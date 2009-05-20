@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+
+$opt_err = 0;
+$opt_out = 0;
+
+GetOptions('err' => \$opt_err, 'out' => \$opt_out);
+
+my $hoge = int(rand(10000));
+
+foreach my $line (<>) {
+    my $str = $line;
+    if ($str =~ m/^(# )/) {}
+    else {
+	$file = 'foo' . $hoge;
+	open ( SH , ">> $file" );
+	    print SH "$str\n";
+	close ( SH );
+    }
+}
+
+system("/bin/bash $file" );
+unlink $file;

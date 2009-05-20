@@ -1,0 +1,94 @@
+内輪向け解説
+
+* 実行方法
+
+スパコン上で実行する場合: xcrypt/qsub を削除する．
+手元で実行する場合: 環境変数 QSUB_WORKDIR を ${HOME}/xcrypt とかにする．
+
+* 概要
+
+NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（$ qsub nqs.sh），
+NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
+し……，という一連の操作を，perl スクリプト xcrypt.pl を作成し，それを
+実行するだけで済むようにするモジュール群である．
+
+ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
+トしている．
+
+* 実装
+
+NQS スクリプト一つの作成をスレッド一つで行う．
+
+モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
+
+コアモジュールは new start before after という関数をのみを持つことがで
+きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
+
+「呼び出す関数 -> 呼び出される関数」と書くことにすると，
+xcrypt.pl の main ->
+1.pm の start -> ... -> n.pm の start ->
+job.pm の start ->
+1.pm の before -> ... -> n.pm の before
+であり，さらに，
+job.pm の start ->
+n.pm の after -> ... -> 1.pm の after
+である．
+
+現在のコアモジュール間の継承関係は，子から親へ向かって xcrypt.pl
+constructor.pm successor.pm refinement.pm dry.pm predecessor.pm
+limit.pm process.pm である．
+
+汎用目的モジュールは現在 jobset.pm function.pm jobsched.pm である．
+
+** xcrypt.pl
+
+ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
+記述し，そのリファレンスを id と同名のスカラ変数で定義する．
+
+** constructor.pm
+
+trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
+
+** successor.pm
+
+successors から別オブジェクトを生成する．ただし successors が空の場合は
+出力列を traces.log に書き出して終了する．
+
+** refinement.pm
+
+オブジェクトの exit_cond と trace から処理を続けるかどうかを判定する．
+続ける場合は change_arg で arg を更新した別オブジェクト（その id は元オ
+ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
+
+** dry.pm
+
+./trigger --dry でユーザ定義のオブジェクトのフィールド値を適当に上書き
+する．
+
+** predecessor.pm
+
+pjo_inventory_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
+の確認ができるまでジョブの生成を待つ．
+
+** limit.pm
+
+作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
+る変数の値で制御する．
+
+** process.pm
+
+関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
+qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
+ことで実現している），関数 after を呼び出すことで後処理をする．
+
+** jobset.pm
+
+ユーザにジョブセットレベルでの記述を可能にさせる．
+
+** function.pm
+
+汎用目的の関数を定義している．
+
+** jobsched.pm
+
+pjo_inventory_{watch,write}.pl と連携してジョブ管理を行う．
