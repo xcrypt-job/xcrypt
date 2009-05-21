@@ -27,7 +27,8 @@ my $inventory_write_command="perl pjo_inventory_write.pl";
 my $inventory_watch_command="perl pjo_inventory_watch.pl";
 my $inventory_watch_opt="-i summary -e end -t 86400 -s"; # -s
 my $inventory_watch_path="$current_directory/inv_watch";
-my $inventory_watch_thread=undef;
+#my $inventory_watch_thread=undef;
+our $inventory_watch_thread=undef;
 
 # ジョブ名→ジョブの状態
 my %job_status : shared;
@@ -40,16 +41,17 @@ sub qsub {
         $dir,      # 実行ファイル置き場（スクリプト実行場所からの相対パス）
         $scriptfile, # スクリプトファイル名
         # 以下の引数はoptional
+	$queue,
         $option,
         $stderr_file, $stdout_file, # 標準／エラー出力の出力先（qsubのオプション）
         # 以下，NQSのオプション
-        $verbose, $verbose_node, $queue, $process, $cpu, $memory
+        $verbose, $verbose_node, $process, $cpu, $memory
         ) = @_;
     my $inventory_file = $inventory_watch_path . '/' . $dir;
     my $jobspec = "\"spec: $job_name\"";
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "$option\n";
-    if ($verbose == "") { print SCRIPT "# @\$-oi\n"; }
+#    if ($verbose eq '') { print SCRIPT "# @\$-oi\n"; }
     if ($verbose_node)  { print SCRIPT "# @\$-OI\n"; }
     if ($queue)         { print SCRIPT "# @\$-q $queue\n"; }
     if ($process)       { print SCRIPT "# @\$-lP $process\n"; }
@@ -63,8 +65,8 @@ sub qsub {
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT "$inventory_write_command $inventory_file \"done\" $jobspec\n";
     close (SCRIPT);
-    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
-    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
+#    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
+#    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
     system ("$inventory_write_command $inventory_file \"submit\" $jobspec");
     system ("$qsub_command $stderr_option $stdout_option $scriptfile");
 }

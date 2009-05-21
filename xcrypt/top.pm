@@ -1,4 +1,4 @@
-package process;
+package top;
 
 use File::Copy;
 use jobsched;
@@ -18,7 +18,6 @@ sub new {
     'output_file' => '',
     'output_column' => 0,
     'delimiter' => ',',
-    'option' => '# @$-q eh',
     'trace' => [],
     'exit_cond' => sub { &function::tautology; },
     'successors' => []
@@ -45,16 +44,14 @@ sub start {
     # NQS スクリプトを作成・投入
     my $nqs_script = $dir . 'nqs.sh';
     my $cmd = $self->{exe} . " $self->{arg1} $self->{arg2}";
-    &jobsched::qsub($self->{id}, $cmd, $self->{id}, $nqs_script, $self->{option});
+    &jobsched::qsub($self->{id}, $cmd, $self->{id}, $nqs_script, $self->{queue}, $self->{option});
 
     # 結果ファイルから結果を取得
     # 拾い方をユーザに書かせないといけないけどどのようにする？
     my $outputfile = $dir . $self->{output_file};
     unless ($self->{output_file}) {}
     else {
-	until ( -e $outputfile ) {
-	    sleep(1);
-	}
+	&jobsched::wait_job_done($self->{id});
 	open ( OUTPUT , "< $outputfile" );
 	my $line = <OUTPUT>;
 	my $delimiter = $self->{delimiter};

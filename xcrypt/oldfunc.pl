@@ -31,6 +31,73 @@ $jobset3 = {
 };
 
 sub parexec {
+    my $foo = $_[0] . 's1';
+	eval "\$$foo = { 'id' => '$_[0]' };";
+    my $bar = $$foo;
+    $bar->{arg1s} = $_[2];
+    $bar->{amplifier} = $_[1];
+    return &parexec_custom($bar);
+}
+
+$job100s1 = {
+    'id' => 'job100',
+    'arg1s' => [1..10],
+    'amplifier' => sub { $_[0]; }
+};
+
+$job100s2 = {
+    'id' => 'job100',
+    'arg1s' => [11..20],
+    'amplifier' => sub { $_[0]; }
+};
+
+&parexec_custom($job100s1, $job100s2);
+print join (" ", @{$job100s1->{outputs}}), "\n";
+
+until ($foo) {
+    &parexec($job100s1);
+    &bar();
+    my @arg1s = &map(\&function::plus10, $job100s1->{arg1s});
+    $job100s1->{arg1s} = \@arg1s;
+}
+
+sub parexec {
+    my $foo = $_[0] . 's1';
+	eval "\$$foo = { 'id' => '$_[0]' };";
+    my $bar = $$foo;
+    $bar->{arg1s} = $_[2];
+    $bar->{amplifier} = $_[1];
+    return &parexec_custom($bar);
+}
+
+sub parexec_custom {
+    my $thrd;
+    my $thrd_card : shared = 0;
+    foreach my $jobgraph (@_) {
+	my @jobgraph_ids = &generate($jobgraph);
+	foreach (@jobgraph_ids) {
+	    eval "\$hoge = \$$_;";
+	    my $obj = xcrypt->new($hoge);
+	    $thrd[$thrd_card] = threads->new(\&constructor::start, $obj);
+	    $thrd_card++;
+	}
+	foreach (@jobgraph_ids) {
+	    print "hoge\n";
+	    &jobsched::wait_job_done($_);
+	}
+    }
+    for (my $k = 0; $k < $thrd_card; $k++) {
+	$thrd[$k]->join;
+    }
+    my @bar;
+    foreach my $jobgraph (@_) {
+	my @foo = &pickup_outputs($jobgraph);
+	push (@bar, @foo);
+    }
+    return @bar;
+}
+
+sub parexec {
     my $thrd;
     my $thrd_card : shared = 0;
     foreach my $id (@_) {

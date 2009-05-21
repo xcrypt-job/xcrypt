@@ -38,7 +38,7 @@ n.pm の after -> ... -> 1.pm の after
 constructor.pm successor.pm refinement.pm dry.pm predecessor.pm
 limit.pm process.pm である．
 
-汎用目的モジュールは現在 jobset.pm function.pm jobsched.pm である．
+汎用目的モジュールは現在 function.pm jobsched.pm である．
 
 ** xcrypt.pl
 
@@ -80,10 +80,6 @@ pjo_inventory_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
 関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
 qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
 ことで実現している），関数 after を呼び出すことで後処理をする．
-
-** jobset.pm
-
-ユーザにジョブセットレベルでの記述を可能にさせる．
 
 ** function.pm
 

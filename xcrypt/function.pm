@@ -19,4 +19,12 @@ sub eq3 { return $_[0] == 3; }
 sub eq4 { return $_[0] == 4; }
 sub eq5 { return $_[0] == 5; }
 
+sub map {
+    my @result;
+    foreach (@{$_[1]}) {
+	push (@result , &{$_[0]}($_));
+    }
+    return @result;
+}
+
 1;

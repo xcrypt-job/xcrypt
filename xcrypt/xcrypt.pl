@@ -6,14 +6,14 @@ use Getopt::Long;
 use function;
 use threads;
 use threads::shared;
-use jobsched;
 use limit;
+use jobsched;
 use base qw(constructor);
 
 $opt_dry = 0;
 GetOptions('dry' => \$opt_dry);
 
-our @outputs : shared = ();
+our @outputs1 : shared = ();
 
 $job100 = {
     'id' => 'job100',
@@ -24,73 +24,57 @@ $job100 = {
     'output_file' => 'pbody',
     'output_column' => 1,
     'delimiter' => ',',
-    'option' => '# @$-q eh',
-    'after_process' => 'push (@xcrypt::outputs, $self->{output});'
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034',
+    'after_processing' => 'push (@xcrypt::outputs1, $self->{output});'
 };
 
-=comment
-&parexec('job100', \&function::plus1, [1..10]);
-print join (" ", @{$job100s1->{outputs}}), "\n";
-print join (" ", @outputs), "\n";
-=cut
+$limit::smph=Thread::Semaphore->new(6);
 
+my @outputs2 = &parexec('job100', \&function::plus1, [1..10]);
+print join (" ", @outputs1), "\n";
+print join (" ", @outputs2), "\n";
+
+$jobsched::inventory_watch_thread->detach;
+
+=comment
 $foo = 0;
-@hhh = (1..10);
+$bar = 1;
 
 until ($foo) {
-    @iii = &parexec('job100', \&function::plus10, \@hhh);
-    &bar(@iii);
-    @hhh = &map(\&function::plus10, \@hhh);
-}
-
-sub map {
-    my @result;
-    foreach (@{$_[1]}) {
-	push (@result , &{$_[0]}($_));
-    }
-    return @result;
-}
-
-sub bar {
-    foreach (@_) {
+    my @kkk = ($bar..($bar+9));
+    my @iii = &parexec('job100', \&function::plus10, \@kkk);
+    foreach (@iii) {
 	if ($_ < 0.1) {
 	    print $_ , "\n";
 	$foo = 1;
 	}
     }
+    $bar = $bar + 10;
 }
+=cut
 
 sub parexec {
-    my $hoge = $_[0] . 's1';
-	eval "\$$hoge = { 'id' => '$_[0]' };";
-    my $hage = $$hoge;
-    $hage->{arg1s} = $_[2];
-    $hage->{amplifier} = $_[1];
-    my @foo = &parexec_custom($hage);
-    return @foo;
-}
-
-sub parexec_custom {
     my $thrd;
     my $thrd_card : shared = 0;
-    foreach my $jobgraph (@_) {
-	my @aaa = &generate($jobgraph);
-	foreach (@aaa) {
-	    eval "\$ccc = \$$_;";
-	    my $obj = xcrypt->new($ccc);
-	    $thrd[$thrd_card] = threads->new(\&constructor::start, $obj);
-	    $thrd_card++;
-	}
+
+    my $id = $_[0] . 's1';
+    eval "\$$id = { 'id' => '$_[0]' };";
+    my $jobgraph = $$id;
+    $jobgraph->{arg1s} = $_[2];
+    $jobgraph->{amplifier} = $_[1];
+
+    my @jobgraph_ids = &generate($jobgraph);
+    foreach (@jobgraph_ids) {
+	eval "\$jg = \$$_;";
+	my $obj = xcrypt->new($jg);
+	$thrd[$thrd_card] = threads->new(\&constructor::start, $obj);
+	$thrd_card++;
     }
     for (my $k = 0; $k < $thrd_card; $k++) {
 	$thrd[$k]->join;
     }
-    my @bar;
-    foreach my $jobgraph (@_) {
-	my @foo = &pickup_outputs($jobgraph);
-	push (@bar, @foo);
-    }
-    return @bar;
+    return &pickup_outputs($jobgraph);
 }
 
 sub pickup_outputs {
@@ -124,16 +108,16 @@ sub generate {
 'id' => '$real_id',
 'exe' => '$self->{exe}',
 'arg1' => $arg1,
-'option' => '# @$-q eh',
 'input_file' => '$self->{input_file}',
 'output_file' => '$self->{output_file}',
 'output_column' => '$self->{output_column}',
 'delimiter' => '$self->{delimiter}',
-'exit_cond' => sub { &function::tautology; },
-'after_process' => '$self->{after_process}'
+'queue' => '$self->{queue}',
+'after_processing' => '$self->{after_processing}'
 };";
+	my $jg = $$real_id;
+	$jg->{option} = $self->{option};
     }
-    $limit::smph=Thread::Semaphore->new(6);
     return @real_ids;
 }
 
@@ -152,6 +136,7 @@ $job100s2 = {
 };
 
 &parexec_custom($job100s1, $job100s2);
+print join (" ", @{$job100s1->{outputs}}), "\n";
 
 until ($foo) {
     &parexec($job100s1);
@@ -228,7 +213,7 @@ $job2 = {
     'trace' => [20, 200]
 };
 
-#    $limit::smph=Thread::Semaphore->new(6);
-#    xcrypt->new($job0)->start;
+$limit::smph=Thread::Semaphore->new(6);
+xcrypt->new($job0)->start;
 
 =cut

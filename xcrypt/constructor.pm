@@ -12,7 +12,7 @@ sub new {
     $self->{arg1} = $obj->{arg1};
     $self->{arg2} = $obj->{arg2};
     $self->{trace} = $obj->{trace};
-    $self->{after_process} = $obj->{after_process};
+    $self->{after_processing} = $obj->{after_processing};
     if ($obj->{exit_cond} eq '') {
 	$self->{exit_cond} = sub { &function::tautology; };
     }
@@ -32,7 +32,7 @@ sub before {
 sub after {
     my $self = shift;
     $self->SUPER::after();
-    eval ($self->{after_process});
+    eval ($self->{after_processing});
 }
 
 1;

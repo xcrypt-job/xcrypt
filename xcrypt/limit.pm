@@ -2,7 +2,7 @@ package limit;
 
 use Thread::Semaphore;
 
-use base qw(process);
+use base qw(top);
 
 $smph;
 
@@ -23,8 +23,8 @@ sub start {
 
 sub before {
     my $self = shift;
-    print "The semaphore is down.\n";
     $smph->down;
+    print "The semaphore is down.\n";
     $self->SUPER::before();
 }
 

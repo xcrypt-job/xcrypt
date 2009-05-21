@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+sleep(3);
 open ( PLASMA , "< plasma.inp");
 foreach my $item (<PLASMA>) {
     my $str = $item;
