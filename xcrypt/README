@@ -36,7 +36,7 @@ n.pm の after -> ... -> 1.pm の after
 
 現在のコアモジュール間の継承関係は，子から親へ向かって xcrypt.pl
 constructor.pm successor.pm refinement.pm dry.pm predecessor.pm
-limit.pm process.pm である．
+limit.pm top.pm である．
 
 汎用目的モジュールは現在 function.pm jobsched.pm である．
 
@@ -75,7 +75,7 @@ pjo_inventory_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
 作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
 る変数の値で制御する．
 
-** process.pm
+** top.pm
 
 関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
 qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す

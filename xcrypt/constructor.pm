@@ -16,6 +16,9 @@ sub new {
     if ($obj->{exit_cond} eq '') {
 	$self->{exit_cond} = sub { &function::tautology; };
     }
+    if ($obj->{queue} eq '') {
+	$self->{queue} = 'eh';
+    }
     return bless $self, $class;
 }
 
@@ -33,6 +36,7 @@ sub after {
     my $self = shift;
     $self->SUPER::after();
     eval ($self->{after_processing});
+#    return $self->{output};
 }
 
 1;

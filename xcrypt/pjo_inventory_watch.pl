@@ -404,7 +404,7 @@ my $check_diff_fkg = &check_diff();
 if ($time_out > 0 and $check_diff_fkg == 0) {
     # 基準時間を取得
     my $start_time = time;
-    my $sleep_time = 10;
+    my $sleep_time = 5;
     my $max_time = $time_out;
     # タイマー監視
     eval {

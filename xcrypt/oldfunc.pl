@@ -30,6 +30,41 @@ $jobset3 = {
     'after_process' => 'push (@xcrypt::outputs2and3, $self->{output});'
 };
 
+sub pickup_outputs {
+    my $jobgraph = shift;
+    my $id = $jobgraph->{id};
+    my $self = $$id;
+    foreach my $arg1 (@{$jobgraph->{arg1s}}) {
+    }
+    return @{$jobgraph->{outputs}};
+}
+
+sub generate {
+    my $jobgraph = shift;
+    my $id = $jobgraph->{id};
+    my $self = $$id;
+    my @jgs;
+    foreach my $arg1 (@{$jobgraph->{arg1s}}) {
+	$arg1 = &{$jobgraph->{amplifier1}}($arg1);
+	my $real_id = $id . '_' . $arg1;
+	my $jg = {};
+	$jg->{id} = $real_id;
+	$jg->{exe} = $self->{exe};
+	$jg->{arg1} = $arg1;
+	$jg->{input_file} = $self->{input_file};
+	$jg->{successors} = $self->{successors};
+	$jg->{predecessors} = $self->{predecessors};
+	$jg->{output_file} = $self->{output_file};
+	$jg->{output_column} = $self->{output_column};
+	$jg->{delimiter} = $self->{delimiter};
+	$jg->{queue} = $self->{queue};
+	$jg->{after_processing} = $self->{after_processing};
+	$jg->{option} = $self->{option};
+	push (@jgs , $jg);
+    }
+    return @jgs;
+}
+
 sub parexec {
     my $foo = $_[0] . 's1';
 	eval "\$$foo = { 'id' => '$_[0]' };";
