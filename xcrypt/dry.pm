@@ -17,7 +17,7 @@ sub start {
 
 sub before {
     my $self = shift;
-    if ($xcrypt::opt_dry) {
+    if ($user::opt_dry) {
 	$self->{exe} = '';
 	$self->{arg1} = '';
 	$self->{arg2} = '';

@@ -8,7 +8,8 @@ foreach my $item (<PLASMA>) {
 	if ($str =~ m/(\d+)/) {
 	    my $num = $1;
 	    open ( PBODY , "> pbody" );
-	    print PBODY "foo," . ($num / $ARGV[0]). ",bar";
+#	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
+	    print PBODY "foo," . $ARGV[0] . ",bar";
 	    close ( PBODY );
 	}
     }

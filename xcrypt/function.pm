@@ -1,5 +1,8 @@
 package function;
 
+use base qw(Exporter);
+@EXPORT = qw(identity plus1 plus10);
+
 sub silent { return ""; }
 sub identity { return $_[0]; }
 #sub backward_difference { abs($_[1] - $_[2]) < 0.0001; }

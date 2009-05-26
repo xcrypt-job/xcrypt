@@ -1,3 +1,84 @@
+=comment
+
+&parexec_custom($job100s1, $job100s2);
+print join (" ", @{$job100s1->{outputs}}), "\n";
+
+until ($foo) {
+    &parexec($job100s1);
+    &bar();
+    my @arg1s = &map(\&plus10, $job100s1->{arg1s});
+    $job100s1->{arg1s} = \@arg1s;
+}
+=cut
+
+# an example of a jobgraph
+
+$job0 = {
+    'id' => 'job0',
+    'option' => '# @$-q eh',
+    'exit_cond' => sub { &tautology; },
+    'successors' => ['job3','job4','job5']
+};
+$job3 = {
+    'id' => 'job3',
+    'predecessors' => ['job4','job5'],
+    'exe' => './kempo.pl',
+    'arg1' => 50,
+    'arg2' => 100000000,
+    'input_file' => 'plasma.inp',
+    'output_file' => 'pbody',
+    'output_column' => 1,
+    'delimiter' => ',',
+    'exit_cond' => sub { &tautology; },
+    'option' => '# @$-q eh'
+};
+$job4 = {
+    'id' => 'job4',
+    'cnvg' => 'job1',
+    'option' => '# @$-q eh',
+    'trace' => [40, 400],
+    'exit_cond' => sub { &forward_difference; },
+    'change_arg1' => sub { $_[0] + 10; },
+    'change_arg2' => sub { 100; },
+    'change_input_file' => sub {}
+};
+$job5 = {
+    'id' => 'job5',
+    'cnvg' => 'job2',
+    'option' => '# @$-q eh',
+    'trace' => [50, 500],
+    'exit_cond' => sub { &forward_difference; },
+    'change_arg1' => sub { $_[0] + 1; },
+    'change_arg2' => sub { 100; },
+    'change_input_file' => sub {}
+};
+$job1 = {
+    'id' => 'job1',
+    'predecessors' => [],
+    'exe' => './kempo.pl',
+    'arg1' => 20,
+    'arg2' => 100,
+    'input_file' => 'plasma.inp',
+    'output_file' => 'pbody',
+    'output_column' => 1,
+    'delimiter' => ',',
+    'option' => '# @$-q eh',
+    'trace' => [10, 100]
+};
+$job2 = {
+    'id' => 'job2',
+    'predecessors' => [],
+    'exe' => './kempo.pl',
+    'arg1' => 30,
+    'arg2' => 100,
+    'input_file' => 'plasma.inp',
+    'output_file' => 'pbody',
+    'output_column' => 1,
+    'delimiter' => ',',
+    'option' => '# @$-q eh',
+    'trace' => [20, 200]
+};
+
 $jobset1 = {
     'exe' => './kempo1.pl',
     'arg1s' => [1..9],

@@ -31,9 +31,9 @@ sub after {
   $self->SUPER::after();
 
   until (&{$self->{exit_cond}}(@{$self->{trace}})) {
-      my $foo = 'xcrypt::' . $self->{cnvg};
+      my $foo = 'user::' . $self->{cnvg};
       my $bar = $$foo;
-      my $obj = xcrypt->new($bar);
+      my $obj = user->new($bar);
       $obj->{id} = $obj->{id} . '_';
       $obj->{arg1} = &{$self->{change_arg1}}($obj->{arg1});
       $obj->{arg2} = &{$self->{change_arg2}}($obj->{arg2});

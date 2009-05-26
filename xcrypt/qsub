@@ -20,5 +20,5 @@ foreach my $line (<>) {
     }
 }
 
-system("/bin/bash $file" );
+system("/bin/bash $file");
 unlink $file;

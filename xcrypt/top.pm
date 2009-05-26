@@ -1,6 +1,8 @@
 package top;
 
 use File::Copy;
+use UI;
+use function;
 use jobsched;
 
 my $tracelog_file = 'trace.log';
@@ -52,11 +54,7 @@ sub start {
     unless ($self->{output_file}) {}
     else {
 	&jobsched::wait_job_done($self->{id});
-	open ( OUTPUT , "< $outputfile" );
-	my $line = <OUTPUT>;
-	my $delimiter = $self->{delimiter};
-	my @list = split(/$delimiter/, $line);
-	close ( OUTPUT );
+	my @list = &pickup($outputfile, $self->{delimiter});
 	$self->{output} = $list[$self->{output_column}];
 	unshift (@{$self->{trace}} , $list[$self->{output_column}]);
     }

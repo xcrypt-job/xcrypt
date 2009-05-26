@@ -41,9 +41,9 @@ sub after {
       close ( TRACE );
   }
   foreach (@{$self->{successors}}) {
-      my $foo = 'xcrypt::' . $_;
+      my $foo = 'user::' . $_;
       my $bar = $$foo;
-      my $obj = xcrypt->new($bar);
+      my $obj = user->new($bar);
       $thrd[$thrd_card] = threads->new(\&start, $obj);
       $thrd_card++;
   }

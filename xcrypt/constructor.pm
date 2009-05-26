@@ -25,6 +25,7 @@ sub new {
 sub start {
     my $self = shift;
     $self->SUPER::start();
+    return $self->{output};
 }
 
 sub before {
