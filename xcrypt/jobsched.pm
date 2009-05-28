@@ -43,7 +43,7 @@ sub qsub {
         # 以下の引数はoptional
 	$queue,
         $option,
-        $stderr_file, $stdout_file, # 標準／エラー出力の出力先（qsubのオプション）
+        $stdout_file, $stderr_file, # 標準／エラー出力の出力先（qsubのオプション）
         # 以下，NQSのオプション
         $verbose, $verbose_node, $process, $cpu, $memory
         ) = @_;
@@ -57,6 +57,8 @@ sub qsub {
     if ($process)       { print SCRIPT "# @\$-lP $process\n"; }
     if ($cpu)           { print SCRIPT "# @\$-lp $cpu\n"; }
     if ($memory)        { print SCRIPT "# @\$-lm $memory\n"; }
+    if ($stdout_file)   { print SCRIPT "# @\$-o $stdout_file\n"; }
+    if ($stderr_file)   { print SCRIPT "# @\$-e $stderr_file\n"; }
     print SCRIPT "cd \$QSUB_WORKDIR \n";
     print SCRIPT "$inventory_write_command $inventory_file \"start\" $jobspec\n";
     print SCRIPT "cd \$QSUB_WORKDIR/$dir \n";
@@ -68,7 +70,8 @@ sub qsub {
 #    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
 #    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
     system ("$inventory_write_command $inventory_file \"submit\" $jobspec");
-    system ("$qsub_command $stderr_option $stdout_option $scriptfile");
+#    system ("$qsub_command $stderr_option $stdout_option $scriptfile");
+    system ("$qsub_command $scriptfile");
 }
 
 ##############################

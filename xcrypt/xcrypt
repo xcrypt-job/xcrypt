@@ -1,13 +1,15 @@
 #!/usr/bin/perl
-
 package xcrypt;
 
 use File::Copy;
 
-rename $ARGV[0] , "tmp.pl";
+my $tmpfile = "xcrypt_tmp.pl";
+
+unless (-e $tmpfile) {
+
+rename $ARGV[0] , $tmpfile;
 
 open ( TMP , "> $ARGV[0]");
-print TMP '#!/usr/bin/perl' . "\n";
 print TMP 'package user;' . "\n";
 print TMP 'use Getopt::Long;' . "\n";
 print TMP 'use UI;' . "\n";
@@ -16,21 +18,20 @@ print TMP 'use threads::shared;' . "\n";
 print TMP 'use limit;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
-#print TMP 'our $async_thrd;' . "\n";
-#print TMP 'our $async_thrd_card : shared = 0;' . "\n";
 print TMP '$opt_dry = 0;' . "\n";
 print TMP 'GetOptions(\'dry\' => $opt_dry);' . "\n";
-open ( USER , "< tmp.pl") . "\n";
-foreach (<USER>) {
-    print TMP "$_";
-}
+open ( USER , "< $tmpfile") . "\n";
+foreach (<USER>) { print TMP "$_"; }
 close ( USER );
+print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self->{output};}' . "\n";
+print TMP 'sub before {my $self = shift;$self->SUPER::before();}' . "\n";
+print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after_processing});}' . "\n";
 print TMP '$jobsched::inventory_watch_thread->detach;' . "\n";
 close ( TMP );
 
 chmod 0755, $ARGV[0];
-
-system("$ARGV[0]");
-
+system("perl $ARGV[0]");
 unlink $ARGV[0];
-rename "tmp.pl", $ARGV[0];
+rename $tmpfile , $ARGV[0];
+
+} else { print "remove or rename $tmpfile.\n"; }

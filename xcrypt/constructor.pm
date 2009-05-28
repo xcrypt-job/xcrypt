@@ -25,7 +25,6 @@ sub new {
 sub start {
     my $self = shift;
     $self->SUPER::start();
-    return $self->{output};
 }
 
 sub before {
@@ -36,8 +35,6 @@ sub before {
 sub after {
     my $self = shift;
     $self->SUPER::after();
-    eval ($self->{after_processing});
-#    return $self->{output};
 }
 
 1;

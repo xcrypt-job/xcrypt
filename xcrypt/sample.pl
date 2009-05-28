@@ -1,8 +1,8 @@
 use function;
 
-$limit::smph=Thread::Semaphore->new(10);
+$limit::smph=Thread::Semaphore->new(100);
 
-our @outputs1 : shared = ();
+our @outputs0 : shared = ();
 %xyz = (
     'id' => 'job100',
     'exe' => './kempo.pl',
@@ -13,15 +13,16 @@ our @outputs1 : shared = ();
     'delimiter' => ',',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034',
-    'after_processing' => 'push (@user::outputs1, $self->{output});'
+#    'after_processing' => 'push (@outputs0, $self->{output});'
+    'after_processing' => 'push (@outputs0, $self->{stdout});'
 );
 
-
-my @outputs2 = &submit_sync(%xyz, 'range1' => [1..10], 'amp1' => \&plus1);
+#my @outputs1 = &submit_sync(%xyz, 'range1' => [1..10], 'amp1' => \&plus1);
+my @outputs1 = &submit_sync(%xyz);
+print join (" ", @outputs0), "\n";
 print join (" ", @outputs1), "\n";
-print join (" ", @outputs2), "\n";
 
-
+=comment
 my @thrd_ids5 = &submit(%xyz, 'range1' => [41..50]);
 my @thrd_ids3 = &submit(%xyz, 'range1' => [21..30]);
 my @thrd_ids4 = &submit(%xyz, 'range1' => [31..40]);
@@ -35,8 +36,6 @@ my @outputs4 = &sync(@thrd_ids4);
 
 print join (" ", @outputs4), "\n";
 print join (" ", @outputs5), "\n";
-
-=comment
 =cut
 
 

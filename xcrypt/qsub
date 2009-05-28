@@ -2,17 +2,25 @@
 
 use Getopt::Long;
 
-$opt_err = 0;
-$opt_out = 0;
+# $opt_err = 0;
+# $opt_out = 0;
 
-GetOptions('err' => \$opt_err, 'out' => \$opt_out);
+# GetOptions('err' => \$opt_err, 'out' => \$opt_out);
 
 my $hoge = int(rand(10000));
 
+my $stdout;
+my $stderr;
 foreach my $line (<>) {
     my $str = $line;
-    if ($str =~ m/^(# )/) {}
-    else {
+    if ($str =~ m/^(# @\$-o)/) {
+	$str =~s/# @\$-o //;
+	$stdout = $str;
+    } elsif ($str =~ m/^(# @\$-e)/) {
+	$str =~s/# @\$-e //;
+	$stderr = $str;
+    } elsif ($str =~ m/^(# )/) {
+    } else {
 	$file = 'foo' . $hoge;
 	open ( SH , ">> $file" );
 	    print SH "$str\n";
@@ -20,5 +28,5 @@ foreach my $line (<>) {
     }
 }
 
-system("/bin/bash $file");
+system("/bin/bash $file 1> $stdout 2>$stderr");
 unlink $file;

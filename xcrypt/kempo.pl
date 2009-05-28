@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 #sleep(1);
+print "hoge";
 open ( PLASMA , "< plasma.inp");
 foreach my $item (<PLASMA>) {
     my $str = $item;

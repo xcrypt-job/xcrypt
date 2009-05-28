@@ -46,14 +46,21 @@ sub start {
     # NQS スクリプトを作成・投入
     my $nqs_script = $dir . 'nqs.sh';
     my $cmd = $self->{exe} . " $self->{arg1} $self->{arg2}";
-    &jobsched::qsub($self->{id}, $cmd, $self->{id}, $nqs_script, $self->{queue}, $self->{option});
+    my $stdoutfile = "stdout";
+    if ($self->{stdout_file}) { $stdoutfile = $self->{stdout_file}; }
+    my $stderrfile = "stderr";
+    if ($self->{stderr_file}) { $stderrfile = $self->{stderr_file}; }
+    &jobsched::qsub($self->{id}, $cmd, $self->{id}, $nqs_script, $self->{queue}, $self->{option}, $stdoutfile, $stderrfile);
 
     # 結果ファイルから結果を取得
     # 拾い方をユーザに書かせないといけないけどどのようにする？
-    my $outputfile = $dir . $self->{output_file};
+    &jobsched::wait_job_done($self->{id});
+    my @stdlist = &pickup($stdoutfile, ',');
+    $self->{stdout} = $stdlist[0];
+
     unless ($self->{output_file}) {}
     else {
-	&jobsched::wait_job_done($self->{id});
+	my $outputfile = $dir . $self->{output_file};
 	my @list = &pickup($outputfile, $self->{delimiter});
 	$self->{output} = $list[$self->{output_column}];
 	unshift (@{$self->{trace}} , $list[$self->{output_column}]);

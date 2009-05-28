@@ -9,8 +9,8 @@
 
 NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（$ qsub nqs.sh），
 NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
-し……，という一連の操作を，perl スクリプト xcrypt.pl を作成し，それを
-実行するだけで済むようにするモジュール群である．
+し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
+xcrypt に渡す（$ xcrypt user.pl）だけで済むようにするモジュール群である．
 
 ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
 トしている．
@@ -25,22 +25,20 @@ NQS スクリプト一つの作成をスレッド一つで行う．
 きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
 
 「呼び出す関数 -> 呼び出される関数」と書くことにすると，
-xcrypt.pl の main ->
 1.pm の start -> ... -> n.pm の start ->
-job.pm の start ->
+top.pm の start ->
 1.pm の before -> ... -> n.pm の before
 であり，さらに，
-job.pm の start ->
+top.pm の start ->
 n.pm の after -> ... -> 1.pm の after
 である．
 
-現在のコアモジュール間の継承関係は，子から親へ向かって xcrypt.pl
-constructor.pm successor.pm refinement.pm dry.pm predecessor.pm
-limit.pm top.pm である．
+現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
+successor.pm refinement.pm dry.pm predecessor.pm limit.pm top.pm である．
 
-汎用目的モジュールは現在 function.pm jobsched.pm である．
+汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
 
-** xcrypt.pl
+** xcrypt & user.pl
 
 ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
 記述し，そのリファレンスを id と同名のスカラ変数で定義する．
@@ -81,9 +79,13 @@ pjo_inventory_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
 qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
 ことで実現している），関数 after を呼び出すことで後処理をする．
 
+** UI.pm
+
+ユーザがオペレーションとして利用する関数を定義している．
+
 ** function.pm
 
-汎用目的の関数を定義している．
+ユーザがデータとして利用する関数を定義している．
 
 ** jobsched.pm
 

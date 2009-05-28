@@ -29,8 +29,6 @@ sub before {
 
 sub after {
   my $self = shift;
-  my $thrd;
-  my $thrd_card : shared = 0;
 
   $self->SUPER::after();
 
@@ -40,15 +38,16 @@ sub after {
       print TRACE join (' ', @{$self->{trace}}), "\n";
       close ( TRACE );
   }
+  my @thrds;
   foreach (@{$self->{successors}}) {
       my $foo = 'user::' . $_;
       my $bar = $$foo;
       my $obj = user->new($bar);
-      $thrd[$thrd_card] = threads->new(\&start, $obj);
-      $thrd_card++;
+      my $thrd = threads->new(\&start, $obj);
+      push(@thrds , $thrd);
   }
-  for (my $k = 0; $k < $thrd_card; $k++) {
-      $thrd[$k]->join;
+  foreach (@thrds) {
+	$_->join;
   }
 }
 
