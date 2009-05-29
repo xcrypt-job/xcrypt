@@ -2,8 +2,12 @@
 
 * 実行方法
 
-スパコン上で実行する場合: xcrypt/qsub を削除する．
-手元で実行する場合: 環境変数 QSUB_WORKDIR を ${HOME}/xcrypt とかにする．
+スパコン上で実行する場合:
+xcrypt/qsub を削除する．
+
+手元で実行する場合:
+環境変数 QSUB_WORKDIR を ${HOME}/e-science/${USERNAME} とかにする．
+環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
 
 * 概要
 

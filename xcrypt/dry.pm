@@ -21,8 +21,8 @@ sub before {
 	$self->{exe} = '';
 	$self->{arg1} = '';
 	$self->{arg2} = '';
-	$self->{input_file} = '';
-	$self->{output_file} = '';
+	$self->{input_filename} = '';
+	$self->{output_filename} = '';
 	$self->{exit_cond} = sub { &function::tautology; };
     }
     $self->SUPER::before();

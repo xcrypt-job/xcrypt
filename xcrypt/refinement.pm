@@ -39,7 +39,6 @@ sub after {
       $obj->{arg2} = &{$self->{change_arg2}}($obj->{arg2});
       $obj->{exit_cond} = sub { &function::tautology };
       $obj->{trace} = $self->{trace};
-      #（未実装）change_input_file で input_file を更新
       &start($obj);
       $self->{trace} = $obj->{trace};
   }

@@ -10,7 +10,8 @@ foreach my $item (<PLASMA>) {
 	    my $num = $1;
 	    open ( PBODY , "> pbody" );
 #	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
-	    print PBODY "foo," . $ARGV[0] . ",bar";
+#	    print PBODY "foo," . $ARGV[0] . ",bar";
+	    print PBODY "foo," . $num . ",bar";
 	    close ( PBODY );
 	}
     }

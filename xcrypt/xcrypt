@@ -15,7 +15,6 @@ print TMP 'use Getopt::Long;' . "\n";
 print TMP 'use UI;' . "\n";
 print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
-print TMP 'use limit;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
 print TMP '$opt_dry = 0;' . "\n";
@@ -24,8 +23,8 @@ open ( USER , "< $tmpfile") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self->{output};}' . "\n";
-print TMP 'sub before {my $self = shift;$self->SUPER::before();}' . "\n";
-print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after_processing});}' . "\n";
+print TMP 'sub before {my $self = shift;$self->SUPER::before();eval ($self->{before});}' . "\n";
+print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after});}' . "\n";
 print TMP '$jobsched::inventory_watch_thread->detach;' . "\n";
 close ( TMP );
 

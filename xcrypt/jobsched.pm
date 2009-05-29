@@ -19,12 +19,12 @@ my $qstat_command="qstat";
 
 my $current_directory=Cwd::getcwd();
 
-my $inventory_write_command="perl pjo_inventory_write.pl";
+my $inventory_write_command="perl \$XCRYPT/pjo_inventory_write.pl";
 # my $inventory_write_opt="";
 
 # pjo_inventory_watch.pl は出力をバッファリングしない設定 ($|=1)
 # にしておくこと（fujitsuオリジナルはそうなってない）
-my $inventory_watch_command="perl pjo_inventory_watch.pl";
+my $inventory_watch_command="perl \$XCRYPT/pjo_inventory_watch.pl";
 my $inventory_watch_opt="-i summary -e end -t 86400 -s"; # -s
 my $inventory_watch_path="$current_directory/inv_watch";
 #my $inventory_watch_thread=undef;

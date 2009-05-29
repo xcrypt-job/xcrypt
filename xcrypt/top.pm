@@ -4,44 +4,25 @@ use File::Copy;
 use UI;
 use function;
 use jobsched;
-
-my $tracelog_file = 'trace.log';
+use Data_Generation;
 
 sub new {
     my $class = shift;
-=comment
-    my $self = {
-    'id' => '',
-    'predecessors' => [],
-    'exe' => '',
-    'arg1' => [],
-    'arg2' => [],
-    'input_file' => '',
-    'output_file' => '',
-    'output_column' => 0,
-    'delimiter' => ',',
-    'trace' => [],
-    'exit_cond' => sub { &function::tautology; },
-    'successors' => []
-    };
-=cut
     my $self = shift;
+    # ジョブをジョブごとに作成されるディレクトリで処理
+    my $dir = $self->{id} . '/';
+    mkdir $dir , 0755;
+    if ( -e $self->{input_filename} ) {
+	$self->{input} = &Data_Generation::CF($self->{input_filename}, $dir);
+    }
     return bless $self, $class;
 }
 
 sub start {
     my $self = shift;
-
-    $self->before();
-
     my $dir = $self->{id} . '/';
 
-    # ジョブをジョブごとに作成されるディレクトリで処理
-    mkdir $dir , 0755;
-    my $inputfile = $self->{input_file};
-    if ( -e $inputfile ) { copy( $inputfile , $dir . $inputfile ); }
-    my $exe = $self->{exe};
-    if ( -e $exe ) { symlink '../' . $exe , $dir . $exe; }
+    $self->before();
 
     # NQS スクリプトを作成・投入
     my $nqs_script = $dir . 'nqs.sh';
@@ -50,33 +31,47 @@ sub start {
     if ($self->{stdout_file}) { $stdoutfile = $self->{stdout_file}; }
     my $stderrfile = "stderr";
     if ($self->{stderr_file}) { $stderrfile = $self->{stderr_file}; }
-    &jobsched::qsub($self->{id}, $cmd, $self->{id}, $nqs_script, $self->{queue}, $self->{option}, $stdoutfile, $stderrfile);
-
+    &jobsched::qsub($self->{id},
+		    $cmd,
+		    $self->{id},
+		    $nqs_script,
+		    $self->{queue},
+		    $self->{option},
+		    $stdoutfile,
+		    $stderrfile);
     # 結果ファイルから結果を取得
     # 拾い方をユーザに書かせないといけないけどどのようにする？
     &jobsched::wait_job_done($self->{id});
     my @stdlist = &pickup($stdoutfile, ',');
     $self->{stdout} = $stdlist[0];
 
-    unless ($self->{output_file}) {}
+    $self->after();
+}
+
+sub before {
+    my $self = shift;
+    if ( -e $self->{input_filename} ) { $self->{input}->do(); }
+    my $exe = $self->{exe};
+    my $dir = $self->{id} . '/';
+    if ( -e $exe ) { symlink '../' . $exe, $dir . $exe; }
+}
+
+sub after {
+    my $self = shift;
+    unless ($self->{output_filename}) {}
     else {
-	my $outputfile = $dir . $self->{output_file};
+	my $dir = $self->{id} . '/';
+	my $outputfile = $dir . $self->{output_filename};
 	my @list = &pickup($outputfile, $self->{delimiter});
 	$self->{output} = $list[$self->{output_column}];
 	unshift (@{$self->{trace}} , $list[$self->{output_column}]);
     }
-
-    $self->after();
-
     # exit_cond により生成されるジョブの結果もディレクトリ以下に保存
-    my $hoge = $dir . $tracelog_file;
+    my $tracelog_filename = 'trace.log';
+    my $hoge = $dir . $tracelog_filename;
     open ( EXITOUTPUT , ">> $hoge" );
     print EXITOUTPUT join (' ', @{$self->{trace}}), "\n";
     close ( EXITOUTPUT );
 }
-
-sub before {}
-
-sub after {}
 
 1;
