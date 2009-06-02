@@ -3,11 +3,23 @@ package xcrypt;
 
 use File::Copy;
 
-my $tmpfile = "xcrypt_tmp.pl";
+my $savefile = "xcrypt_save.pl";
 
-unless (-e $tmpfile) {
+if ($ENV{PATH} eq '') {
+    $ENV{PATH} = $ENV{XCRYPT};
+} else {
+    $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH};
+}
 
-rename $ARGV[0] , $tmpfile;
+if ($ENV{PERL5LIB} eq '') {
+    $ENV{PERL5LIB} = $ENV{XCRYPT};
+} else {
+    $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB};
+}
+
+unless (-e $savefile) {
+
+rename $ARGV[0] , $savefile;
 
 open ( TMP , "> $ARGV[0]");
 print TMP 'package user;' . "\n";
@@ -19,18 +31,18 @@ print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
 print TMP '$opt_dry = 0;' . "\n";
 print TMP 'GetOptions(\'dry\' => $opt_dry);' . "\n";
-open ( USER , "< $tmpfile") . "\n";
+open ( USER , "< $savefile") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self->{output};}' . "\n";
 print TMP 'sub before {my $self = shift;$self->SUPER::before();eval ($self->{before});}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after});}' . "\n";
-print TMP '$jobsched::inventory_watch_thread->detach;' . "\n";
+print TMP '$jobsched::watch_thread->detach;' . "\n";
 close ( TMP );
 
 chmod 0755, $ARGV[0];
 system("perl $ARGV[0]");
 unlink $ARGV[0];
-rename $tmpfile , $ARGV[0];
+rename $savefile , $ARGV[0];
 
-} else { print "remove or rename $tmpfile.\n"; }
+} else { print "remove or rename $savefile.\n"; }

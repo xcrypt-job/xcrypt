@@ -1,4 +1,5 @@
 # Job scheduler I/F  (written by Tasuku HIRAISHI)
+# 注意: 23 行目にフルパスを直接記述している．そのうち直す．
 package jobsched;
 
 use threads;
@@ -19,35 +20,36 @@ my $qstat_command="qstat";
 
 my $current_directory=Cwd::getcwd();
 
-my $inventory_write_command="perl \$XCRYPT/pjo_inventory_write.pl";
-# my $inventory_write_opt="";
+my $write_command="\$XCRYPT/pjo_inventory_write.pl";
+# my $write_opt="";
 
-# pjo_inventory_watch.pl は出力をバッファリングしない設定 ($|=1)
+# pjo_watch.pl は出力をバッファリングしない設定 ($|=1)
 # にしておくこと（fujitsuオリジナルはそうなってない）
-my $inventory_watch_command="perl \$XCRYPT/pjo_inventory_watch.pl";
-my $inventory_watch_opt="-i summary -e end -t 86400 -s"; # -s
-my $inventory_watch_path="$current_directory/inv_watch";
-#my $inventory_watch_thread=undef;
-our $inventory_watch_thread=undef;
+#
+my $watch_command="pjo_inventory_watch.pl";
+my $watch_opt="-i summary -e end -t 86400 -s"; # -s
+my $watch_path="$current_directory/inv_watch";
+#my $watch_thread=undef;
+our $watch_thread=undef;
 
 # ジョブ名→ジョブの状態
 my %job_status : shared;
 
 ##################################################
-# ジョブスクリプトを生成し，必要なinventory_writeを行った後，ジョブ投入
+# ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
 sub qsub {
     my ($job_name, # ジョブ名
         $command,  # 実行するコマンドの文字列
-        $dir,      # 実行ファイル置き場（スクリプト実行場所からの相対パス）
+        $dirname,      # 実行ファイル置き場（スクリプト実行場所からの相対パス）
         $scriptfile, # スクリプトファイル名
         # 以下の引数はoptional
 	$queue,
         $option,
-        $stdout_file, $stderr_file, # 標準／エラー出力の出力先（qsubのオプション）
+        $stdout_file, $stderr_file, # 標準／エラー出力先（qsubのオプション）
         # 以下，NQSのオプション
         $verbose, $verbose_node, $process, $cpu, $memory
         ) = @_;
-    my $inventory_file = $inventory_watch_path . '/' . $dir;
+    my $file = $watch_path . '/' . $dirname;
     my $jobspec = "\"spec: $job_name\"";
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "$option\n";
@@ -59,50 +61,57 @@ sub qsub {
     if ($memory)        { print SCRIPT "# @\$-lm $memory\n"; }
     if ($stdout_file)   { print SCRIPT "# @\$-o $stdout_file\n"; }
     if ($stderr_file)   { print SCRIPT "# @\$-e $stderr_file\n"; }
-    print SCRIPT "cd \$QSUB_WORKDIR \n";
-    print SCRIPT "$inventory_write_command $inventory_file \"start\" $jobspec\n";
-    print SCRIPT "cd \$QSUB_WORKDIR/$dir \n";
+    print SCRIPT "set -x\n";
+    print SCRIPT "XCRYPT=$ENV{'XCRYPT'}\n";
+    print SCRIPT "cd \$QSUB_WORKDIR\n";
+    print SCRIPT "$write_command $file \"start\" $jobspec\n";
+    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
     print SCRIPT "$command\n";
-    print SCRIPT "cd \$QSUB_WORKDIR \n";
+    print SCRIPT "cd \$QSUB_WORKDIR\n";
     # 正常終了でなければ "abort" を書き込むべき
-    print SCRIPT "$inventory_write_command $inventory_file \"done\" $jobspec\n";
+    print SCRIPT "$write_command $file \"done\" $jobspec\n";
     close (SCRIPT);
 #    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
 #    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
-    system ("$inventory_write_command $inventory_file \"submit\" $jobspec");
+    system ("$write_command $file \"submit\" $jobspec");
 #    system ("$qsub_command $stderr_option $stdout_option $scriptfile");
-    system ("$qsub_command $scriptfile");
+    my $hoge = qx/$qsub_command $scriptfile/;
+#    system ("$qsub_command $scriptfile");
+    my $hogefile = $dirname . "/request_id";
+    open (HOGE, ">> $hogefile");
+    print HOGE $hoge;
+    close (HOGE);
 }
 
 ##############################
-# 外部プログラムinventory_watchを起動し，その標準出力を監視するスレッドを起動
-sub invoke_inventory_watch {
+# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    if ( !(-d $inventory_watch_path) ) {
-        mkdir $inventory_watch_path or
-        die "Can't make $inventory_watch_path: $!.\n";
+    if ( !(-d $watch_path) ) {
+        mkdir $watch_path or
+        die "Can't make $watch_path: $!.\n";
     }
     foreach (".tmp", ".lock") {
-        if ( !(-d "$inventory_watch_path/$_") ) {
-            mkdir "$inventory_watch_path/$_" or
-                die "Can't make $inventory_watch_path/$_: $!.\n";
+        if ( !(-d "$watch_path/$_") ) {
+            mkdir "$watch_path/$_" or
+                die "Can't make $watch_path/$_: $!.\n";
         }
     }
     # 以下，監視スレッドの処理
-    $inventory_watch_thread =  threads->new( sub {
-        open (INVWATCH, "$inventory_watch_command $inventory_watch_path $inventory_watch_opt |");
+    $watch_thread =  threads->new( sub {
+        open (INVWATCH, "$watch_command $watch_path $watch_opt |");
         while (1) {
             while (<INVWATCH>){
                 handle_inventory ($_);
             }
             close (INVWATCH);
-            print "inventory_watch finished.\n";
-            open (INVWATCH, "$inventory_watch_command $inventory_watch_path $inventory_watch_opt -c |");
+            print "watch finished.\n";
+            open (INVWATCH, "$watch_command $watch_path $watch_opt -c |");
         }
     });
 }
 
-# inventory_watchの出力一行を処理
+# watchの出力一行を処理
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
 sub handle_inventory {
     my ($line) = @_;
@@ -152,17 +161,17 @@ sub wait_job_done {
 }
 
 # スレッド起動（読み込むだけで起動，は正しい？）
-invoke_inventory_watch ();
+invoke_watch ();
 ## スレッド終了待ち：デバッグ（jobsched.pm単体実行）用
-# $inventory_watch_thread->join();
+# $watch_thread->join();
 
 1;
 
 
-## 自前でinventory_watchをやろうとした残骸
+## 自前でwatchをやろうとした残骸
 #         my %timestamps = {};
 #         my @updates = ();
-#         foreach (glob "$inventory_watch_path/*") {
+#         foreach (glob "$watch_path/*") {
 #             my $bname = fileparse($_);
 #             my @filestat = stat $_;
 #             my $tstamp = @filestat[9];

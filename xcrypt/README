@@ -1,13 +1,24 @@
 内輪向け解説
 
+* 重要
+
+refinement.pm に exit_cond に関するバグあり．
+exit_cond に必要性があるか？
+直すにしてもどのように直すべきか？
+のどちらも不明．
+
 * 実行方法
 
 スパコン上で実行する場合:
-xcrypt/qsub を削除する．
-
-手元で実行する場合:
-環境変数 QSUB_WORKDIR を ${HOME}/e-science/${USERNAME} とかにする．
+環境変数 PATH に ${HOME}/e-science/xcrypt を追加する．
+環境変数 PERL5LIB を ${HOME}/e-science/xcrypt とかにする．
 環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
+
+手元で実行する場合（自前の qsub づくりが面倒になったので obsolete）:
+環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
+環境変数 PERL5LIB を ${HOME}/e-science/xcrypt とかにする．
+環境変数 QSUB_WORKDIR を ${HOME}/e-science/${USERNAME} とかにする．
+環境変数 PATH に ${HOME}/e-science/xcrypt を追加する．
 
 * 概要
 
@@ -37,8 +48,8 @@ top.pm の start ->
 n.pm の after -> ... -> 1.pm の after
 である．
 
-現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
-successor.pm refinement.pm dry.pm predecessor.pm limit.pm top.pm である．
+現在のコアモジュール間の継承関係は，子から親へ向かって refinement.pm
+successor.pm dry.pm predecessor.pm limit.pm top.pm である．
 
 汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
 
@@ -47,20 +58,18 @@ successor.pm refinement.pm dry.pm predecessor.pm limit.pm top.pm である．
 ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
 記述し，そのリファレンスを id と同名のスカラ変数で定義する．
 
-** constructor.pm
+** refinement.pm
 
 trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
+
+オブジェクトの exit_cond と trace から処理を続けるかどうかを判定する．
+続ける場合は change_arg で arg を更新した別オブジェクト（その id は元オ
+ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
 
 ** successor.pm
 
 successors から別オブジェクトを生成する．ただし successors が空の場合は
 出力列を traces.log に書き出して終了する．
-
-** refinement.pm
-
-オブジェクトの exit_cond と trace から処理を続けるかどうかを判定する．
-続ける場合は change_arg で arg を更新した別オブジェクト（その id は元オ
-ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
 
 ** dry.pm
 

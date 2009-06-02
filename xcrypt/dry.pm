@@ -6,7 +6,6 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 #    my $self = $class->SUPER::new();
-    my $obj = shift;
     return bless $self, $class;
 }
 
@@ -23,7 +22,7 @@ sub before {
 	$self->{arg2} = '';
 	$self->{input_filename} = '';
 	$self->{output_filename} = '';
-	$self->{exit_cond} = sub { &function::tautology; };
+	$self->{exit_cond} = sub { 1; };
     }
     $self->SUPER::before();
 }

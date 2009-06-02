@@ -6,9 +6,7 @@ use jobsched;
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
-#    my $self = $class->SUPER::new();
-    my $obj = shift;
-    $self->{predecessors} = $obj->{predecessors};
+    if ($obj->{predecessor} eq '') { $self->{predecessors} = []; }
     return bless $self, $class;
 }
 

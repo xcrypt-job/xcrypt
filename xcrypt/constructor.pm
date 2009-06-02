@@ -1,24 +1,17 @@
 package constructor;
 
+use function;
 use base qw(successor);
 
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 #    my $self = $class->SUPER::new();
-    my $obj = shift;
-    $self->{id} = $obj->{id};
-    $self->{exe} = $obj->{exe};
-    $self->{arg1} = $obj->{arg1};
-    $self->{arg2} = $obj->{arg2};
-    $self->{trace} = $obj->{trace};
-    $self->{after_processing} = $obj->{after_processing};
-    if ($obj->{exit_cond} eq '') {
-	$self->{exit_cond} = sub { &function::tautology; };
-    }
-    if ($obj->{queue} eq '') {
-	$self->{queue} = 'eh';
-    }
+    if ($self->{queue} eq '') { $self->{queue} = 'eh'; }
+#    $self->{cnvg} = $obj->{cnvg};
+    if ($self->{exit_cond} eq '') { $self->{exit_cond} = sub { 1; }; }
+    $self->{change_arg1} = $obj->{change_arg1};
+    $self->{change_arg2} = $obj->{change_arg2};
     return bless $self, $class;
 }
 
@@ -33,8 +26,20 @@ sub before {
 }
 
 sub after {
-    my $self = shift;
-    $self->SUPER::after();
+  my $self = shift;
+  $self->SUPER::after();
+  until (&{$self->{exit_cond}}(@{$self->{trace}})) {
+      my $foo = 'user::' . $self->{cnvg};
+      my %bar = %$foo;
+      my $obj = user->new(\%bar);
+      $obj->{id} = $obj->{id} . '_';
+      $obj->{arg1} = &{$self->{change_arg1}}($obj->{arg1});
+      $obj->{arg2} = &{$self->{change_arg2}}($obj->{arg2});
+      $obj->{exit_cond} = sub { &function::tautology };
+      $obj->{trace} = $self->{trace};
+      &start($obj);
+      $self->{trace} = $obj->{trace};
+  }
 }
 
 1;

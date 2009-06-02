@@ -10,8 +10,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 #    my $self = $class->SUPER::new();
-    my $obj = shift;
-    $self->{limit} = $obj->{limit};
+    if ($self->{limit} eq '') { $self->{limit} = 100; }
     return bless $self, $class;
 }
 

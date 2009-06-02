@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 $|=1; # 出力をバッファリングしない
 use strict;
 use warnings;

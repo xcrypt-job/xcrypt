@@ -3,7 +3,17 @@ package UI;
 use function;
 
 use base qw(Exporter);
-@EXPORT = qw(pickup generate_submit_sync generate submit kaishu sync);
+@EXPORT = qw(killall pickup generate_submit_sync generate_submit submit_sync generate submit kaishu sync);
+
+sub killall {
+    my $id = shift;
+    foreach (@_) {
+	my $hoge = $id . '_' . $_;
+	my @list = &pickup("$hoge/request_id", ' ');
+	system("qdel -k $list[1]");
+	system("pjo_inventory_write.pl inv_watch/$hoge \"done\" \"spec: $hoge\"");
+    }
+}
 
 sub pickup {
     open ( OUTPUT , "< $_[0]" );
@@ -21,6 +31,16 @@ sub generate_submit_sync {
     my @objs = &generate(@_);
     my @thrds = &submit(@objs);
     return &sync(@thrds);
+}
+
+sub submit_sync {
+    my @thrds = &submit(@_);
+    return &sync(@thrds);
+}
+
+sub generate_submit {
+    my @objs = &generate(@_);
+    return &submit(@objs);
 }
 
 sub generate {
@@ -65,8 +85,9 @@ sub generate {
 }
 
 sub submit {
-    my @thrds;
+    my @thrds = ();
     foreach (@_) {
+	$_->{thrds} = \@thrds;
 	my $thrd = threads->new(\&user::start, $_);
 	push(@thrds , $thrd);
     }

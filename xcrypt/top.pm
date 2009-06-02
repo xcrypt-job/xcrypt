@@ -21,6 +21,7 @@ sub new {
 sub start {
     my $self = shift;
     my $dir = $self->{id} . '/';
+    unless (-e $dir) { mkdir $dir , 0755; }
 
     $self->before();
 
