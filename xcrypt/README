@@ -16,7 +16,7 @@ exit_cond に必要性があるか？
 NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（$ qsub nqs.sh），
 NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
 し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
-xcrypt に渡す（$ xcrypt user.pl）だけで済むようにするモジュール群である．
+xcrypt に渡す（$ xcrypt sample.pl）だけで済むようにするモジュール群である．
 
 ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
 トしている．
@@ -39,17 +39,17 @@ top.pm の start ->
 n.pm の after -> ... -> 1.pm の after
 である．
 
-現在のコアモジュール間の継承関係は，子から親へ向かって refinement.pm
+現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
 successor.pm dry.pm predecessor.pm limit.pm top.pm である．
 
 汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
 
-** xcrypt & user.pl
+** xcrypt
 
 ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
 記述し，そのリファレンスを id と同名のスカラ変数で定義する．
 
-** refinement.pm
+** constructor.pm
 
 trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
 

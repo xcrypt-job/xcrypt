@@ -17,7 +17,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'param' => [1..3], 'arg1s' => sub { $_[0]; });
+my @jobs = &prepare(%xyz, 'range' => [1..3], 'arg1s' => sub { $_[0]; });
 foreach (@jobs) {
     $_->{input}->KR("param", "%$_->{arg1} + 50%");
     # 以下，入力ファイルデータの整形ルール（LRとか）が続く

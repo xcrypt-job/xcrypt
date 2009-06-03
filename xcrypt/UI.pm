@@ -59,7 +59,7 @@ sub prepare {
     if ($jg_rng_amp{'ifiles'} eq '') {
 	$jg_rng_amp{'ifiles'} = sub { $jg_rng_amp{'ifile'}; };
     }
-    foreach (@{$jg_rng_amp{'param'}}) {
+    foreach (@{$jg_rng_amp{'range'}}) {
 	my %jobgraph = %jg_rng_amp;
 	$jobgraph{'id'} = $id . '_' . $_;
 	$jobgraph{'arg1'} = &{$jg_rng_amp{'arg1s'}}($_);

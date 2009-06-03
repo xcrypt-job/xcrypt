@@ -11,12 +11,11 @@ sub new {
     my $class = shift;
     my $self = shift;
     # ジョブをジョブごとに作成されるディレクトリで処理
-    mkdir $self->{id} , 0755;
+    my $dir = $self->{id};
+    mkdir $dir , 0755;
 #    unless ($self->{input_arg_dirname} eq '') {
 #	my $hoge = $self->{input_arg_dirname} . "/" . $self->{ifile};
-    my $hoge = $self->{ifile};
-#	    $self->{input} = &Data_Generation::CF($hoge, $dir);
-    copy $hoge , $self->{id};
+    $self->{input} = &Data_Generation::CF($self->{ifile}, $dir);
 #    }
     return bless $self, $class;
 }
@@ -54,7 +53,7 @@ sub start {
 
 sub before {
     my $self = shift;
-#    if ( -e $self->{arg1} ) { $self->{input}->do(); }
+    $self->{input}->do();
     my $exe = $self->{exe};
     my $dir = $self->{id};
     if ( -e $exe ) { symlink File::Spec->catfile('..',  $exe), File::Spec->catfile($dir, $exe); }
