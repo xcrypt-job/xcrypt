@@ -13,10 +13,13 @@ sub new {
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
     mkdir $dir , 0755;
-#    unless ($self->{input_arg_dirname} eq '') {
-#	my $hoge = $self->{input_arg_dirname} . "/" . $self->{ifile};
-    $self->{input} = &Data_Generation::CF($self->{ifile}, $dir);
+    my $copied;
+#    if ($self->{arg1idir}) {
+#	$copied = File::Spec->catfile($self->{arg1idir}, $self->{ifile});
+#    } else {
+	$copied = $self->{ifile};
 #    }
+    $self->{input} = &Data_Generation::CF($copied, $dir);
     return bless $self, $class;
 }
 
@@ -56,7 +59,9 @@ sub before {
     $self->{input}->do();
     my $exe = $self->{exe};
     my $dir = $self->{id};
-    if ( -e $exe ) { symlink File::Spec->catfile('..',  $exe), File::Spec->catfile($dir, $exe); }
+    if ( -e $exe ) {
+	symlink File::Spec->catfile('..',  $exe), File::Spec->catfile($dir, $exe);
+    }
 }
 
 sub after {

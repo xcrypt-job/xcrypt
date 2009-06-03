@@ -47,43 +47,41 @@ sub prepare_submit {
 }
 
 sub prepare {
-    my %jg_rng_amp = @_;
-    my $id = $jg_rng_amp{'id'};
+    my %jobs = @_;
+    if ($jobs{'arg1s'} eq '') {
+	$jobs{'arg1s'} = sub { $jobs{'arg1'}; };
+    }
+    if ($jobs{'arg2s'} eq '') {
+	$jobs{'arg2s'} = sub { $jobs{'arg2'}; };
+    }
+    if ($jobs{'ifiles'} eq '') {
+	$jobs{'ifiles'} = sub { $jobs{'ifile'}; };
+    }
     my @objs;
-    if ($jg_rng_amp{'arg1s'} eq '') {
-	$jg_rng_amp{'arg1s'} = sub { $jg_rng_amp{'arg1'}; };
-    }
-    if ($jg_rng_amp{'arg2s'} eq '') {
-	$jg_rng_amp{'arg2s'} = sub { $jg_rng_amp{'arg2'}; };
-    }
-    if ($jg_rng_amp{'ifiles'} eq '') {
-	$jg_rng_amp{'ifiles'} = sub { $jg_rng_amp{'ifile'}; };
-    }
-    foreach (@{$jg_rng_amp{'range'}}) {
-	my %jobgraph = %jg_rng_amp;
-	$jobgraph{'id'} = $id . '_' . $_;
-	$jobgraph{'arg1'} = &{$jg_rng_amp{'arg1s'}}($_);
-	$jobgraph{'arg2'} = &{$jg_rng_amp{'arg2s'}}($_);
-	$jobgraph{'ifile'} = &{$jg_rng_amp{'ifiles'}}($_);
-	my $obj = user->new(\%jobgraph);
+    foreach (@{$jobs{'range'}}) {
+	my %job = %jobs;
+	$job{'id'} = $jobs{'id'} . '_' . $_;
+	$job{'arg1'} = &{$jobs{'arg1s'}}($_);
+	$job{'arg2'} = &{$jobs{'arg2s'}}($_);
+	$job{'ifile'} = &{$jobs{'ifiles'}}($_);
+	my $obj = user->new(\%job);
 	push(@objs , $obj);
     }
     return @objs;
 }
 
 sub prepare_directory {
-    my %jg_rng_amp = @_;
-    my $id = $jg_rng_amp{'id'};
-    my @objs;
-    opendir(DIR, $jg_rng_amp{'input_arg_dirname'});
+    my %jobs = @_;
+    opendir(DIR, $jobs{'arg1idir'});
     my @files = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
     closedir(DIR);
+    my @objs;
     foreach (@files) {
-	my %jobgraph = %jg_rng_amp;
-	$jobgraph{'id'} = $id . '_' . $_;
-	$jobgraph{'arg1'} = $_;
-	$jobgraph{'ifile'} = $_;
-	my $obj = user->new(\%jobgraph);
+	my %job = %jobs;
+	$job{'id'} = $jobs{'id'} . '_' . $_;
+	$job{'arg1'} = $_;
+	$job{'ifile'} = $_;
+	my $obj = user->new(\%job);
 	    push(@objs , $obj);
     }
     return @objs;

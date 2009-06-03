@@ -66,26 +66,21 @@ sub qsub {
     if ($cpu)           { print SCRIPT "# @\$-lp $cpu\n"; }
     if ($memory)        { print SCRIPT "# @\$-lm $memory\n"; }
     if ($stdout_file) {
-	print SCRIPT "# @\$-o $stdout_file\n";
-#	print SCRIPT "#\$ -o ENV{'PWD'}/$stdout_file\n";
+	print SCRIPT "#\$ -o ENV{'PWD'}/$stdout_file\n";
 #	print SCRIPT "#\$ -o \$QSUB_WORKDIR/$stdout_file\n";
     }
     if ($stderr_file) {
-	print SCRIPT "# @\$-e $stderr_file\n";
-#	print SCRIPT "#\$ -e ENV{'PWD'}/$stderr_file\n";
+	print SCRIPT "#\$ -e ENV{'PWD'}/$stderr_file\n";
 #	print SCRIPT "#\$ -e \$QSUB_WORKDIR/$stderr_file\n";
     }
 #    print SCRIPT "set -x\n";
     print SCRIPT "$write_command $file \"start\" $jobspec\n";
-#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
     print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
+#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
     print SCRIPT "$command\n";
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT "$write_command $file \"done\" $jobspec\n";
     close (SCRIPT);
-#    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
-#    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
-#    system ("$qsub_command $stderr_option $stdout_option $scriptfile");
     system ("$write_command $file \"submit\" $jobspec");
     my $id = qx/$qsub_command $scriptfile/;
     my $idfile = File::Spec->catfile($dirname, 'request_id');
