@@ -1,23 +1,21 @@
 #!/usr/bin/perl
 
-#sleep(1);
-
-open ( PLASMA , "< plasma.inp");
+open (PLASMA, "< $ARGV[0]");
 foreach my $item (<PLASMA>) {
     my $str = $item;
     if ($str =~ m/^(param)/) {
 	if ($str =~ m/(\d+)/) {
 	    my $num = $1;
 #	    print $num;
-	    if ($ARGV[0] <= 2) {
-		sleep(10);
+	    if ($num => 2) {
+		sleep(1);
 	    }
 	    open ( PBODY , "> pbody" );
 #	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
-	    print PBODY "foo," . $ARGV[0] . ",bar";
-#	    print PBODY "foo," . $num . ",bar";
+	    my $hoge = $ARGV[1] + $num;
+	    print PBODY "foo," . $hoge . ",bar";
 	    close ( PBODY );
 	}
     }
 }
-close ( PLASMA );
+close (PLASMA);

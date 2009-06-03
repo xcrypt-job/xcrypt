@@ -7,7 +7,6 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 #    my $self = $class->SUPER::new();
-    if ($self->{queue} eq '') { $self->{queue} = 'eh'; }
 #    $self->{cnvg} = $obj->{cnvg};
     if ($self->{exit_cond} eq '') { $self->{exit_cond} = sub { 1; }; }
     $self->{change_arg1} = $obj->{change_arg1};

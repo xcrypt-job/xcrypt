@@ -15,11 +15,11 @@ $limit::smph=Thread::Semaphore->new(100);
     'queue' => 'eh',
     'arg1' => 50,
     'arg2' => 100,
-    'input_filename' => 'plasma.inp',
-    'output_filename' => 'pbody',
-    'output_column' => 1,
+    'ifile' => 'plasma.inp',
+    'ofile' => 'pbody',
+    'ocolumn' => 1,
 #    'exit_cond' => sub { &function::tautology; },
-    'delimiter' => ','
+    'odelimiter' => ','
 );
 %job1 = (
     'id' => 'job1',
@@ -27,10 +27,10 @@ $limit::smph=Thread::Semaphore->new(100);
     'exe' => './kempo.pl',
     'arg1' => 20,
     'arg2' => 100,
-    'input_filename' => 'plasma.inp',
-    'output_filename' => 'pbody',
-    'output_column' => 1,
-    'delimiter' => ',',
+    'ifile' => 'plasma.inp',
+    'ofile' => 'pbody',
+    'ocolumn' => 1,
+    'odelimiter' => ',',
     'queue' => 'eh',
     'trace' => [10, 100]
 );
@@ -40,12 +40,12 @@ $limit::smph=Thread::Semaphore->new(100);
     'exe' => './kempo.pl',
     'arg1' => 30,
     'arg2' => 100,
-    'input_filename' => 'plasma.inp',
-    'output_filename' => 'pbody',
-    'output_column' => 1,
-    'delimiter' => ',',
+    'ifile' => 'plasma.inp',
+    'ofile' => 'pbody',
+    'ocolumn' => 1,
+    'odelimiter' => ',',
     'queue' => 'eh',
     'trace' => [20, 200]
 );
 
-&generate_submit_sync(%job0) , "\n";
+&prepare_submit_sync(%job0) , "\n";

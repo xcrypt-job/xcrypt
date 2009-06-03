@@ -20,8 +20,8 @@ sub before {
 	$self->{exe} = '';
 	$self->{arg1} = '';
 	$self->{arg2} = '';
-	$self->{input_filename} = '';
-	$self->{output_filename} = '';
+#	$self->{ifile} = '';
+	$self->{ofile} = '';
 	$self->{exit_cond} = sub { 1; };
     }
     $self->SUPER::before();

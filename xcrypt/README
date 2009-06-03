@@ -9,16 +9,7 @@ exit_cond に必要性があるか？
 
 * 実行方法
 
-スパコン上で実行する場合:
-環境変数 PATH に ${HOME}/e-science/xcrypt を追加する．
-環境変数 PERL5LIB を ${HOME}/e-science/xcrypt とかにする．
 環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
-
-手元で実行する場合（自前の qsub づくりが面倒になったので obsolete）:
-環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
-環境変数 PERL5LIB を ${HOME}/e-science/xcrypt とかにする．
-環境変数 QSUB_WORKDIR を ${HOME}/e-science/${USERNAME} とかにする．
-環境変数 PATH に ${HOME}/e-science/xcrypt を追加する．
 
 * 概要
 

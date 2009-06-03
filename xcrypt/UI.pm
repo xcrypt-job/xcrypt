@@ -1,17 +1,20 @@
 package UI;
 
+use File::Copy;
 use function;
 
 use base qw(Exporter);
-@EXPORT = qw(killall pickup generate_submit_sync generate_submit submit_sync generate submit kaishu sync);
+@EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare prepare_directory submit kaishu sync);
 
 sub killall {
-    my $id = shift;
+    my $prefix = shift;
     foreach (@_) {
-	my $hoge = $id . '_' . $_;
-	my @list = &pickup("$hoge/request_id", ' ');
-	system("qdel -k $list[1]");
-	system("pjo_inventory_write.pl inv_watch/$hoge \"done\" \"spec: $hoge\"");
+	my $id = $prefix . '_' . $_;
+	my @list = &pickup("$id/request_id", ' ');
+	my @revlist = reverse(@list);
+#	system("qdel -k $revlist[4]");
+	system("qdel $revlist[4]");
+	system("pjo_inventory_write.pl inv_watch/$id \"done\" \"spec: $id\"");
     }
 }
 
@@ -27,8 +30,8 @@ sub pickup {
     return @list;
 }
 
-sub generate_submit_sync {
-    my @objs = &generate(@_);
+sub prepare_submit_sync {
+    my @objs = &prepare(@_);
     my @thrds = &submit(@objs);
     return &sync(@thrds);
 }
@@ -38,51 +41,54 @@ sub submit_sync {
     return &sync(@thrds);
 }
 
-sub generate_submit {
-    my @objs = &generate(@_);
+sub prepare_submit {
+    my @objs = &prepare(@_);
     return &submit(@objs);
 }
 
-sub generate {
+sub prepare {
     my %jg_rng_amp = @_;
     my $id = $jg_rng_amp{'id'};
-    my @outputs;
     my @objs;
-    if ($jg_rng_amp{'range1'} eq '') {
-#	user->new(\%jg_rng_amp)->start;
-	my $obj = user->new(\%jg_rng_amp);
+    if ($jg_rng_amp{'arg1s'} eq '') {
+	$jg_rng_amp{'arg1s'} = sub { $jg_rng_amp{'arg1'}; };
+    }
+    if ($jg_rng_amp{'arg2s'} eq '') {
+	$jg_rng_amp{'arg2s'} = sub { $jg_rng_amp{'arg2'}; };
+    }
+    if ($jg_rng_amp{'ifiles'} eq '') {
+	$jg_rng_amp{'ifiles'} = sub { $jg_rng_amp{'ifile'}; };
+    }
+    foreach (@{$jg_rng_amp{'param'}}) {
+	my %jobgraph = %jg_rng_amp;
+	$jobgraph{'id'} = $id . '_' . $_;
+	$jobgraph{'arg1'} = &{$jg_rng_amp{'arg1s'}}($_);
+	$jobgraph{'arg2'} = &{$jg_rng_amp{'arg2s'}}($_);
+	$jobgraph{'ifile'} = &{$jg_rng_amp{'ifiles'}}($_);
+	my $obj = user->new(\%jobgraph);
 	push(@objs , $obj);
-    } else {
-	my @arg1s;
-	foreach (@{$jg_rng_amp{'range1'}}) {
-	    my $arg1;
-	    if ($jg_rng_amp{'amp1'} eq '') {
-		$arg1 = &identity($_);
-	    } else {
-		$arg1 = &{$jg_rng_amp{'amp1'}}($_);
-	    }
-	    push (@arg1s, $arg1);
-	}
-	foreach (@arg1s) {
-#	    my $jobgraph = \%jg_rng_amp;
-	    my $jobgraph = {};
-	    $jobgraph->{id} = $id . '_' . $_;
-	    $jobgraph->{exe} = $jg_rng_amp{'exe'};
-	    $jobgraph->{arg1} = $_;
-	    $jobgraph->{input_filename} = $jg_rng_amp{'input_filename'};
-	    $jobgraph->{output_filename} = $jg_rng_amp{'output_filename'};
-	    $jobgraph->{output_column} = $jg_rng_amp{'output_column'};
-	    $jobgraph->{delimiter} = $jg_rng_amp{'delimiter'};
-	    $jobgraph->{queue} = $jg_rng_amp{'queue'};
-	    $jobgraph->{option} = $jg_rng_amp{'option'};
-	    $jobgraph->{before} = $jg_rng_amp{'before'};
-	    $jobgraph->{after} = $jg_rng_amp{'after'};
-	    my $obj = user->new($jobgraph);
-	    push(@objs , $obj);
-	}
     }
     return @objs;
 }
+
+sub prepare_directory {
+    my %jg_rng_amp = @_;
+    my $id = $jg_rng_amp{'id'};
+    my @objs;
+    opendir(DIR, $jg_rng_amp{'input_arg_dirname'});
+    my @files = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
+    closedir(DIR);
+    foreach (@files) {
+	my %jobgraph = %jg_rng_amp;
+	$jobgraph{'id'} = $id . '_' . $_;
+	$jobgraph{'arg1'} = $_;
+	$jobgraph{'ifile'} = $_;
+	my $obj = user->new(\%jobgraph);
+	    push(@objs , $obj);
+    }
+    return @objs;
+}
+
 
 sub submit {
     my @thrds = ();
@@ -118,12 +124,11 @@ sub kaishu {
 	push (@arg1s, $arg1);
     }
     foreach (@arg1s) {
-	my $outputfile = $id . '_' . $_ . '/' . $jg_rng_amp{'output_filename'};
-	my @list = &pickup($outputfile, $jg_rng_amp{'delimiter'});
-	push (@outputs , $list[$jg_rng_amp{'output_column'}]);
+	my $outputfile = File::Spec->catfile($id . '_' . $_, $jg_rng_amp{'ofile'});
+	my @list = &pickup($outputfile, $jg_rng_amp{'odelimiter'});
+	push (@outputs , $list[$jg_rng_amp{'ocolumn'}]);
     }
     return @outputs;
 }
 
 1;
-

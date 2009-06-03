@@ -1,11 +1,11 @@
 # Job scheduler I/F  (written by Tasuku HIRAISHI)
-# 注意: 23 行目にフルパスを直接記述している．そのうち直す．
 package jobsched;
 
 use threads;
 use threads::shared;
 use Cwd;
 use File::Basename;
+use File::Spec;
 use threads::shared;
 # use Thread::Semaphore;
 
@@ -20,7 +20,7 @@ my $qstat_command="qstat";
 
 my $current_directory=Cwd::getcwd();
 
-my $write_command="\$XCRYPT/pjo_inventory_write.pl";
+my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 # my $write_opt="";
 
 # pjo_watch.pl は出力をバッファリングしない設定 ($|=1)
@@ -28,7 +28,7 @@ my $write_command="\$XCRYPT/pjo_inventory_write.pl";
 #
 my $watch_command="pjo_inventory_watch.pl";
 my $watch_opt="-i summary -e end -t 86400 -s"; # -s
-my $watch_path="$current_directory/inv_watch";
+my $watch_path=File::Spec->catfile($current_directory, 'inv_watch');
 #my $watch_thread=undef;
 our $watch_thread=undef;
 
@@ -49,9 +49,15 @@ sub qsub {
         # 以下，NQSのオプション
         $verbose, $verbose_node, $process, $cpu, $memory
         ) = @_;
-    my $file = $watch_path . '/' . $dirname;
+    my $file = File::Spec->catfile($watch_path, $dirname);
     my $jobspec = "\"spec: $job_name\"";
     open (SCRIPT, ">$scriptfile");
+    print SCRIPT "#!/bin/sh\n";
+    print SCRIPT "#\$ -S /bin/sh\n";
+
+#    print SCRIPT "PATH=$ENV{'PATH'}\n";
+#    print SCRIPT "QSUB_WORKDIR=$ENV{'QSUB_WORKDIR'}\n";
+
     print SCRIPT "$option\n";
 #    if ($verbose eq '') { print SCRIPT "# @\$-oi\n"; }
     if ($verbose_node)  { print SCRIPT "# @\$-OI\n"; }
@@ -59,28 +65,33 @@ sub qsub {
     if ($process)       { print SCRIPT "# @\$-lP $process\n"; }
     if ($cpu)           { print SCRIPT "# @\$-lp $cpu\n"; }
     if ($memory)        { print SCRIPT "# @\$-lm $memory\n"; }
-    if ($stdout_file)   { print SCRIPT "# @\$-o $stdout_file\n"; }
-    if ($stderr_file)   { print SCRIPT "# @\$-e $stderr_file\n"; }
-    print SCRIPT "set -x\n";
-    print SCRIPT "XCRYPT=$ENV{'XCRYPT'}\n";
-    print SCRIPT "cd \$QSUB_WORKDIR\n";
+    if ($stdout_file) {
+	print SCRIPT "# @\$-o $stdout_file\n";
+#	print SCRIPT "#\$ -o ENV{'PWD'}/$stdout_file\n";
+#	print SCRIPT "#\$ -o \$QSUB_WORKDIR/$stdout_file\n";
+    }
+    if ($stderr_file) {
+	print SCRIPT "# @\$-e $stderr_file\n";
+#	print SCRIPT "#\$ -e ENV{'PWD'}/$stderr_file\n";
+#	print SCRIPT "#\$ -e \$QSUB_WORKDIR/$stderr_file\n";
+    }
+#    print SCRIPT "set -x\n";
     print SCRIPT "$write_command $file \"start\" $jobspec\n";
-    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
+#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
+    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
     print SCRIPT "$command\n";
-    print SCRIPT "cd \$QSUB_WORKDIR\n";
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT "$write_command $file \"done\" $jobspec\n";
     close (SCRIPT);
 #    my $stderr_option = ($stderr_file = "")?"":"-e $stderr_file";
 #    my $stdout_option = ($stdout_file = "")?"":"-o $stdout_file";
-    system ("$write_command $file \"submit\" $jobspec");
 #    system ("$qsub_command $stderr_option $stdout_option $scriptfile");
-    my $hoge = qx/$qsub_command $scriptfile/;
-#    system ("$qsub_command $scriptfile");
-    my $hogefile = $dirname . "/request_id";
-    open (HOGE, ">> $hogefile");
-    print HOGE $hoge;
-    close (HOGE);
+    system ("$write_command $file \"submit\" $jobspec");
+    my $id = qx/$qsub_command $scriptfile/;
+    my $idfile = File::Spec->catfile($dirname, 'request_id');
+    open (REQUESTID, ">> $idfile");
+    print REQUESTID $id;
+    close (REQUESTID);
 }
 
 ##############################
