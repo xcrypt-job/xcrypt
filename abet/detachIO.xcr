@@ -1,5 +1,4 @@
 use limit;
-use function;
 use Data_Generation;
 use Data_Extraction;
 
@@ -27,8 +26,7 @@ my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
 mkdir 'job100_1/hoge', 0755;
-$After1 = EF('/home/abet/e-science/abet/job100_1/pbody',
-	     '/home/abet/e-science/abet/job100_1/hoge');
+$After1 = EF("$ENV{'PWD'}/job100_1/pbody", "$ENV{'PWD'}/job100_1/hoge");
 $After1->LE("1");
 $After1->do();
 

@@ -53,30 +53,41 @@ sub qsub {
     my $jobspec = "\"spec: $job_name\"";
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
+    # NQS も SGE も，オプション中の環境変数を展開しないので注意！
     print SCRIPT "#\$ -S /bin/sh\n";
-
-#    print SCRIPT "PATH=$ENV{'PATH'}\n";
-#    print SCRIPT "QSUB_WORKDIR=$ENV{'QSUB_WORKDIR'}\n";
-
+    if ($queue) {
+	print SCRIPT "# @\$-q $queue\n";
+    }
     print SCRIPT "$option\n";
-#    if ($verbose eq '') { print SCRIPT "# @\$-oi\n"; }
-    if ($verbose_node) { print SCRIPT "# @\$-OI\n"; }
-    if ($queue)        { print SCRIPT "# @\$-q $queue\n"; }
-    if ($proc)         { print SCRIPT "# @\$-lP $proc\n"; }
-    if ($cpu)          { print SCRIPT "# @\$-lp $cpu\n"; }
-    if ($memory)       { print SCRIPT "# @\$-lm $memory\n"; }
     if ($stdofile) {
 	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
-#	print SCRIPT "#\$ -o \$QSUB_WORKDIR/$stdofile\n";
+	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
     }
     if ($stdefile) {
 	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
-#	print SCRIPT "#\$ -e \$QSUB_WORKDIR/$stdefile\n";
+	print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
     }
+    if ($proc) {
+	print SCRIPT "# @\$-lP $proc\n";
+    }
+    if ($cpu) {
+	print SCRIPT "# @\$-lp $cpu\n";
+    }
+    if ($memory) {
+	print SCRIPT "# @\$-lm $memory\n";
+    }
+    if ($verbose) {
+	print SCRIPT "# @\$-oi\n";
+    }
+    if ($verbose_node) {
+	print SCRIPT "# @\$-OI\n";
+    }
+
+#    print SCRIPT "PATH=$ENV{'PATH'}\n";
 #    print SCRIPT "set -x\n";
     print SCRIPT "$write_command $file \"start\" $jobspec\n";
-    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
-#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
+#    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
+    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
     print SCRIPT "$command\n";
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT "$write_command $file \"done\" $jobspec\n";
