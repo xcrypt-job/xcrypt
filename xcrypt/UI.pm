@@ -4,7 +4,7 @@ use File::Copy;
 use function;
 
 use base qw(Exporter);
-@EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare prepare_directory submit kaishu sync);
+@EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit kaishu sync);
 
 sub killall {
     my $prefix = shift;
@@ -48,45 +48,43 @@ sub prepare_submit {
 
 sub prepare {
     my %jobs = @_;
-    if ($jobs{'arg1s'} eq '') {
-	$jobs{'arg1s'} = sub { $jobs{'arg1'}; };
-    }
-    if ($jobs{'arg2s'} eq '') {
-	$jobs{'arg2s'} = sub { $jobs{'arg2'}; };
-    }
-    if ($jobs{'ifiles'} eq '') {
-	$jobs{'ifiles'} = sub { $jobs{'ifile'}; };
+    unless ($jobs{'exes'})      { $jobs{'exes'}      = sub { $jobs{'exe'}; }; }
+    unless ($jobs{'arg1s'})     { $jobs{'arg1s'}     = sub { $jobs{'arg1'}; }; }
+    unless ($jobs{'arg2s'})     { $jobs{'arg2s'}     = sub { $jobs{'arg2'}; }; }
+    unless ($jobs{'ifiles'})    { $jobs{'ifiles'}    = sub { $jobs{'ifile'}; }; }
+    unless ($jobs{'queues'})    { $jobs{'queues'}    = sub { $jobs{'queue'}; }; }
+    unless ($jobs{'options'})   { $jobs{'options'}   = sub { $jobs{'option'}; }; }
+    unless ($jobs{'stdouts'})   { $jobs{'stdouts'}   = sub { $jobs{'stdout'}; }; }
+    unless ($jobs{'stderrs'})   { $jobs{'stderrs'}   = sub { $jobs{'stderr'}; }; }
+    unless ($jobs{'processes'}) { $jobs{'processes'} = sub { $jobs{'process'}; }; }
+    unless ($jobs{'cpus'})      { $jobs{'cpus'}      = sub { $jobs{'cpu'}; }; }
+    my @params;
+    if ($jobs{'dir'}) {
+	opendir(DIR, $jobs{'dir'});
+	@params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
+	closedir(DIR);
+    } else {
+	@params = @{$jobs{'range'}};
     }
     my @objs;
-    foreach (@{$jobs{'range'}}) {
+    foreach (@params) {
 	my %job = %jobs;
 	$job{'id'} = $jobs{'id'} . '_' . $_;
+	$job{'exe'} = &{$jobs{'exes'}}($_);
 	$job{'arg1'} = &{$jobs{'arg1s'}}($_);
 	$job{'arg2'} = &{$jobs{'arg2s'}}($_);
 	$job{'ifile'} = &{$jobs{'ifiles'}}($_);
+	$job{'queue'} = &{$jobs{'queues'}}($_);
+	$job{'option'} = &{$jobs{'options'}}($_);
+	$job{'stdout'} = &{$jobs{'stdouts'}}($_);
+	$job{'stderr'} = &{$jobs{'stderrs'}}($_);
+	$job{'process'} = &{$jobs{'processes'}}($_);
+	$job{'cpu'} = &{$jobs{'cpus'}}($_);
 	my $obj = user->new(\%job);
 	push(@objs , $obj);
     }
     return @objs;
 }
-
-sub prepare_directory {
-    my %jobs = @_;
-    opendir(DIR, $jobs{'arg1idir'});
-    my @files = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
-    closedir(DIR);
-    my @objs;
-    foreach (@files) {
-	my %job = %jobs;
-	$job{'id'} = $jobs{'id'} . '_' . $_;
-	$job{'arg1'} = $_;
-	$job{'ifile'} = $_;
-	my $obj = user->new(\%job);
-	    push(@objs , $obj);
-    }
-    return @objs;
-}
-
 
 sub submit {
     my @thrds = ();
