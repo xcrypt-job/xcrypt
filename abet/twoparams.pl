@@ -9,8 +9,6 @@ $limit::smph=Thread::Semaphore->new(100);
     'arg2' => '100',
     'ifile' => 'plasma.inp',
     'ofile' => 'pbody',
-    'ocolumn' => 1,
-    'odelimiter' => ',',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
@@ -18,7 +16,8 @@ $limit::smph=Thread::Semaphore->new(100);
 #my @jobs = &prepare(%xyz, 'range' => [1..3]);
 my @jobs = &prepare(%xyz, 'range' => [1..3], 'arg2s' => sub { $_[0]; });
 my @thrds = &submit(@jobs);
-my @outputs  = &sync(@thrds);
-print join (" ", @outputs), "\n";
+my @results  = &sync(@thrds);
 
-
+foreach (@results) {
+    print $_->{stdout} , "\n";
+}

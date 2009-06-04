@@ -48,38 +48,46 @@ sub prepare_submit {
 
 sub prepare {
     my %jobs = @_;
-    unless ($jobs{'exes'})      { $jobs{'exes'}      = sub { $jobs{'exe'}; }; }
-    unless ($jobs{'arg1s'})     { $jobs{'arg1s'}     = sub { $jobs{'arg1'}; }; }
-    unless ($jobs{'arg2s'})     { $jobs{'arg2s'}     = sub { $jobs{'arg2'}; }; }
-    unless ($jobs{'ifiles'})    { $jobs{'ifiles'}    = sub { $jobs{'ifile'}; }; }
-    unless ($jobs{'queues'})    { $jobs{'queues'}    = sub { $jobs{'queue'}; }; }
-    unless ($jobs{'options'})   { $jobs{'options'}   = sub { $jobs{'option'}; }; }
-    unless ($jobs{'stdouts'})   { $jobs{'stdouts'}   = sub { $jobs{'stdout'}; }; }
-    unless ($jobs{'stderrs'})   { $jobs{'stderrs'}   = sub { $jobs{'stderr'}; }; }
-    unless ($jobs{'processes'}) { $jobs{'processes'} = sub { $jobs{'process'}; }; }
-    unless ($jobs{'cpus'})      { $jobs{'cpus'}      = sub { $jobs{'cpu'}; }; }
+    unless ($jobs{'exes'})    { $jobs{'exes'}    = sub { $jobs{'exe'}; }; }
+    unless ($jobs{'arg1s'})   { $jobs{'arg1s'}   = sub { $jobs{'arg1'}; }; }
+    unless ($jobs{'arg2s'})   { $jobs{'arg2s'}   = sub { $jobs{'arg2'}; }; }
+    unless ($jobs{'ifiles'})  { $jobs{'ifiles'}  = sub { $jobs{'ifile'}; }; }
+    unless ($jobs{'ofiles'})  { $jobs{'ofiles'}  = sub { $jobs{'ofile'}; }; }
+    unless ($jobs{'oclmns'})  { $jobs{'oclmns'}  = sub { $jobs{'oclmn'}; }; }
+    unless ($jobs{'odlmtrs'}) { $jobs{'odlmtrs'} = sub { $jobs{'odlmtr'}; }; }
+    unless ($jobs{'queues'})  { $jobs{'queues'}  = sub { $jobs{'queue'}; }; }
+    unless ($jobs{'options'}) { $jobs{'options'} = sub { $jobs{'option'}; }; }
+    unless ($jobs{'stdofiles'}) { $jobs{'stdofiles'} = sub { $jobs{'stdofile'}; }; }
+    unless ($jobs{'stdefiles'}) { $jobs{'stdefiles'} = sub { $jobs{'stdefile'}; }; }
+    unless ($jobs{'procs'})   { $jobs{'procs'}   = sub { $jobs{'proc'}; }; }
+    unless ($jobs{'cpus'})    { $jobs{'cpus'}    = sub { $jobs{'cpu'}; }; }
     my @params;
     if ($jobs{'dir'}) {
 	opendir(DIR, $jobs{'dir'});
 	@params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
 	closedir(DIR);
-    } else {
+    } elsif ($jobs{'range'}) {
 	@params = @{$jobs{'range'}};
+    } else {
+	@params = (0);
     }
     my @objs;
     foreach (@params) {
 	my %job = %jobs;
-	$job{'id'} = $jobs{'id'} . '_' . $_;
-	$job{'exe'} = &{$jobs{'exes'}}($_);
-	$job{'arg1'} = &{$jobs{'arg1s'}}($_);
-	$job{'arg2'} = &{$jobs{'arg2s'}}($_);
-	$job{'ifile'} = &{$jobs{'ifiles'}}($_);
-	$job{'queue'} = &{$jobs{'queues'}}($_);
+	$job{'id'}     = $jobs{'id'} . '_' . $_;
+	$job{'exe'}    = &{$jobs{'exes'}}($_);
+	$job{'arg1'}   = &{$jobs{'arg1s'}}($_);
+	$job{'arg2'}   = &{$jobs{'arg2s'}}($_);
+	$job{'ifile'}  = &{$jobs{'ifiles'}}($_);
+	$job{'ofile'}  = &{$jobs{'ofiles'}}($_);
+	$job{'oclmn'}  = &{$jobs{'oclmns'}}($_);
+	$job{'odlmtr'} = &{$jobs{'odlmtrs'}}($_);
+	$job{'queue'}  = &{$jobs{'queues'}}($_);
 	$job{'option'} = &{$jobs{'options'}}($_);
-	$job{'stdout'} = &{$jobs{'stdouts'}}($_);
-	$job{'stderr'} = &{$jobs{'stderrs'}}($_);
-	$job{'process'} = &{$jobs{'processes'}}($_);
-	$job{'cpu'} = &{$jobs{'cpus'}}($_);
+	$job{'stdofile'} = &{$jobs{'stdofiles'}}($_);
+	$job{'stdefile'} = &{$jobs{'stdefiles'}}($_);
+	$job{'proc'}   = &{$jobs{'procs'}}($_);
+	$job{'cpu'}    = &{$jobs{'cpus'}}($_);
 	my $obj = user->new(\%job);
 	push(@objs , $obj);
     }
@@ -121,8 +129,8 @@ sub kaishu {
     }
     foreach (@arg1s) {
 	my $outputfile = File::Spec->catfile($id . '_' . $_, $jg_rng_amp{'ofile'});
-	my @list = &pickup($outputfile, $jg_rng_amp{'odelimiter'});
-	push (@outputs , $list[$jg_rng_amp{'ocolumn'}]);
+	my @list = &pickup($outputfile, $jg_rng_amp{'odlmtr'});
+	push (@outputs , $list[$jg_rng_amp{'oclmn'}]);
     }
     return @outputs;
 }

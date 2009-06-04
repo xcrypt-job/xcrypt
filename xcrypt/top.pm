@@ -35,42 +35,42 @@ sub start {
     # NQS スクリプトを作成・投入
     my $nqs_script = File::Spec->catfile($dir, 'nqs.sh');
     my $cmd = $self->{exe} . " $self->{arg1} $self->{arg2}";
-    my $stdout = File::Spec->catfile($dir, 'stdout');
-    if ($self->{stdout}) { $stdout = $self->{stdout}; }
-    my $stderr = File::Spec->catfile($dir, 'stderr');
-    if ($self->{stderr}) { $stderr = $self->{stderr}; }
-    my $process = 1;
-    if ($self->{process}) { $process = $self->{process}; }
+    my $stdofile = File::Spec->catfile($dir, 'stdout');
+    if ($self->{stdofile}) { $stdofile = $self->{stdofile}; }
+    my $stdefile = File::Spec->catfile($dir, 'stderr');
+    if ($self->{stdefile}) { $stdefile = $self->{stdefile}; }
+    my $proc = 1;
+    if ($self->{proc}) { $proc = $self->{proc}; }
     my $cpu = 1;
-    if ($self->{cpu}) { $process = $self->{cpu}; }
+    if ($self->{cpu}) { $proc = $self->{cpu}; }
     &jobsched::qsub($self->{id},
 		    $cmd,
 		    $self->{id},
 		    $nqs_script,
 		    $self->{queue},
 		    $self->{option},
-		    $stdout,
-		    $stderr,
-		    $process,
+		    $stdofile,
+		    $stdefile,
+		    $proc,
 		    $cpu);
     # 結果ファイルから結果を取得
-    # 拾い方をユーザに書かせないといけないけどどのようにする？
     &jobsched::wait_job_done($self->{id});
-    my @stdlist = &pickup($stdout, ',');
-    $self->{stdoutput} = $stdlist[0];
+    my @stdlist = &pickup($stdofile, ',');
+    $self->{stdout} = $stdlist[0];
 
     $self->after();
 }
 
 sub before {
     my $self = shift;
-    unless ($self->{dir}) {
-	$self->{input}->do();
-    }
+    unless ($self->{dir}) { $self->{input}->do(); }
     my $exe = $self->{exe};
     my $dir = $self->{id};
+#    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }
     if ( -e $exe ) {
-	symlink File::Spec->catfile('..',  $exe), File::Spec->catfile($dir, $exe);
+	my $direxe = File::Spec->catfile($dir, $exe);
+	copy($exe, $direxe);
+	chmod 0755, $direxe;
     }
 }
 
@@ -80,9 +80,9 @@ sub after {
     unless ($self->{ofile}) {}
     else {
 	my $outputfile = File::Spec->catfile($dir, $self->{ofile});
-	my @list = &pickup($outputfile, $self->{odelimiter});
-	$self->{output} = $list[$self->{ocolumn}];
-	unshift (@{$self->{trace}} , $list[$self->{ocolumn}]);
+	my @list = &pickup($outputfile, $self->{odlmtr});
+	$self->{output} = $list[$self->{oclmn}];
+	unshift (@{$self->{trace}} , $list[$self->{oclmn}]);
     }
     # exit_cond により生成されるジョブの結果もディレクトリ以下に保存
     my $tracelog_filename = 'trace.log';

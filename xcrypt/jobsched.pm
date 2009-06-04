@@ -45,9 +45,9 @@ sub qsub {
         # 以下の引数はoptional
 	$queue,
         $option,
-        $stdout, $stderr, # 標準／エラー出力先（qsubのオプション）
+        $stdofile, $stdefile, # 標準／エラー出力先（qsubのオプション）
         # 以下，NQSのオプション
-        $process, $cpu, $memory, $verbose, $verbose_node,
+        $proc, $cpu, $memory, $verbose, $verbose_node,
         ) = @_;
     my $file = File::Spec->catfile($watch_path, $dirname);
     my $jobspec = "\"spec: $job_name\"";
@@ -60,18 +60,18 @@ sub qsub {
 
     print SCRIPT "$option\n";
 #    if ($verbose eq '') { print SCRIPT "# @\$-oi\n"; }
-    if ($verbose_node)  { print SCRIPT "# @\$-OI\n"; }
-    if ($queue)         { print SCRIPT "# @\$-q $queue\n"; }
-    if ($process)       { print SCRIPT "# @\$-lP $process\n"; }
-    if ($cpu)           { print SCRIPT "# @\$-lp $cpu\n"; }
-    if ($memory)        { print SCRIPT "# @\$-lm $memory\n"; }
-    if ($stdout) {
-	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdout\n";
-#	print SCRIPT "#\$ -o \$QSUB_WORKDIR/$stdout\n";
+    if ($verbose_node) { print SCRIPT "# @\$-OI\n"; }
+    if ($queue)        { print SCRIPT "# @\$-q $queue\n"; }
+    if ($proc)         { print SCRIPT "# @\$-lP $proc\n"; }
+    if ($cpu)          { print SCRIPT "# @\$-lp $cpu\n"; }
+    if ($memory)       { print SCRIPT "# @\$-lm $memory\n"; }
+    if ($stdofile) {
+	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
+#	print SCRIPT "#\$ -o \$QSUB_WORKDIR/$stdofile\n";
     }
-    if ($stderr) {
-	print SCRIPT "#\$ -e $ENV{'PWD'}/$stderr\n";
-#	print SCRIPT "#\$ -e \$QSUB_WORKDIR/$stderr\n";
+    if ($stdefile) {
+	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
+#	print SCRIPT "#\$ -e \$QSUB_WORKDIR/$stdefile\n";
     }
 #    print SCRIPT "set -x\n";
     print SCRIPT "$write_command $file \"start\" $jobspec\n";

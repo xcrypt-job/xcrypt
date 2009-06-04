@@ -13,7 +13,8 @@ foreach my $item (<PLASMA>) {
 	    open ( PBODY , "> pbody" );
 #	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
 	    my $hoge = $ARGV[1] + $num;
-	    print PBODY "foo," . $hoge . ",bar";
+#	    print PBODY "foo," . $hoge . ",bar";
+	    print $hoge;
 	    close ( PBODY );
 	}
     }
