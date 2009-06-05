@@ -47,44 +47,51 @@ sub prepare_submit {
     return &submit(@objs);
 }
 
+sub hage {
+    my %job = $_[0];
+    $job{'id'}       = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2];
+    $job{'exe'}      = &{$_[0]{'exes'}}($_[1], $_[2]);
+    $job{'arg1'}     = &{$_[0]{'arg1s'}}($_[1], $_[2]);
+    $job{'arg2'}     = &{$_[0]{'arg2s'}}($_[1], $_[2]);
+    $job{'ifile'}    = &{$_[0]{'ifiles'}}($_[1], $_[2]);
+    $job{'ofile'}    = &{$_[0]{'ofiles'}}($_[1], $_[2]);
+    $job{'oclmn'}    = &{$_[0]{'oclmns'}}($_[1], $_[2]);
+    $job{'odlmtr'}   = &{$_[0]{'odlmtrs'}}($_[1], $_[2]);
+    $job{'queue'}    = &{$_[0]{'queues'}}($_[1], $_[2]);
+    $job{'option'}   = &{$_[0]{'options'}}($_[1], $_[2]);
+    $job{'stdofile'} = &{$_[0]{'stdofiles'}}($_[1], $_[2]);
+    $job{'stdefile'} = &{$_[0]{'stdefiles'}}($_[1], $_[2]);
+    $job{'proc'}     = &{$_[0]{'procs'}}($_[1], $_[2]);
+    $job{'cpu'}      = &{$_[0]{'cpus'}}($_[1], $_[2]);
+    return user->new(\%job);
+}
+
 sub prepare {
     my %jobs = @_;
-    unless ($jobs{'exes'})    { $jobs{'exes'}    = sub { $jobs{'exe'}; }; }
-    unless ($jobs{'arg1s'})   { $jobs{'arg1s'}   = sub { $jobs{'arg1'}; }; }
-    unless ($jobs{'arg2s'})   { $jobs{'arg2s'}   = sub { $jobs{'arg2'}; }; }
-    unless ($jobs{'ifiles'})  { $jobs{'ifiles'}  = sub { $jobs{'ifile'}; }; }
-    unless ($jobs{'ofiles'})  { $jobs{'ofiles'}  = sub { $jobs{'ofile'}; }; }
-    unless ($jobs{'oclmns'})  { $jobs{'oclmns'}  = sub { $jobs{'oclmn'}; }; }
-    unless ($jobs{'odlmtrs'}) { $jobs{'odlmtrs'} = sub { $jobs{'odlmtr'}; }; }
-    unless ($jobs{'queues'})  { $jobs{'queues'}  = sub { $jobs{'queue'}; }; }
-    unless ($jobs{'options'}) { $jobs{'options'} = sub { $jobs{'option'}; }; }
-    unless ($jobs{'stdofiles'}) { $jobs{'stdofiles'} = sub { $jobs{'stdofile'}; }; }
-    unless ($jobs{'stdefiles'}) { $jobs{'stdefiles'} = sub { $jobs{'stdefile'}; }; }
-    unless ($jobs{'procs'})   { $jobs{'procs'}   = sub { $jobs{'proc'}; }; }
-    unless ($jobs{'cpus'})    { $jobs{'cpus'}    = sub { $jobs{'cpu'}; }; }
+    unless ($jobs{'exes'})      {$jobs{'exes'}      = sub {$jobs{'exe'};};}
+    unless ($jobs{'arg1s'})     {$jobs{'arg1s'}     = sub {$jobs{'arg1'};};}
+    unless ($jobs{'arg2s'})     {$jobs{'arg2s'}     = sub {$jobs{'arg2'};};}
+    unless ($jobs{'ifiles'})    {$jobs{'ifiles'}    = sub {$jobs{'ifile'};};}
+    unless ($jobs{'ofiles'})    {$jobs{'ofiles'}    = sub {$jobs{'ofile'};};}
+    unless ($jobs{'oclmns'})    {$jobs{'oclmns'}    = sub {$jobs{'oclmn'};};}
+    unless ($jobs{'odlmtrs'})   {$jobs{'odlmtrs'}   = sub {$jobs{'odlmtr'}};}
+    unless ($jobs{'queues'})    {$jobs{'queues'}    = sub {$jobs{'queue'};};}
+    unless ($jobs{'options'})   {$jobs{'options'}   = sub {$jobs{'option'};};}
+    unless ($jobs{'stdofiles'}) {$jobs{'stdofiles'} = sub {$jobs{'stdofile'};};}
+    unless ($jobs{'stdefiles'}) {$jobs{'stdefiles'} = sub {$jobs{'stdefile'};};}
+    unless ($jobs{'procs'})     {$jobs{'procs'}     = sub {$jobs{'proc'};};}
+    unless ($jobs{'cpus'})      {$jobs{'cpus'}      = sub {$jobs{'cpu'};};}
     my @objs;
     if ($jobs{'range1'}) {
 	foreach my $r1 (@{$jobs{'range1'}}) {
 	    if ($jobs{'range2'}) {
 		foreach my $r2 (@{$jobs{'range2'}}) {
-		    my %job = %jobs;
-		    $job{'id'}     = $jobs{'id'} . '_' . $r1 . '-' . $r2;
-		    $job{'exe'}    = &{$jobs{'exes'}}($r1, $r2);
-		    $job{'arg1'}   = &{$jobs{'arg1s'}}($r1, $r2);
-		    $job{'arg2'}   = &{$jobs{'arg2s'}}($r1, $r2);
-		    $job{'ifile'}  = &{$jobs{'ifiles'}}($r1, $r2);
-		    $job{'ofile'}  = &{$jobs{'ofiles'}}($r1, $r2);
-		    $job{'oclmn'}  = &{$jobs{'oclmns'}}($r1, $r2);
-		    $job{'odlmtr'} = &{$jobs{'odlmtrs'}}($r1, $r2);
-		    $job{'queue'}  = &{$jobs{'queues'}}($r1, $r2);
-		    $job{'option'} = &{$jobs{'options'}}($r1, $r2);
-		    $job{'stdofile'} = &{$jobs{'stdofiles'}}($r1, $r2);
-		    $job{'stdefile'} = &{$jobs{'stdefiles'}}($r1, $r2);
-		    $job{'proc'}   = &{$jobs{'procs'}}($r1, $r2);
-		    $job{'cpu'}    = &{$jobs{'cpus'}}($r1, $r2);
-		    my $obj = user->new(\%job);
+		    my $obj = &hage(\%jobs, $r1, $r2);
 		    push(@objs , $obj);
 		}
+	    } else {
+		my $obj = &hage(\%jobs, $r1, 0);
+		push(@objs , $obj);
 	    }
 	}
     } elsif ($jobs{'dir'}) {
@@ -93,20 +100,20 @@ sub prepare {
 	closedir(DIR);
 	foreach (@params) {
 	    my %job = %jobs;
-	    $job{'id'}     = $jobs{'id'} . '_' . $_;
-	    $job{'exe'}    = &{$jobs{'exes'}}($_);
-	    $job{'arg1'}   = &{$jobs{'arg1s'}}($_);
-	    $job{'arg2'}   = &{$jobs{'arg2s'}}($_);
-	    $job{'ifile'}  = &{$jobs{'ifiles'}}($_);
-	    $job{'ofile'}  = &{$jobs{'ofiles'}}($_);
-	    $job{'oclmn'}  = &{$jobs{'oclmns'}}($_);
-	    $job{'odlmtr'} = &{$jobs{'odlmtrs'}}($_);
-	    $job{'queue'}  = &{$jobs{'queues'}}($_);
-	    $job{'option'} = &{$jobs{'options'}}($_);
+	    $job{'id'}       = $jobs{'id'} . '_' . $_;
+	    $job{'exe'}      = &{$jobs{'exes'}}($_);
+	    $job{'arg1'}     = &{$jobs{'arg1s'}}($_);
+	    $job{'arg2'}     = &{$jobs{'arg2s'}}($_);
+	    $job{'ifile'}    = &{$jobs{'ifiles'}}($_);
+	    $job{'ofile'}    = &{$jobs{'ofiles'}}($_);
+	    $job{'oclmn'}    = &{$jobs{'oclmns'}}($_);
+	    $job{'odlmtr'}   = &{$jobs{'odlmtrs'}}($_);
+	    $job{'queue'}    = &{$jobs{'queues'}}($_);
+	    $job{'option'}   = &{$jobs{'options'}}($_);
 	    $job{'stdofile'} = &{$jobs{'stdofiles'}}($_);
 	    $job{'stdefile'} = &{$jobs{'stdefiles'}}($_);
-	    $job{'proc'}   = &{$jobs{'procs'}}($_);
-	    $job{'cpu'}    = &{$jobs{'cpus'}}($_);
+	    $job{'proc'}     = &{$jobs{'procs'}}($_);
+	    $job{'cpu'}      = &{$jobs{'cpus'}}($_);
 	    my $obj = user->new(\%job);
 	    push(@objs , $obj);
 	}
