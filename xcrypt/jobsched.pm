@@ -86,8 +86,8 @@ sub qsub {
 #    print SCRIPT "PATH=$ENV{'PATH'}\n";
 #    print SCRIPT "set -x\n";
     print SCRIPT "$write_command $file \"start\" $jobspec\n";
-#    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
-    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
+    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
+#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
     print SCRIPT "$command\n";
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT "$write_command $file \"done\" $jobspec\n";
