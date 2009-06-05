@@ -50,12 +50,23 @@ sub prepare_submit {
 
 sub generate {
     my %job = %{$_[0]};
-    unless ($_[2]) { $job{'id'} = $_[0]{'id'} . '_' . $_[1]; }
-    else { $job{'id'} = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2]; }
+    unless ($_[1]) {
+	$job{'id'} = $_[0]{'id'};
+    } else {
+	unless ($_[2]) {
+	    $job{'id'} = $_[0]{'id'} .'_'. $_[1];
+	} else {
+	    unless ($_[3]) {
+		$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2];
+	    } else {
+		$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3];
+	    }
+	}
+    }
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($_[0]{"$members"}) eq 'CODE') {
-	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2]);
+	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2], $_[3]);
 	} elsif (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my @tmp = @{$_[0]{"$members"}};
 	    $job{"$_"} = $tmp[$_[1]];
@@ -74,13 +85,26 @@ sub prepare {
     }
     my @objs;
     if ($jobs{'range1'}) {
-	foreach my $r1 (@{$jobs{'range1'}}) {
-	    if ($jobs{'range2'}) {
-		foreach my $r2 (@{$jobs{'range2'}}) {
-		    my $obj = &generate(\%jobs, $r1, $r2);
-		    push(@objs , $obj);
+	if ($jobs{'range2'}) {
+	    if ($jobs{'range3'}) {
+		foreach my $r1 (@{$jobs{'range1'}}) {
+		    foreach my $r2 (@{$jobs{'range2'}}) {
+			foreach my $r3 (@{$jobs{'range3'}}) {
+			    my $obj = &generate(\%jobs, $r1, $r2, $r3);
+			    push(@objs , $obj);
+			}
+		    }
 		}
 	    } else {
+		foreach my $r1 (@{$jobs{'range1'}}) {
+		    foreach my $r2 (@{$jobs{'range2'}}) {
+			my $obj = &generate(\%jobs, $r1, $r2);
+			push(@objs , $obj);
+		    }
+		}
+	    }
+	} else {
+	    foreach my $r1 (@{$jobs{'range1'}}) {
 		my $obj = &generate(\%jobs, $r1);
 		push(@objs , $obj);
 	    }
@@ -93,8 +117,45 @@ sub prepare {
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
+    } elsif (&max(\%jobs)) {
+	my @params = (0..(&min(\%jobs)-1));
+	foreach (@params) {
+	    my $obj = &generate(\%jobs, $_);
+	    push(@objs , $obj);
+	}
+    } else {
+	my $obj = &generate(\%jobs);
+	push(@objs , $obj);
     }
     return @objs;
+}
+
+sub max {
+    my $hoge = 0;
+    foreach (@allmembers) {
+	my $members = "$_" . 's';
+	if (ref($_[0]{"$members"}) eq 'ARRAY') {
+	    my $tmp = @{$_[0]{"$members"}};
+	    $hoge = $tmp + $hoge;
+	}
+    }
+    return $hoge;
+}
+
+sub min {
+    my $hoge = 0;
+    foreach (@allmembers) {
+	my $members = "$_" . 's';
+	if (ref($_[0]{"$members"}) eq 'ARRAY') {
+	    my $tmp = @{$_[0]{"$members"}};
+	    if ($tmp <= $hoge) {
+		$hoge = $tmp;
+	    } elsif ($hoge == 0) {
+		$hoge = $tmp;
+	    }
+	}
+    }
+    return $hoge;
 }
 
 sub submit {
