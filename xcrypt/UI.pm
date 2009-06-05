@@ -47,9 +47,14 @@ sub prepare_submit {
     return &submit(@objs);
 }
 
-sub hage {
-    my %job = $_[0];
-    $job{'id'}       = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2];
+sub generate {
+    my %tmp = %{$_[0]};
+    my %job = %tmp;
+    unless ($_[2]) {
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1];
+    } else {
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2];
+    }
     $job{'exe'}      = &{$_[0]{'exes'}}($_[1], $_[2]);
     $job{'arg1'}     = &{$_[0]{'arg1s'}}($_[1], $_[2]);
     $job{'arg2'}     = &{$_[0]{'arg2s'}}($_[1], $_[2]);
@@ -86,11 +91,11 @@ sub prepare {
 	foreach my $r1 (@{$jobs{'range1'}}) {
 	    if ($jobs{'range2'}) {
 		foreach my $r2 (@{$jobs{'range2'}}) {
-		    my $obj = &hage(\%jobs, $r1, $r2);
+		    my $obj = &generate(\%jobs, $r1, $r2);
 		    push(@objs , $obj);
 		}
 	    } else {
-		my $obj = &hage(\%jobs, $r1, 0);
+		my $obj = &generate(\%jobs, $r1);
 		push(@objs , $obj);
 	    }
 	}
@@ -99,22 +104,7 @@ sub prepare {
 	my @params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
 	closedir(DIR);
 	foreach (@params) {
-	    my %job = %jobs;
-	    $job{'id'}       = $jobs{'id'} . '_' . $_;
-	    $job{'exe'}      = &{$jobs{'exes'}}($_);
-	    $job{'arg1'}     = &{$jobs{'arg1s'}}($_);
-	    $job{'arg2'}     = &{$jobs{'arg2s'}}($_);
-	    $job{'ifile'}    = &{$jobs{'ifiles'}}($_);
-	    $job{'ofile'}    = &{$jobs{'ofiles'}}($_);
-	    $job{'oclmn'}    = &{$jobs{'oclmns'}}($_);
-	    $job{'odlmtr'}   = &{$jobs{'odlmtrs'}}($_);
-	    $job{'queue'}    = &{$jobs{'queues'}}($_);
-	    $job{'option'}   = &{$jobs{'options'}}($_);
-	    $job{'stdofile'} = &{$jobs{'stdofiles'}}($_);
-	    $job{'stdefile'} = &{$jobs{'stdefiles'}}($_);
-	    $job{'proc'}     = &{$jobs{'procs'}}($_);
-	    $job{'cpu'}      = &{$jobs{'cpus'}}($_);
-	    my $obj = user->new(\%job);
+	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
     }
