@@ -6,6 +6,7 @@ use function;
 use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit kaishu sync);
 
+my @allmembers = ('exe', 'arg1', 'arg2', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
 
 sub killall {
     my $prefix = shift;
@@ -48,44 +49,29 @@ sub prepare_submit {
 }
 
 sub generate {
-    my %tmp = %{$_[0]};
-    my %job = %tmp;
-    unless ($_[2]) {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1];
-    } else {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2];
+    my %job = %{$_[0]};
+    unless ($_[2]) { $job{'id'} = $_[0]{'id'} . '_' . $_[1]; }
+    else { $job{'id'} = $_[0]{'id'} . '_' . $_[1] . '-' . $_[2]; }
+    foreach (@allmembers) {
+	my $members = "$_" . 's';
+	if (ref($_[0]{"$members"}) eq 'CODE') {
+	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2]);
+	} elsif (ref($_[0]{"$members"}) eq 'ARRAY') {
+	    my @tmp = @{$_[0]{"$members"}};
+	    $job{"$_"} = $tmp[$_[1]];
+	} else {
+	    die "X must be a reference of a function or an array at \&prepare(\.\.\. \'$members\'\=\> X)";
+	}
     }
-    $job{'exe'}      = &{$_[0]{'exes'}}($_[1], $_[2]);
-    $job{'arg1'}     = &{$_[0]{'arg1s'}}($_[1], $_[2]);
-    $job{'arg2'}     = &{$_[0]{'arg2s'}}($_[1], $_[2]);
-    $job{'ifile'}    = &{$_[0]{'ifiles'}}($_[1], $_[2]);
-    $job{'ofile'}    = &{$_[0]{'ofiles'}}($_[1], $_[2]);
-    $job{'oclmn'}    = &{$_[0]{'oclmns'}}($_[1], $_[2]);
-    $job{'odlmtr'}   = &{$_[0]{'odlmtrs'}}($_[1], $_[2]);
-    $job{'queue'}    = &{$_[0]{'queues'}}($_[1], $_[2]);
-    $job{'option'}   = &{$_[0]{'options'}}($_[1], $_[2]);
-    $job{'stdofile'} = &{$_[0]{'stdofiles'}}($_[1], $_[2]);
-    $job{'stdefile'} = &{$_[0]{'stdefiles'}}($_[1], $_[2]);
-    $job{'proc'}     = &{$_[0]{'procs'}}($_[1], $_[2]);
-    $job{'cpu'}      = &{$_[0]{'cpus'}}($_[1], $_[2]);
     return user->new(\%job);
 }
 
 sub prepare {
     my %jobs = @_;
-    unless ($jobs{'exes'})      {$jobs{'exes'}      = sub {$jobs{'exe'};};}
-    unless ($jobs{'arg1s'})     {$jobs{'arg1s'}     = sub {$jobs{'arg1'};};}
-    unless ($jobs{'arg2s'})     {$jobs{'arg2s'}     = sub {$jobs{'arg2'};};}
-    unless ($jobs{'ifiles'})    {$jobs{'ifiles'}    = sub {$jobs{'ifile'};};}
-    unless ($jobs{'ofiles'})    {$jobs{'ofiles'}    = sub {$jobs{'ofile'};};}
-    unless ($jobs{'oclmns'})    {$jobs{'oclmns'}    = sub {$jobs{'oclmn'};};}
-    unless ($jobs{'odlmtrs'})   {$jobs{'odlmtrs'}   = sub {$jobs{'odlmtr'}};}
-    unless ($jobs{'queues'})    {$jobs{'queues'}    = sub {$jobs{'queue'};};}
-    unless ($jobs{'options'})   {$jobs{'options'}   = sub {$jobs{'option'};};}
-    unless ($jobs{'stdofiles'}) {$jobs{'stdofiles'} = sub {$jobs{'stdofile'};};}
-    unless ($jobs{'stdefiles'}) {$jobs{'stdefiles'} = sub {$jobs{'stdefile'};};}
-    unless ($jobs{'procs'})     {$jobs{'procs'}     = sub {$jobs{'proc'};};}
-    unless ($jobs{'cpus'})      {$jobs{'cpus'}      = sub {$jobs{'cpu'};};}
+    foreach (@allmembers) {
+	my $members = "$_" . 's';
+	unless ($jobs{"$members"}) {$jobs{"$members"} = sub {$jobs{"$_"};};}
+    }
     my @objs;
     if ($jobs{'range1'}) {
 	foreach my $r1 (@{$jobs{'range1'}}) {

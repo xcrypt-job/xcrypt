@@ -14,7 +14,9 @@ $limit::smph=Thread::Semaphore->new(100);
 );
 
 #my @jobs = &prepare(%xyz, 'range1' => [1,2], 'range2' => [2,4], 'arg2s' => sub { $_[0] + $_[1]; });
-my @jobs = &prepare(%xyz, 'range1' => [1,2], 'arg2s' => sub { $_[0]; });
+#my @jobs = &prepare(%xyz, 'range1' => [1,2], 'arg2s' => sub { $_[0]; });
+#my @jobs = &prepare(%xyz, 'range1' => [0,1], 'arg2s' => [3,4]);
+my @jobs = &prepare(%xyz, 'range1' => [0,1], 'arg2s' => 3);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
