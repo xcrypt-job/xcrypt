@@ -50,18 +50,14 @@ sub prepare_submit {
 
 sub generate {
     my %job = %{$_[0]};
-    unless ($_[1]) {
+    if ($_[1] eq '') {
 	$job{'id'} = $_[0]{'id'};
+    } elsif ($_[2] eq '') {
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1];
+    } elsif ($_[3] eq '') {
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2];
     } else {
-	unless ($_[2]) {
-	    $job{'id'} = $_[0]{'id'} .'_'. $_[1];
-	} else {
-	    unless ($_[3]) {
-		$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2];
-	    } else {
-		$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3];
-	    }
-	}
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3];
     }
     foreach (@allmembers) {
 	my $members = "$_" . 's';
@@ -120,6 +116,7 @@ sub prepare {
     } elsif (&max(\%jobs)) {
 	my @params = (0..(&min(\%jobs)-1));
 	foreach (@params) {
+	    print $_;
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
@@ -175,6 +172,18 @@ sub sync {
 	push (@outputs , $output);
     }
     return @outputs;
+}
+
+sub repickup {
+    my @objs = &prepare(@_);
+    my @stdouts = ();
+    foreach (@objs) {
+	my $stdofile = File::Spec->catfile($_->{id}, 'stdout');
+	if ($_->{stdofile}) { $stdofile = $_->{stdofile}; }
+	my @stdlist = &pickup($stdofile, ',');
+	push (@stdouts, $stdlist[0]);
+    }
+    return @stdouts;
 }
 
 sub kaishu {
