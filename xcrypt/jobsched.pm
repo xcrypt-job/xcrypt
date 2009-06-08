@@ -93,11 +93,16 @@ sub qsub {
     print SCRIPT "$write_command $file \"done\" $jobspec\n";
     close (SCRIPT);
     system ("$write_command $file \"submit\" $jobspec");
-    my $id = qx/$qsub_command $scriptfile/;
-    my $idfile = File::Spec->catfile($dirname, 'request_id');
-    open (REQUESTID, ">> $idfile");
-    print REQUESTID $id;
-    close (REQUESTID);
+    my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
+    if ($existence == 0) {
+	my $id = qx/$qsub_command $scriptfile/;
+	my $idfile = File::Spec->catfile($dirname, 'request_id');
+	open (REQUESTID, ">> $idfile");
+	print REQUESTID $id;
+	close (REQUESTID);
+    } else {
+	die "qsub not found\n";
+    }
 }
 
 ##############################

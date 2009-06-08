@@ -116,7 +116,6 @@ sub prepare {
     } elsif (&max(\%jobs)) {
 	my @params = (0..(&min(\%jobs)-1));
 	foreach (@params) {
-	    print $_;
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}

@@ -24,4 +24,4 @@ my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
 #foreach (@results) { print $_->{stdout} , "\n"; }
-&repickup();
+print &repickup();
