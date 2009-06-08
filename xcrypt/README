@@ -10,6 +10,9 @@ exit_cond に必要性があるか？
 * 実行方法
 
 環境変数 XCRYPT を ${HOME}/e-science/xcrypt とかにする．
+移動する（$ cd ${HOME}/e-science/${USERNAME}）．
+xcrypt スクリプト（例えば hoge.xcr）を作成する．
+実行する（$ {XCRYPT}/xcrypt hoge.xcr）．
 
 * 概要
 

@@ -23,4 +23,5 @@ my @jobs = &prepare(%xyz, 'arg2s' => [3,4,5], 'ifiles' => ['plasma.inp', 'plasma
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
-foreach (@results) { print $_->{stdout} , "\n"; }
+#foreach (@results) { print $_->{stdout} , "\n"; }
+&repickup();
