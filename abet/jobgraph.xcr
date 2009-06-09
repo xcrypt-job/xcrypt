@@ -1,6 +1,7 @@
 use function;
 
 $limit::smph=Thread::Semaphore->new(100);
+$opt_dry = 1;
 
 %job0 = (
     'id' => 'job0',
@@ -11,10 +12,10 @@ $limit::smph=Thread::Semaphore->new(100);
 %job3 = (
     'id' => 'job3',
     'predecessors' => ['job1','job2'],
-    'exe' => './kempo.pl',
+    'exe' => './kempo',
     'queue' => 'eh',
-    'arg1' => 50,
-    'arg2' => 100,
+    'arg0' => 50,
+    'arg1' => 100,
     'ifile' => 'plasma.inp',
     'ofile' => 'pbody',
     'ocolumn' => 1,
@@ -24,9 +25,9 @@ $limit::smph=Thread::Semaphore->new(100);
 %job1 = (
     'id' => 'job1',
     'predecessors' => [],
-    'exe' => './kempo.pl',
-    'arg1' => 20,
-    'arg2' => 100,
+    'exe' => './kempo',
+    'arg0' => 20,
+    'arg1' => 100,
     'ifile' => 'plasma.inp',
     'ofile' => 'pbody',
     'ocolumn' => 1,
@@ -37,9 +38,9 @@ $limit::smph=Thread::Semaphore->new(100);
 %job2 = (
     'id' => 'job2',
     'predecessors' => [],
-    'exe' => './kempo.pl',
-    'arg1' => 30,
-    'arg2' => 100,
+    'exe' => './kempo',
+    'arg0' => 30,
+    'arg1' => 100,
     'ifile' => 'plasma.inp',
     'ofile' => 'pbody',
     'ocolumn' => 1,

@@ -5,8 +5,8 @@ $limit::smph=Thread::Semaphore->new(100);
 %xyz = (
     'id' => 'job100',
     'exe' => './kempo',
-    'arg1' => 'plasma.inp',
-    'arg2' => '100',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
     'ifile' => 'plasma.inp',
     'ofile' => 'pbody',
     'queue' => 'gh10034',
@@ -15,7 +15,7 @@ $limit::smph=Thread::Semaphore->new(100);
 
 my @jobs = &prepare(%xyz, 'dir' => 'hoge',
 		    'ifiles' => sub {$_[0];},
-		    'arg1s' => sub {$_[0];});
+		    'arg0s' => sub {$_[0];});
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 

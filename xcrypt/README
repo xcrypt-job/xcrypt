@@ -2,7 +2,7 @@
 
 * 重要
 
-refinement.pm に exit_cond に関するバグあり．
+constructor.pm に exit_cond に関するバグあり．
 exit_cond に必要性があるか？
 直すにしてもどのように直すべきか？
 のどちらも不明．

@@ -18,8 +18,10 @@ sub before {
     my $self = shift;
     if ($user::opt_dry) {
 	$self->{exe} = '';
-	$self->{arg1} = '';
-	$self->{arg2} = '';
+	for ( my $i = 0; $i <= 255; $i++ ) {
+	    my $arg = 'arg' . $i;
+	    $self->{$arg} = '';
+	}
 #	$self->{ifile} = '';
 	$self->{ofile} = '';
 	$self->{exit_cond} = sub { 1; };

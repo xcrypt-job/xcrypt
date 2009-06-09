@@ -6,7 +6,9 @@ use function;
 use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
-my @allmembers = ('exe', 'arg1', 'arg2', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
+my @args = ();
+for ( my $i = 0; $i <= 255; $i++ ) { push(@args, "arg$i"); }
+my @allmembers = ('exe', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu', @args);
 
 sub killall {
     my $prefix = shift;
@@ -80,28 +82,41 @@ sub prepare {
 	unless ($jobs{"$members"}) {$jobs{"$members"} = sub {$jobs{"$_"};};}
     }
     my @objs;
-    if ($jobs{'range1'}) {
-	if ($jobs{'range2'}) {
-	    if ($jobs{'range3'}) {
-		foreach my $r1 (@{$jobs{'range1'}}) {
-		    foreach my $r2 (@{$jobs{'range2'}}) {
-			foreach my $r3 (@{$jobs{'range3'}}) {
-			    my $obj = &generate(\%jobs, $r1, $r2, $r3);
-			    push(@objs , $obj);
+    if ($jobs{'range0'}) {
+	if ($jobs{'range1'}) {
+	    if ($jobs{'range2'}) {
+		if ($jobs{'range3'}) {
+		    foreach my $r0 (@{$jobs{'range0'}}) {
+			foreach my $r1 (@{$jobs{'range1'}}) {
+			    foreach my $r2 (@{$jobs{'range2'}}) {
+				foreach my $r3 (@{$jobs{'range3'}}) {
+				    my $obj = &generate(\%jobs, $r0, $r1, $r2, $r3);
+				    push(@objs , $obj);
+				}
+			    }
+			}
+		    }
+		} else {
+		    foreach my $r0 (@{$jobs{'range0'}}) {
+			foreach my $r1 (@{$jobs{'range1'}}) {
+			    foreach my $r2 (@{$jobs{'range2'}}) {
+				my $obj = &generate(\%jobs, $r0, $r1, $r2);
+				push(@objs , $obj);
+			    }
 			}
 		    }
 		}
 	    } else {
-		foreach my $r1 (@{$jobs{'range1'}}) {
-		    foreach my $r2 (@{$jobs{'range2'}}) {
-			my $obj = &generate(\%jobs, $r1, $r2);
+		foreach my $r0 (@{$jobs{'range0'}}) {
+		    foreach my $r1 (@{$jobs{'range1'}}) {
+			my $obj = &generate(\%jobs, $r0, $r1);
 			push(@objs , $obj);
 		    }
 		}
 	    }
 	} else {
-	    foreach my $r1 (@{$jobs{'range1'}}) {
-		my $obj = &generate(\%jobs, $r1);
+	    foreach my $r0 (@{$jobs{'range0'}}) {
+		my $obj = &generate(\%jobs, $r0);
 		push(@objs , $obj);
 	    }
 	}

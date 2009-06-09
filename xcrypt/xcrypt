@@ -23,14 +23,11 @@ rename $ARGV[0] , $savefile;
 
 open ( TMP , "> $ARGV[0]");
 print TMP 'package user;' . "\n";
-print TMP 'use Getopt::Long;' . "\n";
 print TMP 'use UI;' . "\n";
 print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
-print TMP '$opt_dry = 0;' . "\n";
-print TMP 'GetOptions(\'dry\' => $opt_dry);' . "\n";
 open ( USER , "< $savefile") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );

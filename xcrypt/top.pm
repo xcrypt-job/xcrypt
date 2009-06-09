@@ -19,8 +19,10 @@ sub new {
 #	$self->{input} = &Data_Generation::CF($copied, $dir);
 	copy $copied, $dir;
     } else {
-	$copied = $self->{ifile};
-	$self->{input} = &Data_Generation::CF($copied, $dir);
+	if ($self->{ifile}) {
+	    $copied = $self->{ifile};
+	    $self->{input} = &Data_Generation::CF($copied, $dir);
+	}
     }
     return bless $self, $class;
 }
@@ -34,7 +36,12 @@ sub start {
 
     # NQS スクリプトを作成・投入
     my $nqs_script = File::Spec->catfile($dir, 'nqs.sh');
-    my $cmd = $self->{exe} . " $self->{arg1} $self->{arg2}";
+    my @args = ();
+    for ( my $i = 0; $i <= 255; $i++ ) {
+	my $arg = 'arg' . $i;
+	push(@args, $self->{$arg});
+    }
+    my $cmd = $self->{exe} . ' ' . join(' ', @args);
     my $stdofile = File::Spec->catfile($dir, 'stdout');
     if ($self->{stdofile}) { $stdofile = $self->{stdofile}; }
     my $stdefile = File::Spec->catfile($dir, 'stderr');
@@ -63,7 +70,11 @@ sub start {
 
 sub before {
     my $self = shift;
-    unless ($self->{dir}) { $self->{input}->do(); }
+    unless ($self->{dir}) {
+	if ($self->{ifile}) {
+	    $self->{input}->do();
+	}
+    }
     my $exe = $self->{exe};
     my $dir = $self->{id};
 #    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }
