@@ -58,13 +58,15 @@ sub generate {
 	$job{'id'} = $_[0]{'id'} . '_' . $_[1];
     } elsif ($_[3] eq '') {
 	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2];
-    } else {
+    } elsif ($_[4] eq '') {
 	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3];
+    } else {
+	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3] .'-'. $_[4];
     }
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($_[0]{"$members"}) eq 'CODE') {
-	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2], $_[3]);
+	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2], $_[3], $_[4]);
 	} elsif (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my @tmp = @{$_[0]{"$members"}};
 	    $job{"$_"} = $tmp[$_[1]];
@@ -75,6 +77,23 @@ sub generate {
     return user->new(\%job);
 }
 
+sub times {
+    if (@_ == ()) { return (); }
+    my $head = shift;
+    my @tail = &times(@_);
+    my @result;
+    foreach my $i (@{$head}) {
+	if (@tail == ()) {
+	    push(@result, [$i]);
+	} else {
+	    foreach my $j (@tail) {
+		push(@result, [$i, @{$j}]);
+	    }
+	}
+    }
+    return @result;
+}
+
 sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
@@ -82,43 +101,24 @@ sub prepare {
 	unless ($jobs{"$members"}) {$jobs{"$members"} = sub {$jobs{"$_"};};}
     }
     my @objs;
+
+    for ( my $i = 0; $i <= 3; $i++ ) {
+	my $range = 'range' . $i;
+	if (@{$jobs{"$range"}} eq ()) {
+	    push(@{$jobs{"$range"}}, 'nil');
+	}
+    }
+
     if ($jobs{'range0'}) {
-	if ($jobs{'range1'}) {
-	    if ($jobs{'range2'}) {
-		if ($jobs{'range3'}) {
-		    foreach my $r0 (@{$jobs{'range0'}}) {
-			foreach my $r1 (@{$jobs{'range1'}}) {
-			    foreach my $r2 (@{$jobs{'range2'}}) {
-				foreach my $r3 (@{$jobs{'range3'}}) {
-				    my $obj = &generate(\%jobs, $r0, $r1, $r2, $r3);
-				    push(@objs , $obj);
-				}
-			    }
-			}
-		    }
-		} else {
-		    foreach my $r0 (@{$jobs{'range0'}}) {
-			foreach my $r1 (@{$jobs{'range1'}}) {
-			    foreach my $r2 (@{$jobs{'range2'}}) {
-				my $obj = &generate(\%jobs, $r0, $r1, $r2);
-				push(@objs , $obj);
-			    }
-			}
-		    }
-		}
-	    } else {
-		foreach my $r0 (@{$jobs{'range0'}}) {
-		    foreach my $r1 (@{$jobs{'range1'}}) {
-			my $obj = &generate(\%jobs, $r0, $r1);
-			push(@objs , $obj);
-		    }
-		}
-	    }
-	} else {
-	    foreach my $r0 (@{$jobs{'range0'}}) {
-		my $obj = &generate(\%jobs, $r0);
-		push(@objs , $obj);
-	    }
+	my @ranges = ();
+	for ( my $i = 0; $i <= 3; $i++ ) {
+	    my $range = 'range' . $i;
+	    push(@ranges, $jobs{"$range"});
+	}
+	my @range = &times(@ranges);
+	foreach my $r (@range) {
+	    my $obj = &generate(\%jobs, @{$r});
+	    push(@objs , $obj);
 	}
     } elsif ($jobs{'dir'}) {
 	opendir(DIR, $jobs{'dir'});

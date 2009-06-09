@@ -12,12 +12,17 @@ sub new {
     my $self = shift;
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
-    mkdir $dir , 0755;
+    unless (-e $dir) {
+	mkdir $dir , 0755;
+    } else {
+	die "Can't make a directory $dir since $dir has already existed.  Rename the id of a job or the directory.";
+    }
     my $copied;
     if ($self->{dir}) {
 	$copied = File::Spec->catfile($self->{dir}, $self->{ifile});
 #	$self->{input} = &Data_Generation::CF($copied, $dir);
-	copy $copied, $dir;
+#	copy $copied, $dir;
+	system("\cp -f $copied, $dir");
     } else {
 	if ($self->{ifile}) {
 	    $copied = $self->{ifile};
@@ -80,8 +85,9 @@ sub before {
 #    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }
     if ( -e $exe ) {
 	my $direxe = File::Spec->catfile($dir, $exe);
-	copy($exe, $direxe);
-	chmod 0755, $direxe;
+#	copy($exe, $direxe);
+#	chmod 0755, $direxe;
+	system("\cp -f $exe $direxe");
     }
 }
 
