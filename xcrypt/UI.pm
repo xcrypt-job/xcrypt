@@ -7,8 +7,12 @@ use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my @args = ();
-for ( my $i = 0; $i <= 255; $i++ ) { push(@args, "arg$i"); }
+for ( my $i = 0; $i < $MAXARG; $i++ ) { push(@args, "arg$i"); }
 my @allmembers = ('exe', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu', @args);
+
+my $MAXRANGE = 16;
+my $MAXARG = 256;
+
 
 sub killall {
     my $prefix = shift;
@@ -50,26 +54,29 @@ sub prepare_submit {
     return &submit(@objs);
 }
 
+sub rm_nil {
+    my @hoge = @_;
+    if ($hoge[$#hoge] eq 'nil') {
+	pop(@hoge);
+	&rm_nil(@hoge);
+    } else {
+	return @hoge;
+    }
+}
+
 sub generate {
     my %job = %{$_[0]};
-    if ($_[1] eq '') {
-	$job{'id'} = $_[0]{'id'};
-    } elsif ($_[2] eq '') {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1];
-    } elsif ($_[3] eq '') {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2];
-    } elsif ($_[4] eq '') {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3];
-    } else {
-	$job{'id'} = $_[0]{'id'} . '_' . $_[1] .'-'. $_[2] .'-'. $_[3] .'-'. $_[4];
-    }
+    shift;
+
+    my @ranges = rm_nil(@_);
+    $job{'id'} = $job{'id'} . '_' . join($user::separation_symbol, @ranges);
     foreach (@allmembers) {
 	my $members = "$_" . 's';
-	if (ref($_[0]{"$members"}) eq 'CODE') {
-	    $job{"$_"} =  &{$_[0]{"$members"}}($_[1], $_[2], $_[3], $_[4]);
-	} elsif (ref($_[0]{"$members"}) eq 'ARRAY') {
-	    my @tmp = @{$_[0]{"$members"}};
-	    $job{"$_"} = $tmp[$_[1]];
+	if (ref($job{"$members"}) eq 'CODE') {
+	    $job{"$_"} =  &{$job{"$members"}}(@ranges);
+	} elsif (ref($job{"$members"}) eq 'ARRAY') {
+	    my @tmp = @{$job{"$members"}};
+	    $job{"$_"} = $tmp[$_[0]];
 	} else {
 	    die "X must be a reference of a function or an array at \&prepare(\.\.\. \'$members\'\=\> X)";
 	}
@@ -102,18 +109,20 @@ sub prepare {
     }
     my @objs;
 
-    for ( my $i = 0; $i <= 3; $i++ ) {
-	my $range = 'range' . $i;
-	if (@{$jobs{"$range"}} eq ()) {
-	    push(@{$jobs{"$range"}}, 'nil');
+    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+	if (@{$jobs{"range$i"}} eq ()) {
+	    push(@{$jobs{"range$i"}}, 'nil');
 	}
     }
-
-    if ($jobs{'range0'}) {
+    my $count = 0;
+    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+	$tmp = @{$jobs{"range$i"}};
+	$count = $count + $tmp;
+    }
+    if ($count) {
 	my @ranges = ();
-	for ( my $i = 0; $i <= 3; $i++ ) {
-	    my $range = 'range' . $i;
-	    push(@ranges, $jobs{"$range"});
+	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+	    push(@ranges, $jobs{"range$i"});
 	}
 	my @range = &times(@ranges);
 	foreach my $r (@range) {
@@ -134,10 +143,7 @@ sub prepare {
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
-    } else {
-	my $obj = &generate(\%jobs);
-	push(@objs , $obj);
-    }
+    } else {}
     return @objs;
 }
 

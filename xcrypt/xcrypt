@@ -28,6 +28,7 @@ print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
+print TMP '$separation_symbol = \'!\';' . "\n";
 open ( USER , "< $savefile") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );

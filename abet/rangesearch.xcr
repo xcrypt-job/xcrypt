@@ -1,6 +1,7 @@
 use limit;
 
 $limit::smph=Thread::Semaphore->new(100);
+$separation_symbol = '-';
 
 %xyz = (
     'id' => 'job100',
@@ -13,7 +14,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'range0' => [0,1], 'range1' => [2,4], 'arg1s' => sub { $_[0] + $_[1]; });
+my @jobs = &prepare(%xyz, 'range0' => [0,3], 'range15' => [8,10], 'arg1s' => sub { $_[0] + $_[1]; });
 #my @jobs = &prepare(%xyz, 'range0' => [0,1], 'arg1s' => sub { $_[0]; });
 #my @jobs = &prepare(%xyz, 'range0' => [100,200], 'arg1s' => [3,4]);
 #my @jobs = &prepare(%xyz, 'range0' => [0,1], 'arg1s' => 3);
