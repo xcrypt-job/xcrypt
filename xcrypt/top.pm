@@ -79,9 +79,7 @@ sub start {
 sub before {
     my $self = shift;
     unless ($self->{dir}) {
-	if ($self->{ifile}) {
-	    $self->{input}->do();
-	}
+#	if ($self->{ifile}) { $self->{input}->do(); }
     }
     my $exe = $self->{exe};
     my $dir = $self->{id};

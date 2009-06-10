@@ -14,13 +14,7 @@ $limit::smph=Thread::Semaphore->new(100);
 );
 
 my @jobs = &prepare(%xyz, 'dir' => 'fordirsearch',
-		    'ifiles' => sub {$_[0];},
-		    'arg0s' => sub {$_[0];});
-foreach (@jobs) {
-    print $_->{ifile} , "\n";
-    print $_->{arg0} , "\n";
-}
-
+		    'ifiles' => sub {$_[0];}, 'arg0s' => sub {$_[0];});
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
