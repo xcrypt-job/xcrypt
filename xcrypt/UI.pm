@@ -14,7 +14,7 @@ my $nilchar = 'nil';
 my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
 
 for ( my $i = 0; $i < $MAX; $i++ ) {
-    foreach (('arg', 'envfile', 'ifile')) {
+    foreach (('arg', 'envfile', 'ifile', 'envdir')) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
     }
@@ -135,8 +135,8 @@ sub prepare {
 	    my $obj = &generate(\%jobs, @{$r});
 	    push(@objs , $obj);
 	}
-    } elsif ($jobs{'dir'}) {
-	opendir(DIR, $jobs{'dir'});
+    } elsif ($jobs{'idir'}) {
+	opendir(DIR, $jobs{'idir'});
 	my @params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
 	closedir(DIR);
 	foreach (@params) {

@@ -21,19 +21,23 @@ sub new {
     }
 
     my $hoge;
-    if ($self->{dir}) {
-	$hoge = sub { File::Spec->catfile($self->{dir}, $_[0]); };
+    if ($self->{idir}) {
+	$hoge = sub { File::Spec->catfile($self->{idir}, $_[0]); };
     } else {
 	$hoge = sub { $_[0]; };
     }
     for ( my $i = 0; $i < $MAX; $i++ ) {
+	if ($self->{"envdir$i"}) {
+	    my $copied = &{$hoge}($self->{"envdir$i"});
+	    system("cp -R $copied $dir");
+	}
 	if ($self->{"envfile$i"}) {
 	    my $copied = &{$hoge}($self->{"envfile$i"});
-	    copy $copied, $dir;
+	    system("cp $copied $dir");
 	}
 	if ($self->{"ifile$i"}) {
 	    my $copied = &{$hoge}($self->{"ifile$i"});
-	    $self->{input} = &Data_Generation::CF($copied, $dir);
+	    $self->{"input$i"} = &Data_Generation::CF($copied, $dir);
 	}
     }
     return bless $self, $class;
@@ -84,17 +88,15 @@ sub before {
     my $self = shift;
 
     for ( my $i = 0; $i < $MAX; $i++ ) {
-	if ($self->{"ifile$i"}) { $self->{input}->do(); }
+	if ($self->{"ifile$i"}) { $self->{"input$i"}->do(); }
     }
 
     my $exe = $self->{exe};
     my $dir = $self->{id};
-#    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }
-    if ( -e $exe ) {
-	my $direxe = File::Spec->catfile($dir, $exe);
-	copy($exe, $direxe);
-	chmod 0755, $direxe;
-    }
+#    if ( -e $exe ) {
+#	my $direxe = File::Spec->catfile($dir, $exe);
+#	system("cp $exe $direxe");
+#    }
 }
 
 sub after {

@@ -9,7 +9,8 @@ $separation_symbol = '-';
     'arg0' => 'plasma.inp',
     'arg1' => '100',
     'envfile0' => 'plasma.inp',
-    'ofile' => 'pbody',
+    'envfile1' => 'kempo',
+    'envdir0' => 'fordirsearch',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

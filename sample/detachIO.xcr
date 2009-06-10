@@ -11,16 +11,14 @@ $limit::smph=Thread::Semaphore->new(100);
     'arg1' => '100',
     'arg2' => '> pbody',
     'ifile0' => 'plasma.inp',
-    'ofile' => 'pbody',
+    'envfile0' => 'kempo',
     'queue' => 'gh10034',
-#    'before' => '$self->{input}->KR("param", "%$self->{arg0} + 50%");',
-#    'after' => '$self->{output} = 100 + $self->{output};',
     'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz);
 foreach (@jobs) {
-    $_->{input}->KR("param", "%$_->{arg1} + 50%");
+    $_->{'input0'}->KR("param", "%$_->{arg1} + 50%");
     # 以下，入力ファイルデータの整形ルール（LRとか）が続く
 }
 my @thrds = &submit(@jobs);
