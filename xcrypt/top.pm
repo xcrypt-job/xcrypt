@@ -7,6 +7,8 @@ use function;
 use jobsched;
 use Data_Generation;
 
+my $MAX = 255;
+
 sub new {
     my $class = shift;
     my $self = shift;
@@ -17,19 +19,21 @@ sub new {
     } else {
 	die "Can't make a directory $dir since $dir has already existed.  Rename the id of a job or the directory.";
     }
-    my $copied;
-    if ($self->{dir}) {
-	$copied = File::Spec->catfile($self->{dir}, $self->{ifile});
-#	$self->{input} = &Data_Generation::CF($copied, $dir);
-	copy $copied, $dir;
-#	system("cp -f $copied $dir");
-    } else {
-	if ($self->{ifile}) {
-	    $copied = $self->{ifile};
-#	    $self->{input} = &Data_Generation::CF($copied, $dir);
-	copy $copied, $dir;
-#	system("cp -f $copied $dir");
 
+    my $hoge;
+    if ($self->{dir}) {
+	$hoge = sub { File::Spec->catfile($self->{dir}, $_[0]); };
+    } else {
+	$hoge = sub { $_[0]; };
+    }
+    for ( my $i = 0; $i < $MAX; $i++ ) {
+	if ($self->{"envfile$i"}) {
+	    my $copied = &{$hoge}($self->{"envfile$i"});
+	    copy $copied, $dir;
+	}
+	if ($self->{"ifile$i"}) {
+	    my $copied = &{$hoge}($self->{"ifile$i"});
+	    $self->{input} = &Data_Generation::CF($copied, $dir);
 	}
     }
     return bless $self, $class;
@@ -78,9 +82,11 @@ sub start {
 
 sub before {
     my $self = shift;
-    unless ($self->{dir}) {
-#	if ($self->{ifile}) { $self->{input}->do(); }
+
+    for ( my $i = 0; $i < $MAX; $i++ ) {
+	if ($self->{"ifile$i"}) { $self->{input}->do(); }
     }
+
     my $exe = $self->{exe};
     my $dir = $self->{id};
 #    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }

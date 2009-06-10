@@ -9,7 +9,8 @@ $limit::smph=Thread::Semaphore->new(100);
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
     'arg1' => '100',
-    'ifile' => 'plasma.inp',
+    'arg2' => '> pbody',
+    'ifile0' => 'plasma.inp',
     'ofile' => 'pbody',
     'queue' => 'gh10034',
 #    'before' => '$self->{input}->KR("param", "%$self->{arg0} + 50%");',
@@ -17,7 +18,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'range0' => [1..3], 'arg1s' => sub { $_[0]; });
+my @jobs = &prepare(%xyz);
 foreach (@jobs) {
     $_->{input}->KR("param", "%$_->{arg1} + 50%");
     # 以下，入力ファイルデータの整形ルール（LRとか）が続く
@@ -25,11 +26,11 @@ foreach (@jobs) {
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
-mkdir 'job100_1/hoge', 0755;
-$After1 = EF("$ENV{'PWD'}/job100_1/pbody", "$ENV{'PWD'}/job100_1/hoge");
+mkdir 'job100_/hoge', 0755;
+$After1 = EF("$ENV{'PWD'}/job100_/pbody", "$ENV{'PWD'}/job100_/hoge");
 $After1->LE("1");
 $After1->do();
 
-my @list = &pickup('job100_1/hoge/pbody', ',');
-print $list[1];
+my @list = &pickup('job100_/hoge/pbody', ',');
+print $list[0] , "\n";
 

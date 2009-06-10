@@ -7,13 +7,18 @@ use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my $MAXRANGE = 16;
-my $MAXARG = 256;
+my $MAX = 256;
 my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 my $nilchar = 'nil';
 
-my @args = ();
-for ( my $i = 0; $i < $MAXARG; $i++ ) { push(@args, "arg$i"); }
-my @allmembers = ('exe', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu', @args);
+my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
+
+for ( my $i = 0; $i < $MAX; $i++ ) {
+    foreach (('arg', 'envfile', 'ifile')) {
+	my $name = $_ . $i;
+	push(@allmembers, "$name");
+    }
+}
 
 sub killall {
     my $prefix = shift;
@@ -141,11 +146,13 @@ sub prepare {
     } elsif (&max(\%jobs)) {
 	my @params = (0..(&min(\%jobs)-1));
 	foreach (@params) {
-	    print $_;
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
-    } else {}
+    } else {
+	my $obj = &generate(\%jobs);
+	push(@objs , $obj);
+    }
     return @objs;
 }
 
