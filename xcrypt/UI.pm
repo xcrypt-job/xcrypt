@@ -6,13 +6,14 @@ use function;
 use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
+my $MAXRANGE = 16;
+my $MAXARG = 256;
+my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+my $nilchar = 'nil';
+
 my @args = ();
 for ( my $i = 0; $i < $MAXARG; $i++ ) { push(@args, "arg$i"); }
 my @allmembers = ('exe', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu', @args);
-
-my $MAXRANGE = 16;
-my $MAXARG = 256;
-
 
 sub killall {
     my $prefix = shift;
@@ -22,7 +23,7 @@ sub killall {
 	my @revlist = reverse(@list);
 #	system("qdel -k $revlist[4]");
 	system("qdel $revlist[4]");
-	system("pjo_inventory_write.pl inv_watch/$id \"done\" \"spec: $id\"");
+	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
     }
 }
 
@@ -54,11 +55,11 @@ sub prepare_submit {
     return &submit(@objs);
 }
 
-sub rm_nil {
+sub rm_nilchar {
     my @hoge = @_;
-    if ($hoge[$#hoge] eq 'nil') {
+    if ($hoge[$#hoge] eq $nilchar) {
 	pop(@hoge);
-	&rm_nil(@hoge);
+	&rm_nilchar(@hoge);
     } else {
 	return @hoge;
     }
@@ -68,7 +69,7 @@ sub generate {
     my %job = %{$_[0]};
     shift;
 
-    my @ranges = rm_nil(@_);
+    my @ranges = &rm_nilchar(@_);
     $job{'id'} = $job{'id'} . '_' . join($user::separation_symbol, @ranges);
     foreach (@allmembers) {
 	my $members = "$_" . 's';
@@ -109,15 +110,15 @@ sub prepare {
     }
     my @objs;
 
-    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	if (@{$jobs{"range$i"}} eq ()) {
-	    push(@{$jobs{"range$i"}}, 'nil');
-	}
-    }
     my $count = 0;
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
 	$tmp = @{$jobs{"range$i"}};
 	$count = $count + $tmp;
+    }
+    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+	if (@{$jobs{"range$i"}} eq ()) {
+	    push(@{$jobs{"range$i"}}, $nilchar);
+	}
     }
     if ($count) {
 	my @ranges = ();
@@ -140,6 +141,7 @@ sub prepare {
     } elsif (&max(\%jobs)) {
 	my @params = (0..(&min(\%jobs)-1));
 	foreach (@params) {
+	    print $_;
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
