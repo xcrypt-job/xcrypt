@@ -1,6 +1,6 @@
 package top;
 
-use File::Copy;
+use File::Copy::Recursive qw(fcopy);
 use File::Spec;
 use UI;
 use function;
@@ -14,39 +14,42 @@ sub new {
     my $self = shift;
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
-    unless (-e $dir) {
-	mkdir $dir , 0755;
-    } else {
-	die "Can't make a directory $dir since $dir has already existed.  Rename the id of a job or the directory.";
-    }
+    my $dotdir = '.' . $dir;
+    unless (-e $dotdir) { mkdir $dotdir , 0755; }
+    else { die "Can't make $dotdir or $dir since they have already existed."; }
 
     my $hoge;
-    if ($self->{idir}) {
-	$hoge = sub { File::Spec->catfile($self->{idir}, $_[0]); };
-    } else {
-	$hoge = sub { $_[0]; };
-    }
     for ( my $i = 0; $i < $MAX; $i++ ) {
+	my $copied;
 	if ($self->{"envdir$i"}) {
-	    my $copied = &{$hoge}($self->{"envdir$i"});
-	    system("cp -R $copied $dir");
+	    $copied = $self->{"envdir$i"};
+	    opendir(DIR, $copied);
+	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
+	    closedir(DIR);
+	    foreach (@params) {
+		my $tmp = File::Spec->catfile($copied, $_);
+		fcopy $tmp, $dotdir;
+	    }
 	}
 	if ($self->{"envfile$i"}) {
-	    my $copied = &{$hoge}($self->{"envfile$i"});
-	    system("cp $copied $dir");
+	    $copied = $self->{"envfile$i"};
+	    fcopy $copied, $dotdir;
 	}
 	if ($self->{"ifile$i"}) {
-	    my $copied = &{$hoge}($self->{"ifile$i"});
-	    $self->{"input$i"} = &Data_Generation::CF($copied, $dir);
+	    $copied = $self->{"ifile$i"};
+	    $self->{"input$i"} = &Data_Generation::CF($copied, $dotdir);
 	}
     }
+
     return bless $self, $class;
 }
 
 sub start {
     my $self = shift;
+
     my $dir = $self->{id};
-    unless (-e $dir) { mkdir $dir , 0755; }
+    my $dotdir = '.' . $dir;
+    unless (-e $dir) { rename $dotdir, $dir; }
 
     $self->before();
 
