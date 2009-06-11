@@ -1,6 +1,6 @@
 package top;
 
-use File::Copy::Recursive qw(fcopy);
+use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use UI;
 use function;
@@ -28,7 +28,8 @@ sub new {
 	    closedir(DIR);
 	    foreach (@params) {
 		my $tmp = File::Spec->catfile($copied, $_);
-		fcopy $tmp, $dotdir;
+		my $temp = File::Spec->catfile($dotdir, $_);
+		rcopy $tmp, $temp;
 	    }
 	}
 	if ($self->{"envfile$i"}) {
@@ -40,7 +41,6 @@ sub new {
 	    $self->{"input$i"} = &Data_Generation::CF($copied, $dotdir);
 	}
     }
-
     return bless $self, $class;
 }
 
