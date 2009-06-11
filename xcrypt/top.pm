@@ -1,6 +1,6 @@
 package top;
 
-use File::Copy::Recursive qw(fcopy dircopy rcopy);
+use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use UI;
 use function;
@@ -81,8 +81,12 @@ sub start {
 		    $cpu);
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
+    until (-e $stdofile) {
+	sleep 2;
+    }
     my @stdlist = &pickup($stdofile, ',');
     $self->{stdout} = $stdlist[0];
+
 
     $self->after();
 }
