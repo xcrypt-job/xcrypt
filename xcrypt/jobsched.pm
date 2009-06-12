@@ -34,6 +34,8 @@ our $watch_thread=undef;
 
 # ジョブ名→ジョブの状態
 my %job_status : shared;
+# ジョブの状態→ランレベル
+my %status_level = ("undef"=>0, "submit"=>1, "start"=>2, "abort"=>3, "done"=>4);
 
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
@@ -139,10 +141,14 @@ sub handle_inventory {
     my ($line) = @_;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
-    } elsif ($line =~ /^status\:\s*done/) {     # ジョブの終了（正常）
-        set_job_done ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+    } elsif ($line =~ /^status\:\s*submit/) {   # ジョブの終了（正常以外）
+        set_job_submit ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+    } elsif ($line =~ /^status\:\s*start/) {    # ジョブの終了（正常以外）
+        set_job_start ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
     } elsif ($line =~ /^status\:\s*abort/) {    # ジョブの終了（正常以外）
         set_job_abort ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+    } elsif ($line =~ /^status\:\s*done/) {     # ジョブの終了（正常）
+        set_job_done ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
     } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
         # とりあえず何もなし
     } elsif (/^date\_.*\:\s*(.+)/){             # ジョブ状態変化の時刻
@@ -155,32 +161,58 @@ sub handle_inventory {
 }
 
 ##############################
-# ジョブの状態を変更
-sub set_job_done {
-    my ($jobname) = @_;
-    lock (%job_status);
-    $job_status{$jobname} = "done";
-    cond_broadcast (%job_status);
-}
-sub set_job_abort {
-    my ($jobname) = @_;
-    lock (%job_status);
-    $job_status{$jobname} = "abort";
-    cond_broadcast (%job_status);
-}
-## 呼び出すタイミング（そもそも必要か）がわからない
-# sub set_job_submit  { ... }
-# sub set_job_running { ... }
-
-# ジョブ"$jobname"の状態がdoneになるまで待つ
-sub wait_job_done {
-    my ($jobname) = @_;
-    lock (%job_status);
-#    while ($job_status{$jobname} != "done") {
-    until ($job_status{$jobname} eq 'done') {
-        cond_wait (%job_status);
+# ジョブ状態名→状態レベル数
+sub status_name_to_level {
+    my ($name) = @_;
+    if ( exists ($status_level{$name}) ) {
+        return $status_level{$name};
+    } else {
+        die "status_name_to_runlevel: unexpected status name \"$name\"\n";
     }
 }
+
+# ジョブ→状態
+sub get_job_status {
+    my ($jobname) = @_;
+    if ( exists ($job_status{$jobname}) ) {
+        return $job_status{$jobname};
+    } else {
+        return "undef";
+    }
+}
+
+# ジョブの状態を変更
+sub set_job_status {
+    my ($jobname, $stat) = @_;
+    # print "set status of $jobname to $stat\n";
+    status_name_to_level ($stat); # 有効な名前かチェック
+    lock (%job_status);
+    $job_status{$jobname} = $stat;
+    cond_broadcast (%job_status);
+}
+sub set_job_undef  { set_job_status ($_[0], "undef"); }
+sub set_job_submit { set_job_status ($_[0], "submit"); }
+sub set_job_start  { set_job_status ($_[0], "start"); }
+sub set_job_abort  { set_job_status ($_[0], "abort"); }
+sub set_job_done   { set_job_status ($_[0], "done"); }
+
+# ジョブ"$jobname"の状態が$stat以上になるまで待つ
+sub wait_job_status {
+    my ($jobname, $stat) = @_;
+    my $stat_lv = status_name_to_level ($stat);
+    # print "wait for status of $jobname changed to $stat($stat_lv)\n";
+    lock (%job_status);
+    until ( &status_name_to_level (&get_job_status ($jobname))
+            >= $stat_lv) {
+        cond_wait (%job_status);
+    }
+    # print "wait: $stat($stat_lv)...done\n";
+}
+sub wait_job_undef  { wait_job_status ($_[0], "undef"); }
+sub wait_job_submit { wait_job_status ($_[0], "submit"); }
+sub wait_job_start  { wait_job_status ($_[0], "start"); }
+sub wait_job_abort  { wait_job_status ($_[0], "abort"); }
+sub wait_job_done   { wait_job_status ($_[0], "done"); }
 
 # スレッド起動（読み込むだけで起動，は正しい？）
 invoke_watch ();

@@ -1,44 +1,35 @@
 package top;
 
-use Recursive qw(fcopy dircopy rcopy);
+use File::Copy;
 use File::Spec;
 use UI;
 use function;
 use jobsched;
 use Data_Generation;
 
-my $MAX = 255;
-
 sub new {
     my $class = shift;
     my $self = shift;
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
-    my $dotdir = '.' . $dir;
-    unless (-e $dotdir) { mkdir $dotdir , 0755; }
-    else { die "Can't make $dotdir or $dir since they have already existed."; }
+    unless (-e $dir) {
+	mkdir $dir , 0755;
+    } else {
+	die "Can't make a directory $dir since $dir has already existed.  Rename the id of a job or the directory.";
+    }
+    my $copied;
+    if ($self->{dir}) {
+	$copied = File::Spec->catfile($self->{dir}, $self->{ifile});
+#	$self->{input} = &Data_Generation::CF($copied, $dir);
+	copy $copied, $dir;
+#	system("cp -f $copied $dir");
+    } else {
+	if ($self->{ifile}) {
+	    $copied = $self->{ifile};
+#	    $self->{input} = &Data_Generation::CF($copied, $dir);
+	copy $copied, $dir;
+#	system("cp -f $copied $dir");
 
-    my $hoge;
-    for ( my $i = 0; $i < $MAX; $i++ ) {
-	my $copied;
-	if ($self->{"envdir$i"}) {
-	    $copied = $self->{"envdir$i"};
-	    opendir(DIR, $copied);
-	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
-	    closedir(DIR);
-	    foreach (@params) {
-		my $tmp = File::Spec->catfile($copied, $_);
-		my $temp = File::Spec->catfile($dotdir, $_);
-		rcopy $tmp, $temp;
-	    }
-	}
-	if ($self->{"envfile$i"}) {
-	    $copied = $self->{"envfile$i"};
-	    fcopy $copied, $dotdir;
-	}
-	if ($self->{"ifile$i"}) {
-	    $copied = $self->{"ifile$i"};
-	    $self->{"input$i"} = &Data_Generation::CF($copied, $dotdir);
 	}
     }
     return bless $self, $class;
@@ -46,10 +37,8 @@ sub new {
 
 sub start {
     my $self = shift;
-
     my $dir = $self->{id};
-    my $dotdir = '.' . $dir;
-    unless (-e $dir) { rename $dotdir, $dir; }
+    unless (-e $dir) { mkdir $dir , 0755; }
 
     $self->before();
 
@@ -81,29 +70,25 @@ sub start {
 		    $cpu);
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
-    until (-e $stdofile) {
-	sleep 2;
-    }
     my @stdlist = &pickup($stdofile, ',');
     $self->{stdout} = $stdlist[0];
-
 
     $self->after();
 }
 
 sub before {
     my $self = shift;
-
-    for ( my $i = 0; $i < $MAX; $i++ ) {
-	if ($self->{"ifile$i"}) { $self->{"input$i"}->do(); }
+    unless ($self->{dir}) {
+#	if ($self->{ifile}) { $self->{input}->do(); }
     }
-
     my $exe = $self->{exe};
     my $dir = $self->{id};
-#    if ( -e $exe ) {
-#	my $direxe = File::Spec->catfile($dir, $exe);
-#	system("cp $exe $direxe");
-#    }
+#    if ( -e $exe ) { copy($exe, File::Spec->catfile($dir, $exe)); }
+    if ( -e $exe ) {
+	my $direxe = File::Spec->catfile($dir, $exe);
+	copy($exe, $direxe);
+	chmod 0755, $direxe;
+    }
 }
 
 sub after {

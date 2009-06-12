@@ -10,12 +10,12 @@ foreach my $item (<PLASMA>) {
 	    if ($num => 2) {
 		sleep(1);
 	    }
-#	    open ( PBODY , "> pbody" );
+	    open ( PBODY , "> pbody" );
 #	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
 	    my $hoge = $ARGV[1] + $num;
 #	    print PBODY "foo," . $hoge . ",bar";
 	    print $hoge;
-#	    close ( PBODY );
+	    close ( PBODY );
 	}
     }
 }

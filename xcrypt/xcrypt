@@ -3,17 +3,7 @@ package xcrypt;
 
 use File::Copy;
 
-sub get_base_name {
-    my $file_name = shift;
-    my $basename = $file_name;
-    $basename =~ s/(.*)\..*?$/$1/;
-    if ($basename eq '') {
-        $basename = $file_name;
-    }
-    return $basename;
-}
-
-my $plfile = &get_base_name($ARGV[0]) . '.pl';
+my $savefile = "xcrypt_save.pl";
 
 if ($ENV{PATH} eq '') {
     $ENV{PATH} = $ENV{XCRYPT};
@@ -27,11 +17,11 @@ if ($ENV{PERL5LIB} eq '') {
     $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB};
 }
 
-unless (-e $plfile) {
+unless (-e $savefile) {
 
-#rename $ARGV[0] , $plfile;
+rename $ARGV[0] , $savefile;
 
-open ( TMP , "> $plfile");
+open ( TMP , "> $ARGV[0]");
 print TMP 'package user;' . "\n";
 print TMP 'use UI;' . "\n";
 print TMP 'use threads;' . "\n";
@@ -39,7 +29,7 @@ print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'use base qw(constructor);' . "\n";
 print TMP '$separation_symbol = \'!\';' . "\n";
-open ( USER , "< $ARGV[0]") . "\n";
+open ( USER , "< $savefile") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
@@ -48,8 +38,9 @@ print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 close ( TMP );
 
-chmod 0755, $plfile;
-system("perl $plfile");
-unlink $plfile;
+chmod 0755, $ARGV[0];
+system("perl $ARGV[0]");
+unlink $ARGV[0];
+rename $savefile , $ARGV[0];
 
-} else { die "Can't make $plfile since it has already existed.\n"; }
+} else { print "remove or rename $savefile.\n"; }

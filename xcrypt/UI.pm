@@ -7,18 +7,13 @@ use base qw(Exporter);
 @EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my $MAXRANGE = 16;
-my $MAX = 256;
+my $MAXARG = 256;
 my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 my $nilchar = 'nil';
 
-my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
-
-for ( my $i = 0; $i < $MAX; $i++ ) {
-    foreach (('arg', 'envfile', 'ifile', 'envdir')) {
-	my $name = $_ . $i;
-	push(@allmembers, "$name");
-    }
-}
+my @args = ();
+for ( my $i = 0; $i < $MAXARG; $i++ ) { push(@args, "arg$i"); }
+my @allmembers = ('exe', 'ifile', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu', @args);
 
 sub killall {
     my $prefix = shift;
@@ -135,8 +130,8 @@ sub prepare {
 	    my $obj = &generate(\%jobs, @{$r});
 	    push(@objs , $obj);
 	}
-    } elsif ($jobs{'idir'}) {
-	opendir(DIR, $jobs{'idir'});
+    } elsif ($jobs{'dir'}) {
+	opendir(DIR, $jobs{'dir'});
 	my @params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
 	closedir(DIR);
 	foreach (@params) {
@@ -146,13 +141,11 @@ sub prepare {
     } elsif (&max(\%jobs)) {
 	my @params = (0..(&min(\%jobs)-1));
 	foreach (@params) {
+	    print $_;
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
-    } else {
-	my $obj = &generate(\%jobs);
-	push(@objs , $obj);
-    }
+    } else {}
     return @objs;
 }
 
