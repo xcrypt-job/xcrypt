@@ -6,7 +6,6 @@ use jobsched;
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
-    if ($obj->{predecessor} eq '') { $self->{predecessors} = []; }
     return bless $self, $class;
 }
 
@@ -17,7 +16,7 @@ sub start {
 
 sub before {
     my $self = shift;
-    foreach (@{$self->{predecessors}}) {
+    foreach (@{$self->{predecessor}}) {
 	&jobsched::wait_job_done($_);
     }
     $self->SUPER::before();

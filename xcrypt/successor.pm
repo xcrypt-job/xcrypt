@@ -9,7 +9,7 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 #    my $self = $class->SUPER::new();
-    if ($self->{successors} eq '') { $self->{successors} = []; }
+#    if ($self->{successor} eq '') { $self->{successor} = []; }
     return bless $self, $class;
 }
 
@@ -26,7 +26,7 @@ sub before {
 sub after {
   my $self = shift;
   $self->SUPER::after();
-#  my $successor_card = @{$self->{successors}};
+#  my $successor_card = @{$self->{successor}};
 #  my $traceslog_file = 'traces.log';
 #  if ($successor_card == 0) {
 #      open ( TRACE , ">> $traceslog_file" );
@@ -34,7 +34,7 @@ sub after {
 #     close ( TRACE );
 #  }
   my @thrds = ();
-  foreach (@{$self->{successors}}) {
+  foreach (@{$self->{successor}}) {
       my $foo = 'user::' . $_;
       my %bar = %$foo;
       my $obj = user->new(\%bar);

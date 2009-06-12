@@ -1,34 +1,34 @@
 use function;
 
 $limit::smph=Thread::Semaphore->new(100);
-$opt_dry = 1;
+#$opt_dry = 1;
 
-%job0 = (
+%xyz = (
     'id' => 'job0',
+    'exe' => 'echo',
     'queue' => 'eh',
-#    'exit_cond' => sub { &function::tautology; },
-    'successors' => ['job3','job1','job2']
+    'successor' => ['job3','job1','job2']
 );
 %job3 = (
     'id' => 'job3',
-    'predecessors' => ['job1','job2'],
+    'predecessor' => ['job1','job2'],
     'exe' => './kempo',
     'queue' => 'eh',
-    'arg0' => 50,
-    'arg1' => 100,
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
     'envfile0' => 'plasma.inp',
+    'envfile1' => 'kempo',
     'ofile' => 'pbody',
     'ocolumn' => 1,
-#    'exit_cond' => sub { &function::tautology; },
     'odelimiter' => ','
 );
 %job1 = (
     'id' => 'job1',
-    'predecessors' => [],
     'exe' => './kempo',
-    'arg0' => 20,
-    'arg1' => 100,
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
     'envfile0' => 'plasma.inp',
+    'envfile1' => 'kempo',
     'ofile' => 'pbody',
     'ocolumn' => 1,
     'odelimiter' => ',',
@@ -37,10 +37,10 @@ $opt_dry = 1;
 );
 %job2 = (
     'id' => 'job2',
-    'predecessors' => [],
     'exe' => './kempo',
-    'arg0' => 30,
-    'arg1' => 100,
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'envfile1' => 'kempo',
     'envfile0' => 'plasma.inp',
     'ofile' => 'pbody',
     'ocolumn' => 1,
@@ -49,4 +49,4 @@ $opt_dry = 1;
     'trace' => [20, 200]
 );
 
-&prepare_submit_sync(%job0) , "\n";
+&prepare_submit_sync(%xyz) , "\n";

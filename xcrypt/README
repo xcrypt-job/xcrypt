@@ -66,8 +66,8 @@ trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
 
 ** successor.pm
 
-successors から別オブジェクトを生成する．ただし successors が空の場合は
-出力列を traces.log に書き出して終了する．
+successor から別オブジェクトを生成する．ただし successor が空の場合は出
+力列を traces.log に書き出して終了する．
 
 ** dry.pm
 

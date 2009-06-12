@@ -11,7 +11,7 @@ my $MAX = 256;
 my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 my $nilchar = 'nil';
 
-my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'option', 'stdofile', 'stdefile', 'proc', 'cpu');
+my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'stdofile', 'stdefile', 'proc', 'cpu');
 
 for ( my $i = 0; $i < $MAX; $i++ ) {
     foreach (('arg', 'envfile', 'ifile', 'envdir')) {
@@ -61,12 +61,12 @@ sub prepare_submit {
 }
 
 sub rm_nilchar {
-    my @hoge = @_;
-    if ($hoge[$#hoge] eq $nilchar) {
-	pop(@hoge);
-	&rm_nilchar(@hoge);
+    my @str = @_;
+    if ($str[$#str] eq $nilchar) {
+	pop(@str);
+	&rm_nilchar(@str);
     } else {
-	return @hoge;
+	return @str;
     }
 }
 
@@ -75,7 +75,7 @@ sub generate {
     shift;
 
     my @ranges = &rm_nilchar(@_);
-    $job{'id'} = $job{'id'} . '_' . join($user::separation_symbol, @ranges);
+    $job{'id'} = join($user::separation_symbol, ($job{'id'}, @ranges));
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($job{"$members"}) eq 'CODE') {
@@ -83,8 +83,11 @@ sub generate {
 	} elsif (ref($job{"$members"}) eq 'ARRAY') {
 	    my @tmp = @{$job{"$members"}};
 	    $job{"$_"} = $tmp[$_[0]];
+	} elsif (ref($job{"$members"}) eq 'SCALAR') {
+	    my $tmp = ${$job{"$members"}};
+	    $job{"$_"} = $tmp;
 	} else {
-	    die "X must be a reference of a function or an array at \&prepare(\.\.\. \'$members\'\=\> X)";
+	    die "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
 	}
     }
     return user->new(\%job);
@@ -157,31 +160,29 @@ sub prepare {
 }
 
 sub max {
-    my $hoge = 0;
+    my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my $tmp = @{$_[0]{"$members"}};
-	    $hoge = $tmp + $hoge;
+	    $num = $tmp + $num;
 	}
     }
-    return $hoge;
+    return $num;
 }
 
 sub min {
-    my $hoge = 0;
+    my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my $tmp = @{$_[0]{"$members"}};
-	    if ($tmp <= $hoge) {
-		$hoge = $tmp;
-	    } elsif ($hoge == 0) {
-		$hoge = $tmp;
-	    }
+	    if ($tmp <= $num) {	$num = $tmp; }
+	    elsif ($num == 0) { $num = $tmp; }
+	    else {}
 	}
     }
-    return $hoge;
+    return $num;
 }
 
 sub submit {
