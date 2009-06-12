@@ -1,0 +1,29 @@
+use function;
+
+$limit::smph=Thread::Semaphore->new(100);
+
+%xyz = (
+    'id' => 'job1',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '10',
+    'envfile0' => 'plasma.inp',
+    'envfile1' => 'kempo',
+#    'trace' => [10, 100],
+    'queue' => 'eh'
+);
+
+my $today = 10;
+my $yesterday = 10;
+my $arg1 = 10;
+my %job = %xyz;
+
+until (abs($today - $yesterday) > 20) {
+    $yesterday = $today;
+    $job{'id'} = $job{'id'} . '_';
+    $job{'arg1'} = $job{'arg1'} * 2;
+    @results = &prepare_submit_sync(%job) , "\n";
+    $today = $results[0]->{stdout};
+}
+print $today, "\n";
+print $yesterday, "\n";
