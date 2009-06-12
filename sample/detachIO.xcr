@@ -18,7 +18,7 @@ $limit::smph=Thread::Semaphore->new(100);
 
 my @jobs = &prepare(%xyz);
 foreach (@jobs) {
-    $_->{'input0'}->KR("param", "%$_->{arg1} + 50%");
+#    $_->{'input0'}->KR("param", "%$_->{arg1} + 50%");
     # 以下，入力ファイルデータの整形ルール（LRとか）が続く
 }
 my @thrds = &submit(@jobs);

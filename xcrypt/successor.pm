@@ -26,13 +26,13 @@ sub before {
 sub after {
   my $self = shift;
   $self->SUPER::after();
-  my $successor_card = @{$self->{successors}};
-  my $traceslog_file = 'traces.log';
-  if ($successor_card == 0) {
-      open ( TRACE , ">> $traceslog_file" );
-      print TRACE join (' ', @{$self->{trace}}), "\n";
-      close ( TRACE );
-  }
+#  my $successor_card = @{$self->{successors}};
+#  my $traceslog_file = 'traces.log';
+#  if ($successor_card == 0) {
+#      open ( TRACE , ">> $traceslog_file" );
+#      print TRACE join (' ', @{$self->{trace}}), "\n";
+#     close ( TRACE );
+#  }
   my @thrds = ();
   foreach (@{$self->{successors}}) {
       my $foo = 'user::' . $_;

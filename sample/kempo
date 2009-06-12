@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+sleep(10);
 open (PLASMA, "< $ARGV[0]");
 foreach my $item (<PLASMA>) {
     my $str = $item;

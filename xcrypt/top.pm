@@ -16,13 +16,11 @@ sub new {
     my $dir = $self->{id};
     my $dotdir = '.' . $dir;
     unless (-e $dotdir) { mkdir $dotdir , 0755; }
-    else { die "Can't make $dotdir or $dir since they have already existed."; }
+    else { die "Can't make $dotdir since it has already existed."; }
 
-    my $hoge;
     for ( my $i = 0; $i < $MAX; $i++ ) {
-	my $copied;
 	if ($self->{"envdir$i"}) {
-	    $copied = $self->{"envdir$i"};
+	    my $copied = $self->{"envdir$i"};
 	    opendir(DIR, $copied);
 	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
 	    closedir(DIR);
@@ -32,15 +30,15 @@ sub new {
 		rcopy $tmp, $temp;
 	    }
 	}
-	if ($self->{"envfile$i"}) {
-	    $copied = $self->{"envfile$i"};
-	    fcopy $copied, $dotdir;
-	}
+	if ($self->{"envfile$i"}) { fcopy $self->{"envfile$i"}, $dotdir; }
 	if ($self->{"ifile$i"}) {
-	    $copied = $self->{"ifile$i"};
-	    $self->{"input$i"} = &Data_Generation::CF($copied, $dotdir);
+#	    $self->{"input$i"} = &Data_Generation::CF($self->{"ifile$i"}, $dotdir);
+	    fcopy $self->{"envfile$i"}, $dotdir;
 	}
     }
+    unless (-e $dir) { rename $dotdir, $dir; }
+    else { die "Can't make $dir since it has already existed."; }
+
     return bless $self, $class;
 }
 
@@ -48,26 +46,21 @@ sub start {
     my $self = shift;
 
     my $dir = $self->{id};
-    my $dotdir = '.' . $dir;
-    unless (-e $dir) { rename $dotdir, $dir; }
 
     $self->before();
 
     # NQS スクリプトを作成・投入
     my $nqs_script = File::Spec->catfile($dir, 'nqs.sh');
     my @args = ();
-    for ( my $i = 0; $i <= 255; $i++ ) {
-	my $arg = 'arg' . $i;
-	push(@args, $self->{$arg});
-    }
+    for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     my $stdofile = File::Spec->catfile($dir, 'stdout');
-    if ($self->{stdofile}) { $stdofile = $self->{stdofile}; }
     my $stdefile = File::Spec->catfile($dir, 'stderr');
-    if ($self->{stdefile}) { $stdefile = $self->{stdefile}; }
     my $proc = 1;
-    if ($self->{proc}) { $proc = $self->{proc}; }
     my $cpu = 1;
+    if ($self->{stdofile}) { $stdofile = $self->{stdofile}; }
+    if ($self->{stdefile}) { $stdefile = $self->{stdefile}; }
+    if ($self->{proc}) { $proc = $self->{proc}; }
     if ($self->{cpu}) { $cpu = $self->{cpu}; }
     &jobsched::qsub($self->{id},
 		    $cmd,
@@ -79,14 +72,17 @@ sub start {
 		    $stdefile,
 		    $proc,
 		    $cpu);
+    print $self->{id} . " is submitted.\n";
+
+#    &jobsched::wait_job_started($self->{id});
+    print $self->{id} . " gets started.\n";
+
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
-    until (-e $stdofile) {
-	sleep 2;
-    }
+    print $self->{id} . " is done.\n";
+    until (-e $stdofile) { sleep 2; }
     my @stdlist = &pickup($stdofile, ',');
     $self->{stdout} = $stdlist[0];
-
 
     $self->after();
 }
@@ -95,15 +91,8 @@ sub before {
     my $self = shift;
 
     for ( my $i = 0; $i < $MAX; $i++ ) {
-	if ($self->{"ifile$i"}) { $self->{"input$i"}->do(); }
+#	if ($self->{"ifile$i"}) { $self->{"input$i"}->do(); }
     }
-
-    my $exe = $self->{exe};
-    my $dir = $self->{id};
-#    if ( -e $exe ) {
-#	my $direxe = File::Spec->catfile($dir, $exe);
-#	system("cp $exe $direxe");
-#    }
 }
 
 sub after {

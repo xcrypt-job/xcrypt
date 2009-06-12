@@ -23,7 +23,7 @@ sub start {
 sub before {
     my $self = shift;
     $smph->down;
-    print "The semaphore is down.\n";
+#    print "The semaphore is down.\n";
     $self->SUPER::before();
 }
 
@@ -31,7 +31,7 @@ sub after {
     my $self = shift;
     $self->SUPER::after();
     $smph->up;
-    print "The semaphore is up.\n";
+#    print "The semaphore is up.\n";
 }
 
 1;
