@@ -2,10 +2,6 @@
 
 * 重要
 
-CPAN で取得した File::Copy::Recursive を利用している（Copyright 2004
-by Daniel Muey.  This library is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.）
-
 constructor.pm に exit_cond に関するバグあり．
 exit_cond に必要性があるか？
 直すにしてもどのように直すべきか？
