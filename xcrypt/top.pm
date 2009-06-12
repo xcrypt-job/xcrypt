@@ -68,7 +68,7 @@ sub start {
     my $proc = 1;
     if ($self->{proc}) { $proc = $self->{proc}; }
     my $cpu = 1;
-    if ($self->{cpu}) { $proc = $self->{cpu}; }
+    if ($self->{cpu}) { $cpu = $self->{cpu}; }
     &jobsched::qsub($self->{id},
 		    $cmd,
 		    $self->{id},
