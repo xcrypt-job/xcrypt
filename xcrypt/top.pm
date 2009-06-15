@@ -72,14 +72,11 @@ sub start {
 		    $stdefile,
 		    $proc,
 		    $cpu);
-    print $self->{id} . " is submitted.\n";
-
-#    &jobsched::wait_job_started($self->{id});
-    print $self->{id} . " gets started.\n";
+#    print $self->{id} . " is submitted.\n";
 
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
-    print $self->{id} . " is done.\n";
+#    print $self->{id} . " is done.\n";
     until (-e $stdofile) { sleep 2; }
     my @stdlist = &pickup($stdofile, ',');
     $self->{stdout} = $stdlist[0];

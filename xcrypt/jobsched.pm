@@ -184,8 +184,8 @@ sub get_job_status {
 # ジョブの状態を変更
 sub set_job_status {
     my ($jobname, $stat) = @_;
-    # print "set status of $jobname to $stat\n";
     status_name_to_level ($stat); # 有効な名前かチェック
+    print "$jobname: $stat\n";
     lock (%job_status);
     $job_status{$jobname} = $stat;
     cond_broadcast (%job_status);
