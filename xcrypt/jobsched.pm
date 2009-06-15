@@ -102,6 +102,7 @@ sub qsub {
 	open (REQUESTID, ">> $idfile");
 	print REQUESTID $id;
 	close (REQUESTID);
+	return $id;
     } else {
 	die "qsub not found\n";
     }
