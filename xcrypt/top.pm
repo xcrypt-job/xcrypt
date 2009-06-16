@@ -62,16 +62,16 @@ sub start {
     if ($self->{stdefile}) { $stdefile = $self->{stdefile}; }
     if ($self->{proc}) { $proc = $self->{proc}; }
     if ($self->{cpu}) { $cpu = $self->{cpu}; }
-    &jobsched::qsub($self->{id},
-		    $cmd,
-		    $self->{id},
-		    $nqs_script,
-		    $self->{queue},
-		    $self->{option},
-		    $stdofile,
-		    $stdefile,
-		    $proc,
-		    $cpu);
+    $self->{request_id} = &jobsched::qsub($self->{id},
+					  $cmd,
+					  $self->{id},
+					  $nqs_script,
+					  $self->{queue},
+					  $self->{option},
+					  $stdofile,
+					  $stdefile,
+					  $proc,
+					  $cpu);
 #    print $self->{id} . " is submitted.\n";
 
     # 結果ファイルから結果を取得
