@@ -27,7 +27,7 @@ my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 # にしておくこと（fujitsuオリジナルはそうなってない）
 #
 my $watch_command="pjo_inventory_watch.pl";
-my $watch_opt="-i summary -e end -t 86400 -s"; # -s
+my $watch_opt="-i summary -e all -t 86400 -s"; # -s
 my $watch_path=File::Spec->catfile($current_directory, 'inv_watch');
 #my $watch_thread=undef;
 our $watch_thread=undef;
