@@ -3,25 +3,17 @@ package xcrypt;
 
 use File::Copy;
 
-my $savefile = "xcrypt_save.pl";
+my $savefile = "$ARGV[0]" . '.pl';
 
-if ($ENV{PATH} eq '') {
-    $ENV{PATH} = $ENV{XCRYPT};
-} else {
-    $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH};
-}
+if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
+else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
 
-if ($ENV{PERL5LIB} eq '') {
-    $ENV{PERL5LIB} = $ENV{XCRYPT};
-} else {
-    $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB};
-}
+if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
+else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
 
 unless (-e $savefile) {
 
-rename $ARGV[0] , $savefile;
-
-open ( TMP , "> $ARGV[0]");
+open ( TMP , "> $savefile");
 print TMP 'package user;' . "\n";
 print TMP 'use UI;' . "\n";
 print TMP 'use threads;' . "\n";
@@ -30,7 +22,7 @@ print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(constructor);' . "\n";
 print TMP 'use base qw(successor);' . "\n";
 print TMP '$separation_symbol = \'!\';' . "\n";
-open ( USER , "< $savefile") . "\n";
+open ( USER , "< $ARGV[0]") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
@@ -39,9 +31,8 @@ print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 close ( TMP );
 
-chmod 0755, $ARGV[0];
-system("perl $ARGV[0]");
-unlink $ARGV[0];
-rename $savefile , $ARGV[0];
+chmod 0755, $savefile;
+system("perl $savefile");
+unlink $savefile;
 
-} else { print "remove or rename $savefile.\n"; }
+} else { print "Remove or rename $savefile.\n"; }
