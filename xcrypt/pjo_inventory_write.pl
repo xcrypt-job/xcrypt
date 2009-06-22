@@ -64,7 +64,8 @@ sub check_cmdline {
 #   ＜＜ Put_inventory_update(Inventoryファイル出力)の定義 ＞＞                #
 #------------------------------------------------------------------------------#
 sub Put_inventory_update {
-    if ($inventory_status ne 'qsub' and 'abort') {
+    if ($inventory_status ne 'qsub' and
+        $inventory_status ne 'abort') {
                 # ロックファイル存在確認(削除されるまで待つ)
         if (-e "${inventory_dir}/${inventory_lock_dir}/${inventory_name}") {
             my $check_lock_fkg = 0;
@@ -129,7 +130,8 @@ sub Put_inventory_update {
         }
     }
         # ロックファイル削除
-    if ($inventory_status eq 'qsub' or 'abort') {
+    if ($inventory_status eq 'qsub' or
+        $inventory_status eq 'abort') {
         if (-e "${inventory_dir}/${inventory_lock_dir}/${inventory_name}") {
             unlink "${inventory_dir}/${inventory_lock_dir}/${inventory_name}";
         }

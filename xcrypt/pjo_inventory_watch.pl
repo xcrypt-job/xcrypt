@@ -399,6 +399,14 @@ my $check_status = &get_inventory_files_data();
 if (defined($option_c)) {
     @pjo_save_data = @inventory_files_date;
 }
+# 準備がでたことを示すファイルを設置
+my $pjo_invwatch_ok_file =
+    File::Spec->catfile($inventory_tmp_dir, "\.pjo_invwatch_ok");
+if (! open (OK_FILE, ">$pjo_invwatch_ok_file")) {
+    print STDERR "$inventory_tmp_dir: cannot open file. (file: $pjo_invwatch_ok_file)\n";
+    exit 99;
+}
+close (OK_FILE);
 # inventory_watch_path
 my $check_diff_fkg = &check_diff();
 if ($time_out > 0 and $check_diff_fkg == 0) {
