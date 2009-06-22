@@ -72,6 +72,7 @@ sub start {
 					  $stdefile,
 					  $proc,
 					  $cpu);
+    jobsched::set_job_request_id ($self->{id}, $self->{request_id});
 #    print $self->{id} . " is submitted.\n";
 
     # 結果ファイルから結果を取得
