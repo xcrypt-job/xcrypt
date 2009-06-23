@@ -7,8 +7,8 @@ $limit::smph=Thread::Semaphore->new(100);
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
     'arg1' => '10',
-    'envfile0' => 'plasma.inp',
-    'envfile1' => 'kempo',
+    'linkedfile1' => 'plasma.inp',
+    'linkedfile0' => 'kempo',
 #    'trace' => [10, 100],
     'queue' => 'eh'
 );

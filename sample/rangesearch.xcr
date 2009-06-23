@@ -9,8 +9,8 @@ $separation_symbol = '-';
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
     'arg1' => '100',
-#    'envdir0' => 'forenvdir',
-    'envdir0' => '.',
+#    'copieddir0' => 'forcopieddir',
+    'copieddir0' => '.',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

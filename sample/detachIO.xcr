@@ -10,8 +10,8 @@ $limit::smph=Thread::Semaphore->new(100);
     'arg0' => 'plasma.inp',
     'arg1' => '100',
     'arg2' => '> pbody',
-    'ifile0' => 'plasma.inp',
-    'envfile0' => 'kempo',
+    'copiedfile0' => 'plasma.inp',
+    'linkedfile0' => 'kempo',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

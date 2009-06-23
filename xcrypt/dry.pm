@@ -22,7 +22,7 @@ sub before {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
-#	$self->{ifile} = '';
+#	$self->{copiedfile} = '';
 	$self->{ofile} = '';
 	$self->{exit_cond} = sub { 1; };
     }

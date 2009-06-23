@@ -19,8 +19,8 @@ sub new {
     else { die "Can't make $dotdir since it has already existed."; }
 
     for ( my $i = 0; $i < $MAX; $i++ ) {
-	if ($self->{"envdir$i"}) {
-	    my $copied = $self->{"envdir$i"};
+	if ($self->{"copieddir$i"}) {
+	    my $copied = $self->{"copieddir$i"};
 	    opendir(DIR, $copied);
 	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
 	    closedir(DIR);
@@ -30,10 +30,14 @@ sub new {
 		rcopy $tmp, $temp;
 	    }
 	}
-	if ($self->{"envfile$i"}) { fcopy $self->{"envfile$i"}, $dotdir; }
-	if ($self->{"ifile$i"}) {
-#	    $self->{"input$i"} = &Data_Generation::CF($self->{"ifile$i"}, $dotdir);
-	    fcopy $self->{"envfile$i"}, $dotdir;
+	if ($self->{"linkedfile$i"}) {
+	    my $hoge = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
+	    my $nya = File::Spec->catfile('..', $self->{"linkedfile$i"});
+	    symlink $nya , $hoge;
+	}
+	if ($self->{"copiedfile$i"}) {
+#	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dotdir);
+	    fcopy $self->{"copiedfile$i"}, $dotdir;
 	}
     }
     unless (-e $dir) { rename $dotdir, $dir; }
@@ -89,7 +93,7 @@ sub before {
     my $self = shift;
 
     for ( my $i = 0; $i < $MAX; $i++ ) {
-#	if ($self->{"ifile$i"}) { $self->{"input$i"}->do(); }
+#	if ($self->{"copiedfile$i"}) { $self->{"input$i"}->do(); }
     }
 }
 
