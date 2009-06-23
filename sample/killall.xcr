@@ -9,6 +9,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
     'arg1' => '100',
+    'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
@@ -16,7 +17,7 @@ $limit::smph=Thread::Semaphore->new(100);
 
 my @jobs = &prepare(%xyz, 'range0' => [0..2],
  'arg1s' => [0..2],
- 'after' => 'if ($self->{stdout} == 11) { killall(\'job100\', 0, 1, 2); }');
+ 'after' => 'eval(if ($self->{stdout} == 11) { killall(\'job100\', 0, 1, 2); })');
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 

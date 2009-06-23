@@ -26,8 +26,8 @@ open ( USER , "< $ARGV[0]") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
-print TMP 'sub before {my $self = shift;$self->SUPER::before();eval ($self->{before});}' . "\n";
-print TMP 'sub after {my $self = shift;$self->SUPER::after();eval ($self->{after});}' . "\n";
+print TMP 'sub before {my $self = shift;$self->SUPER::before(); $self->{before};}' . "\n";
+print TMP 'sub after {my $self = shift;$self->SUPER::after(); $self->{after};}' . "\n";
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 close ( TMP );
 
