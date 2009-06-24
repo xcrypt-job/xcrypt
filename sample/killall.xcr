@@ -8,7 +8,6 @@ $limit::smph=Thread::Semaphore->new(100);
     'id' => 'job100',
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
-    'arg1' => '100',
     'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'queue' => 'gh10034',
