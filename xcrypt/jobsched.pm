@@ -227,12 +227,21 @@ sub set_job_request_id {
     my ($jobname, $req_id_line) = @_;
     my $req_id;
     # depend on outputs of NQS's qsub
-    if ( $req_id_line =~ /([0-9]*)\.nqs/ ) {
-        $req_id = $1;
-    } else {
-        die "set_job_request_id: unexpected req_id_line.\n";
+#    if ( $req_id_line =~ /([0-9]*)\.nqs/ ) {
+#        $req_id = $1;
+#    } else {
+#        die "set_job_request_id: unexpected req_id_line.\n";
+#    }
+
+    # SGEでも動くようにしたつもり
+    my @list = split(/ /, $req_id_line);
+    my $req_id;
+    foreach (@list) {
+	if ($_ =~ /^([0-9]+)/) {
+	    $req_id = $1;
+	}
     }
-    # print "$jobname id <= $req_id\n";
+    print "$jobname id <= $req_id\n";
     lock (%job_request_id);
     $job_request_id{$jobname} = $req_id;
 }
@@ -416,11 +425,21 @@ sub check_and_write_abort {
     open (QSTATOUT, "$qstat_command |");
     while (<QSTATOUT>) {
         chomp;
-        # depend on outputs of NQS's qstat
-        if ( $_ =~ /([0-9]*)\.nqs/ ) {
-            my $req_id = $1;
-            print "$_ --- " . $unchecked{$req_id} . "\n";
-            delete ($unchecked{$req_id});
+        # # depend on outputs of NQS's qstat
+        # if ( $_ =~ /([0-9]*)\.nqs/ ) {
+        #   my $req_id = $1;
+        #   delete ($unchecked{$req_id});
+        # }
+
+        # SGEでも動くようにしたつもり
+        my @list = split(/ /, $_);
+        my $req_id;
+        foreach (@list) {
+            if ($_ =~ /^([0-9]+)/) {
+                $req_id = $1;
+                print "$_ --- " . $unchecked{$req_id} . "\n";
+                delete ($unchecked{$req_id});
+            }
         }
     }
     close (QSTATOUT);

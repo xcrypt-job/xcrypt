@@ -26,8 +26,8 @@ sub killall {
 	my $id = $prefix . '_' . $_;
 	my @list = &pickup("$id/request_id", ' ');
 	my @revlist = reverse(@list);
-#	system("qdel -k $revlist[4]");
-	system("qdel $revlist[4]");
+	system("qdel -k $revlist[4]");
+#	system("qdel $revlist[4]");
 	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
     }
 }
