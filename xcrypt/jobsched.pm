@@ -45,6 +45,7 @@ our $abort_check_thread=undef;
 
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
+# ジョブスケジューラ（NQSであるかSGEであるか）によって吐くものが違う
 sub qsub {
     my $self = shift;
 
@@ -64,15 +65,20 @@ sub qsub {
 
     my $job_name = $self->{id};
     my $dir = $self->{id};
-    my $dirname = $self->{id};
     my $scriptfile = File::Spec->catfile($dir, 'nqs.sh');
 
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！
-    print SCRIPT "#\$ -S /bin/sh\n";
+    if ($user::opt_sge) {
+	print SCRIPT "#\$ -S /bin/sh\n";
+    }
     my $queue = $self->{queue};
-    print SCRIPT "# @\$-q $queue\n";
+    if ($user::opt_sge) {
+
+    } else {
+	print SCRIPT "# @\$-q $queue\n";
+    }
     my $option = $self->{option};
     print SCRIPT "$option\n";
 
@@ -82,43 +88,69 @@ sub qsub {
     } else {
 	$stdofile = File::Spec->catfile($dir, 'stdout');
     }
-    print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
-    print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
+    if ($user::opt_sge) {
+	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
+    } else {
+	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
+    }
     my $stdefile;
     if ($self->{stdefile}) {
 	$stdefile = File::Spec->catfile($dir, $self->{stdefile});
     } else {
 	$stdefile = File::Spec->catfile($dir, 'stderr');
     }
-    print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
-    print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
+    if ($user::opt_sge) {
+	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
+    } else {
+	print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
+    }
 
     my $proc = $self->{proc};
     unless ($proc eq '') {
-	print SCRIPT "# @\$-lP $proc\n";
+	if ($user::opt_sge) {
+
+	} else {
+	    print SCRIPT "# @\$-lP $proc\n";
+	}
     }
     my $cpu = $self->{cpu};
     unless ($cpu eq '') {
-	print SCRIPT "# @\$-lp $cpu\n";
+	if ($user::opt_sge) {
+
+	} else {
+	    print SCRIPT "# @\$-lp $cpu\n";
+	}
     }
     my $memory = $self->{memory};
     unless ($memory eq '') {
-	print SCRIPT "# @\$-lm $memory\n";
+	if ($user::opt_sge) {
+
+	} else {
+	    print SCRIPT "# @\$-lm $memory\n";
+	}
     }
     my $verbose = $self->{verbose};
     unless ($verbose eq '') {
-	print SCRIPT "# @\$-oi\n";
+	if ($user::opt_sge) {
+
+	} else {
+	    print SCRIPT "# @\$-oi\n";
+	}
     }
     my $verbose_node = $self->{verbose_node};
     unless ($verbose_node eq '') {
-	print SCRIPT "# @\$-OI\n";
+	if ($user::opt_sge) {
+
+	} else {
+	    print SCRIPT "# @\$-OI\n";
+	}
     }
 
 #    print SCRIPT "PATH=$ENV{'PATH'}\n";
 #    print SCRIPT "set -x\n";
     print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
-    print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
-#    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
+    print SCRIPT "cd $ENV{'PWD'}/$dir\n";
+#    print SCRIPT "cd \$QSUB_WORKDIR/$dir\n";
 
 #    print SCRIPT "$command\n";
     my @args = ();
@@ -132,15 +164,13 @@ sub qsub {
     my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
     if ($existence == 0) {
 	my $id = qx/$qsub_command $scriptfile/;
-	my $idfile = File::Spec->catfile($dirname, 'request_id');
+	my $idfile = File::Spec->catfile($dir, 'request_id');
 	open (REQUESTID, ">> $idfile");
 	print REQUESTID $id;
 	close (REQUESTID);
         inventory_write ($job_name, "qsub");
 	return $id;
-    } else {
-	die "qsub not found\n";
-    }
+    } else { die "qsub not found\n"; }
 }
 
 ##############################
@@ -156,7 +186,6 @@ sub inventory_write_cmdline {
     my $jobspec = "\"spec: $jobname\"";
     status_name_to_level ($stat); # 有効な名前かチェック
     return "$write_command $file \"$stat\" $jobspec";
-    
 }
 
 
@@ -257,18 +286,19 @@ sub set_job_request_id {
     my ($jobname, $req_id_line) = @_;
     my $req_id;
     # depend on outputs of NQS's qsub
-#    if ( $req_id_line =~ /([0-9]*)\.nqs/ ) {
-#        $req_id = $1;
-#    } else {
-#        die "set_job_request_id: unexpected req_id_line.\n";
-#    }
-
     # SGEでも動くようにしたつもり
-    my @list = split(/ /, $req_id_line);
-    my $req_id;
-    foreach (@list) {
-	if ($_ =~ /^([0-9]+)/) {
+    if ($user::opt_sge) {
+	my @list = split(/ /, $req_id_line);
+	foreach (@list) {
+	    if ($_ =~ /^([0-9]+)/) {
+		$req_id = $1;
+	    }
+	}
+    } else {
+	if ( $req_id_line =~ /([0-9]*)\.nqs/ ) {
 	    $req_id = $1;
+	} else {
+	    die "set_job_request_id: unexpected req_id_line.\n";
 	}
     }
     print "$jobname id <= $req_id\n";
@@ -455,22 +485,21 @@ sub check_and_write_abort {
     open (QSTATOUT, "$qstat_command |");
     while (<QSTATOUT>) {
         chomp;
-        # # depend on outputs of NQS's qstat
-        # if ( $_ =~ /([0-9]*)\.nqs/ ) {
-        #   my $req_id = $1;
-        #   delete ($unchecked{$req_id});
-        # }
-
+	# depend on outputs of NQS's qstat
         # SGEでも動くようにしたつもり
-        my @list = split(/ /, $_);
-        my $req_id;
-        foreach (@list) {
-            if ($_ =~ /^([0-9]+)/) {
-                $req_id = $1;
-                print "$_ --- " . $unchecked{$req_id} . "\n";
+	if ($user::opt_sge) {
+	    my @list = split(/ /, $_);
+	    if ($list[0] =~ /^([0-9]+)/) {
+		my $req_id = $1;
+#		print "$_ --- " . $unchecked{$req_id} . "\n";
                 delete ($unchecked{$req_id});
-            }
-        }
+	    }
+	} else {
+	    if ( $_ =~ /([0-9]*)\.nqs/ ) {
+		my $req_id = $1;
+		delete ($unchecked{$req_id});
+	    }
+	}
     }
     close (QSTATOUT);
     # "abort"をインベントリファイルに書き込み

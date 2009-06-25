@@ -2,6 +2,12 @@
 package xcrypt;
 
 use File::Copy;
+use Getopt::Long;
+
+my $opt_dry = 0;
+my $opt_sge = 0;
+
+GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
 
 my $savefile = "$ARGV[0]" . '.pl';
 
@@ -22,14 +28,15 @@ print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(constructor);' . "\n";
 print TMP 'use base qw(successor);' . "\n";
 print TMP '$separation_symbol = \'!\';' . "\n";
+print TMP '$opt_sge = ' . $opt_sge .  ';' . "\n";
 open ( USER , "< $ARGV[0]") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
+#print TMP '$jobsched::abort_check_thread->detach;' . "\n";
+#print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
 print TMP 'sub before {my $self = shift;$self->SUPER::before(); $self->{before};}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after(); $self->{after};}' . "\n";
-print TMP '$jobsched::watch_thread->detach;' . "\n";
-print TMP '$jobsched::abort_check_thread->detach;' . "\n";
 close ( TMP );
 
 chmod 0755, $savefile;
