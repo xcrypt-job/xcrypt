@@ -75,12 +75,24 @@ sub qsub {
     print SCRIPT "# @\$-q $queue\n";
     my $option = $self->{option};
     print SCRIPT "$option\n";
-    my $stdofile = $self->{stdofile};
+
+    my $stdofile;
+    if ($self->{stdofile}) {
+	$stdofile = File::Spec->catfile($dir, $self->{stdofile});
+    } else {
+	$stdofile = File::Spec->catfile($dir, 'stdout');
+    }
     print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
     print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
-    my $stdefile = $self->{stdefile};
+    my $stdefile;
+    if ($self->{stdefile}) {
+	$stdefile = File::Spec->catfile($dir, $self->{stdefile});
+    } else {
+	$stdefile = File::Spec->catfile($dir, 'stderr');
+    }
     print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
     print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
+
     my $proc = $self->{proc};
     unless ($proc eq '') {
 	print SCRIPT "# @\$-lP $proc\n";

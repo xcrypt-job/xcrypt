@@ -10,7 +10,11 @@ $separation_symbol = '-';
     'arg0' => 'plasma.inp',
     'arg1' => '100',
 #    'copieddir0' => 'forcopieddir',
-    'copieddir0' => '.',
+#    'copieddir0' => '.',
+    'linkedfile0' => 'kempo',
+    'copiedfile0' => 'plasma.inp',
+    'stdofile' => 'hogeout',
+    'stdefile' => 'hogeerr',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
