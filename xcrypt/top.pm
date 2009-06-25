@@ -54,6 +54,7 @@ sub start {
     $self->before();
 
     # NQS スクリプトを作成・投入
+=comment
     my $nqs_script = File::Spec->catfile($dir, 'nqs.sh');
     my @args = ();
     for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
@@ -72,6 +73,8 @@ sub start {
 					  $self->{stdefile},
 					  $proc,
 					  $cpu);
+=cut
+    $self->{request_id} = &jobsched::qsub($self);
     jobsched::set_job_request_id ($self->{id}, $self->{request_id});
 #    print $self->{id} . " is submitted.\n";
 

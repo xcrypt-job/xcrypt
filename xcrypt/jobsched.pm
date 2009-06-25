@@ -46,6 +46,9 @@ our $abort_check_thread=undef;
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
 sub qsub {
+    my $self = shift;
+
+=comment
     my ($job_name, # ジョブ名
         $command,  # 実行するコマンドの文字列
         $dirname,      # 実行ファイル置き場（スクリプト実行場所からの相対パス）
@@ -57,35 +60,45 @@ sub qsub {
         # 以下，NQSのオプション
         $proc, $cpu, $memory, $verbose, $verbose_node,
         ) = @_;
+=cut
+
+    my $job_name = $self->{id};
+    my $dir = $self->{id};
+    my $dirname = $self->{id};
+    my $scriptfile = File::Spec->catfile($dir, 'nqs.sh');
+
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！
     print SCRIPT "#\$ -S /bin/sh\n";
-    if ($queue) {
-	print SCRIPT "# @\$-q $queue\n";
-    }
+    my $queue = $self->{queue};
+    print SCRIPT "# @\$-q $queue\n";
+    my $option = $self->{option};
     print SCRIPT "$option\n";
-    if ($stdofile) {
-	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
-	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
-    }
-    if ($stdefile) {
-	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
-	print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
-    }
-    if ($proc) {
+    my $stdofile = $self->{stdofile};
+    print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
+    print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
+    my $stdefile = $self->{stdefile};
+    print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
+    print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
+    my $proc = $self->{proc};
+    unless ($proc eq '') {
 	print SCRIPT "# @\$-lP $proc\n";
     }
-    if ($cpu) {
+    my $cpu = $self->{cpu};
+    unless ($cpu eq '') {
 	print SCRIPT "# @\$-lp $cpu\n";
     }
-    if ($memory) {
+    my $memory = $self->{memory};
+    unless ($memory eq '') {
 	print SCRIPT "# @\$-lm $memory\n";
     }
-    if ($verbose) {
+    my $verbose = $self->{verbose};
+    unless ($verbose eq '') {
 	print SCRIPT "# @\$-oi\n";
     }
-    if ($verbose_node) {
+    my $verbose_node = $self->{verbose_node};
+    unless ($verbose_node eq '') {
 	print SCRIPT "# @\$-OI\n";
     }
 
@@ -94,7 +107,12 @@ sub qsub {
     print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
     print SCRIPT "cd $ENV{'PWD'}/$dirname\n";
 #    print SCRIPT "cd \$QSUB_WORKDIR/$dirname\n";
-    print SCRIPT "$command\n";
+
+#    print SCRIPT "$command\n";
+    my @args = ();
+    for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
+    my $cmd = $self->{exe} . ' ' . join(' ', @args);
+    print SCRIPT "$cmd\n";
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
     close (SCRIPT);

@@ -22,8 +22,6 @@ sub before {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
-#	$self->{copiedfile} = '';
-	$self->{ofile} = '';
 	$self->{exit_cond} = sub { 1; };
     }
     $self->SUPER::before();
