@@ -58,12 +58,8 @@ sub start {
     my @args = ();
     for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
-    my $stdofile = File::Spec->catfile($dir, 'stdout');
-    my $stdefile = File::Spec->catfile($dir, 'stderr');
     my $proc = 1;
     my $cpu = 1;
-    if ($self->{stdofile}) { $stdofile = $self->{stdofile}; }
-    if ($self->{stdefile}) { $stdefile = $self->{stdefile}; }
     if ($self->{proc}) { $proc = $self->{proc}; }
     if ($self->{cpu}) { $cpu = $self->{cpu}; }
     $self->{request_id} = &jobsched::qsub($self->{id},
@@ -72,8 +68,8 @@ sub start {
 					  $nqs_script,
 					  $self->{queue},
 					  $self->{option},
-					  $stdofile,
-					  $stdefile,
+					  $self->{stdofile},
+					  $self->{stdefile},
 					  $proc,
 					  $cpu);
     jobsched::set_job_request_id ($self->{id}, $self->{request_id});

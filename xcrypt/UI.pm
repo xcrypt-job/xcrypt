@@ -90,6 +90,16 @@ sub generate {
 	    die "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
 	}
     }
+
+    my $dir = $job{'id'};
+    my $stdofile = File::Spec->catfile($dir, 'stdout');
+    my $stdefile = File::Spec->catfile($dir, 'stderr');
+    if ($self->{stdofile}) {
+	$stdofile = File::Spec->catfile($dir, $job{'stdofile'});
+    }
+    if ($self->{stdefile}) {
+	$stdefile = File::Spec->catfile($dir, $job{'stdefile'});
+    }
     return user->new(\%job);
 }
 
