@@ -10,15 +10,105 @@
 \maketitle
 \tableofcontents
 
-\chapter{TODO}
+\paragraph{TODO}
 定義すべき用語
 ジョブ定義ハッシュ，ジョブキー，ジョブリファレンス，ジョブスレッド
 
+\paragraph{メモ}
+
+内輪向け解説
+
+重要
+
+constructor.pm に exit\_cond に関するバグあり．
+exit\_cond に必要性があるか？
+直すにしてもどのように直すべきか？
+のどちらも不明．
+
+実行方法
+
+環境変数 XCRYPT を \${HOME}/e-science/xcrypt とかにする．
+移動する（\$ cd \${HOME}/e-science/\${USERNAME}）．
+xcrypt スクリプト（例えば hoge.xcr）を作成する．
+実行する（\$ {XCRYPT}/xcrypt hoge.xcr）．
+
+
+実装
+
+NQS スクリプト一つの作成をスレッド一つで行う．
+
+モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
+
+コアモジュールは new start before after という関数をのみを持つことがで
+きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
+
+「呼び出す関数 -> 呼び出される関数」と書くことにすると，
+1.pm の start -> ... -> n.pm の start ->
+top.pm の start ->
+1.pm の before -> ... -> n.pm の before
+であり，さらに，
+top.pm の start ->
+n.pm の after -> ... -> 1.pm の after
+である．
+
+現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
+successor.pm dry.pm predecessor.pm limit.pm top.pm である．
+
+汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
+
+xcrypt
+
+ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
+記述し，そのリファレンスを id と同名のスカラ変数で定義する．
+
+constructor.pm
+
+trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
+
+オブジェクトの exit\_cond と trace から処理を続けるかどうかを判定する．
+続ける場合は change\_arg で arg を更新した別オブジェクト（その id は元オ
+ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
+
+successor.pm
+
+successor から別オブジェクトを生成する．ただし successor が空の場合は出
+力列を traces.log に書き出して終了する．
+
+** dry.pm
+
+./trigger --dry でユーザ定義のオブジェクトのフィールド値を適当に上書き
+する．
+
+predecessor.pm
+
+pjo\_inventory\_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
+の確認ができるまでジョブの生成を待つ．
+
+limit.pm
+
+作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
+る変数の値で制御する．
+
+top.pm
+
+関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
+qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
+ことで実現している），関数 after を呼び出すことで後処理をする．
+
+UI.pm
+
+ユーザがオペレーションとして利用する関数を定義している．
+
+function.pm
+
+ユーザがデータとして利用する関数を定義している．
+
+jobsched.pm
+
+pjo\_inventory\_{watch,write}.pl と連携してジョブ管理を行う．
+
+
 \part{総論}
-\chapter{要件}
-
-
-
 \chapter{機能}
 
 NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（\$ qsub nqs.sh），
@@ -35,37 +125,40 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 クリプトである．しかし， Xcrypt はジョブに関する操作の補助を行うものと
 考えられ，Xcrypt スクリプトは典型的には以下のように記述される．
 
-\def\uselibrary{ライブラリに関する記述}
-\def\globalvar{大域変数に関する記述}
-\def\jobdefhash{ジョブ定義ハッシュに関する記述}
+\def\usemodule{モジュールに関する記述}
+\def\setglobalvar{大域変数に関する記述}
+\def\defjobdefhash{ジョブ定義ハッシュに関する記述}
 \def\operation{ジョブの処理に関する記述}
 
 \begin{enumerate}
- \item \uselibrary
- \item \globalvar
- \item \jobdefhash
+ \item \usemodule
+ \item \setglobalvar
+ \item \defjobdefhash
  \item \operation
 \end{enumerate}
 
-\section{\uselibrary}
+\section{\usemodule}
 
+例えば
 \begin{boxnote}
 \begin{alltt}
-use ライブラリ名;
+use モジュール名;
 \end{alltt}
 \end{boxnote}
-と記述する．利用可能なライブラリに関しては\ref{library}で述べる．
+と記述する．利用可能なモジュールに関しては\ref{module}で述べる．
 
-\section{\globalvar}
+\section{\setglobalvar}
 
+例えば
 \begin{center}
 \texttt{\$separation\_symbol = '-';}
 \end{center}
+と記述する．セット可能な大域変数に関しては\ref{globalvar}で述べる．
 
 
+\section{\defjobdefhash}
 
-\section{\jobdefhash}
-
+例えば
 \begin{boxnote}
 \begin{alltt}
 %xyz = (
@@ -83,9 +176,7 @@ use ライブラリ名;
 );
 \end{alltt}
 \end{boxnote}
-
-
-
+と記述する．定義可能なキーに関しては\ref{jobdefhash}で述べる．
 
 \section{\operation}
 
@@ -100,9 +191,9 @@ use ライブラリ名;
 
 
 \part{各論}
-\chapter{ライブラリ}\label{library}
+\chapter{モジュール}\label{module}
 
-コア扱い？ライブラリ扱い？
+コア扱い？モジュール扱い？
 \section{\texttt{limit}}
 
 \begin{boxnote}
@@ -117,11 +208,33 @@ use ライブラリ名;
 \section{\texttt{dry}}
 
 
-\chapter{大域変数}
+\chapter{大域変数}\label{globalvar}
 
+\section{\texttt{\$opt\_dry}}
 
+$1$ にセットすることで Xcrypt をドライモード（実行コマンドなしで）で動
+作させる．
 
-\chapter{ジョブ定義ハッシュ}
+\section{\texttt{\$opt\_sge}}
+
+ジョブスケジューラが Sun Grid Engine の場合は $1$ にセットすることで
+Xcrypt を正常に動作させることができる．デフォルト値は$0$である．Xcrypt
+実行時にオプション「\texttt{-s}」をつけることと同義である．
+
+\section{\texttt{\$separation\_symbol}}
+
+Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
+\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切っ
+た名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォ
+ルト値は「!」である．「-」に変えたい場合は，
+\begin{boxnote}
+\begin{alltt}
+\texttt{\$separation\_symbol = '-';}
+\end{alltt}
+\end{boxnote}
+とする．
+
+\chapter{ジョブ定義ハッシュ}\label{jobdefhash}
 
 ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
 
@@ -379,98 +492,5 @@ sync(@thrds);
 
 \texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
 ずる．
-
-\chapter{メモ}
-
-内輪向け解説
-
-重要
-
-constructor.pm に exit\_cond に関するバグあり．
-exit\_cond に必要性があるか？
-直すにしてもどのように直すべきか？
-のどちらも不明．
-
-実行方法
-
-環境変数 XCRYPT を \${HOME}/e-science/xcrypt とかにする．
-移動する（\$ cd \${HOME}/e-science/\${USERNAME}）．
-xcrypt スクリプト（例えば hoge.xcr）を作成する．
-実行する（\$ {XCRYPT}/xcrypt hoge.xcr）．
-
-
-実装
-
-NQS スクリプト一つの作成をスレッド一つで行う．
-
-モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
-
-コアモジュールは new start before after という関数をのみを持つことがで
-きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
-
-「呼び出す関数 -> 呼び出される関数」と書くことにすると，
-1.pm の start -> ... -> n.pm の start ->
-top.pm の start ->
-1.pm の before -> ... -> n.pm の before
-であり，さらに，
-top.pm の start ->
-n.pm の after -> ... -> 1.pm の after
-である．
-
-現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
-successor.pm dry.pm predecessor.pm limit.pm top.pm である．
-
-汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
-
-xcrypt
-
-ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
-記述し，そのリファレンスを id と同名のスカラ変数で定義する．
-
-constructor.pm
-
-trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
-
-オブジェクトの exit\_cond と trace から処理を続けるかどうかを判定する．
-続ける場合は change\_arg で arg を更新した別オブジェクト（その id は元オ
-ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
-
-successor.pm
-
-successor から別オブジェクトを生成する．ただし successor が空の場合は出
-力列を traces.log に書き出して終了する．
-
-** dry.pm
-
-./trigger --dry でユーザ定義のオブジェクトのフィールド値を適当に上書き
-する．
-
-predecessor.pm
-
-pjo\_inventory\_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
-の確認ができるまでジョブの生成を待つ．
-
-limit.pm
-
-作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
-る変数の値で制御する．
-
-top.pm
-
-関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
-qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
-ことで実現している），関数 after を呼び出すことで後処理をする．
-
-UI.pm
-
-ユーザがオペレーションとして利用する関数を定義している．
-
-function.pm
-
-ユーザがデータとして利用する関数を定義している．
-
-jobsched.pm
-
-pjo\_inventory\_{watch,write}.pl と連携してジョブ管理を行う．
 
 \end{document}
