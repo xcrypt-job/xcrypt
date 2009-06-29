@@ -30,8 +30,67 @@ xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
 トしている．
 
 \chapter{Xcrypt スクリプトの記述}
-\section{ジョブの記述}
-\section{実行の記述}
+
+Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
+クリプトである．しかし， Xcrypt はジョブに関する操作の補助を行うものと
+考えられ，Xcrypt スクリプトは典型的には以下のように記述される．
+
+\def\uselibrary{ライブラリに関する記述}
+\def\globalvar{大域変数に関する記述}
+\def\jobdefhash{ジョブ定義ハッシュに関する記述}
+\def\operation{ジョブの処理に関する記述}
+
+\begin{enumerate}
+ \item \uselibrary
+ \item \globalvar
+ \item \jobdefhash
+ \item \operation
+\end{enumerate}
+
+\section{\uselibrary}
+
+\begin{boxnote}
+\begin{alltt}
+use ライブラリ名;
+\end{alltt}
+\end{boxnote}
+と記述する．利用可能なライブラリに関しては\ref{library}で述べる．
+
+\section{\globalvar}
+
+\begin{center}
+\texttt{\$separation\_symbol = '-';}
+\end{center}
+
+
+
+\section{\jobdefhash}
+
+\begin{boxnote}
+\begin{alltt}
+%xyz = (
+    'id' => 'job100',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'copieddir0' => 'forcopieddir',
+    'linkedfile0' => 'kempo',
+    'copiedfile0' => 'plasma.inp',
+    'stdofile' => 'hogeout',
+    'stdefile' => 'hogeerr',
+    'queue' => 'gh10034',
+    'option' => '# @\$-g gh10034'
+);
+\end{alltt}
+\end{boxnote}
+
+
+
+
+\section{\operation}
+
+
+
 
 
 \chapter{ジョブ処理の実際}
@@ -41,6 +100,27 @@ xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
 
 
 \part{各論}
+\chapter{ライブラリ}\label{library}
+
+コア扱い？ライブラリ扱い？
+\section{\texttt{limit}}
+
+\begin{boxnote}
+\begin{alltt}
+\$limit::smph=Thread::Semaphore->new(100);
+\end{alltt}
+\end{boxnote}
+
+\section{\texttt{function}}
+\section{\texttt{successor}}
+\section{\texttt{predecessor}}
+\section{\texttt{dry}}
+
+
+\chapter{大域変数}
+
+
+
 \chapter{ジョブ定義ハッシュ}
 
 ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
@@ -63,6 +143,8 @@ xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
 \texttt{\$ exe arg0 arg1 ... arg255}
 \end{center}
 といった形で実行される．
+
+
 
 \section{\texttt{linkedfile0,...,linkedfile255}}
 
@@ -104,9 +186,8 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \def\example{記述例}
 \def\advanced{発展}
 
-\format と\example と\advanced とをそれぞれ説明する．
 
-\section{prepare}
+\section{\texttt{prepare}}
 
 ジョブ定義ハッシュとパラメタを受け取り，ジョブリファレンスの配列を返す．
 
@@ -226,10 +307,10 @@ push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
 \end{boxnote}
 
 
-\section{submit}
+\section{\texttt{submit}}
 
-引数であるところのジョブリファレンスをジョブスケジューラに渡し，ジョブ
-スレッドを返す．
+ジョブリファレンスの配列を受け取り，各ジョブをジョブスケジューラに渡
+し，ジョブスケジューラからジョブスレッドを受け取り，それらの配列を返す．
 
 \subsection{\format}
 
@@ -259,11 +340,47 @@ submit(\{'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'\},
 \end{alltt}
 \end{boxnote}
 
-\section{sync}
+\section{\texttt{sync}}
 
+ジョブスレッドの配列を受け取り，ジョブ処理後のジョブリファレンスの配列
+を返す．
 
+\subsection{\format}
 
-\chapter{マニュアル作成のためのメモ}
+\begin{boxnote}
+\begin{alltt}
+sync(ジョブスレッドの配列);
+\end{alltt}
+\end{boxnote}
+
+\subsection{\example}
+
+典型的には\texttt{submit}の返り値を引数にとる．
+
+\begin{boxnote}
+\begin{alltt}
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+@thrds = submit(@jobs);
+sync(@thrds);
+\end{alltt}
+\end{boxnote}
+
+\section{\texttt{prepare\_submit\_sync}}
+
+\texttt{prepare}，\texttt{submit}，\texttt{sync}を順に行う．\format は
+\texttt{prepare}に準ずる．
+
+\section{\texttt{prepare\_submit}}
+
+\texttt{prepare}，\texttt{submit}を順に行う．\format は
+\texttt{prepare}に準ずる．
+
+\section{\texttt{submit\_sync}}
+
+\texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
+ずる．
+
+\chapter{メモ}
 
 内輪向け解説
 
