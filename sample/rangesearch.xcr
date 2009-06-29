@@ -19,12 +19,12 @@ $separation_symbol = '-';
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'range0' => [0,3], 'range2' => [8,10],
-		    'arg1s' => sub { $_[0] + $_[2]; });
+#my @jobs = &prepare(%xyz, 'range0' => [0,3], 'range2' => [8,10],
+#		    'arg1s' => sub { $_[0] + $_[2]; });
 #my @jobs = &prepare(%xyz, 'range0' => [0,3], 'arg1s' => [2,4]);
 #my @jobs = &prepare(%xyz, 'range0' => [0,1], 'arg1s' => \3);
 #my @jobs = &prepare(%xyz, 'range0' => [0,1], 'arg1s' => 3); # error
-#my @jobs = &prepare(%xyz, 'arg1s' => [2,4]);
+my @jobs = &prepare(%xyz, 'arg1s' => [2,4]);
 #my @jobs = &prepare(%xyz);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);

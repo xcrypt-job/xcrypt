@@ -1,0 +1,359 @@
+\documentclass[10pt,report]{jsbook}
+
+\usepackage{alltt,tascmac}
+
+\title{Xcrypt マニュアル}
+\author{京大中島研e-scienceグループ}
+\date{$2009$ 年上半期}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\chapter{TODO}
+定義すべき用語
+ジョブ定義ハッシュ，ジョブキー，ジョブリファレンス，ジョブスレッド
+
+\part{総論}
+\chapter{要件}
+
+
+
+\chapter{機能}
+
+NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（\$ qsub nqs.sh），
+NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
+し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
+xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
+
+ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
+トしている．
+
+\chapter{Xcrypt スクリプトの記述}
+\section{ジョブの記述}
+\section{実行の記述}
+
+
+\chapter{ジョブ処理の実際}
+
+
+\chapter{ジョブ処理後に作成されるもの}
+
+
+\part{各論}
+\chapter{ジョブ定義ハッシュ}
+
+ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
+
+\section{\texttt{id}}
+
+\section{\texttt{exe}}
+
+実行されるジョブの実行コマンドを記述する．後述の\texttt{arg0,...,arg255}とともに
+\begin{center}
+\texttt{\$ exe arg0 arg1 ... arg255}
+\end{center}
+といった形で実行される．
+
+\section{\texttt{arg0,...,arg255}}
+
+実行されるジョブの実行コマンドの引数を記述する．前述の\texttt{exe}とと
+もに
+\begin{center}
+\texttt{\$ exe arg0 arg1 ... arg255}
+\end{center}
+といった形で実行される．
+
+\section{\texttt{linkedfile0,...,linkedfile255}}
+
+この値のリンク名でジョブ作業ディレクトリから作業ディレクトリのファイル
+へシンボリックリンクを張る．
+
+\section{\texttt{copiedfile0,...,copiedfile255}}
+
+この値のファイル名でジョブ作業ディレクトリから作業ディレクトリにコピー
+をつくる．
+
+\section{\texttt{stdofile}}
+
+この値のファイル名で実行プログラムとジョブスケジューラの標準出力を格納
+する．空の場合は「stdout」というファイル名になる．
+
+\section{\texttt{stdefile}}
+
+この値のファイル名で実行プログラムとジョブスケジューラの標準エラー出力
+を格納する．空の場合は「stderr」というファイル名になる．
+
+\section{\texttt{queue}}
+
+実行するジョブを投入するキューの名前を記述する．
+
+\section{\texttt{cpu}}
+
+\section{\texttt{proc}}
+
+\section{\texttt{option}}
+
+
+\chapter{組込み関数}
+
+Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
+て紹介する．
+
+\def\format{書式}
+\def\example{記述例}
+\def\advanced{発展}
+
+\format と\example と\advanced とをそれぞれ説明する．
+
+\section{prepare}
+
+ジョブ定義ハッシュとパラメタを受け取り，ジョブリファレンスの配列を返す．
+
+\subsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+prepare(ジョブ定義ハッシュ[,'range0' => リファレンス]
+                      ...[,'range255' => リファレンス]
+                         [,'ジョブ定義ハッシュキーs' => リファレンス]
+                      ...[,'ジョブ定義ハッシュキーs' => リファレンス]);
+\end{alltt}
+\end{boxnote}
+
+ただし，「ジョブ定義ハッシュキーs」はジョブ定義ハッシュキー
+（\texttt{arg0}等）の語尾に\texttt{s}をつけ加えたもの
+（\texttt{arg0s}等）を意味するものとする．
+
+\subsection{\example}
+
+\begin{boxnote}
+\begin{alltt}
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+\end{alltt}
+\end{boxnote}
+
+これは以下と同義である．
+
+\begin{boxnote}
+\begin{alltt}
+@jobs = ();
+push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10']);
+push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20']);
+\end{alltt}
+\end{boxnote}
+
+宣言的に書くこともできる．
+
+\begin{boxnote}
+\begin{alltt}
+%abc = (
+    'id' => 'xyz',
+    'exe' => './kempo',
+    'arg0s' => [10,20]
+);
+prepare(%abc);
+\end{alltt}
+\end{boxnote}
+
+ジョブ定義ハッシュとパラメタを分けて書くこともできる．
+
+\begin{boxnote}
+\begin{alltt}
+%abc = (
+    'id' => 'xyz',
+    'exe' => './kempo'
+);
+prepare(%abc, 'arg0s' => [10,20]);
+\end{alltt}
+\end{boxnote}
+
+\texttt{range0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
+を生成することができる．例えば，
+\begin{boxnote}
+\begin{alltt}
+@jobs = prepare(%abc, 'range0' => [0..99], 'arg0s' => sub \{ 2 * $_[0] \});
+\end{alltt}
+\end{boxnote}
+は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
+198)}を順番に行ったものと同義である．
+
+
+\subsection{\advanced}
+
+パラメタは複数書くことができる．複数パラメタの配列の頭からジョブは生成
+される．例えば，
+
+\begin{boxnote}
+\begin{alltt}
+%abc = (
+    'id' => 'xyz',
+    'exe' => './kempo'
+);
+@jobs = prepare(%abc, 'arg0s' => [0,1], 'arg1s' => [2,3]);
+\end{alltt}
+\end{boxnote}
+は以下と同義である．
+\begin{boxnote}
+\begin{alltt}
+@jobs = ();
+push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2']);
+push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3']);
+\end{alltt}
+\end{boxnote}
+
+\texttt{range0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
+ブを生成することができる．例えば，
+\begin{boxnote}
+\begin{alltt}
+%abc = (
+    'id' => 'xyz',
+    'exe' => './kempo'
+);
+@jobs = prepare(%abc, 'range0' => [0,1], 'range1' => [2,4],
+                'arg0s' => sub \{ $_[0] + $_[1] \});
+\end{alltt}
+\end{boxnote}
+は以下と同義である．
+\begin{boxnote}
+\begin{alltt}
+@jobs = ();
+push(@jobs, ['id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2']);
+push(@jobs, ['id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4']);
+push(@jobs, ['id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3']);
+push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
+\end{alltt}
+\end{boxnote}
+
+
+\section{submit}
+
+引数であるところのジョブリファレンスをジョブスケジューラに渡し，ジョブ
+スレッドを返す．
+
+\subsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+submit(ジョブリファレンスの配列);
+\end{alltt}
+\end{boxnote}
+
+\subsection{\example}
+
+典型的には\texttt{prepare}の返り値を引数にとる．
+
+\begin{boxnote}
+\begin{alltt}
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+submit(@jobs);
+\end{alltt}
+\end{boxnote}
+
+自力でジョブリファレンスの配列を書いてもよい．
+
+\begin{boxnote}
+\begin{alltt}
+submit(\{'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'\},
+       \{'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'\});
+\end{alltt}
+\end{boxnote}
+
+\section{sync}
+
+
+
+\chapter{マニュアル作成のためのメモ}
+
+内輪向け解説
+
+重要
+
+constructor.pm に exit\_cond に関するバグあり．
+exit\_cond に必要性があるか？
+直すにしてもどのように直すべきか？
+のどちらも不明．
+
+実行方法
+
+環境変数 XCRYPT を \${HOME}/e-science/xcrypt とかにする．
+移動する（\$ cd \${HOME}/e-science/\${USERNAME}）．
+xcrypt スクリプト（例えば hoge.xcr）を作成する．
+実行する（\$ {XCRYPT}/xcrypt hoge.xcr）．
+
+
+実装
+
+NQS スクリプト一つの作成をスレッド一つで行う．
+
+モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
+
+コアモジュールは new start before after という関数をのみを持つことがで
+きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
+
+「呼び出す関数 -> 呼び出される関数」と書くことにすると，
+1.pm の start -> ... -> n.pm の start ->
+top.pm の start ->
+1.pm の before -> ... -> n.pm の before
+であり，さらに，
+top.pm の start ->
+n.pm の after -> ... -> 1.pm の after
+である．
+
+現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
+successor.pm dry.pm predecessor.pm limit.pm top.pm である．
+
+汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
+
+xcrypt
+
+ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
+記述し，そのリファレンスを id と同名のスカラ変数で定義する．
+
+constructor.pm
+
+trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
+
+オブジェクトの exit\_cond と trace から処理を続けるかどうかを判定する．
+続ける場合は change\_arg で arg を更新した別オブジェクト（その id は元オ
+ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
+
+successor.pm
+
+successor から別オブジェクトを生成する．ただし successor が空の場合は出
+力列を traces.log に書き出して終了する．
+
+** dry.pm
+
+./trigger --dry でユーザ定義のオブジェクトのフィールド値を適当に上書き
+する．
+
+predecessor.pm
+
+pjo\_inventory\_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
+の確認ができるまでジョブの生成を待つ．
+
+limit.pm
+
+作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
+る変数の値で制御する．
+
+top.pm
+
+関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
+qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
+ことで実現している），関数 after を呼び出すことで後処理をする．
+
+UI.pm
+
+ユーザがオペレーションとして利用する関数を定義している．
+
+function.pm
+
+ユーザがデータとして利用する関数を定義している．
+
+jobsched.pm
+
+pjo\_inventory\_{watch,write}.pl と連携してジョブ管理を行う．
+
+\end{document}

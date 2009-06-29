@@ -6,7 +6,6 @@ use Getopt::Long;
 
 my $opt_dry = 0;
 my $opt_sge = 0;
-
 GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
 
 my $savefile = "$ARGV[0]" . '.pl';
