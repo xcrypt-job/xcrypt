@@ -14,6 +14,7 @@
 定義すべき用語
 ジョブ定義ハッシュ，ジョブキー，ジョブリファレンス，ジョブスレッド
 
+
 \paragraph{メモ}
 
 内輪向け解説
@@ -25,15 +26,23 @@ exit\_cond に必要性があるか？
 直すにしてもどのように直すべきか？
 のどちらも不明．
 
-実行方法
-
-環境変数 XCRYPT を \${HOME}/e-science/xcrypt とかにする．
-移動する（\$ cd \${HOME}/e-science/\${USERNAME}）．
-xcrypt スクリプト（例えば hoge.xcr）を作成する．
-実行する（\$ {XCRYPT}/xcrypt hoge.xcr）．
 
 
-実装
+
+
+\part{総論}
+\chapter{機能}
+
+NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（\$ qsub nqs.sh），
+NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
+し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
+xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
+
+ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
+トしている．
+
+\chapter{実装}
+
 
 NQS スクリプト一つの作成をスレッド一つで行う．
 
@@ -42,13 +51,13 @@ NQS スクリプト一つの作成をスレッド一つで行う．
 コアモジュールは new start before after という関数をのみを持つことがで
 きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
 
-「呼び出す関数 -> 呼び出される関数」と書くことにすると，
-1.pm の start -> ... -> n.pm の start ->
-top.pm の start ->
-1.pm の before -> ... -> n.pm の before
+「呼び出す関数 $\to$ 呼び出される関数」と書くことにすると，
+1.pm の start $\to,\ldots,\to$ n.pm の start ->
+top.pm の start $\to$
+1.pm の before $\to,\ldots,\to$ n.pm の before
 であり，さらに，
-top.pm の start ->
-n.pm の after -> ... -> 1.pm の after
+top.pm の start $\to$ 
+n.pm の after $\to,\ldots,\to$ 1.pm の after
 である．
 
 現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
@@ -106,18 +115,6 @@ function.pm
 jobsched.pm
 
 pjo\_inventory\_{watch,write}.pl と連携してジョブ管理を行う．
-
-
-\part{総論}
-\chapter{機能}
-
-NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（\$ qsub nqs.sh），
-NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
-し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
-xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
-
-ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
-トしている．
 
 \chapter{Xcrypt スクリプトの記述}
 
@@ -182,12 +179,82 @@ use モジュール名;
 
 
 
+\section{記述例}
 
+\begin{boxnote}
+\begin{alltt}
+\$limit::smph=Thread::Semaphore->new(100);
+\$separation\_symbol = '-';
+
+%xyz = (
+    'id' => 'job100',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'copieddir0' => 'forcopieddir',
+    'linkedfile0' => 'kempo',
+    'copiedfile0' => 'plasma.inp',
+    'stdofile' => 'hogeout',
+    'stdefile' => 'hogeerr',
+    'queue' => 'gh10034',
+    'option' => '# @\$-g gh10034'
+);
+
+my @jobs = &prepare(%xyz, 'arg1s' => [2,4]);
+my @thrds = &submit(@jobs);
+my @results  = &sync(@thrds);
+
+foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
+\end{alltt}
+\end{boxnote}
 
 \chapter{ジョブ処理の実際}
 
 
-\chapter{ジョブ処理後に作成されるもの}
+\section{実行方法}
+
+NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し
+\begin{center}
+\texttt{\$ qsub nqs.sh}
+\end{center}
+NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
+し……，という一連の操作を，
+
+
+実行方法
+
+環境変数 XCRYPT を \$HOME/e-science/xcrypt とかにする．
+
+移動する．
+\begin{center}
+\texttt{\$ cd \$HOME/e-science/\${USERNAME}}
+\end{center}
+
+xcrypt スクリプト（例えば hoge.xcr）を作成する．
+
+実行する．
+\begin{center}
+\texttt{\$XCRYPT/xcrypt hoge.xcr}
+\end{center}
+
+
+perl スクリプト user.pl を作成し，それをxcrypt に渡す
+\begin{center}
+\texttt{\$ xcrypt sample.pl}
+\end{center}
+
+
+\section{ジョブ処理後に作成されるもの}
+
+\subsection{ディレクトリ}
+
+\subsection{\texttt{nqs.sh}}
+
+\subsection{\texttt{request\_id}}
+
+\subsection{\texttt{stdout}}
+
+\subsection{\texttt{stderr}}
 
 
 \part{各論}
