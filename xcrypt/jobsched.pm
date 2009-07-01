@@ -7,10 +7,14 @@ use threads::shared;
 use Cwd;
 use File::Basename;
 use File::Spec;
+use IO::Socket;
 # use Thread::Semaphore;
 
 ##################################################
 
+my $current_directory=Cwd::getcwd();
+
+### qsub, qdel qstat
 # my $qsub_command="../kahanka/qsub";
 # my $qdel_command="../kahanka/qdel";
 # my $qstat_command="../kahanka/qstat";
@@ -18,17 +22,23 @@ my $qsub_command="qsub";
 my $qdel_command="qdel";
 my $qstat_command="qstat";
 
-my $current_directory=Cwd::getcwd();
+### Inventory
+my $inventory_host = qx/hostname/;
+chomp $inventory_host;
+my $inventory_port = 9999;           # インベントリ通知待ち受けポート．0ならNFS経由
+my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
+my $inventory_save=File::Spec->catfile($inventory_path, '.all');
 
-my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
-# my $write_opt="";
-
+my $write_command = undef;
+if ($inventory_port > 0) {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'inventory_write_sock.pl');
+} else {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+}
 # pjo_inventory_watch.pl は出力をバッファリングしない設定 ($|=1)
 # にしておくこと（fujitsuオリジナルはそうなってない）
 my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_watch.pl');
 my $watch_opt="-i summary -e all -t 86400 -s"; # -s: signal end mode
-my $watch_path=File::Spec->catfile($current_directory, 'inv_watch');
-#my $watch_thread=undef;
 our $watch_thread=undef;
 
 # ジョブ名→ジョブのrequest_id
@@ -184,35 +194,49 @@ sub inventory_write {
 }
 sub inventory_write_cmdline {
     my ($jobname, $stat) = @_;
-    my $file = File::Spec->catfile($watch_path, $jobname);
-    my $jobspec = "\"spec: $jobname\"";
     status_name_to_level ($stat); # 有効な名前かチェック
-    return "$write_command $file \"$stat\" $jobspec";
+    if ( $inventory_port > 0 ) {
+        return "$write_command $inventory_host $inventory_port $jobname $stat";
+    } else { 
+        my $file = File::Spec->catfile($inventory_path, $jobname);
+        my $jobspec = "\"spec: $jobname\"";
+        return "$write_command $file \"$stat\" $jobspec";
+    }
 }
 
-
 ##############################
-# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+# ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
-    # inventory_watchが，監視準備ができたことを通知するために設置するファイル
-    my $invwatch_ok_file = "$watch_path/.tmp/.pjo_invwatch_ok";
     # インベントリファイルの置き場所ディレクトリを作成
-    if ( !(-d $watch_path) ) {
-        mkdir $watch_path or
-        die "Can't make $watch_path: $!.\n";
+    if ( !(-d $inventory_path) ) {
+        mkdir $inventory_path or
+        die "Can't make $inventory_path: $!.\n";
     }
     foreach (".tmp", ".lock") {
-        if ( !(-d "$watch_path/$_") ) {
-            mkdir "$watch_path/$_" or
-                die "Can't make $watch_path/$_: $!.\n";
+        my $newdir = File::Spec->catfile($inventory_path, $_);
+        if ( !(-d $newdir) ) {
+            mkdir $newdir or
+                die "Can't make $newdir: $!.\n";
         }
     }
+    # 起動
+    if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
+        invoke_watch_by_socket ();
+    } else {                       # NFS経由で通知を受ける
+        invoke_watch_by_file ();
+    }
+}
+
+# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+sub invoke_watch_by_file {
+    # inventory_watchが，監視準備ができたことを通知するために設置するファイル
+    my $invwatch_ok_file = "$inventory_path/.tmp/.pjo_invwatch_ok";
     # 起動前にもしあれば消しておく
     if ( -f $invwatch_ok_file ) { unlink $invwatch_ok_file; }
     # 以下，監視スレッドの処理
     $watch_thread =  threads->new( sub {
-        # open (INVWATCH_LOG, ">", "$watch_path/log");
-        open (INVWATCH, "$watch_command $watch_path $watch_opt |")
+        # open (INVWATCH_LOG, ">", "$inventory_path/log");
+        open (INVWATCH, "$watch_command $inventory_path $watch_opt |")
             or die "Failed to execute inventory_watch.";
         while (1) {
             while (<INVWATCH>){
@@ -221,12 +245,42 @@ sub invoke_watch {
             }
             close (INVWATCH);
             # print "watch finished.\n";
-            open (INVWATCH, "$watch_command $watch_path $watch_opt -c |");
+            open (INVWATCH, "$watch_command $inventory_path $watch_opt -c |");
         }
         # close (INVWATCH_LOG);
     });
     # inventory_watchの準備ができるまで待つ
     until ( -f $invwatch_ok_file ) { sleep 1; }
+}
+
+# TCP/IP通信によりジョブ状態の変更通知を受け付けるスレッドを起動
+sub invoke_watch_by_socket {
+    $watch_thread = threads-> new ( sub {
+        socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
+            or die "Can't make socket. $!";
+        setsockopt (CLIENT_WAITING, SOL_SOCKET, SO_REUSEADDR, 1)
+            or die "setsockopt failed. $!";
+        bind (CLIENT_WAITING, pack_sockaddr_in ($inventory_port, inet_aton($inventory_host)))
+            or die "Can't bind socket. $!";
+        listen (CLIENT_WAITING, SOMAXCONN)
+            or die "listen: $!";        
+
+        while (1) {
+            my $paddr = accept (CLIENT, CLIENT_WAITING);
+            my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
+            my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
+            my $cl_ip = inet_ntoa ($cl_iaddr);
+            select (CLIENT); $|=1; select (STDOUT);
+            open ( SAVE, ">> $inventory_save")
+                or die "Can't open $inventory_save\n";
+            while (<CLIENT>) {
+                handle_inventory ($_);
+                print SAVE $_;
+            }
+            close (SAVE);
+            close (CLIENT);
+        }
+    });
 }
 
 # watchの出力一行を処理
@@ -429,12 +483,13 @@ sub expect_job_stat {
 sub wait_job_status {
     my ($jobname, $stat) = @_;
     my $stat_lv = status_name_to_level ($stat);
-    # print "wait for status of $jobname changed to $stat($stat_lv)\n";
+    # print "$jobname: wait for the status changed to $stat($stat_lv)\n";
     lock (%job_status);
     until ( &status_name_to_level (&get_job_status ($jobname))
             >= $stat_lv) {
         cond_wait (%job_status);
     }
+    # print "$jobname: exit wait_job_status\n";
 }
 sub wait_job_active { wait_job_status ($_[0], "active"); }
 sub wait_job_submit { wait_job_status ($_[0], "submit"); }
@@ -493,12 +548,12 @@ sub check_and_write_abort {
 	    my @list = split(/ /, $_);
 	    if ($list[0] =~ /^([0-9]+)/) {
 		my $req_id = $1;
-#		print "$_ --- " . $unchecked{$req_id} . "\n";
                 delete ($unchecked{$req_id});
 	    }
 	} else {
 	    if ( $_ =~ /([0-9]*)\.nqs/ ) {
 		my $req_id = $1;
+		# print "$_ --- " . $unchecked{$req_id} . "\n";
 		delete ($unchecked{$req_id});
 	    }
 	}
@@ -512,7 +567,7 @@ sub check_and_write_abort {
 sub invoke_abort_check {
     $abort_check_thread = threads->new( sub {
         while (1) {
-            sleep 10;
+            sleep 19;
             check_and_write_abort();
             # print_all_job_status();
         }
@@ -531,7 +586,7 @@ invoke_abort_check ();
 ## 自前でwatchをやろうとした残骸
 #         my %timestamps = {};
 #         my @updates = ();
-#         foreach (glob "$watch_path/*") {
+#         foreach (glob "$inventory_path/*") {
 #             my $bname = fileparse($_);
 #             my @filestat = stat $_;
 #             my $tstamp = @filestat[9];
