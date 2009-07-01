@@ -2,6 +2,8 @@ package dry;
 
 use base qw(predecessor);
 
+$dry;
+
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);

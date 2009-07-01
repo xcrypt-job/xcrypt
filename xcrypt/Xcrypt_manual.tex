@@ -123,34 +123,26 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 考えられ，Xcrypt スクリプトは典型的には以下のように記述される．
 
 \def\usemodule{モジュールに関する記述}
-\def\setglobalvar{大域変数に関する記述}
 \def\defjobdefhash{ジョブ定義ハッシュに関する記述}
 \def\operation{ジョブの処理に関する記述}
 
 \begin{enumerate}
  \item \usemodule
- \item \setglobalvar
  \item \defjobdefhash
  \item \operation
 \end{enumerate}
 
 \section{\usemodule}
 
-例えば
+利用可能なモジュールにはコアモジュールとそれ以外のモジュールの二種類が
+ある．コアモジュールは自動的に読み込まれるため，明示的に読み込むための
+記述をする必要はない．コアモジュール以外に関しては，例えば
 \begin{boxnote}
 \begin{alltt}
 use モジュール名;
 \end{alltt}
 \end{boxnote}
 と記述する．利用可能なモジュールに関しては\ref{module}で述べる．
-
-\section{\setglobalvar}
-
-例えば
-\begin{center}
-\texttt{\$separation\_symbol = '-';}
-\end{center}
-と記述する．セット可能な大域変数に関しては\ref{globalvar}で述べる．
 
 
 \section{\defjobdefhash}
@@ -214,9 +206,9 @@ foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
 \section{実行方法}
 
 NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し
-\begin{center}
+\begin{screen}
 \texttt{\$ qsub nqs.sh}
-\end{center}
+\end{screen}
 NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
 し……，という一連の操作を，
 
@@ -226,22 +218,22 @@ NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
 環境変数 XCRYPT を \$HOME/e-science/xcrypt とかにする．
 
 移動する．
-\begin{center}
+\begin{screen}
 \texttt{\$ cd \$HOME/e-science/\${USERNAME}}
-\end{center}
+\end{screen}
 
 xcrypt スクリプト（例えば hoge.xcr）を作成する．
 
 実行する．
-\begin{center}
+\begin{screen}
 \texttt{\$XCRYPT/xcrypt hoge.xcr}
-\end{center}
+\end{screen}
 
 
 perl スクリプト user.pl を作成し，それをxcrypt に渡す
-\begin{center}
+\begin{screen}
 \texttt{\$ xcrypt sample.pl}
-\end{center}
+\end{screen}
 
 
 \section{ジョブ処理後に作成されるもの}
@@ -270,25 +262,49 @@ perl スクリプト user.pl を作成し，それをxcrypt に渡す
 \end{boxnote}
 
 \section{\texttt{function}}
+
 \section{\texttt{successor}}
 \section{\texttt{predecessor}}
+
 \section{\texttt{dry}}
 
+Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
 
-\chapter{大域変数}\label{globalvar}
-
-\section{\texttt{\$opt\_dry}}
+Xcrypt スクリプトに
+\begin{boxnote}
+\begin{alltt}
+\$dry::dry = 1;
+\end{alltt}
+\end{boxnote}
+と記述することで Xcrypt がドライモードで動作する．また，
+\begin{screen}
+\texttt{\$ xcrypt -d sample.xcr}
+\end{screen}
+とオプションつきで実行することでドライモードで動作させることもできる．
 
 $1$ にセットすることで Xcrypt をドライモード（実行コマンドなしで）で動
 作させる．
 
-\section{\texttt{\$opt\_sge}}
+\section{\texttt{jobsched}}
 
-ジョブスケジューラが Sun Grid Engine の場合は $1$ にセットすることで
-Xcrypt を正常に動作させることができる．デフォルト値は$0$である．Xcrypt
-実行時にオプション「\texttt{-s}」をつけることと同義である．
+ジョブスケジューラとのインターフェイスである．
 
-\section{\texttt{\$separation\_symbol}}
+ジョブスケジューラが Sun Grid Engine の場合は，Xcrypt スクリプトに
+\begin{boxnote}
+\begin{alltt}
+\$jobsched::sge = 1;
+\end{alltt}
+\end{boxnote}
+と記述することで Sun Grid Engine に対して Xcrypt を正常に動作させること
+ができる．デフォルト値は$0$である．
+\begin{screen}
+\texttt{\$ xcrypt -s sample.xcr}
+\end{screen}
+とオプションつきで実行することと同義である．
+
+\section{\texttt{UI}}
+
+組込み関数を提供する．
 
 Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 \texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切っ
@@ -296,7 +312,7 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 ルト値は「!」である．「-」に変えたい場合は，
 \begin{boxnote}
 \begin{alltt}
-\texttt{\$separation\_symbol = '-';}
+\texttt{\$jobsched::separation\_symbol = '-';}
 \end{alltt}
 \end{boxnote}
 とする．
@@ -310,18 +326,18 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 \section{\texttt{exe}}
 
 実行されるジョブの実行コマンドを記述する．後述の\texttt{arg0,...,arg255}とともに
-\begin{center}
+\begin{screen}
 \texttt{\$ exe arg0 arg1 ... arg255}
-\end{center}
+\end{screen}
 といった形で実行される．
 
 \section{\texttt{arg0,...,arg255}}
 
 実行されるジョブの実行コマンドの引数を記述する．前述の\texttt{exe}とと
 もに
-\begin{center}
+\begin{screen}
 \texttt{\$ exe arg0 arg1 ... arg255}
-\end{center}
+\end{screen}
 といった形で実行される．
 
 

@@ -20,6 +20,8 @@ for ( my $i = 0; $i < $MAX; $i++ ) {
     }
 }
 
+$separation_symbol = '!';
+
 sub killall {
     my $prefix = shift;
     foreach (@_) {
@@ -75,7 +77,7 @@ sub generate {
     shift;
 
     my @ranges = &rm_nilchar(@_);
-    $job{'id'} = join($user::separation_symbol, ($job{'id'}, @ranges));
+    $job{'id'} = join($separation_symbol, ($job{'id'}, @ranges));
     foreach (@allmembers) {
 	my $members = "$_" . 's';
 	if (ref($job{"$members"}) eq 'CODE') {

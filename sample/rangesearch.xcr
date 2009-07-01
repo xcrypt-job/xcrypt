@@ -2,7 +2,9 @@ use limit;
 use function;
 
 $limit::smph=Thread::Semaphore->new(100);
-$separation_symbol = '-';
+#$dry::dry = 0;
+#$jobsched::sge = 1;
+#$UI::separation_symbol = '-';
 
 %xyz = (
     'id' => 'job100',
