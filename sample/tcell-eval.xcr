@@ -1,0 +1,110 @@
+use limit;
+
+$limit::smph=Thread::Semaphore->new(20);
+
+my %job_fib =
+    (
+     'id' => 'job_fib',
+     'range0' => [1,16],      # # of workers per node
+     'range1' => [1,2,4,8],   # # of nodes
+     'range2' => [44,50],     # fib's param
+     'range3' => ["fib-lw"],  #, "fib-gcc"], # implementations
+     'range4' => [1..3],     # # of trials
+     'exe' => './tcell-batch-thin',
+     'cpus' => sub { 16; }, #sub { $_[0]; },
+     'procs' => sub { $_[1]; },
+     'arg0s' => sub {"./$_[3]";},
+     'arg1s' => sub { $_[0]; },
+     'arg2s' => sub { $_[1]; },
+     'arg3s' => sub {"\"1 $_[2]\"" },
+     'arg4' => '`hostname`',
+     'copiedfile0s' => sub { $_[3]; },
+     'copiedfile1' => 'tcpcon',
+     'copiedfile2' => 'tcell-batch-thin',
+     'copiedfile3' => 'tcell-plexec.sh',
+     'queue' => 'gh10034',
+     'option' => '# @$-g gh10034' . "\n" . '# @$-cp 00:03:00'
+     );
+
+# Nqueens
+my %job_nq = %job_fib;
+$job_nq{id} = 'job_nq';
+$job_nq{range2} = [16];
+$job_nq{range3} = ["nq-lw"];
+$job_nq{arg3s} = sub {"\"0 $_[2] -1\""};
+# delete $job_nq{option};
+# $job_nq{options} = sub {
+#     if ( $_[2] == 17 ) {
+#         return '# @$-g gh10034' . "\n" . '# @$-cp 00:10:00';
+#     } else {
+#         return '# @$-g gh10034' . "\n" . '# @$-cp 00:04:00';
+#     }
+# };
+
+# Pentomino
+my %job_pen = %job_fib;
+$job_pen{id} = 'job_pen';
+$job_pen{range2} = [14];
+$job_pen{range3} = ["pen6x17-lw"];
+$job_pen{arg3s} = sub {"\"1 $_[2]\""};
+
+# LU decomposition
+my %job_lu = %job_fib;
+$job_lu{id} = 'job_lu';
+$job_lu{range2} = [2000];
+$job_lu{range3} = ["lu-lw"];
+$job_lu{arg3s} = sub {"\"0 0 $_[2] 2 0\""};
+
+# Comp
+my %job_cmp = %job_fib;
+$job_cmp{id} = 'job_cmp';
+$job_cmp{range2} = [60000];
+$job_cmp{range3} = ["cmp-lw"];
+$job_cmp{arg3s} = sub {"\"0 $_[2] -1\""};
+
+# grav
+my %job_grav = %job_fib;
+$job_grav{id} = 'job_grav';
+$job_grav{range2} = [400];
+$job_grav{range3} = ["grav-lw"];
+$job_grav{arg3s} = sub {"\"1 -$_[2] -$_[2] -$_[2] $_[2] $_[2] $_[2] 25 25 25\""};
+
+my @jobs = ();
+
+push (@jobs, prepare_submit(%job_fib));
+push (@jobs, prepare_submit(%job_nq));
+push (@jobs, prepare_submit(%job_pen));
+push (@jobs, prepare_submit(%job_lu));
+push (@jobs, prepare_submit(%job_cmp));
+push (@jobs, prepare_submit(%job_grav));
+
+my @all_jobs = sync (@jobs);
+
+# foreach my $k (sort keys %{$fibs[0]}) {
+#     print "$k: " . $fibs[0]->{$k} . "\n";
+# }
+
+foreach (@all_jobs) {
+    my $id = $_->{id};
+    my $ofile = "$id/stdout";
+    my $timeline = qx/grep \"^Time:\" $ofile/;
+    my $ofile;
+    my $tm;
+    if ( $id =~ /job_(.*)!([0-9]+)!([0-9]+)!([0-9]+).*/ )
+    {
+        $app = $1;
+        $nworker = $2;
+        $nnode = $3;
+        $param = $4;
+        $ofile = 'log-' . $app . '-' . $param . '-' . $nnode . 'nodes-' . $nworker . "workers";
+        print "$ofile\n";
+     
+        if ( $timeline =~ /^Time:\s*(.*)/ ) {
+            $tm = $1;
+            print "$tm\n";
+            open ( OUT, ">> $ofile" );
+            print OUT "$tm\n";
+            close OUT;
+        }
+    }
+}

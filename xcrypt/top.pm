@@ -81,7 +81,7 @@ sub start {
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
 #    print $self->{id} . " is done.\n";
-    until (-e $stdofile) { sleep 2; }
+    until (-e $self->{stdofile}) { sleep 2; }
     my @stdlist = &pickup($stdofile, ',');
     $self->{stdout} = $stdlist[0];
 
