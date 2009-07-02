@@ -77,8 +77,13 @@ sub qsub {
 
     my $job_name = $self->{id};
     my $dir = $self->{id};
-    my $scriptfile = File::Spec->catfile($dir, 'nqs.sh');
 
+    my $scriptfile;
+    if ($sge) {
+	$scriptfile = File::Spec->catfile($dir, 'sge.sh');
+    } else {
+	$scriptfile = File::Spec->catfile($dir, 'nqs.sh');
+    }
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！

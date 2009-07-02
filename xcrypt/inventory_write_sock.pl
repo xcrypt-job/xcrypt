@@ -36,5 +36,5 @@ if ($status ne 'qsub' ) {
 
     $socket->flush();
     $socket->close();
-    print "Successfully written $jobname<=$status.\n";
+#    print "Successfully written $jobname<=$status.\n";
 }
