@@ -18,9 +18,6 @@
 Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
 ず．
 
-
-
-
 \part{総論}
 \chapter{機能}
 
@@ -175,10 +172,11 @@ Xcrypt はジョブごとにディレクトリ（ジョブ作業ディレクトリと呼ぶ）を作成
 
 \subsection*{ジョブリンク・ジョブファイル}
 
-ジョブ作業ディレクトリから\texttt{linkedfile0,...,linkedfile255}キーの
-値で指定されているファイルへシンボリックリンクを張
-り，\texttt{copiedfile0,...,copiedfile255}キーの値で指定されている作業
-ディレクトリ中のファイルのコピーをジョブ作業ディレクトリに作成する．
+ジョブ作業ディレクトリからジョブハッシュの
+\texttt{linkedfile0,...,linkedfile255}キーの値で指定されているファイル
+へシンボリックリンクを張り，\texttt{copiedfile0,...,copiedfile255}キー
+の値で指定されている作業ディレクトリ中のファイルのコピーをジョブ作業ディ
+レクトリに作成する．
 
 \subsection*{\texttt{nqs.sh}}
 
@@ -209,19 +207,6 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 \part{各論}
 \chapter{モジュール}\label{chapmodule}
 
-\section{\texttt{limit}}
-
-\begin{boxnote}
-\begin{alltt}
-\$limit::smph=Thread::Semaphore->new(100);
-\end{alltt}
-\end{boxnote}
-
-\section{\texttt{function}}
-
-\section{\texttt{successor}}
-\section{\texttt{predecessor}}
-
 \section{\texttt{dry}}
 
 Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
@@ -232,14 +217,34 @@ Xcrypt スクリプトに
 \$dry::dry = 1;
 \end{alltt}
 \end{boxnote}
+\noindent
 と記述することで Xcrypt がドライモードで動作する．また，
 \begin{screen}
 \texttt{\$ xcrypt -d sample.xcr}
 \end{screen}
+\noindent
 とオプションつきで実行することでドライモードで動作させることもできる．
 
-$1$ にセットすることで Xcrypt をドライモード（実行コマンドなしで）で動
-作させる．
+\section{\texttt{function}}
+
+頻繁に使用される関数を定義している．
+
+\section{\texttt{graph}}
+
+ジョブの実行を制御することで，ジョブの実行に関するグラフ構造を実現す
+る．ジョブは，ハッシュの\texttt{predecessor}キーの値であるところのジョ
+ブたちの処理が終わるまで投入されず，処理後はハッシュの
+\texttt{successor}キーの値であるところのジョブたちを生成する．
+
+\section{\texttt{limit}}
+
+一度に投入されるジョブの数の上限を指定する．
+
+\begin{boxnote}
+\begin{alltt}
+\$limit::smph=Thread::Semaphore->new(100);
+\end{alltt}
+\end{boxnote}
 
 \section{\texttt{jobsched}}
 
@@ -298,8 +303,6 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 \end{screen}
 といった形で実行される．
 
-
-
 \section{\texttt{linkedfile0,...,linkedfile255}}
 
 この値のリンク名でジョブ作業ディレクトリから作業ディレクトリのファイル
@@ -320,16 +323,33 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 この値のファイル名で実行プログラムとジョブスケジューラの標準エラー出力
 を格納する．空の場合は「stderr」というファイル名になる．
 
+\section{\texttt{ofile}}
+
+実行プログラムの出力ファイルを記述する．
+
+\section{\texttt{odelimiter}}
+
+実行プログラムの出力ファイルの行を区切る際の区切り文字を指定する．
+
+\section{\texttt{ocolumn}}
+
+実行プログラムの出力ファイルの列を指定する．
+
 \section{\texttt{queue}}
 
 実行するジョブを投入するキューの名前を記述する．
 
 \section{\texttt{cpu}}
 
+使用するコア数を指定する．
+
 \section{\texttt{proc}}
+
+使用するプロセス数を指定する．
 
 \section{\texttt{option}}
 
+ジョブスケジューラのオプションを記述する．
 
 \chapter{組込み関数}\label{chapfun}
 
@@ -535,5 +555,34 @@ sync(@thrds);
 
 \texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
 ずる．
+
+
+\section{\texttt{pickup}}
+
+ファイル名と区切り文字を受け取り，ファイルの先頭行を区切り文字で分割
+し，それらからなる配列を返す．
+
+\subsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+pickup(ファイル名，区切り文字);
+\end{alltt}
+\end{boxnote}
+
+\section{\texttt{repickup}}
+
+ジョブハッシュリファレンスの配列を受け取り，\texttt{ofile}キーの値であ
+るところのファイルの先頭行を\texttt{odelimiter}キーの値であるところの区
+切り文字で区切った際の\texttt{ocolumn}キーの値であるところの数番目の列
+からなる配列を返す．
+
+\subsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+repickup(ジョブハッシュリファレンスの配列);
+\end{alltt}
+\end{boxnote}
 
 \end{document}

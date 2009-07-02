@@ -4,7 +4,7 @@ use File::Copy;
 use function;
 
 use base qw(Exporter);
-@EXPORT = qw(killall pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
+@EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my $MAXRANGE = 16;
 my $MAX = 256;
@@ -22,6 +22,7 @@ for ( my $i = 0; $i < $MAX; $i++ ) {
 
 $separation_symbol = '!';
 
+=comment
 sub killall {
     my $prefix = shift;
     foreach (@_) {
@@ -33,6 +34,7 @@ sub killall {
 	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
     }
 }
+=cut
 
 sub pickup {
     open ( OUTPUT , "< $_[0]" );
