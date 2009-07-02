@@ -31,8 +31,8 @@ print TMP '$jobsched::sge = ' . $opt_sge .  ';' . "\n";
 open ( USER , "< $ARGV[0]") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
-#print TMP '$jobsched::abort_check_thread->detach;' . "\n";
-#print TMP '$jobsched::watch_thread->detach;' . "\n";
+print TMP '$jobsched::abort_check_thread->detach;' . "\n";
+print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
 print TMP 'sub before {my $self = shift;$self->SUPER::before(); $self->{before};}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after(); $self->{after};}' . "\n";

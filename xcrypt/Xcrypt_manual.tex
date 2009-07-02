@@ -1,10 +1,9 @@
-\documentclass[10pt,report]{jsbook}
+\documentclass[report]{jsbook}
 
 \usepackage{alltt,tascmac}
 
 \title{Xcrypt マニュアル}
 \author{京大中島研e-scienceグループ}
-\date{$2009$ 年上半期}
 
 \begin{document}
 \maketitle
@@ -12,15 +11,9 @@
 
 \paragraph{メモ}
 定義すべき用語
-ジョブ定義ハッシュ，ジョブキー，ジョブリファレンス，ジョブスレッド
+ジョブスレッド
 
 重要
-
-constructor.pm に exit\_cond に関するバグあり．
-exit\_cond に必要性があるか？
-直すにしてもどのように直すべきか？
-のどちらも不明．
-
 
 Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
 ず．
@@ -31,98 +24,34 @@ Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
 \part{総論}
 \chapter{機能}
 
-NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し（\$ qsub nqs.sh），
-NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
-し……，という一連の操作を，perl スクリプト user.pl を作成し，それを
-xcrypt に渡す（\$ xcrypt sample.pl）だけで済むようにするモジュール群である．
+通常，ある一つの大きな処理を行うには，その処理を小分け（ジョブと呼ぶ）
+にし，それらの処理をジョブスケジューラに依頼する．具体的には，
+\begin{enumerate}
+\item ジョブスケジューラが理解できるスクリプトを作成し，
+\item そのスクリプトをジョブスケジューラに渡し，
+\item ジョブスケジューラが返す結果からまた別のスクリプトを作成し，それ
+      をジョブスケジューラに渡す，
+\end{enumerate}
+という一連の操作を繰り返すというものである．
 
-ライトユーザ向けに，ジョブレベルでなく，ジョブセットレベルの記述もサポー
-トしている．
+しかし，この方法は処理の繰り返しごとに人手による介入を要し，作業効率が
+悪い．そこで，人手で行うところを適当なスクリプト言語により記述すること
+で自動実行を実現することが考えられる．Xcrypt はそのスクリプト言語とし
+て Perl を採用し，パラメタ指定によるジョブの生成や投入を Perl の関数と
+して提供することで，ユーザがジョブ処理を容易に行うことを補助する．
 
-\chapter{実装}
-
-
-NQS スクリプト一つの作成をスレッド一つで行う．
-
-モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
-
-コアモジュールは new start before after という関数をのみを持つことがで
-きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
-
-「呼び出す関数 $\to$ 呼び出される関数」と書くことにすると，
-1.pm の start $\to,\ldots,\to$ n.pm の start ->
-top.pm の start $\to$
-1.pm の before $\to,\ldots,\to$ n.pm の before
-であり，さらに，
-top.pm の start $\to$ 
-n.pm の after $\to,\ldots,\to$ 1.pm の after
-である．
-
-現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
-successor.pm dry.pm predecessor.pm limit.pm top.pm である．
-
-汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．
-
-xcrypt
-
-ユーザはモジュール群で処理されるフィールドとその値の組となるハッシュを
-記述し，そのリファレンスを id と同名のスカラ変数で定義する．
-
-constructor.pm
-
-trigger.pl で定義されたハッシュリファレンスからジョブを生成する．
-
-オブジェクトの exit\_cond と trace から処理を続けるかどうかを判定する．
-続ける場合は change\_arg で arg を更新した別オブジェクト（その id は元オ
-ブジェクトの id の後ろに 0 を付加したもの）を生成し，その処理を行う．
-
-successor.pm
-
-successor から別オブジェクトを生成する．ただし successor が空の場合は出
-力列を traces.log に書き出して終了する．
-
-** dry.pm
-
-./trigger --dry でユーザ定義のオブジェクトのフィールド値を適当に上書き
+TODO: サーチアルゴリズム等のアルゴリズムモジュールの提供についても記述
 する．
-
-predecessor.pm
-
-pjo\_inventory\_{watch,write}.pl にジョブの処理を終了を判定してもらい，そ
-の確認ができるまでジョブの生成を待つ．
-
-limit.pm
-
-作成されて処理されるのを待っている NQS スクリプトの数をスレッドにまたが
-る変数の値で制御する．
-
-top.pm
-
-関数 before を呼び出すことで前処理をし，NQS スクリプトを作成し，それを
-qsub に渡し（ジョブ管理をするモジュール jobsched.pm 中の関数を呼び出す
-ことで実現している），関数 after を呼び出すことで後処理をする．
-
-UI.pm
-
-ユーザがオペレーションとして利用する関数を定義している．
-
-function.pm
-
-ユーザがデータとして利用する関数を定義している．
-
-jobsched.pm
-
-pjo\_inventory\_{watch,write}.pl と連携してジョブ管理を行う．
 
 \chapter{Xcrypt スクリプトの記述}
 
 Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
-クリプトである．しかし， Xcrypt はジョブに関する操作の補助を行うものと
-考えられ，Xcrypt スクリプトは典型的には以下のように記述される．
+クリプトである．しかし，Xcrypt はジョブに関する操作の補助を行うものと考
+えられ，Xcrypt スクリプトは典型的には以下の順に記述される．
 
 \def\usemodule{モジュールに関する記述}
 \def\defjobdefhash{ジョブ定義ハッシュに関する記述}
-\def\operation{ジョブの処理に関する記述}
+\def\operation{ジョブ処理に関する記述}
 
 \begin{enumerate}
  \item \usemodule
@@ -140,12 +69,16 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 use モジュール名;
 \end{alltt}
 \end{boxnote}
-と記述する．利用可能なモジュールに関しては\ref{module}で述べる．
+\noindent
+と記述する．利用可能なモジュールに関しては\ref{chapmodule}章で述べる．
 
 
 \section{\defjobdefhash}
 
-例えば
+Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
+ブを定義するにあたり，ハッシュ自身を記述してもよいが，ジョブ定義ハッシュ
+と呼ばれるハッシュを記述すれば，ジョブを生成する際，さらにパラメタを与
+えることで多数のジョブを一度に生成できる．例えば，
 \begin{boxnote}
 \begin{alltt}
 %xyz = (
@@ -163,18 +96,24 @@ use モジュール名;
 );
 \end{alltt}
 \end{boxnote}
-と記述する．定義可能なキーに関しては\ref{jobdefhash}で述べる．
+\noindent
+と記述する．定義可能なジョブ定義ハッシュのキーに関しては
+\ref{chapjobdefhash}章で述べる．
 
 \section{\operation}
 
+通常，人手で行う処理で，今回，Xcrypt に行わせたい処理について記述す
+る．Xcrypt で利用可能な関数については\ref{chapfun}章で述べる．
 
+\section{記述例}\label{secscriptexample}
 
-\section{記述例}
+本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
 
 \begin{boxnote}
 \begin{alltt}
-\$limit::smph=Thread::Semaphore->new(100);
-\$separation\_symbol = '-';
+use limit;
+
+\$limit::smph=Thread::Semaphore->new(10);
 
 %xyz = (
     'id' => 'job100',
@@ -198,59 +137,78 @@ foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
 \end{alltt}
 \end{boxnote}
 
-\chapter{ジョブ処理の実際}
+\chapter{ジョブ処理の流れ}
 
+実際のジョブ処理の流れについて概観する．
 
 \section{実行方法}
 
-NQS スクリプト（nqs.sh）を作成し，それを NQS に渡し
+環境変数 \texttt{XCRYPT} を Xcrypt をインストールしたディレクトリで定義
+する（ここでは \texttt{/usr/share/xcrypt} と仮定する）．シェルが bash
+なら，
 \begin{screen}
-\texttt{\$ qsub nqs.sh}
-\end{screen}
-NQS が返す結果からまた別の NQS スクリプトを作成し，それを NQS に渡
-し……，という一連の操作を，
-
-
-実行方法
-
-環境変数 XCRYPT を \$HOME/e-science/xcrypt とかにする．
-
-移動する．
-\begin{screen}
-\texttt{\$ cd \$HOME/e-science/\${USERNAME}}
+\texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
 
-xcrypt スクリプト（例えば hoge.xcr）を作成する．
+作業ディレクトリに移動する（ここでは \texttt{\$HOME/wd} とする）．
+\begin{screen}
+\texttt{\$ cd \$HOME/e-science/wd}
+\end{screen}
+
+Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
+sample.xcr とする）．
 
 実行する．
 \begin{screen}
-\texttt{\$XCRYPT/xcrypt hoge.xcr}
+\texttt{\$ \$XCRYPT/xcrypt sample.xcr}
 \end{screen}
 
+\section{作成される物}
 
-perl スクリプト user.pl を作成し，それをxcrypt に渡す
-\begin{screen}
-\texttt{\$ xcrypt sample.pl}
-\end{screen}
+Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 
+\subsection*{ディレクトリ}
 
-\section{ジョブ処理後に作成されるもの}
+Xcrypt はジョブごとにディレクトリ（ジョブ作業ディレクトリと呼ぶ）を作成
+する．ディレクトリの名前はジョブハッシュの\texttt{id}キーの値である．
+ジョブ処理はジョブ作業ディレクトリで行われる．
 
-\subsection{ディレクトリ}
+\subsection*{ジョブリンク・ジョブファイル}
 
-\subsection{\texttt{nqs.sh}}
+ジョブ作業ディレクトリから\texttt{linkedfile0,...,linkedfile255}キーの
+値で指定されているファイルへシンボリックリンクを張
+り，\texttt{copiedfile0,...,copiedfile255}キーの値で指定されている作業
+ディレクトリ中のファイルのコピーをジョブ作業ディレクトリに作成する．
 
-\subsection{\texttt{request\_id}}
+\subsection*{\texttt{nqs.sh}}
 
-\subsection{\texttt{stdout}}
+ジョブスケジューラが NQS である際，NQS に渡されるスクリプトである．
 
-\subsection{\texttt{stderr}}
+\subsection*{\texttt{sge.sh}}
 
+ジョブスケジューラが Sun Grid Engine である際，Sun Grid Engine に渡され
+るスクリプトである．
+
+\subsection*{\texttt{request\_id}}
+
+Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
+ストIDを格納する．
+
+\subsection*{\texttt{stdout}}
+
+ジョブの実行コマンドの標準出力が格納される．ジョブハッシュの
+\texttt{stdofile}キーの値が指定されている場合，その値のファイル名で作成
+される．
+
+\subsection*{\texttt{stderr}}
+
+ジョブの実行コマンドの標準エラー出力が格納される．ジョブハッシュの
+\texttt{stdefile}キーの値が指定されている場合，その値のファイル名で作成
+される．
 
 \part{各論}
-\chapter{モジュール}\label{module}
+\chapter{モジュール}\label{chapmodule}
 
-コア扱い？モジュール扱い？
 \section{\texttt{limit}}
 
 \begin{boxnote}
@@ -287,6 +245,8 @@ $1$ にセットすることで Xcrypt をドライモード（実行コマンドなしで）で動
 
 ジョブスケジューラとのインターフェイスである．
 
+（注）SGE の qstat について考えていないので SGE では動作しない．
+
 ジョブスケジューラが Sun Grid Engine の場合は，Xcrypt スクリプトに
 \begin{boxnote}
 \begin{alltt}
@@ -315,7 +275,7 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 \end{boxnote}
 とする．
 
-\chapter{ジョブ定義ハッシュ}\label{jobdefhash}
+\chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 
 ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
 
@@ -371,7 +331,7 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 \section{\texttt{option}}
 
 
-\chapter{組込み関数}
+\chapter{組込み関数}\label{chapfun}
 
 Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 て紹介する．
@@ -383,7 +343,9 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 
 \section{\texttt{prepare}}
 
-ジョブ定義ハッシュとパラメタを受け取り，ジョブリファレンスの配列を返す．
+ジョブ定義ハッシュとパラメタを受け取り，適当なジョブリファレンスの配列
+を返す．特に，ジョブの\texttt{id}は後述の\texttt{range0,...,range255}
+により生成される．
 
 \subsection{\format}
 

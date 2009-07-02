@@ -28,9 +28,10 @@ xcrypt に渡す（$ xcrypt sample.pl）だけで済むようにするモジュール群である．
 
 NQS スクリプト一つの作成をスレッド一つで行う．
 
-モジュールにはコアモジュールと汎用目的モジュールとの二種類ある．
+モジュールには中心モジュールと汎用目的モジュールとそれ以外のモジュール
+の三種類ある．
 
-コアモジュールは new start before after という関数をのみを持つことがで
+中心モジュールは new start before after という関数をのみを持つことがで
 きる．これらの関数はこの順番で呼び出される仮定の下で書かれている．
 
 「呼び出す関数 -> 呼び出される関数」と書くことにすると，
@@ -42,7 +43,7 @@ top.pm の start ->
 n.pm の after -> ... -> 1.pm の after
 である．
 
-現在のコアモジュール間の継承関係は，子から親へ向かって constructor.pm
+現在の中心モジュール間の継承関係は，子から親へ向かって constructor.pm
 successor.pm dry.pm predecessor.pm limit.pm top.pm である．
 
 汎用目的モジュールは現在 UI.pm function.pm jobsched.pm である．

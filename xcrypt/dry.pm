@@ -1,6 +1,6 @@
 package dry;
 
-use base qw(predecessor);
+use base qw(limit);
 
 $dry;
 
@@ -24,7 +24,7 @@ sub before {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
-	$self->{exit_cond} = sub { 1; };
+#	$self->{exit_cond} = sub { 1; };
     }
     $self->SUPER::before();
 }

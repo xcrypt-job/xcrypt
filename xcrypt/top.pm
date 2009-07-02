@@ -87,7 +87,7 @@ sub start {
     my $hoge = File::Spec->catfile($self->{id}, $stdofile);
 
     until (-e $hoge) { sleep 2; }
-    my @stdlist = &pickup($stdofile, ',');
+    my @stdlist = &pickup($hoge, ',');
     $self->{stdout} = $stdlist[0];
     $self->after();
 }
@@ -110,12 +110,15 @@ sub after {
 	$self->{output} = $list[$self->{oclmn}];
 	unshift (@{$self->{trace}} , $list[$self->{oclmn}]);
     }
+
     # exit_cond により生成されるジョブの結果もディレクトリ以下に保存
+=comment
     my $tracelog_filename = 'trace.log';
     my $tracelog = File::Spec->catfile($dir, $tracelog_filename);
     open ( EXITOUTPUT , ">> $tracelog" );
     print EXITOUTPUT join (' ', @{$self->{trace}}), "\n";
     close ( EXITOUTPUT );
+=cut
 }
 
 1;
