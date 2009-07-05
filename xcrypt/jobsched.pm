@@ -27,7 +27,7 @@ my $inventory_host = qx/hostname/;
 chomp $inventory_host;
 my $inventory_port = 9999;           # インベントリ通知待ち受けポート．0ならNFS経由
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $inventory_save=File::Spec->catfile($inventory_path, '.all');
+my $inventory_save_path=$inventory_path;
 
 my $write_command = undef;
 if ($inventory_port > 0) {
@@ -77,7 +77,8 @@ sub qsub {
 
     my $job_name = $self->{id};
     my $dir = $self->{id};
-
+    
+    ## <-- Create job script file <--
     my $scriptfile;
     if ($sge) {
 	$scriptfile = File::Spec->catfile($dir, 'sge.sh');
@@ -162,7 +163,6 @@ sub qsub {
 	    print SCRIPT "# @\$-OI\n";
 	}
     }
-
 #    print SCRIPT "PATH=$ENV{'PATH'}\n";
 #    print SCRIPT "set -x\n";
     print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
@@ -177,6 +177,8 @@ sub qsub {
     # 正常終了でなければ "abort" を書き込むべき
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
     close (SCRIPT);
+    ## --> Create job script file -->
+    
     inventory_write ($job_name, "submit");
     my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
     if ($existence == 0) {
@@ -246,7 +248,7 @@ sub invoke_watch_by_file {
         while (1) {
             while (<INVWATCH>){
                 # print INVWATCH_LOG "$_";
-                handle_inventory ($_);
+                handle_inventory ($_, 0);
             }
             close (INVWATCH);
             # print "watch finished.\n";
@@ -276,22 +278,32 @@ sub invoke_watch_by_socket {
             my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
             my $cl_ip = inet_ntoa ($cl_iaddr);
             select (CLIENT); $|=1; select (STDOUT);
-            open ( SAVE, ">> $inventory_save")
-                or die "Can't open $inventory_save\n";
             while (<CLIENT>) {
-                handle_inventory ($_);
-                print SAVE $_;
+                handle_inventory ($_, 1);
             }
-            close (SAVE);
             close (CLIENT);
         }
     });
 }
 
+# $jobnameに対応するインベントリファイルを読み込んで反映
+sub load_inventory {
+    my ($jobname) = @_;
+    my $invfile = File::Spec->catfile($inventory_path, $jobname);
+    if ( -e $invfile ) {
+        open ( IN, "< $invfile" )
+            or warn "Can't open $invfile: $!\n";
+        while (<IN>) {
+            handle_inventory ($_, 0);
+        }
+        close (IN);
+    }
+}
+
 # watchの出力一行を処理
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
 sub handle_inventory {
-    my ($line) = @_;
+    my ($line, $write_p) = @_;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
 #     } elsif ($line =~ /^status\:\s*active/) {   # ジョブ実行予定
@@ -330,6 +342,14 @@ sub handle_inventory {
         # とりあえず何もなし
     } else {
         warn "unexpected inventory output: \"$line\"\n";
+    }
+    # TCP/IP通信モードの場合，inventoryをファイルに保存
+    if ( $write_p ) {
+        my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
+        open ( SAVE, ">> $inv_save")
+            or die "Can't open $inv_save\n";
+        print SAVE $line;
+        close (SAVE);
     }
 }
 
@@ -551,12 +571,12 @@ sub check_and_write_abort {
         # SGEでも動くようにしたつもり
 	if ($sge) {
 	    my @list = split(/ /, $_);
-	    if ($list[0] =~ /^([0-9]+)/) {
+	    if ($list[0] =~ /^\s*([0-9]+)/) {
 		my $req_id = $1;
                 delete ($unchecked{$req_id});
 	    }
 	} else {
-	    if ( $_ =~ /([0-9]*)\.nqs/ ) {
+	    if ( $_ =~ /([0-9]+)\.nqs/ ) {
 		my $req_id = $1;
 		# print "$_ --- " . $unchecked{$req_id} . "\n";
 		delete ($unchecked{$req_id});

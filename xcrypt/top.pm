@@ -2,6 +2,7 @@ package top;
 
 use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
+use File::Path;
 use UI;
 use function;
 use jobsched;
@@ -15,34 +16,47 @@ sub new {
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
     my $dotdir = '.' . $dir;
-    unless (-e $dotdir) { mkdir $dotdir , 0755; }
-    else { die "Can't make $dotdir since it has already existed."; }
 
-    for ( my $i = 0; $i < $MAX; $i++ ) {
-	if ($self->{"copieddir$i"}) {
-	    my $copied = $self->{"copieddir$i"};
-	    opendir(DIR, $copied);
-	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
-	    closedir(DIR);
-	    foreach (@params) {
-		my $tmp = File::Spec->catfile($copied, $_);
-		my $temp = File::Spec->catfile($dotdir, $_);
-		rcopy $tmp, $temp;
-	    }
-	}
-	if ($self->{"linkedfile$i"}) {
-	    my $hoge = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
-	    my $nya = File::Spec->catfile('..', $self->{"linkedfile$i"});
-	    symlink $nya , $hoge;
-	}
-	if ($self->{"copiedfile$i"}) {
+    # 前回実行時にできたインベントリファイルがあれば反映
+    &jobsched::load_inventory ($self->{id});
+    # doneになってたら処理はとばす
+    unless ( &jobsched::get_job_status ($self->{id}) eq 'done') {
+        # done以外だったらactiveにしてジョブディレクトリを（あれば）削除
+        &jobsched::set_job_status ($self->{id}, 'active');
+        if ( -e $dir ) {
+            print "Delete directory $dir\n";
+            File::Path::rmtree ($dir);
+        }
+
+        unless (-e $dotdir) { mkdir $dotdir , 0755; }
+        else { die "Can't make $dotdir since it has already existed."; }
+
+        for ( my $i = 0; $i < $MAX; $i++ ) {
+            if ($self->{"copieddir$i"}) {
+                my $copied = $self->{"copieddir$i"};
+                opendir(DIR, $copied);
+                my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
+                closedir(DIR);
+                foreach (@params) {
+                    my $tmp = File::Spec->catfile($copied, $_);
+                    my $temp = File::Spec->catfile($dotdir, $_);
+                    rcopy $tmp, $temp;
+                }
+            }
+            if ($self->{"linkedfile$i"}) {
+                my $hoge = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
+                my $nya = File::Spec->catfile('..', $self->{"linkedfile$i"});
+                symlink $nya , $hoge;
+            }
+            if ($self->{"copiedfile$i"}) {
 #	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dotdir);
-	    fcopy $self->{"copiedfile$i"}, $dotdir;
-	}
+                fcopy $self->{"copiedfile$i"}, $dotdir;
+            }
+        }
+        unless (-e $dir) { rename $dotdir, $dir; }
+        else { die "Can't make $dir since it has already existed."; }
     }
-    unless (-e $dir) { rename $dotdir, $dir; }
-    else { die "Can't make $dir since it has already existed."; }
-
+        
     return bless $self, $class;
 }
 
@@ -74,22 +88,27 @@ sub start {
 					  $proc,
 					  $cpu);
 =cut
-    $self->{request_id} = &jobsched::qsub($self);
-    jobsched::set_job_request_id ($self->{id}, $self->{request_id});
+    # 前回doneになったジョブならとばす．
+    if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
+        print "Skipping " . $self->{id} . " because already done.\n";
+    } else {
+        $self->{request_id} = &jobsched::qsub($self);
+        jobsched::set_job_request_id ($self->{id}, $self->{request_id});
 #    print $self->{id} . " is submitted.\n";
 
-    # 結果ファイルから結果を取得
-    &jobsched::wait_job_done($self->{id});
+        # 結果ファイルから結果を取得
+        &jobsched::wait_job_done($self->{id});
 #    print $self->{id} . " is done.\n";
 
-    my $stdofile = 'stdout';
-    unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
-    my $hoge = File::Spec->catfile($self->{id}, $stdofile);
+        my $stdofile = 'stdout';
+        unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
+        my $hoge = File::Spec->catfile($self->{id}, $stdofile);
 
-    until (-e $hoge) { sleep 2; }
-    my @stdlist = &pickup($hoge, ',');
-    $self->{stdout} = $stdlist[0];
-    $self->after();
+        until (-e $hoge) { sleep 2; }
+        my @stdlist = &pickup($hoge, ',');
+        $self->{stdout} = $stdlist[0];
+        $self->after();
+    }
 }
 
 sub before {
