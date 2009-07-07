@@ -59,16 +59,23 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 \section{\usemodule}
 
 利用可能なモジュールにはコアモジュールとそれ以外のモジュールの二種類が
-ある．コアモジュールは自動的に読み込まれるため，明示的に読み込むための
-記述をする必要はない．コアモジュール以外に関しては，例えば
+ある．コアモジュールは
 \begin{boxnote}
 \begin{alltt}
-use モジュール名;
+use base qw(core);
 \end{alltt}
 \end{boxnote}
 \noindent
-と記述する．利用可能なモジュールに関しては\ref{chapmodule}章で述べる．
-
+と記述して読み込む．コアモジュール以外（例えば\texttt{dry.pm}）に関して
+は，
+\begin{boxnote}
+\begin{alltt}
+use base qw(dry core);
+\end{alltt}
+\end{boxnote}
+\noindent
+と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
+述べる．
 
 \section{\defjobdefhash}
 
@@ -207,6 +214,10 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 \part{各論}
 \chapter{モジュール}\label{chapmodule}
 
+\section{\texttt{core}（コア）}
+
+コアモジュールを全て読み込む．
+
 \section{\texttt{dry}}
 
 Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
@@ -225,18 +236,36 @@ Xcrypt スクリプトに
 \noindent
 とオプションつきで実行することでドライモードで動作させることもできる．
 
+\if0
 \section{\texttt{function}}
 
 頻繁に使用される関数を定義している．
 
-\section{\texttt{graph}}
+\section{\texttt{UI}}
+
+組込み関数を提供する．
+
+Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
+\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切っ
+た名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォ
+ルト値は「!」である．「-」に変えたい場合は，
+\begin{boxnote}
+\begin{alltt}
+\texttt{\$jobsched::separation\_symbol = '-';}
+\end{alltt}
+\end{boxnote}
+とする．
+
+\fi
+
+\section{\texttt{graph}（コア）}
 
 ジョブの実行を制御することで，ジョブの実行に関するグラフ構造を実現す
 る．ジョブは，ハッシュの\texttt{predecessor}キーの値であるところのジョ
 ブたちの処理が終わるまで投入されず，処理後はハッシュの
 \texttt{successor}キーの値であるところのジョブたちを生成する．
 
-\section{\texttt{limit}}
+\section{\texttt{limit}（コア）}
 
 一度に投入されるジョブの数の上限を指定する．
 
@@ -246,7 +275,7 @@ Xcrypt スクリプトに
 \end{alltt}
 \end{boxnote}
 
-\section{\texttt{jobsched}}
+\section{\texttt{jobsched}（コア）}
 
 ジョブスケジューラとのインターフェイスである．
 
@@ -265,20 +294,6 @@ Xcrypt スクリプトに
 \end{screen}
 とオプションつきで実行することと同義である．
 
-\section{\texttt{UI}}
-
-組込み関数を提供する．
-
-Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切っ
-た名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォ
-ルト値は「!」である．「-」に変えたい場合は，
-\begin{boxnote}
-\begin{alltt}
-\texttt{\$jobsched::separation\_symbol = '-';}
-\end{alltt}
-\end{boxnote}
-とする．
 
 \chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 

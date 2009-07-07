@@ -1,0 +1,23 @@
+use base qw(GA core);
+
+$limit::smph=Thread::Semaphore->new(100);
+$jobsched::sge = 1;
+
+%xyz = (
+    'id' => 'job200',
+    'exe' => './GA.sh',
+    'GA_count' => '1',
+    'GA_lengthOfStr' => '6',
+    'GA_howToCrossover' => 'onePointCrossover',
+    'GA_howToSelect' => 'equivalence',
+    'linkedfile0' => 'GA.sh',
+    'stdofile' => 'hogeout',
+    'stdefile' => 'hogeerr',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
+);
+
+&prepare_submit_sync(%xyz, 'arg0s' => ['123456 654321 abcdef fedcba 000000']);
+#&prepare_submit_sync(%xyz, 'arg0s' => ['100 123456 654321 abcdef fedcba 000000',
+#				       '100 111111 222222 333333 444444 000000',
+#				       '100 123456 abcdef']);

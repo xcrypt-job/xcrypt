@@ -1,4 +1,4 @@
-use limit;
+use base qw(dry core);
 use function;
 
 $limit::smph=Thread::Semaphore->new(100);

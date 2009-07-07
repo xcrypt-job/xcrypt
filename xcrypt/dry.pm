@@ -1,19 +1,19 @@
 package dry;
 
-use base qw(limit);
+use NEXT;
 
 $dry;
 
 sub new {
     my $class = shift;
-    my $self = $class->SUPER::new(@_);
-#    my $self = $class->SUPER::new();
+    my $self = $class->NEXT::new(@_);
+#    my $self = $class->NEXT::new();
     return bless $self, $class;
 }
 
 sub start {
     my $self = shift;
-    $self->SUPER::start();
+    $self->NEXT::start();
 }
 
 sub before {
@@ -26,12 +26,12 @@ sub before {
 	}
 #	$self->{exit_cond} = sub { 1; };
     }
-    $self->SUPER::before();
+    $self->NEXT::before();
 }
 
 sub after {
   my $self = shift;
-  $self->SUPER::after();
+  $self->NEXT::after();
 }
 
 1;

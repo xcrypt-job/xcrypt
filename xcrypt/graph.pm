@@ -3,7 +3,7 @@ package graph;
 use threads;
 use threads::shared;
 use function;
-use base qw(dry);
+use base qw(limit);
 
 sub new {
     my $class = shift;

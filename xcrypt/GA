@@ -1,0 +1,150 @@
+#!/usr/bin/perl
+
+my @words = &mainfun(@ARGV);
+print join (' ', @words), "\n";
+
+sub fitness { # String -> Int
+    if ($_[0] == "123456") {return 4;}
+    else {return 6;}
+}
+
+sub equivalence { # String -> Array String -> Real
+    $sum = @_;
+    return (1 / $sum);
+}
+
+sub mainfun { # Int -> Array String
+    if ($_[0] == 0) {
+	shift(@_);
+	shift(@_);
+	shift(@_);
+	shift(@_);
+	return @_;
+    }
+    else {
+	my $count = shift(@_);
+	my $length = shift(@_);
+	my $func = shift(@_);
+	my $prob = shift(@_);
+	my @tmp1 = &selection(rand(1), 0, $prob, @_);
+	my $foo = $tmp1[0];
+	shift(@tmp1);
+	my @tmp2 = &selection(rand(1), 0, $prob, @tmp1);
+	my $bar = $tmp2[0];
+	shift(@tmp2);
+	&mainfun($count - 1, $length, $func, $prob, @tmp2,
+		 &$func($foo, $bar, int(rand($length))));
+    }
+}
+
+sub roulette (@) {
+#
+# Fast, but hard.
+#
+    my $sum = 0;
+    my @tmps = ();
+    foreach (@_) {
+	my $tmp = fitness($_);
+	push(@tmps, $tmp);
+	$sum = $sum + $tmp;
+    }
+    my @result = ();
+    foreach (@tmps) {
+	push(@result, ($_ / $sum));
+    }
+    return @result;
+#
+# Slow, but easy.
+#
+#    my @tmps = (map{fitness($_)}, @_);
+#    my $sum  = Prelude::summation(map{fitness($_)}, @_);
+#    return (map{$_ / $sum}, @tmps);
+}
+
+sub selection { # Int -> Real -> Array String -> Array String
+    my $random = $_[0];
+    my $inf    = $_[1];
+    my $prob   = $_[2];
+    shift(@_);
+    shift(@_);
+    shift(@_);
+    my @population = @_;
+    my $supreme    = $inf + (&$prob(@population));
+    if (($inf <= $random) && ($random <= $supreme)) {
+	return @population;
+    }
+    else {
+	push(@population, $population[0]);
+	shift(@population);
+	return &selection($random, $supreme, $prob, @population);
+    }
+}
+
+sub isCongruentMax ($@) { # Int -> Array String -> Bool
+    my $threshold = $_[0];
+    shift(@_);
+    my @population = @_;
+    if ($#population == -1) {return 0;}
+    else {
+	if (fitness($population[0]) > $threshold) {return 1;}
+	else {
+	    shift(@population);
+	    return isCongruentMax($threshold, @population)}
+    }
+}
+
+sub isCongruentAverage ($@) { # Int -> Array String -> Bool
+    my $threshold = $_[0];
+    shift(@_);
+    my $num = @_;
+    my $sum = 0;
+    foreach (@_) {
+	$sum = $sum + fitness($_);
+    }
+    return (($sum / $num) > $threshold);
+}
+
+sub onePointCrossover($$$) { # String -> String -> Int -> Array String
+    my $input0         = $_[0];
+    my $input1         = $_[1];
+    my $crossoverPoint = $_[2];
+    return (substr($input0, 0, $crossoverPoint)
+	    . substr($input1, $crossoverPoint),
+	    substr($input1, 0, $crossoverPoint)
+	    . substr($input0, $crossoverPoint));
+}
+
+sub manyPointCrossover($$@) { # String -> String -> Array Int -> Array String
+    my $str0 = $_[0];
+    my $str1 = $_[1];
+    shift(@_);
+    shift(@_);
+    my $numCrossoverPoint = @_;
+    if ($numCrossoverPoint <= 0) {return ($str0, $str1);}
+    else {
+	my $pre0   = substr($str0, 0, $_[0]);
+	my $pre1   = substr($str1, 0, $_[0]);
+	my $post0  = substr($str0, $_[0]);
+	my $post1  = substr($str1, $_[0]);
+	shift(@_);
+	my @result = manyPointCrossover($pre1, $pre0, @_);
+	return ($result[0] . $post0,
+		$result[1] . $post1);
+    }
+}
+
+#sub uniformPointCrossover {
+#}
+
+=comment
+sub orderCrossover($$$) { # String -> String -> Int -> Array String
+    my $pre0    = substr($_[0], 0, $_[2]);
+    my $pre1    = substr($_[1], 0, $_[2]);
+    my $post0   = substr($_[0], $_[2]);
+    my $post1   = substr($_[1], $_[2]);
+    my $result0 = Prelude::filter($_[1], $post0);
+    my $result1 = Prelude::filter($_[0], $post1);
+    return ($pre0 . $result0,
+	    $pre1 . $result1);
+}
+=cut
