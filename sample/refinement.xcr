@@ -1,7 +1,5 @@
 use function;
 
-$limit::smph=Thread::Semaphore->new(100);
-
 %xyz = (
     'id' => 'job1',
     'exe' => './kempo',

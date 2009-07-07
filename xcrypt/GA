@@ -3,17 +3,17 @@
 my @words = &mainfun(@ARGV);
 print join (' ', @words), "\n";
 
-sub fitness { # String -> Int
+sub fitness {
     if ($_[0] == "123456") {return 4;}
     else {return 6;}
 }
 
-sub equivalence { # String -> Array String -> Real
+sub equivalence {
     $sum = @_;
     return (1 / $sum);
 }
 
-sub mainfun { # Int -> Array String
+sub mainfun {
     if ($_[0] == 0) {
 	shift(@_);
 	shift(@_);
@@ -61,7 +61,7 @@ sub roulette (@) {
 #    return (map{$_ / $sum}, @tmps);
 }
 
-sub selection { # Int -> Real -> Array String -> Array String
+sub selection {
     my $random = $_[0];
     my $inf    = $_[1];
     my $prob   = $_[2];
@@ -80,7 +80,7 @@ sub selection { # Int -> Real -> Array String -> Array String
     }
 }
 
-sub isCongruentMax ($@) { # Int -> Array String -> Bool
+sub isCongruentMax ($@) {
     my $threshold = $_[0];
     shift(@_);
     my @population = @_;
@@ -93,7 +93,7 @@ sub isCongruentMax ($@) { # Int -> Array String -> Bool
     }
 }
 
-sub isCongruentAverage ($@) { # Int -> Array String -> Bool
+sub isCongruentAverage ($@) {
     my $threshold = $_[0];
     shift(@_);
     my $num = @_;
@@ -104,7 +104,7 @@ sub isCongruentAverage ($@) { # Int -> Array String -> Bool
     return (($sum / $num) > $threshold);
 }
 
-sub onePointCrossover($$$) { # String -> String -> Int -> Array String
+sub onePointCrossover($$$) {
     my $input0         = $_[0];
     my $input1         = $_[1];
     my $crossoverPoint = $_[2];
@@ -114,7 +114,7 @@ sub onePointCrossover($$$) { # String -> String -> Int -> Array String
 	    . substr($input0, $crossoverPoint));
 }
 
-sub manyPointCrossover($$@) { # String -> String -> Array Int -> Array String
+sub manyPointCrossover($$@) {
     my $str0 = $_[0];
     my $str1 = $_[1];
     shift(@_);
@@ -137,7 +137,7 @@ sub manyPointCrossover($$@) { # String -> String -> Array Int -> Array String
 #}
 
 =comment
-sub orderCrossover($$$) { # String -> String -> Int -> Array String
+sub orderCrossover($$$) {
     my $pre0    = substr($_[0], 0, $_[2]);
     my $pre1    = substr($_[1], 0, $_[2]);
     my $post0   = substr($_[0], $_[2]);

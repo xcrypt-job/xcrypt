@@ -1,8 +1,5 @@
-use limit;
 use function;
 use Data_Generation;
-
-$limit::smph=Thread::Semaphore->new(100);
 
 %xyz = (
     'id' => 'job100',

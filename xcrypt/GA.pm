@@ -1,8 +1,6 @@
 package GA;
 
 use NEXT;
-use base qw(Exporter);
-@EXPORT = qw(toplevel manyPointCrossover isCongruentMax selection);
 
 sub new {
     my $class = shift;
@@ -25,8 +23,8 @@ sub before {
 }
 
 sub after {
-  my $self = shift;
-  $self->NEXT::after();
+    my $self = shift;
+    $self->NEXT::after();
 }
 
 1;

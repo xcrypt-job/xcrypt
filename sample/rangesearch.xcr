@@ -1,9 +1,9 @@
-use base qw(dry core);
+use base qw(limit dry core);
 use function;
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
-#$jobsched::sge = 1;
+$jobsched::sge = 1;
 #$UI::separation_symbol = '-';
 
 %xyz = (

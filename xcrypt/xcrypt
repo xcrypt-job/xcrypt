@@ -25,8 +25,8 @@ print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
-print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
-print TMP '$jobsched::sge = ' . $opt_sge .  ';' . "\n";
+#print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
+#print TMP '$jobsched::sge = ' . $opt_sge .  ';' . "\n";
 open ( USER , "< $ARGV[0]") . "\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );

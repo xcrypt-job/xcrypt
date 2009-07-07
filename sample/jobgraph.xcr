@@ -1,8 +1,5 @@
 use function;
 
-$limit::smph=Thread::Semaphore->new(100);
-#$opt_dry = 1;
-
 %xyz = (
     'id' => 'job0',
     'exe' => 'echo',
