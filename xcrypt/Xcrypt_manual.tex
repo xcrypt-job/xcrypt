@@ -47,11 +47,13 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 えられ，Xcrypt スクリプトは典型的には以下の順に記述される．
 
 \def\usemodule{モジュールに関する記述}
+\def\setglobalvar{大域変数に関する記述}
 \def\defjobdefhash{ジョブ定義ハッシュに関する記述}
 \def\operation{ジョブ処理に関する記述}
 
 \begin{enumerate}
  \item \usemodule
+ \item \setglobalvar
  \item \defjobdefhash
  \item \operation
 \end{enumerate}
@@ -74,6 +76,17 @@ use base qw(dry core);
 \noindent
 と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
 述べる．
+
+\section{\setglobalvar}
+
+Xcrypt スクリプトの動作全体に関わる大域変数（例えば\texttt{\$sge}）は
+\begin{boxnote}
+\begin{alltt}
+$sge = 1;
+\end{alltt}
+\end{boxnote}
+\noindent
+と記述してセットする．
 
 \section{\defjobdefhash}
 
@@ -256,16 +269,14 @@ Xcrypt スクリプトに
 \end{alltt}
 \end{boxnote}
 
-\section{\texttt{jobsched}（コア）}
+\chapter{大域変数}\label{globalvar}
 
-ジョブスケジューラとのインターフェイスである．
-
-（注）SGE の qstat について考えていないので SGE では動作しない．
+\section{\texttt{sge}}
 
 ジョブスケジューラが Sun Grid Engine の場合は，Xcrypt スクリプトに
 \begin{boxnote}
 \begin{alltt}
-\$jobsched::sge = 1;
+\$sge = 1;
 \end{alltt}
 \end{boxnote}
 と記述することで Sun Grid Engine に対して Xcrypt を正常に動作させること
@@ -277,14 +288,12 @@ Xcrypt スクリプトに
 とオプションつきで実行することと同義である．
 \fi
 
-\section{\texttt{UI}（コア）}
+\section{\texttt{separation\_symbol}}
 
-組込み関数を提供する．
-
-Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切っ
-た名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォ
-ルト値は「!」である．「-」に変えたい場合は，
+ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
+\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切った
+名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォルト
+値は「!」である．「-」に変えたい場合は，
 \begin{boxnote}
 \begin{alltt}
 \texttt{\$jobsched::separation\_symbol = '-';}
@@ -298,6 +307,8 @@ Xcrypt はジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
 ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
 
 \section{\texttt{id}}
+
+実行されるジョブを識別する語を記述する．
 
 \section{\texttt{exe}}
 

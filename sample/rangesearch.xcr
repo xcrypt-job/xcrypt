@@ -3,8 +3,8 @@ use function;
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
-$jobsched::sge = 1;
-#$UI::separation_symbol = '-';
+$sge = 1;
+#$separation_symbol = '-';
 
 %xyz = (
     'id' => 'job100',

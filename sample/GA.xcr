@@ -1,6 +1,6 @@
-use base qw(dry GA core);
+use base qw(GA core);
 
-$jobsched::sge = 1;
+$sge = 1;
 
 %xyz = (
     'id' => 'job200',
