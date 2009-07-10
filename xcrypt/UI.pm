@@ -79,7 +79,7 @@ sub generate {
     my @ranges = &rm_nilchar(@_);
     $job{'id'} = join($user::separation_symbol, ($job{'id'}, @ranges));
     foreach (@allmembers) {
-	my $members = "$_" . 's';
+	my $members = "$_" . 'S';
 	if (ref($job{"$members"}) eq 'CODE') {
 	    $job{"$_"} =  &{$job{"$members"}}(@ranges);
 	} elsif (ref($job{"$members"}) eq 'ARRAY') {
@@ -120,25 +120,25 @@ sub times {
 sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
-	my $members = "$_" . 's';
+	my $members = "$_" . 'S';
 	unless ($jobs{"$members"}) {$jobs{"$members"} = sub {$jobs{"$_"};};}
     }
     my @objs;
 
     my $count = 0;
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	$tmp = @{$jobs{"range$i"}};
+	$tmp = @{$jobs{"RANGE$i"}};
 	$count = $count + $tmp;
     }
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	if (@{$jobs{"range$i"}} eq ()) {
-	    push(@{$jobs{"range$i"}}, $nilchar);
+	if (@{$jobs{"RANGE$i"}} eq ()) {
+	    push(@{$jobs{"RANGE$i"}}, $nilchar);
 	}
     }
     if ($count) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	    push(@ranges, $jobs{"range$i"});
+	    push(@ranges, $jobs{"RANGE$i"});
 	}
 	my @range = &times(@ranges);
 	foreach my $r (@range) {
@@ -169,7 +169,7 @@ sub prepare {
 sub max {
     my $num = 0;
     foreach (@allmembers) {
-	my $members = "$_" . 's';
+	my $members = "$_" . 'S';
 	if (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my $tmp = @{$_[0]{"$members"}};
 	    $num = $tmp + $num;
@@ -181,7 +181,7 @@ sub max {
 sub min {
     my $num = 0;
     foreach (@allmembers) {
-	my $members = "$_" . 's';
+	my $members = "$_" . 'S';
 	if (ref($_[0]{"$members"}) eq 'ARRAY') {
 	    my $tmp = @{$_[0]{"$members"}};
 	    if ($tmp <= $num) {	$num = $tmp; }

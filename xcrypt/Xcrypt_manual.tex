@@ -126,9 +126,10 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 
 \begin{boxnote}
 \begin{alltt}
-use limit;
+use base qw(limit core);
 
 \$limit::smph=Thread::Semaphore->new(10);
+\$sge = 1;
 
 %xyz = (
     'id' => 'job100',
@@ -227,7 +228,7 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 
 \section{\texttt{core}}
 
-コアモジュールを全て読み込む．ジョブ定義ハッシュ等の，Xcrypt 特有のもの
+コアモジュールを全て読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）
 を使用する場合には必ず読み込まないといけない．
 
 \section{\texttt{dry}}
@@ -396,29 +397,29 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \section{\texttt{prepare}}
 
 ジョブ定義ハッシュとパラメタを受け取り，適当なジョブリファレンスの配列
-を返す．特に，ジョブの\texttt{id}は後述の\texttt{range0,...,range255}
+を返す．特に，ジョブの\texttt{id}は後述の\texttt{RANGE0,...,RANGE255}
 により生成される．
 
 \subsection{\format}
 
 \begin{boxnote}
 \begin{alltt}
-prepare(ジョブ定義ハッシュ[,'range0' => リファレンス]
-                      ...[,'range255' => リファレンス]
-                         [,'ジョブ定義ハッシュキーs' => リファレンス]
-                      ...[,'ジョブ定義ハッシュキーs' => リファレンス]);
+prepare(ジョブ定義ハッシュ[,'RANGE0' => リファレンス]
+                      ...[,'RANGE255' => リファレンス]
+                         [,'ジョブ定義ハッシュキーS' => リファレンス]
+                      ...[,'ジョブ定義ハッシュキーS' => リファレンス]);
 \end{alltt}
 \end{boxnote}
 
-ただし，「ジョブ定義ハッシュキーs」はジョブ定義ハッシュキー
-（\texttt{arg0}等）の語尾に\texttt{s}をつけ加えたもの
-（\texttt{arg0s}等）を意味するものとする．
+ただし，「ジョブ定義ハッシュキー\texttt{S}」はジョブ定義ハッシュキー
+（\texttt{arg0}等）の語尾に\texttt{S}をつけ加えたもの
+（\texttt{arg0S}等）を意味するものとする．
 
 \subsection{\example}
 
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 \end{alltt}
 \end{boxnote}
 
@@ -439,7 +440,7 @@ push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20']);
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo',
-    'arg0s' => [10,20]
+    'arg0S' => [10,20]
 );
 prepare(%abc);
 \end{alltt}
@@ -453,15 +454,15 @@ prepare(%abc);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-prepare(%abc, 'arg0s' => [10,20]);
+prepare(%abc, 'arg0S' => [10,20]);
 \end{alltt}
 \end{boxnote}
 
-\texttt{range0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
+\texttt{RANGE0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
 を生成することができる．例えば，
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare(%abc, 'range0' => [0..99], 'arg0s' => sub \{ 2 * $_[0] \});
+@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0S' => sub \{ 2 * $_[0] \});
 \end{alltt}
 \end{boxnote}
 は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
@@ -479,7 +480,7 @@ prepare(%abc, 'arg0s' => [10,20]);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'arg0s' => [0,1], 'arg1s' => [2,3]);
+@jobs = prepare(%abc, 'arg0s' => [0,1], 'arg1S' => [2,3]);
 \end{alltt}
 \end{boxnote}
 は以下と同義である．
@@ -491,7 +492,7 @@ push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'])
 \end{alltt}
 \end{boxnote}
 
-\texttt{range0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
+\texttt{RANGE0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
 ブを生成することができる．例えば，
 \begin{boxnote}
 \begin{alltt}
@@ -499,8 +500,8 @@ push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'])
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'range0' => [0,1], 'range1' => [2,4],
-                'arg0s' => sub \{ $_[0] + $_[1] \});
+@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
+                'arg0S' => sub \{ $_[0] + $_[1] \});
 \end{alltt}
 \end{boxnote}
 は以下と同義である．
@@ -534,7 +535,7 @@ submit(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 submit(@jobs);
 \end{alltt}
 \end{boxnote}
@@ -567,7 +568,7 @@ sync(ジョブスレッドの配列);
 
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0s' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 @thrds = submit(@jobs);
 sync(@thrds);
 \end{alltt}

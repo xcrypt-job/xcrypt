@@ -5,11 +5,11 @@ $limit::smph=Thread::Semaphore->new(20);
 my %job_fib =
     (
      'id' => 'job_fib',
-     'range0' => [1,16],      # # of workers per node
-     'range1' => [1,2,4,8],   # # of nodes
-     'range2' => [44,50],     # fib's param
-     'range3' => ["fib-lw"],  #, "fib-gcc"], # implementations
-     'range4' => [1..3],     # # of trials
+     'RANGE0' => [1,16],      # # of workers per node
+     'RANGE1' => [1,2,4,8],   # # of nodes
+     'RANGE2' => [44,50],     # fib's param
+     'RANGE3' => ["fib-lw"],  #, "fib-gcc"], # implementations
+     'RANGE4' => [1..3],     # # of trials
      'exe' => './tcell-batch-thin',
      'cpus' => sub { 16; }, #sub { $_[0]; },
      'procs' => sub { $_[1]; },
@@ -29,8 +29,8 @@ my %job_fib =
 # Nqueens
 my %job_nq = %job_fib;
 $job_nq{id} = 'job_nq';
-$job_nq{range2} = [16];
-$job_nq{range3} = ["nq-lw"];
+$job_nq{RANGE2} = [16];
+$job_nq{RANGE3} = ["nq-lw"];
 $job_nq{arg3s} = sub {"\"0 $_[2] -1\""};
 # delete $job_nq{option};
 # $job_nq{options} = sub {
@@ -44,29 +44,29 @@ $job_nq{arg3s} = sub {"\"0 $_[2] -1\""};
 # Pentomino
 my %job_pen = %job_fib;
 $job_pen{id} = 'job_pen';
-$job_pen{range2} = [14];
-$job_pen{range3} = ["pen6x17-lw"];
+$job_pen{RANGE2} = [14];
+$job_pen{RANGE3} = ["pen6x17-lw"];
 $job_pen{arg3s} = sub {"\"1 $_[2]\""};
 
 # LU decomposition
 my %job_lu = %job_fib;
 $job_lu{id} = 'job_lu';
-$job_lu{range2} = [2000];
-$job_lu{range3} = ["lu-lw"];
+$job_lu{RANGE2} = [2000];
+$job_lu{RANGE3} = ["lu-lw"];
 $job_lu{arg3s} = sub {"\"0 0 $_[2] 2 0\""};
 
 # Comp
 my %job_cmp = %job_fib;
 $job_cmp{id} = 'job_cmp';
-$job_cmp{range2} = [60000];
-$job_cmp{range3} = ["cmp-lw"];
+$job_cmp{RANGE2} = [60000];
+$job_cmp{RANGE3} = ["cmp-lw"];
 $job_cmp{arg3s} = sub {"\"0 $_[2] -1\""};
 
 # grav
 my %job_grav = %job_fib;
 $job_grav{id} = 'job_grav';
-$job_grav{range2} = [400];
-$job_grav{range3} = ["grav-lw"];
+$job_grav{RANGE2} = [400];
+$job_grav{RANGE3} = ["grav-lw"];
 $job_grav{arg3s} = sub {"\"1 -$_[2] -$_[2] -$_[2] $_[2] $_[2] $_[2] 25 25 25\""};
 
 my @jobs = ();

@@ -11,8 +11,7 @@ use Data_Generation;
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'range0' => [0..2],
- 'arg1s' => [0..2],
+my @jobs = &prepare(%xyz, 'RANGE0' => [0..2], 'arg1S' => [0..2],
 # 'after' => 'eval(if ($self->{stdout} == 11) { killall(\'job100\', 0, 1, 2); })');
  'after' => 'eval(if ($self->{stdout} == 11) { system("qdel -u username"); })');
 my @thrds = &submit(@jobs);
