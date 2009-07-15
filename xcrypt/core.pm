@@ -51,7 +51,7 @@ sub new {
             if ($self->{"linkedfile$i"}) {
                 my $link = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
                 my $file = File::Spec->catfile('..', $self->{"linkedfile$i"});
-                symlink($file, $link) or die "hoge";
+                symlink($file, $link) or warn "Can't link to $file";
             }
         }
 	if ( -e $dir ) {

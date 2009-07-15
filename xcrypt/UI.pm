@@ -34,7 +34,7 @@ sub killall {
 =cut
 
 sub pickup {
-    open ( OUTPUT , "< $_[0]" ) or die "Can't open $_[0]";
+    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
     my $line;
     foreach (<OUTPUT>) {
 	$line = $_;
@@ -88,7 +88,7 @@ sub generate {
 	    my $tmp = ${$job{"$members"}};
 	    $job{"$_"} = $tmp;
 	} else {
-	    die "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
+	    warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
 	}
     }
 =comment
