@@ -28,8 +28,10 @@ sub new {
             File::Path::rmtree ($dir);
         }
 
-        unless (-e $dotdir) { mkdir $dotdir , 0755; }
-        else { die "Can't make $dotdir since it has already existed."; }
+#        unless (-e $dotdir) { mkdir $dotdir , 0755; }
+#        else { die "Can't make $dotdir since it has already existed."; }
+	File::Path::rmtree ($dotdir);
+        mkdir $dotdir , 0755;
 
         for ( my $i = 0; $i < $MAX; $i++ ) {
             if ($self->{"copieddir$i"}) {
@@ -53,8 +55,9 @@ sub new {
                 fcopy $self->{"copiedfile$i"}, $dotdir;
             }
         }
-        unless (-e $dir) { rename $dotdir, $dir; }
-        else { die "Can't make $dir since it has already existed."; }
+#        unless (-e $dir) { rename $dotdir, $dir; }
+#        else { die "Can't make $dir since it has already existed."; }
+        rename $dotdir, $dir;
     }
     return bless $self, $class;
 }

@@ -4,9 +4,9 @@ package xcrypt;
 use File::Copy;
 use Getopt::Long;
 
-my $opt_dry = 0;
-my $opt_sge = 0;
-GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
+#my $opt_dry = 0;
+#my $opt_sge = 0;
+#GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
 
 my $savefile = "$ARGV[0]" . '.pl';
 
@@ -16,7 +16,7 @@ else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
 if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
 else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
 
-unless (-e $savefile) {
+if (-e $savefile) { unlink $savefile; }
 
 open ( TMP , "> $savefile");
 print TMP 'package user;' . "\n";
@@ -41,5 +41,3 @@ close ( TMP );
 chmod 0755, $savefile;
 system("perl $savefile");
 unlink $savefile;
-
-} else { print "Remove or rename $savefile.\n"; }

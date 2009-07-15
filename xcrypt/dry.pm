@@ -7,7 +7,6 @@ $dry;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-#    my $self = $class->NEXT::new();
     return bless $self, $class;
 }
 
@@ -18,7 +17,7 @@ sub start {
 
 sub before {
     my $self = shift;
-    if ($user::opt_dry) {
+    if ($dry) {
 	$self->{exe} = '';
 	for ( my $i = 0; $i <= 255; $i++ ) {
 	    my $arg = 'arg' . $i;
