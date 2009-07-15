@@ -77,7 +77,7 @@ sub qsub {
 
     my $job_name = $self->{id};
     my $dir = $self->{id};
-    
+
     ## <-- Create job script file <--
     my $scriptfile;
     if ($user::sge) {
@@ -106,17 +106,20 @@ sub qsub {
     } else {
 	$stdofile = File::Spec->catfile($dir, 'stdout');
     }
+    if ( -e $stdofile) { unlink $stdofile; }
     if ($user::sge) {
 	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
     } else {
 	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
     }
+
     my $stdefile;
     if ($self->{stdefile}) {
 	$stdefile = File::Spec->catfile($dir, $self->{stdefile});
     } else {
 	$stdefile = File::Spec->catfile($dir, 'stderr');
     }
+    if ( -e $stdefile) { unlink $stdefile; }
     if ($user::sge) {
 	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
     } else {
@@ -171,7 +174,7 @@ sub qsub {
 
 #    print SCRIPT "$command\n";
     my @args = ();
-    for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
+    for ( my $i = 0; $i <= $user::max; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
     # 正常終了でなければ "abort" を書き込むべき

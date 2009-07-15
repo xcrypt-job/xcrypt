@@ -8,8 +8,6 @@ use function;
 use jobsched;
 use Data_Generation;
 
-my $MAX = 255;
-
 sub new {
     my $class = shift;
     my $self = shift;
@@ -28,12 +26,13 @@ sub new {
             File::Path::rmtree ($dir);
         }
 
-#        unless (-e $dotdir) { mkdir $dotdir , 0755; }
-#        else { die "Can't make $dotdir since it has already existed."; }
-	File::Path::rmtree ($dotdir);
+	if ( -e $dotdir ) {
+            print "Delete directory $dotdir\n";
+	    File::Path::rmtree ($dotdir);
+	}
         mkdir $dotdir , 0755;
 
-        for ( my $i = 0; $i < $MAX; $i++ ) {
+        for ( my $i = 0; $i <= $user::max; $i++ ) {
             if ($self->{"copieddir$i"}) {
                 my $copied = $self->{"copieddir$i"};
                 opendir(DIR, $copied);
@@ -45,18 +44,20 @@ sub new {
                     rcopy $tmp, $temp;
                 }
             }
-            if ($self->{"linkedfile$i"}) {
-                my $hoge = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
-                my $nya = File::Spec->catfile('..', $self->{"linkedfile$i"});
-                symlink $nya , $hoge;
-            }
             if ($self->{"copiedfile$i"}) {
 #	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dotdir);
                 fcopy $self->{"copiedfile$i"}, $dotdir;
             }
+            if ($self->{"linkedfile$i"}) {
+                my $link = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
+                my $file = File::Spec->catfile('..', $self->{"linkedfile$i"});
+                symlink($file, $link) or die "hoge";
+            }
         }
-#        unless (-e $dir) { rename $dotdir, $dir; }
-#        else { die "Can't make $dir since it has already existed."; }
+	if ( -e $dir ) {
+            print "Delete directory $dir\n";
+	    File::Path::rmtree ($dir);
+	}
         rename $dotdir, $dir;
     }
     return bless $self, $class;
@@ -64,32 +65,12 @@ sub new {
 
 sub start {
     my $self = shift;
-
     my $dir = $self->{id};
 
     $self->before();
 
     # NQS スクリプトを作成・投入
-=comment
-    my $nqs_script = File::Spec->catfile($dir, 'nqs.sh');
-    my @args = ();
-    for ( my $i = 0; $i <= 255; $i++ ) { push(@args, $self->{"arg$i"}); }
-    my $cmd = $self->{exe} . ' ' . join(' ', @args);
-    my $proc = 1;
-    my $cpu = 1;
-    if ($self->{proc}) { $proc = $self->{proc}; }
-    if ($self->{cpu}) { $cpu = $self->{cpu}; }
-    $self->{request_id} = &jobsched::qsub($self->{id},
-					  $cmd,
-					  $self->{id},
-					  $nqs_script,
-					  $self->{queue},
-					  $self->{option},
-					  $self->{stdofile},
-					  $self->{stdefile},
-					  $proc,
-					  $cpu);
-=cut
+
     # 前回doneになったジョブならとばす．
     if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
         print "Skipping " . $self->{id} . " because already done.\n";
@@ -109,8 +90,9 @@ sub start {
         until (-e $hoge) { sleep 2; }
         my @stdlist = &pickup($hoge, ',');
         $self->{stdout} = $stdlist[0];
-        $self->after();
     }
+
+    $self->after();
 }
 
 sub before {

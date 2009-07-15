@@ -19,7 +19,7 @@ sub before {
     my $self = shift;
     if ($dry) {
 	$self->{exe} = '';
-	for ( my $i = 0; $i <= 255; $i++ ) {
+	for ( my $i = 0; $i <= $user::max; $i++ ) {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}

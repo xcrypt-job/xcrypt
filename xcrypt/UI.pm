@@ -7,13 +7,12 @@ use base qw(Exporter);
 @EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my $MAXRANGE = 16;
-my $MAX = 256;
 my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 my $nilchar = 'nil';
 
 my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'stdofile', 'stdefile', 'proc', 'cpu');
 
-for ( my $i = 0; $i < $MAX; $i++ ) {
+for ( my $i = 0; $i <= $user::max; $i++ ) {
     foreach (('arg', 'linkedfile', 'copiedfile', 'copieddir')) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
@@ -35,7 +34,7 @@ sub killall {
 =cut
 
 sub pickup {
-    open ( OUTPUT , "< $_[0]" );
+    open ( OUTPUT , "< $_[0]" ) or die "Can't open $_[0]";
     my $line;
     foreach (<OUTPUT>) {
 	$line = $_;
@@ -153,8 +152,8 @@ sub prepare {
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
 	}
-    } elsif (&max(\%jobs)) {
-	my @params = (0..(&min(\%jobs)-1));
+    } elsif (&MAX(\%jobs)) {
+	my @params = (0..(&MIN(\%jobs)-1));
 	foreach (@params) {
 	    my $obj = &generate(\%jobs, $_);
 	    push(@objs , $obj);
@@ -166,7 +165,7 @@ sub prepare {
     return @objs;
 }
 
-sub max {
+sub MAX {
     my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
@@ -178,7 +177,7 @@ sub max {
     return $num;
 }
 
-sub min {
+sub MIN {
     my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
