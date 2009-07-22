@@ -621,18 +621,19 @@ repickup(ジョブハッシュリファレンスの配列);
 
 \chapter{}
 
-{\huge
+{\Large
 \[
-%\entrymodifiers={+[F-:<10pt>]}
-\xymatrix@=120pt{
+\entrymodifiers={+[F-:<10pt>]}
+\xymatrix@=100pt{
+  *{}
   \ar[r]^{\txt{\normalsize オブジェクト生成}} &
-  *+[F-:<10pt>]{\txt{active}} \ar[rrd]^{\txt{\normalsize \texttt{xcr\_del}}} \ar[r]^{\txt{\normalsize qsub実行}} &
-  *+[F-:<10pt>]\txt{submit} \ar[rd]^{\txt{\normalsize qsub失敗}} \ar[r]^{\txt{\normalsize qsub成功}} &
-  *+[F-:<10pt>]\txt{qsub} \ar[lld]^{\txt{\normalsize プログラム開始}} \ar[d]^{\txt{\normalsize 当該ジョブ消滅}}\\
-  &
-  *+[F-:<10pt>]\txt{start} \ar[r]^{\txt{\normalsize プログラム終了}} \ar@/_5pc/[rr]^{\txt{\normalsize 当該ジョブ消滅}}&
-  *+[F-:<10pt>]\txt{done} &
-  *+[F-:<10pt>]\txt{abort}
+  \txt{active} \ar[rrd]^(.3){\txt{\normalsize \texttt{xcryptdel}}}|\hole \ar[r]^{\txt{\normalsize qsub実行}} &
+  \txt{submit} \ar[rd]^{\txt{\normalsize qsub失敗}}|!{[r];[dl]}\hole \ar[r]^{\txt{\normalsize qsub成功}} &
+  \txt{qsub} \ar[lld]_(.7){\txt{\normalsize プログラム開始}} \ar[d]^{\txt{\normalsize 当該ジョブ消滅}}\\
+  *{} &
+  \txt{start} \ar[r]^{\txt{\normalsize プログラム終了}} \ar@/_5pc/[rr]^{\txt{\normalsize 当該ジョブ消滅}}&
+  \txt{done} &
+  \txt{abort}
 }
 \]
 }
