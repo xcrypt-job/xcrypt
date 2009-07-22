@@ -197,7 +197,7 @@ sub qsub {
 	    }
 	} else {
 	    if ( $id =~ /([0-9]*)\.nqs/ ) {
-		$req_id = $1;
+		$req_id = $1 . '.nqs';
 	    } else {
 		die "unexpected requestid.\n";
 	    }
