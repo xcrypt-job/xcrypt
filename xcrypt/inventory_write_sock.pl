@@ -2,6 +2,8 @@
 use IO::Socket;
 use strict;
 
+my $retry = 100; # # of connection trial
+
 if ( @ARGV < 4 ) {
     print STDERR "usage: $0 [hostname] [port] [jobname] [status]\n";
     exit -1;
@@ -14,14 +16,19 @@ my $jobname = $ARGV[2];
 my $status = $ARGV[3];
 
 if ($status ne 'qsub' ) {
-    my $socket = IO::Socket::INET->new (PeerAddr => $host,
-                                        PeerPort => $port,
-                                        Proto => 'tcp',
-                                        );
-    if ( ! $socket ) {
-        die "Failed to connect $host:$port. $!\n";
+    my $socket = 0;
+    my $n_trial = 0;
+    until ($socket) {
+        if ( $n_trial >= $retry ) {
+            die "Failed to connect $host:$port. $!\n";
+        }
+        $n_trial++;
+        $socket = IO::Socket::INET->new (PeerAddr => $host,
+                                         PeerPort => $port,
+                                         Proto => 'tcp',
+        );
+        unless ($socket) {sleep (0.1+rand(1.0));}
     }
-    
     ###
     my $time_now = time();
     my @times = localtime($time_now);
