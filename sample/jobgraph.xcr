@@ -16,8 +16,8 @@ use function;
     'linkedfile0' => 'plasma.inp',
     'linkedfile1' => 'kempo',
     'ofile' => 'pbody',
-    'ocolumn' => 1,
-    'odelimiter' => ','
+    'oclmn' => 1,
+    'odlmtr' => ','
 );
 %job1 = (
     'id' => 'job1',
@@ -27,8 +27,8 @@ use function;
     'linkedfile0' => 'plasma.inp',
     'linkedfile1' => 'kempo',
     'ofile' => 'pbody',
-    'ocolumn' => 1,
-    'odelimiter' => ',',
+    'oclmn' => 1,
+    'odlmtr' => ',',
     'queue' => 'eh',
     'trace' => [10, 100]
 );
@@ -40,8 +40,8 @@ use function;
     'linkedfile1' => 'kempo',
     'linkedfile0' => 'plasma.inp',
     'ofile' => 'pbody',
-    'ocolumn' => 1,
-    'odelimiter' => ',',
+    'oclmn' => 1,
+    'odlmtr' => ',',
     'queue' => 'eh',
     'trace' => [20, 200]
 );

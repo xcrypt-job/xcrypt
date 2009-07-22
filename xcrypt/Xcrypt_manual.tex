@@ -1,6 +1,7 @@
 \documentclass[report]{jsbook}
 
 \usepackage{alltt,tascmac}
+\usepackage[all]{xy}
 
 \title{Xcrypt マニュアル}
 \author{京大中島研e-scienceグループ}
@@ -352,11 +353,11 @@ Xcrypt スクリプトに
 
 実行プログラムの出力ファイルを記述する．
 
-\section{\texttt{odelimiter}}
+\section{\texttt{odlmtr}}
 
 実行プログラムの出力ファイルの行を区切る際の区切り文字を指定する．
 
-\section{\texttt{ocolumn}}
+\section{\texttt{oclmn}}
 
 実行プログラムの出力ファイルの列を指定する．
 
@@ -606,8 +607,8 @@ pickup(ファイル名，区切り文字);
 \section{\texttt{repickup}}
 
 ジョブハッシュリファレンスの配列を受け取り，\texttt{ofile}キーの値であ
-るところのファイルの先頭行を\texttt{odelimiter}キーの値であるところの区
-切り文字で区切った際の\texttt{ocolumn}キーの値であるところの数番目の列
+るところのファイルの先頭行を\texttt{odlmtr}キーの値であるところの区
+切り文字で区切った際の\texttt{oclmn}キーの値であるところの数番目の列
 からなる配列を返す．
 
 \subsection{\format}
@@ -617,5 +618,21 @@ pickup(ファイル名，区切り文字);
 repickup(ジョブハッシュリファレンスの配列);
 \end{alltt}
 \end{boxnote}
+
+\chapter{}
+
+{\huge
+\[
+\entrymodifiers={+[F-:<10pt>]}
+\xymatrix@=120pt{
+\txt{active} \ar[rrd] \ar[r] &
+\txt{submit} \ar[rd] \ar[r]^{\txt{qsub成功}} &
+\txt{qsub} \ar[lld] \ar[d]\\
+\txt{start} \ar[r] \ar@/_5pc/[rr]&
+\txt{done} &
+\txt{abort}
+}
+\]
+}
 
 \end{document}
