@@ -1,8 +1,9 @@
 #!/usr/bin/perl
 use IO::Socket;
 use strict;
+use Time::HiRes;
 
-my $retry = 1000; # # of connection trial
+my $retry = 100; # # of connection trial
 
 if ( @ARGV < 4 ) {
     print STDERR "usage: $0 [hostname] [port] [jobname] [status]\n";
@@ -27,7 +28,11 @@ if ($status ne 'qsub' ) {
                                          PeerPort => $port,
                                          Proto => 'tcp',
         );
-        unless ($socket) {sleep (0.1+rand(1.0));}
+        unless ($socket) {
+            my $slp = 0.1+rand(1.0);
+            print stderr "Failed to connect $host:$port. Retry after $slp seconds.\n";
+            Time::HiRes::sleep $slp;
+        }
     }
     ###
     my $time_now = time();
