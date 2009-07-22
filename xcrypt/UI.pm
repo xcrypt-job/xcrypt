@@ -83,7 +83,8 @@ sub generate {
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
 	if (ref($job{"$members"}) eq 'CODE') {
-	    $job{"$_"} =  &{$job{"$members"}}(@ranges);
+#	    $job{"$_"} =  &{$job{"$members"}}(@ranges);
+	    $job{"$_"} =  &{$job{"$members"}}(@_);
 	} elsif (ref($job{"$members"}) eq 'ARRAY') {
 	    my @tmp = @{$job{"$members"}};
 	    $job{"$_"} = $tmp[$_[0]];
