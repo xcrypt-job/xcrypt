@@ -1,10 +1,11 @@
 package UI;
 
+use strict;
 use File::Copy;
 use function;
 
 use base qw(Exporter);
-@EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
+our @EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
 my $MAXRANGE = 16;
 my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
@@ -12,7 +13,9 @@ my $nilchar = 'nil';
 
 my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'stdofile', 'stdefile', 'proc', 'cpu');
 
-for ( my $i = 0; $i <= $user::max; $i++ ) {
+my $max = 255;
+#for ( my $i = 0; $i <= $user::max; $i++ ) {
+for ( my $i = 0; $i <= $max; $i++ ) {
     foreach (('arg', 'linkedfile', 'copiedfile', 'copieddir')) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
@@ -39,7 +42,7 @@ sub pickup {
     foreach (<OUTPUT>) {
 	$line = $_;
     }
-    $delimit = $_[1];
+    my $delimit = $_[1];
     my @list = split(/$delimit/, $line);
     close ( OUTPUT );
     return @list;
@@ -88,7 +91,10 @@ sub generate {
 	    my $tmp = ${$job{"$members"}};
 	    $job{"$_"} = $tmp;
 	} else {
-	    warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
+	    unless ($job{"$members"}) {}
+		    else {
+			warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
+		    }
 	}
     }
 =comment
@@ -120,24 +126,34 @@ sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
-	unless ($jobs{"$members"}) {$jobs{"$members"} = sub {$jobs{"$_"};};}
+	unless ($jobs{"$members"}) {
+	    if ($jobs{"$_"}) {
+		$jobs{"$members"} = sub {$jobs{"$_"};};
+	    }
+	}
     }
     my @objs;
 
     my $count = 0;
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	$tmp = @{$jobs{"RANGE$i"}};
-	$count = $count + $tmp;
+	if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
+	    my $tmp = @{$jobs{"RANGE$i"}};
+	    $count = $count + $tmp;
+	}
     }
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	if (@{$jobs{"RANGE$i"}} eq ()) {
-	    push(@{$jobs{"RANGE$i"}}, $nilchar);
+	if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
+	    if (@{$jobs{"RANGE$i"}} eq ()) {
+		push(@{$jobs{"RANGE$i"}}, $nilchar);
+	    }
 	}
     }
     if ($count) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	    push(@ranges, $jobs{"RANGE$i"});
+	    if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
+		push(@ranges, $jobs{"RANGE$i"});
+	    }
 	}
 	my @range = &times(@ranges);
 	foreach my $r (@range) {
@@ -213,10 +229,11 @@ sub sync {
 sub repickup {
     my @outputs = ();
     foreach (@_) {
+	my @stdouts;
 	if ($_->{ofile}) {
 	    my @stdlist = &pickup(File::Spec->catfile($_->{id}, $_->{ofile}),
 				  $_->{odlmtr});
-	    push (@stdouts, $stdlist[$self->{oclmn}]);
+	    push (@stdouts, $stdlist[$_->{oclmn}]);
 	}
 	return @stdouts;
     }

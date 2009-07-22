@@ -1,9 +1,10 @@
 package limit;
 
+use strict;
 use NEXT;
 use Thread::Semaphore;
 
-$smph;
+our $smph;
 
 sub new {
     my $class = shift;

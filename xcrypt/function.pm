@@ -1,7 +1,8 @@
 package function;
 
+use strict;
 use base qw(Exporter);
-@EXPORT = qw(identity plus1 plus10);
+our @EXPORT = qw(identity plus1 plus10);
 
 sub silent { return ""; }
 sub identity { return $_[0]; }

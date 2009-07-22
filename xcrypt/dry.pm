@@ -1,8 +1,9 @@
 package dry;
 
+use strict;
 use NEXT;
 
-$dry;
+our $dry;
 
 sub new {
     my $class = shift;

@@ -1,5 +1,6 @@
 package GA;
 
+use strict;
 use NEXT;
 
 sub new {

@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 package xcryptdel;
 
+use strict;
 use Cwd;
 use File::Basename;
 use File::Spec;

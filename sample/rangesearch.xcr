@@ -21,12 +21,12 @@ $sge = 1;
     'option' => '# @$-g gh10034'
 );
 
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'RANGE2' => [8,10],
-#		    'arg1S' => sub { $_[0] + $_[2]; });
+my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'RANGE2' => [8,10],
+		    'arg1S' => sub { $_[0] + $_[2]; });
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg1S' => [2,4]);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => \3);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => 3); # error
-my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
+#my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
 #my @jobs = &prepare(%xyz);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);

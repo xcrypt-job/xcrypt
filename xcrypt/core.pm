@@ -1,5 +1,6 @@
 package core;
 
+use strict;
 use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
