@@ -75,6 +75,7 @@ sub start {
     if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
         print "Skipping " . $self->{id} . " because already done.\n";
     } else {
+#        $self->{request_id} = &jobsched::qsub($self);
         $self->{request_id} = &jobsched::qsub($self);
         jobsched::set_job_request_id ($self->{id}, $self->{request_id});
 #    print $self->{id} . " is submitted.\n";

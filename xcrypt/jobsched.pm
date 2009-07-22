@@ -186,12 +186,29 @@ sub qsub {
     my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
     if ($existence == 0) {
 	my $id = qx/$qsub_command $scriptfile/;
+
+	my $req_id;
+	if ($user::sge) {
+	    my @list = split(/ /, $id);
+	    foreach (@list) {
+		if ($_ =~ /^([0-9]+)/) {
+		    $req_id = $1;
+		}
+	    }
+	} else {
+	    if ( $id =~ /([0-9]*)\.nqs/ ) {
+		$req_id = $1;
+	    } else {
+		die "unexpected requestid.\n";
+	    }
+	}
+
 	my $idfile = File::Spec->catfile($dir, 'request_id');
 	open (REQUESTID, ">> $idfile");
-	print REQUESTID $id;
+	print REQUESTID $req_id;
 	close (REQUESTID);
         inventory_write ($job_name, "qsub");
-	return $id;
+	return $req_id;
     } else { die "qsub not found\n"; }
 }
 
