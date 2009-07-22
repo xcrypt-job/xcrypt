@@ -2,7 +2,7 @@
 use IO::Socket;
 use strict;
 
-my $retry = 100; # # of connection trial
+my $retry = 1000; # # of connection trial
 
 if ( @ARGV < 4 ) {
     print STDERR "usage: $0 [hostname] [port] [jobname] [status]\n";

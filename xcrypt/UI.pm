@@ -143,10 +143,9 @@ sub prepare {
 	}
     }
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
-	    if (@{$jobs{"RANGE$i"}} eq ()) {
-		push(@{$jobs{"RANGE$i"}}, $nilchar);
-	    }
+	unless ($jobs{"RANGE$i"}) {
+	    my @tmp = ($nilchar);
+	    $jobs{"RANGE$i"} = \@tmp;
 	}
     }
     if ($count) {
