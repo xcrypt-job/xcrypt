@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+package xcryptdel;
+
+use Cwd;
+use File::Basename;
+use File::Spec;
+
+my $write_command = undef;
+my $inventory_port = 9999;
+if ($inventory_port > 0) {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'inventory_write_sock.pl');
+} else {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+}
+
+my $tmp = File::Spec->catfile($ARGV[0], "request_id");
+my $temp;
+open (DEL, "< $tmp");
+$temp = <DEL>;
+close (DEL);
+
+system ("qdel $temp");
+system (inventory_write_cmdline($ARGV[0], "abort"));
+
+sub inventory_write_cmdline {
+    my ($jobname, $stat) = @_;
+    my $inventory_host = qx/hostname/;
+    $inventory_host =~ s/\n//g;
+#    status_name_to_level ($stat); # 有効な名前かチェック
+    if ( $inventory_port > 0 ) {
+        return "$write_command $inventory_host $inventory_port $jobname $stat";
+    } else {
+	my $current_directory=Cwd::getcwd();
+	my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
+        my $file = File::Spec->catfile($inventory_path, $jobname);
+        my $jobspec = "\"spec: $jobname\"";
+        return "$write_command $file \"$stat\" $jobspec";
+    }
+}
