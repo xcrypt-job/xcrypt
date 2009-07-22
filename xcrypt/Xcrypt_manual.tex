@@ -623,14 +623,16 @@ repickup(ジョブハッシュリファレンスの配列);
 
 {\huge
 \[
-\entrymodifiers={+[F-:<10pt>]}
+%\entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=120pt{
-\txt{active} \ar[rrd] \ar[r] &
-\txt{submit} \ar[rd] \ar[r]^{\txt{qsub成功}} &
-\txt{qsub} \ar[lld] \ar[d]\\
-\txt{start} \ar[r] \ar@/_5pc/[rr]&
-\txt{done} &
-\txt{abort}
+  \ar[r]^{\txt{\normalsize オブジェクト生成}} &
+  *+[F-:<10pt>]{\txt{active}} \ar[rrd]^{\txt{\normalsize \texttt{xcr\_del}}} \ar[r]^{\txt{\normalsize qsub実行}} &
+  *+[F-:<10pt>]\txt{submit} \ar[rd]^{\txt{\normalsize qsub失敗}} \ar[r]^{\txt{\normalsize qsub成功}} &
+  *+[F-:<10pt>]\txt{qsub} \ar[lld]^{\txt{\normalsize プログラム開始}} \ar[d]^{\txt{\normalsize 当該ジョブ消滅}}\\
+  &
+  *+[F-:<10pt>]\txt{start} \ar[r]^{\txt{\normalsize プログラム終了}} \ar@/_5pc/[rr]^{\txt{\normalsize 当該ジョブ消滅}}&
+  *+[F-:<10pt>]\txt{done} &
+  *+[F-:<10pt>]\txt{abort}
 }
 \]
 }
