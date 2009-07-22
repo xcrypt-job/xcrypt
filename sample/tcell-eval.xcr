@@ -1,3 +1,4 @@
+use base qw(core);
 use limit;
 
 $limit::smph=Thread::Semaphore->new(20);
