@@ -109,6 +109,7 @@ sub after {
 
     my @thrds = ();
     foreach (@{$self->{successor}}) {
+	no strict 'refs';
 	my $foo = 'user::' . $_;
 	my %bar = %$foo;
 	my $obj = user->new(\%bar);
