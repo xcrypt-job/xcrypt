@@ -1,5 +1,4 @@
 use base qw(limit dry core);
-use function;
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
@@ -11,8 +10,6 @@ $sge = 1;
     'exe' => './kempo',
     'arg0' => 'plasma.inp',
     'arg1' => '100',
-#    'copieddir0' => 'forcopieddir',
-#    'copieddir0' => '.',
     'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'stdofile' => 'hogeout',
