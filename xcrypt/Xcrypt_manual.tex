@@ -89,10 +89,11 @@ use base qw(dry core);
 
 \section{\setglobalvar}
 
-Xcrypt スクリプトの動作全体に関わる大域変数（例えば\texttt{\$jobsched::sge}）は
+Xcrypt スクリプトの動作全体に関わる大域変数（例えば
+\texttt{\$separation\_symbol} ）は
 \begin{boxnote}
 \begin{alltt}
-$jobsched::sge = 1;
+$separation_symbol = '-';
 \end{alltt}
 \end{boxnote}
 \noindent
@@ -139,7 +140,7 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 use base qw(limit core);
 
 \$limit::smph=Thread::Semaphore->new(10);
-\$jobsched::sge = 1;
+\$separation\_symbol = '-';
 
 %xyz = (
     'id' => 'job100',
@@ -292,23 +293,6 @@ Xcrypt スクリプトに
 \end{boxnote}
 
 \chapter{大域変数}\label{globalvar}
-
-\section{\texttt{jobsched::sge}}
-
-ジョブスケジューラが Sun Grid Engine の場合は，Xcrypt スクリプトに
-\begin{boxnote}
-\begin{alltt}
-\$jobsched::sge = 1;
-\end{alltt}
-\end{boxnote}
-と記述することで Sun Grid Engine に対して Xcrypt を正常に動作させること
-ができる．デフォルト値は$0$である．
-\if0
-\begin{screen}
-\texttt{\$ xcrypt -s sample.xcr}
-\end{screen}
-とオプションつきで実行することと同義である．
-\fi
 
 \section{\texttt{separation\_symbol}}
 
