@@ -29,6 +29,13 @@ print TMP 'use jobsched;' . "\n";
 #print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
 print TMP '$max = 255;' . "\n";
 print TMP '$separation_symbol = \'!\';' . "\n";
+if ( $ENV{JOBSCHEDULER} eq 'NQS' ) {
+    print TMP '$jobsched::sge = 0;' . "\n";
+} elsif ( $ENV{JOBSCHEDULER} eq 'SGE' ) {
+    print TMP '$jobsched::sge = 1;' . "\n";
+} else {}
+print TMP '&jobsched::invoke_watch ();' . "\n";
+print TMP '&jobsched::invoke_abort_check ();' . "\n";
 open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
 foreach (<USER>) { print TMP "$_"; }
 close ( USER );
