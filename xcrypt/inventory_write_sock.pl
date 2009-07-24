@@ -3,10 +3,16 @@ use IO::Socket;
 use strict;
 use Time::HiRes;
 
-my $retry = 100; # # of connection trial
+$|=1;
+select(STDERR); $|=1; select(STDOUT);
+
+my $retry = 10; # # of connection trial
+my $log;
+open ($log, ">> invwrite-sock.log");
+select($log); $|=1; select(STDOUT);
 
 if ( @ARGV < 4 ) {
-    print STDERR "usage: $0 [hostname] [port] [jobname] [status]\n";
+    print $log "usage: $0 [hostname] [port] [jobname] [status]\n";
     exit -1;
 }
 
@@ -16,7 +22,8 @@ my $port = $ARGV[1];
 my $jobname = $ARGV[2];
 my $status = $ARGV[3];
 
-if ($status ne 'qsub' ) {
+# if ($status ne 'qsub' ) {
+if (1) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
@@ -30,10 +37,11 @@ if ($status ne 'qsub' ) {
         );
         unless ($socket) {
             my $slp = 0.1+rand(1.0);
-            print stderr "Failed to connect $host:$port. Retry after $slp seconds.\n";
+            print $log "Failed to connect $host:$port. Retry after $slp seconds.\n";
             Time::HiRes::sleep $slp;
         }
     }
+    select($socket); $|=1; select(STDOUT);
     ###
     my $time_now = time();
     my @times = localtime($time_now);
@@ -46,16 +54,14 @@ if ($status ne 'qsub' ) {
     print $socket "date_$status: $timestring\n";
     print $socket "time_$status: $time_now\n";
     print $socket ":end\n";
-    $socket->flush();
     
-    while ( <$socket> ) {
-        if ( $_ =~ '^:ack' ) { last; }
-        else {
-            warn "Unexpected ack message: $_";
-            last;
-        }
+    print $log "$jobname\[$status\]: waiting ack\n";
+    my $ackline =  <$socket>;
+    unless ( $ackline =~ /^:ack/ ) {
+        warn "Unexpected ack message: $ackline";
     }
-    
+    print $log "$jobname\[$status\]: received ack\n";
     $socket->close();
-#    print "Successfully written $jobname<=$status.\n";
+    print $log "$jobname\[$status\]: successfully done\n";
+    close($log);
 }
