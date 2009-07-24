@@ -7,14 +7,10 @@ use function;
 use base qw(Exporter);
 our @EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
 
-my $MAXRANGE = 16;
-my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
 my $nilchar = 'nil';
-
 my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'stdofile', 'stdefile', 'proc', 'cpu');
 
 my $max = 255;
-#for ( my $i = 0; $i <= $user::max; $i++ ) {
 for ( my $i = 0; $i <= $max; $i++ ) {
     foreach (('arg', 'linkedfile', 'copiedfile', 'copieddir')) {
 	my $name = $_ . $i;
@@ -22,53 +18,11 @@ for ( my $i = 0; $i <= $max; $i++ ) {
     }
 }
 
-=comment
-sub killall {
-    my $prefix = shift;
-    foreach (@_) {
-	my $id = $prefix . '_' . $_;
-	my @list = &pickup("$id/request_id", ' ');
-	my @revlist = reverse(@list);
-	system("qdel -k $revlist[4]");
-#	system("qdel $revlist[4]");
-	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
-    }
-}
-=cut
-
-sub pickup {
-    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
-    my $line;
-    foreach (<OUTPUT>) {
-	$line = $_;
-    }
-    my $delimit = $_[1];
-    my @list = split(/$delimit/, $line);
-    close ( OUTPUT );
-    return @list;
-}
-
-sub prepare_submit_sync {
-    my @objs = &prepare(@_);
-    my @thrds = &submit(@objs);
-    return &sync(@thrds);
-}
-
-sub submit_sync {
-    my @thrds = &submit(@_);
-    return &sync(@thrds);
-}
-
-sub prepare_submit {
-    my @objs = &prepare(@_);
-    return &submit(@objs);
-}
-
-sub rm_nilchar {
+sub rm_tailnis {
     my @str = @_;
     if ($str[$#str] eq $nilchar) {
 	pop(@str);
-	&rm_nilchar(@str);
+	&rm_tailnis(@str);
     } else {
 	return @str;
     }
@@ -78,24 +32,25 @@ sub generate {
     my %job = %{$_[0]};
     shift;
 
-    my @ranges = &rm_nilchar(@_);
+    my @ranges = &rm_tailnis(@_);
     $job{'id'} = join($user::separation_symbol, ($job{'id'}, @ranges));
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
-	if (ref($job{"$members"}) eq 'CODE') {
-#	    $job{"$_"} =  &{$job{"$members"}}(@ranges);
-	    $job{"$_"} =  &{$job{"$members"}}(@_);
-	} elsif (ref($job{"$members"}) eq 'ARRAY') {
-	    my @tmp = @{$job{"$members"}};
-	    $job{"$_"} = $tmp[$_[0]];
-	} elsif (ref($job{"$members"}) eq 'SCALAR') {
-	    my $tmp = ${$job{"$members"}};
-	    $job{"$_"} = $tmp;
-	} else {
-	    unless ($job{"$members"}) {}
-		    else {
-			warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
-		    }
+	if ( exists($job{"$members"}) ) {
+	    if ( ref($job{"$members"}) eq 'CODE' ) {
+		$job{"$_"} = &{$job{"$members"}}(@ranges);
+	    } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+		my @tmp = @{$job{"$members"}};
+		$job{"$_"} = $tmp[$_[0]];
+	    } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+		my $tmp = ${$job{"$members"}};
+		$job{"$_"} = $tmp;
+	    } else {
+		unless ($job{"$members"}) {
+		} else {
+		    warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
+		}
+	    }
 	}
     }
 =comment
@@ -123,52 +78,54 @@ sub times {
     return @result;
 }
 
+my $MAXRANGE = 16;
 sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
-	unless ($jobs{"$members"}) {
-	    if ($jobs{"$_"}) {
+	unless ( exists($jobs{"$members"}) ) {
+	    if ( exists($jobs{"$_"}) ) {
 		$jobs{"$members"} = sub {$jobs{"$_"};};
 	    }
 	}
     }
-    my @objs;
 
-    my $count = 0;
+    my $existOfRANGE = 0;
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
-	    my $tmp = @{$jobs{"RANGE$i"}};
-	    $count = $count + $tmp;
+	if ( exists($jobs{"RANGE$i"}) ) {
+	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
+		my $tmp = @{$jobs{"RANGE$i"}};
+		$existOfRANGE = $existOfRANGE + $tmp;
+	    } else {
+		warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+	    }
 	}
     }
     for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	unless ($jobs{"RANGE$i"}) {
+	unless ( exists($jobs{"RANGE$i"}) ) {
 	    my @tmp = ($nilchar);
 	    $jobs{"RANGE$i"} = \@tmp;
 	}
     }
-    if ($count) {
+
+    my @objs;
+    if ( $existOfRANGE ) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
-	    if (ref($jobs{"RANGE$i"}) eq 'ARRAY') {
-		push(@ranges, $jobs{"RANGE$i"});
+	    if ( exists($jobs{"RANGE$i"}) ) {
+		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
+		    push(@ranges, $jobs{"RANGE$i"});
+		} else {
+		    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+		}
 	    }
 	}
 	my @range = &times(@ranges);
-	foreach my $r (@range) {
-	    my $obj = &generate(\%jobs, @{$r});
+	foreach (@range) {
+	    my $obj = &generate(\%jobs, @{$_});
 	    push(@objs , $obj);
 	}
-    } elsif ($jobs{'copieddir'}) {
-	opendir(DIR, $jobs{'copieddir'});
-	my @params = grep { !m/^(\.|\.\.)$/g } readdir(DIR);
-	closedir(DIR);
-	foreach (@params) {
-	    my $obj = &generate(\%jobs, $_);
-	    push(@objs , $obj);
-	}
-    } elsif (&MAX(\%jobs)) {
+    } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
 	my @params = (0..(&MIN(\%jobs)-1));
 	foreach (@params) {
 	    my $obj = &generate(\%jobs, $_);
@@ -185,9 +142,11 @@ sub MAX {
     my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
-	if (ref($_[0]{"$members"}) eq 'ARRAY') {
-	    my $tmp = @{$_[0]{"$members"}};
-	    $num = $tmp + $num;
+	if ( exists($_[0]{"$members"}) ) {
+	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
+		my $tmp = @{$_[0]{"$members"}};
+		$num = $tmp + $num;
+	    }
 	}
     }
     return $num;
@@ -197,11 +156,13 @@ sub MIN {
     my $num = 0;
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
-	if (ref($_[0]{"$members"}) eq 'ARRAY') {
-	    my $tmp = @{$_[0]{"$members"}};
-	    if ($tmp <= $num) {	$num = $tmp; }
-	    elsif ($num == 0) { $num = $tmp; }
-	    else {}
+	if ( exists($_[0]{"$members"}) ) {
+	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
+		my $tmp = @{$_[0]{"$members"}};
+		if ($tmp <= $num) { $num = $tmp; }
+		elsif ($num == 0) { $num = $tmp; }
+		else {}
+	    }
 	}
     }
     return $num;
@@ -226,6 +187,33 @@ sub sync {
     return @outputs;
 }
 
+=comment
+my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+sub killall {
+    my $prefix = shift;
+    foreach (@_) {
+	my $id = $prefix . '_' . $_;
+	my @list = &pickup("$id/request_id", ' ');
+	my @revlist = reverse(@list);
+	system("qdel -k $revlist[4]");
+	system("qdel $revlist[4]");
+	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
+    }
+}
+=cut
+
+sub pickup {
+    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
+    my $line;
+    foreach (<OUTPUT>) {
+	$line = $_;
+    }
+    my $delimit = $_[1];
+    my @list = split(/$delimit/, $line);
+    close ( OUTPUT );
+    return @list;
+}
+
 sub repickup {
     my @outputs = ();
     foreach (@_) {
@@ -237,6 +225,22 @@ sub repickup {
 	}
 	return @stdouts;
     }
+}
+
+sub prepare_submit_sync {
+    my @objs = &prepare(@_);
+    my @thrds = &submit(@objs);
+    return &sync(@thrds);
+}
+
+sub submit_sync {
+    my @thrds = &submit(@_);
+    return &sync(@thrds);
+}
+
+sub prepare_submit {
+    my @objs = &prepare(@_);
+    return &submit(@objs);
 }
 
 1;

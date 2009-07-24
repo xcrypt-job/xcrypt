@@ -1,6 +1,8 @@
 use base qw(core);
 use function;
 
+$sge = 1;
+
 %xyz = (
     'id' => 'job0',
     'exe' => 'echo',
@@ -15,10 +17,10 @@ use function;
     'arg0' => 'plasma.inp',
     'arg1' => '100',
     'linkedfile0' => 'plasma.inp',
-    'linkedfile1' => 'kempo',
-    'ofile' => 'pbody',
-    'oclmn' => 1,
-    'odlmtr' => ','
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
+    'linkedfile1' => 'kempo'
 );
 %job1 = (
     'id' => 'job1',
@@ -27,9 +29,9 @@ use function;
     'arg1' => '100',
     'linkedfile0' => 'plasma.inp',
     'linkedfile1' => 'kempo',
-    'ofile' => 'pbody',
-    'oclmn' => 1,
-    'odlmtr' => ',',
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
     'queue' => 'eh',
     'trace' => [10, 100]
 );
@@ -40,9 +42,9 @@ use function;
     'arg1' => '100',
     'linkedfile1' => 'kempo',
     'linkedfile0' => 'plasma.inp',
-    'ofile' => 'pbody',
-    'oclmn' => 1,
-    'odlmtr' => ',',
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
     'queue' => 'eh',
     'trace' => [20, 200]
 );

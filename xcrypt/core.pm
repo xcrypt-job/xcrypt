@@ -76,14 +76,11 @@ sub start {
     if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
         print "Skipping " . $self->{id} . " because already done.\n";
     } else {
-#        $self->{request_id} = &jobsched::qsub($self);
         $self->{request_id} = &jobsched::qsub($self);
         jobsched::set_job_request_id ($self->{id}, $self->{request_id});
-#    print $self->{id} . " is submitted.\n";
 
         # 結果ファイルから結果を取得
         &jobsched::wait_job_done($self->{id});
-#    print $self->{id} . " is done.\n";
 
         my $stdofile = 'stdout';
         unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
@@ -109,6 +106,7 @@ sub after {
 
     my @thrds = ();
     foreach (@{$self->{successor}}) {
+	no strict 'refs';
 	my $foo = 'user::' . $_;
 	my %bar = %$foo;
 	my $obj = user->new(\%bar);

@@ -20,7 +20,9 @@ Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
 ず．
 
 \part{総論}
-\chapter{機能}
+\chapter{はじめに}
+
+\section{機能}
 
 通常，ある一つの大きな処理を行うには，その処理を小分け（ジョブと呼ぶ）
 にし，それらの処理をジョブスケジューラに依頼する．具体的には，
@@ -40,6 +42,13 @@ Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
 
 TODO: サーチアルゴリズム等のアルゴリズムモジュールの提供についても記述
 する．
+
+\section{動作環境}
+
+・Perl 5.10.0
+
+・他
+
 
 \chapter{Xcrypt スクリプトの記述}
 
@@ -337,6 +346,11 @@ Xcrypt スクリプトに
 \section{\texttt{copiedfile0,...,copiedfile255}}
 
 この値のファイル名でジョブ作業ディレクトリから作業ディレクトリにコピー
+をつくる．
+
+\section{\texttt{copieddir0,...,copieddir255}}
+
+この値の名前であるディレクトリ中のファイルから作業ディレクトリにコピー
 をつくる．
 
 \section{\texttt{stdofile}}
