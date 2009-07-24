@@ -1,0 +1,37 @@
+use base qw(core);
+use Data_Generation;
+use Data_Extraction;
+
+$sge = 1;
+
+%xyz = (
+    'id' => 'job100',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'arg2' => '> pbody',
+    'copiedfile0' => 'plasma.inp',
+    'linkedfile0' => 'kempo',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
+);
+
+my @jobs = &prepare(%xyz);
+foreach (@jobs) {
+#    $_->{'input0'}->KR("param", "%$_->{arg1} + 50%");
+    # 以下，入力ファイルデータの整形ルール（LRとか）が続く
+}
+my @thrds = &submit(@jobs);
+my @results  = &sync(@thrds);
+
+=comment
+mkdir 'job100_/hoge', 0755;
+$After1 = EF("$ENV{'PWD'}/job100_/pbody", "$ENV{'PWD'}/job100_/hoge");
+$After1->LE("1");
+$After1->do();
+
+my @list = &pickup('job100_/hoge/pbody', ',');
+print $list[0] , "\n";
+=cut
+
+foreach (@results) { print $_->{stdout} , "\n"; }

@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+package xcrypt;
+
+use strict;
+use File::Copy;
+use Getopt::Long;
+
+#my $opt_dry = 0;
+#my $opt_sge = 0;
+#GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
+
+my $savefile = "$ARGV[0]" . '.pl';
+
+if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
+else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
+
+if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
+else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
+
+if ( -e $savefile ) { unlink $savefile; }
+
+open ( TMP , "> $savefile") or die "Can't open $savefile\n";
+print TMP 'package user;' . "\n";
+print TMP 'use UI;' . "\n";
+print TMP 'use threads;' . "\n";
+print TMP 'use threads::shared;' . "\n";
+print TMP 'use jobsched;' . "\n";
+#print TMP 'use base qw(core);' . "\n";
+#print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
+print TMP '$max = 255;' . "\n";
+print TMP '$separation_symbol = \'!\';' . "\n";
+open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
+foreach (<USER>) { print TMP "$_"; }
+close ( USER );
+print TMP '$jobsched::abort_check_thread->detach;' . "\n";
+print TMP '$jobsched::watch_thread->detach;' . "\n";
+print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
+print TMP 'sub before {my $self = shift;$self->SUPER::before(); $self->{before};}' . "\n";
+print TMP 'sub after {my $self = shift;$self->SUPER::after(); $self->{after};}' . "\n";
+
+#print TMP 'return 0;' . "\n";
+close ( TMP );
+
+chmod 0755, $savefile or die "Can't chmod $savefile\n";
+my $exitcode = system("perl $savefile");
+unless ($exitcode == 0) { die "Can't perl $savefile"; }
+#system("perl $savefile");
+#unlink $savefile or die "Can't remove $savefile";

@@ -1,0 +1,52 @@
+use base qw(core);
+use function;
+
+$sge = 1;
+
+%xyz = (
+    'id' => 'job0',
+    'exe' => 'echo',
+    'queue' => 'eh',
+    'successor' => ['job3','job1','job2']
+);
+%job3 = (
+    'id' => 'job3',
+    'predecessor' => ['job1','job2'],
+    'exe' => './kempo',
+    'queue' => 'eh',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'linkedfile0' => 'plasma.inp',
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
+    'linkedfile1' => 'kempo'
+);
+%job1 = (
+    'id' => 'job1',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'linkedfile0' => 'plasma.inp',
+    'linkedfile1' => 'kempo',
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
+    'queue' => 'eh',
+    'trace' => [10, 100]
+);
+%job2 = (
+    'id' => 'job2',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'arg1' => '100',
+    'linkedfile1' => 'kempo',
+    'linkedfile0' => 'plasma.inp',
+#    'ofile' => 'pbody',
+#    'oclmn' => 1,
+#    'odlmtr' => ',',
+    'queue' => 'eh',
+    'trace' => [20, 200]
+);
+
+&prepare_submit_sync(%xyz) , "\n";

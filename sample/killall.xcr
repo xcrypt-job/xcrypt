@@ -1,0 +1,22 @@
+use base qw(core);
+
+$sge = 1;
+
+%xyz = (
+    'id' => 'job100',
+    'exe' => './kempo',
+    'arg0' => 'plasma.inp',
+    'linkedfile0' => 'kempo',
+    'copiedfile0' => 'plasma.inp',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
+);
+
+my @jobs = &prepare(%xyz, 'RANGE0' => [0..2], 'arg1S' => [0..2],
+ 'after' => 'eval(if ($self->{stdout} == 11) { system("qdel -u username"); })');
+my @thrds = &submit(@jobs);
+my @results  = &sync(@thrds);
+
+foreach (@results) {
+    print $_->{stdout} , "\n";
+}

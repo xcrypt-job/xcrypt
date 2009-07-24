@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+
+#sleep(10);
+open (PLASMA, "< $ARGV[1]");
+foreach my $item (<PLASMA>) {
+    my $str = $item;
+    if ($str =~ m/^(param)/) {
+	if ($str =~ m/(\d+)/) {
+	    my $num = $1;
+#	    print $num;
+	    if ($num => 2) {
+		sleep(1);
+	    }
+	    open ( PBODY , "> pbody" );
+#	    print PBODY "foo," . ($num / $ARGV[0]) . ",bar";
+	    my $hoge = $ARGV[0] + $num;
+#	    print PBODY "foo," . $hoge . ",bar";
+	    print $hoge;
+	    close ( PBODY );
+	}
+    }
+}
+close (PLASMA);
