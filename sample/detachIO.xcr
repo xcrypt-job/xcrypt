@@ -2,8 +2,6 @@ use base qw(core);
 use Data_Generation;
 use Data_Extraction;
 
-$jobsched::sge = 1;
-
 %xyz = (
     'id' => 'job100',
     'exe' => './kempo',

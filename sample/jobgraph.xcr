@@ -1,8 +1,6 @@
 use base qw(core);
 use function;
 
-$jobsched::sge = 1;
-
 %xyz = (
     'id' => 'job0',
     'exe' => 'echo',

@@ -1,8 +1,6 @@
 use base qw(core);
 use limit;
 
-$jobsched::sge = 1;
-
 $limit::smph=Thread::Semaphore->new(20);
 
 my %job_lu =

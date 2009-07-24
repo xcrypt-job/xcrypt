@@ -1,7 +1,5 @@
 use base qw(core);
 
-$jobsched::sge = 1;
-
 %xyz = (
     'id' => 'job100',
     'exe' => './kempo',
