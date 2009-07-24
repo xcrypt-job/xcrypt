@@ -53,7 +53,7 @@ my %status_level = ("active"=>0, "submit"=>1, "qsub"=>2, "start"=>3, "done"=>4, 
 my %running_jobs : shared;
 our $abort_check_thread=undef;
 
-#our $user::sge = 0;
+our $sge : shared = 0;
 
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
@@ -80,7 +80,7 @@ sub qsub {
 
     ## <-- Create job script file <--
     my $scriptfile;
-    if ($user::sge) {
+    if ($sge) {
 	$scriptfile = File::Spec->catfile($dir, 'sge.sh');
     } else {
 	$scriptfile = File::Spec->catfile($dir, 'nqs.sh');
@@ -88,11 +88,11 @@ sub qsub {
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！
-    if ($user::sge) {
+    if ($sge) {
 	print SCRIPT "#\$ -S /bin/sh\n";
     }
     my $queue = $self->{queue};
-    if ($user::sge) {
+    if ($sge) {
 
     } else {
 	print SCRIPT "# @\$-q $queue\n";
@@ -107,7 +107,7 @@ sub qsub {
 	$stdofile = File::Spec->catfile($dir, 'stdout');
     }
     if ( -e $stdofile) { unlink $stdofile; }
-    if ($user::sge) {
+    if ($sge) {
 	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
     } else {
 	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
@@ -120,7 +120,7 @@ sub qsub {
 	$stdefile = File::Spec->catfile($dir, 'stderr');
     }
     if ( -e $stdefile) { unlink $stdefile; }
-    if ($user::sge) {
+    if ($sge) {
 	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
     } else {
 	print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
@@ -128,7 +128,7 @@ sub qsub {
 
     my $proc = $self->{proc};
     unless ($proc eq '') {
-	if ($user::sge) {
+	if ($sge) {
 
 	} else {
 	    print SCRIPT "# @\$-lP $proc\n";
@@ -136,7 +136,7 @@ sub qsub {
     }
     my $cpu = $self->{cpu};
     unless ($cpu eq '') {
-	if ($user::sge) {
+	if ($sge) {
 
 	} else {
 	    print SCRIPT "# @\$-lp $cpu\n";
@@ -144,7 +144,7 @@ sub qsub {
     }
     my $memory = $self->{memory};
     unless ($memory eq '') {
-	if ($user::sge) {
+	if ($sge) {
 
 	} else {
 	    print SCRIPT "# @\$-lm $memory\n";
@@ -152,7 +152,7 @@ sub qsub {
     }
     my $verbose = $self->{verbose};
     unless ($verbose eq '') {
-	if ($user::sge) {
+	if ($sge) {
 
 	} else {
 	    print SCRIPT "# @\$-oi\n";
@@ -160,7 +160,7 @@ sub qsub {
     }
     my $verbose_node = $self->{verbose_node};
     unless ($verbose_node eq '') {
-	if ($user::sge) {
+	if ($sge) {
 
 	} else {
 	    print SCRIPT "# @\$-OI\n";
@@ -188,7 +188,7 @@ sub qsub {
 	my $id = qx/$qsub_command $scriptfile/;
 
 	my $req_id;
-	if ($user::sge) {
+	if ($sge) {
 	    my @list = split(/ /, $id);
 	    foreach (@list) {
 		if ($_ =~ /^([0-9]+)/) {
@@ -388,7 +388,7 @@ sub set_job_request_id {
     my $req_id;
     # depend on outputs of NQS's qsub
     # SGEでも動くようにしたつもり
-    if ($user::sge) {
+    if ($sge) {
 	my @list = split(/ /, $req_id_line);
 	foreach (@list) {
 	    if ($_ =~ /^([0-9]+)/) {
@@ -589,16 +589,19 @@ sub check_and_write_abort {
         chomp;
 	# depend on outputs of NQS's qstat
         # SGEでも動くようにしたつもり
-	if ($user::sge) {
+	if ($sge) {
+            # print "--- $_\n";
 	    my @list = split(/ /, $_);
 	    if ($list[0] =~ /^\s*([0-9]+)/) {
 		my $req_id = $1;
+                # print "$_ --- " . $unchecked{$req_id} . "\n";
                 delete ($unchecked{$req_id});
 	    }
 	} else {
+            # print "=== $_\n";
 	    if ( $_ =~ /([0-9]+)\.nqs/ ) {
 		my $req_id = $1;
-		# print "$_ --- " . $unchecked{$req_id} . "\n";
+                # print "$_ === " . $unchecked{$req_id} . "\n";
 		delete ($unchecked{$req_id});
 	    }
 	}

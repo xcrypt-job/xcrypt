@@ -27,7 +27,6 @@ print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
 #print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
-print TMP '$sge = 0;' . "\n";
 print TMP '$max = 255;' . "\n";
 print TMP '$separation_symbol = \'!\';' . "\n";
 open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
@@ -38,6 +37,7 @@ print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->SUPER::start();return $self;}' . "\n";
 print TMP 'sub before {my $self = shift;$self->SUPER::before(); $self->{before};}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after(); $self->{after};}' . "\n";
+
 #print TMP 'return 0;' . "\n";
 close ( TMP );
 
