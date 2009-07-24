@@ -49,10 +49,10 @@ if ($status ne 'qsub' ) {
     $socket->flush();
     
     while ( <$socket> ) {
-        if ( $_ eq ":ack" ) { break; }
+        if ( $_ =~ '^:ack' ) { last; }
         else {
             warn "Unexpected ack message: $_";
-            break;
+            last;
         }
     }
     

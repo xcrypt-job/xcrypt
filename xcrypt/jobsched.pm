@@ -299,7 +299,7 @@ sub invoke_watch_by_socket {
             my $cl_ip = inet_ntoa ($cl_iaddr);
             select (CLIENT); $|=1; select (STDOUT);
             while (<CLIENT>) {
-                if ( $_ eq ':end' ) { break; }
+                if ( $_ =~ '^:end' ) { last; }
                 handle_inventory ($_, 1);
             }
             print CLIENT ":ack\n";
