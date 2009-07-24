@@ -590,15 +590,18 @@ sub check_and_write_abort {
 	# depend on outputs of NQS's qstat
         # SGEでも動くようにしたつもり
 	if ($sge) {
-            # print "--- $_\n";
+            print "--- $_\n";
 	    my @list = split(/ /, $_);
 	    if ($list[0] =~ /^\s*([0-9]+)/) {
 		my $req_id = $1;
+print "foo\n";
                 # print "$_ --- " . $unchecked{$req_id} . "\n";
                 delete ($unchecked{$req_id});
+	    } else {
+print "bar\n";
 	    }
 	} else {
-            # print "=== $_\n";
+            print "=== $_\n";
 	    if ( $_ =~ /([0-9]+)\.nqs/ ) {
 		my $req_id = $1;
                 # print "$_ === " . $unchecked{$req_id} . "\n";
@@ -623,8 +626,8 @@ sub invoke_abort_check {
 }
 
 # スレッド起動（読み込むだけで起動，は正しい？）
-invoke_watch ();
-invoke_abort_check ();
+#invoke_watch ();
+#invoke_abort_check ();
 ## スレッド終了待ち：デバッグ（jobsched.pm単体実行）用
 # $watch_thread->join();
 

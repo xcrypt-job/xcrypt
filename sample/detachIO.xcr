@@ -2,7 +2,7 @@ use base qw(core);
 use Data_Generation;
 use Data_Extraction;
 
-$sge = 1;
+$jobsched::sge = 1;
 
 %xyz = (
     'id' => 'job100',

@@ -1,6 +1,6 @@
 use base qw(core);
 
-$sge = 1;
+$jobsched::sge = 1;
 
 %xyz = (
     'id' => 'job1',

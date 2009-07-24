@@ -89,10 +89,10 @@ use base qw(dry core);
 
 \section{\setglobalvar}
 
-Xcrypt スクリプトの動作全体に関わる大域変数（例えば\texttt{\$sge}）は
+Xcrypt スクリプトの動作全体に関わる大域変数（例えば\texttt{\$jobsched::sge}）は
 \begin{boxnote}
 \begin{alltt}
-$sge = 1;
+$jobsched::sge = 1;
 \end{alltt}
 \end{boxnote}
 \noindent
@@ -139,7 +139,7 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 use base qw(limit core);
 
 \$limit::smph=Thread::Semaphore->new(10);
-\$sge = 1;
+\$jobsched::sge = 1;
 
 %xyz = (
     'id' => 'job100',
@@ -175,6 +175,17 @@ foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
 \begin{screen}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
+
+環境変数 \texttt{JOBSCHEDULER} を適切に設定する．シェルが bash なら，
+\begin{screen}
+\texttt{\$ JOBSCHEDULER=SGE; export JOBSCHEDULER}
+\end{screen}
+
+NQS を使う場合は
+\begin{screen}
+\texttt{\$ JOBSCHEDULER=NQS; export JOBSCHEDULER}
+\end{screen}
+とする．
 
 作業ディレクトリに移動する（ここでは \texttt{\$HOME/wd} とする）．
 \begin{screen}
@@ -282,12 +293,12 @@ Xcrypt スクリプトに
 
 \chapter{大域変数}\label{globalvar}
 
-\section{\texttt{sge}}
+\section{\texttt{jobsched::sge}}
 
 ジョブスケジューラが Sun Grid Engine の場合は，Xcrypt スクリプトに
 \begin{boxnote}
 \begin{alltt}
-\$sge = 1;
+\$jobsched::sge = 1;
 \end{alltt}
 \end{boxnote}
 と記述することで Sun Grid Engine に対して Xcrypt を正常に動作させること
