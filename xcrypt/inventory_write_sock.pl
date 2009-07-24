@@ -45,8 +45,17 @@ if ($status ne 'qsub' ) {
     print $socket "status: $status\n";
     print $socket "date_$status: $timestring\n";
     print $socket "time_$status: $time_now\n";
-
+    print $socket ":end\n";
     $socket->flush();
+    
+    while ( <$socket> ) {
+        if ( $_ eq ":ack" ) { break; }
+        else {
+            warn "Unexpected ack message: $_";
+            break;
+        }
+    }
+    
     $socket->close();
 #    print "Successfully written $jobname<=$status.\n";
 }
