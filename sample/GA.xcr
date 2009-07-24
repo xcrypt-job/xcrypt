@@ -1,7 +1,5 @@
 use base qw(GA core);
 
-$sge = 1;
-
 %xyz = (
     'id' => 'job200',
     'exe' => './GA.sh',

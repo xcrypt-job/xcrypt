@@ -2,17 +2,16 @@ use base qw(limit dry core);
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
-$jobsched::sge = 1;
 #$separation_symbol = '-';
 
 %xyz = (
     'id' => 'job100',
-    'exe' => './kempo',
-#    'exe' => './a.out',
+#    'exe' => './kempo',
+    'exe' => './a.out',
     'arg0' => '100',
     'arg1' => 'plasma.inp',
     'linkedfile0' => 'kempo',
-#    'linkedfile1' => 'a.out',
+    'linkedfile1' => 'a.out',
     'copiedfile0' => 'plasma.inp',
     'stdofile' => 'hogeout',
     'stdefile' => 'hogeerr',
@@ -21,7 +20,7 @@ $jobsched::sge = 1;
 );
 
 my @jobs = &prepare(%xyz, 'RANGE0' => [20,21,22,23], 'RANGE2' => [10,11],
-		    'arg0S' => sub { $_[0] + $_[2]; });
+		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg1S' => [2,4]);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => \3);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => 3); # error

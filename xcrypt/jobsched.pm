@@ -640,8 +640,8 @@ sub invoke_abort_check {
 }
 
 # スレッド起動（読み込むだけで起動，は正しい？）
-invoke_watch ();
-invoke_abort_check ();
+#invoke_watch ();
+#invoke_abort_check ();
 ## スレッド終了待ち：デバッグ（jobsched.pm単体実行）用
 # $watch_thread->join();
 
