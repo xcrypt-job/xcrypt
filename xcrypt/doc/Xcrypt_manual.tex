@@ -151,6 +151,8 @@ use base qw(limit core);
     'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'stdofile' => 'hogeout',
+    'stdodlmtr' => ',',
+    'stdoclmn' => '0',
     'stdefile' => 'hogeerr',
     'queue' => 'gh10034',
     'option' => '# @\$-g gh10034'
@@ -352,6 +354,14 @@ Xcrypt スクリプトに
 
 この値のファイル名で実行プログラムとジョブスケジューラの標準出力を格納
 する．空の場合は「stdout」というファイル名になる．
+
+\section{\texttt{stdodlmtr}}
+
+実行プログラムの標準出力ファイルの行を区切る際の区切り文字を指定する．
+
+\section{\texttt{stdoclmn}}
+
+実行プログラムの標準出力ファイルの列を指定する．
 
 \section{\texttt{stdefile}}
 

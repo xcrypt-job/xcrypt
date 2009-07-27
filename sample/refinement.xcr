@@ -21,6 +21,7 @@ until (abs($today - $yesterday) > 20) {
     $job{'id'} = $job{'id'} . '_';
     $job{'arg1'} = $job{'arg1'} * 2;
     @results = &prepare_submit_sync(%job) , "\n";
+# stdoutキーはSGEでのみ正常に動作する
     $today = $results[0]->{stdout};
 }
 print $today, "\n";
