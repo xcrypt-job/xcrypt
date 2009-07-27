@@ -603,8 +603,10 @@ sub check_and_write_abort {
     }
     # "abort"をインベントリファイルに書き込み
     foreach my $req_id ( keys %unchecked ){
-        print STDERR "abort: $req_id: " . $unchecked{$req_id} . "\n";
-        inventory_write ($unchecked{$req_id}, "abort");
+        if ( exists $running_jobs{$req_id} ) {
+            print STDERR "abort: $req_id: " . $unchecked{$req_id} . "\n";
+            inventory_write ($unchecked{$req_id}, "abort");
+        }
     }
 }
 sub extract_req_id_from_qstat_line {
