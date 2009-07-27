@@ -179,14 +179,14 @@ foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
 
-環境変数 \texttt{JOBSCHEDULER} を適切に設定する．シェルが bash なら，
+環境変数 \texttt{XCRJOBSCHED} を適切に設定する．シェルが bash なら，
 \begin{screen}
-\texttt{\$ JOBSCHEDULER=SGE; export JOBSCHEDULER}
+\texttt{\$ XCRJOBSCHED=SGE; export XCRJOBSCHED}
 \end{screen}
 
 NQS を使う場合は
 \begin{screen}
-\texttt{\$ JOBSCHEDULER=NQS; export JOBSCHEDULER}
+\texttt{\$ XCRJOBSCHED=NQS; export XCRJOBSCHED}
 \end{screen}
 とする．
 
