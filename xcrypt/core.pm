@@ -84,9 +84,9 @@ sub start {
         unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
         my $hoge = File::Spec->catfile($self->{id}, $stdofile);
 
-        until (-e $hoge) { sleep 2; }
-        my @stdlist = &pickup($hoge, ',');
-        $self->{stdout} = $stdlist[0];
+        until (-e $hoge) { sleep 1; }
+        my @stdlist = &pickup($hoge, $self->{stdodlmtr});
+        $self->{stdout} = $stdlist[$self->{stdoclmn}];
     }
 
     $self->after();
