@@ -11,11 +11,15 @@ use Getopt::Long;
 
 my $savefile = "$ARGV[0]" . '.pl';
 
-if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
-else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
+if ( $ENV{XCRYPT} ) {
+    if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
+    else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
 
-if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
-else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
+    if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
+    else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
+} else {
+    die "Set the environment varialble XCRYPT\n";
+}
 
 if ( -e $savefile ) { unlink $savefile; }
 

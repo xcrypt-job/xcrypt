@@ -21,7 +21,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'RANGE0' => [20,21,22,23], 'RANGE2' => [10,11],
+my @jobs = &prepare(%xyz, 'RANGE0' => [20,21,22,23,24,25,26,27], 'RANGE2' => [10,11,12],
 		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg1S' => [2,4]);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => \3);
