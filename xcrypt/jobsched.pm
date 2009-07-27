@@ -25,7 +25,7 @@ my $qstat_command="qstat";
 ### Inventory
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
-my $inventory_port = 9999;           # インベントリ通知待ち受けポート．0ならNFS経由
+my $inventory_port = 9999;           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $inventory_save_path=$inventory_path;
 
@@ -54,6 +54,10 @@ my %running_jobs : shared;
 our $abort_check_thread=undef;
 
 our $sge : shared = 0;
+
+# 出力をバッファリングしない（STDOUT & STDERR）
+$|=1;
+select(STDERR); $|=1; select(STDOUT);
 
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
@@ -185,31 +189,35 @@ sub qsub {
     inventory_write ($job_name, "submit");
     my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
     if ($existence == 0) {
-	my $id = qx/$qsub_command $scriptfile/;
-
-	my $req_id;
-	if ($sge) {
-	    my @list = split(/ /, $id);
-	    foreach (@list) {
-		if ($_ =~ /^([0-9]+)/) {
-		    $req_id = $1;
-		}
-	    }
-	} else {
-	    if ( $id =~ /([0-9]*)\.nqs/ ) {
-		$req_id = $1 . '.nqs';
-	    } else {
-		die "unexpected requestid.\n";
-	    }
-	}
-
+	my $qsub_output = qx/$qsub_command $scriptfile/;
+	my $req_id = extract_req_id_from_qsub_output ($qsub_output);
 	my $idfile = File::Spec->catfile($dir, 'request_id');
 	open (REQUESTID, ">> $idfile");
 	print REQUESTID $req_id;
 	close (REQUESTID);
+        set_job_request_id ($self->{id}, $req_id);
         inventory_write ($job_name, "qsub");
 	return $req_id;
     } else { die "qsub not found\n"; }
+}
+
+sub extract_req_id_from_qsub_output {
+    my ($line) = @_;
+    my $req_id;
+    if ($sge) {
+        if ( $line =~ /^\s*Your\s+job\s+([0-9]+)/ ) {
+            $req_id = $1;
+        } else {
+            die "Can't extract request_id: $line";
+        }
+    } else {
+        if ( $line =~ /([0-9]*)\.nqs/ ) {
+            $req_id = $1 . '.nqs';
+        } else {
+            die "Can't extract request_id: $line";
+        }
+    }
+    return $req_id;
 }
 
 ##############################
@@ -297,10 +305,14 @@ sub invoke_watch_by_socket {
             my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
             my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
             my $cl_ip = inet_ntoa ($cl_iaddr);
-            select (CLIENT); $|=1; select (STDOUT);
+            select(CLIENT); $|=1; select(STDOUT);
             while (<CLIENT>) {
+                if ( $_ =~ /^:end/ ) { last; }
                 handle_inventory ($_, 1);
             }
+            # print STDERR "received :end\n";
+            print CLIENT ":ack\n";
+            # print STDERR "sent :ack\n";
             close (CLIENT);
         }
     });
@@ -380,27 +392,13 @@ sub get_job_request_id {
     if ( exists ($job_request_id{$jobname}) ) {
         return $job_request_id{$jobname};
     } else {
-        return "active";
+        return 0;
     }
 }
 sub set_job_request_id {
-    my ($jobname, $req_id_line) = @_;
-    my $req_id;
-    # depend on outputs of NQS's qsub
-    # SGEでも動くようにしたつもり
-    if ($sge) {
-	my @list = split(/ /, $req_id_line);
-	foreach (@list) {
-	    if ($_ =~ /^([0-9]+)/) {
-		$req_id = $1;
-	    }
-	}
-    } else {
-	if ( $req_id_line =~ /([0-9]*)\.nqs/ ) {
-	    $req_id = $1;
-	} else {
-	    die "set_job_request_id: unexpected req_id_line.\n";
-	}
+    my ($jobname, $req_id) = @_;
+    unless ( $req_id =~ /[0-9]+/ ) {
+        die "Unexpected request_id of $jobname: $req_id";
     }
     print "$jobname id <= $req_id\n";
     lock (%job_request_id);
@@ -448,8 +446,8 @@ sub set_job_status {
         $job_last_update{$jobname} = $tim;
         cond_broadcast (%job_status);
     }
-    # startなジョブ一覧に登録／削除
-    if ( $stat eq "start" ) {
+    # 実行中ジョブ一覧に登録／削除
+    if ( $stat eq "qsub" || $stat eq "start" ) {
         entry_running_job ($jobname);
     } else {
         delete_running_job ($jobname);
@@ -467,13 +465,15 @@ sub set_job_submit {
         set_job_status ($jobname, "submit", $tim);
     }
 }
-# sub set_job_qsub {
-#     expect_job_stat ("qsub", $_[0], "submit");
-#     set_job_status ($_[0], "submit");
-# }
+sub set_job_qsub {
+    my ($jobname, $tim) = @_;
+    if ( do_set_p ($jobname, $tim, "qsub", "submit" ) ) {
+        set_job_status ($_[0], "qsub", $tim);
+    }
+}
 sub set_job_start  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "start", "submit" ) ) {
+    if ( do_set_p ($jobname, $tim, "start", "qsub" ) ) {
         set_job_status ($jobname, "start", $tim);
     }
 }
@@ -485,7 +485,7 @@ sub set_job_done   {
 }
 sub set_job_abort  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "abort", "submit", "start" )
+    if ( do_set_p ($jobname, $tim, "abort", "submit", "qsub", "start" )
          && get_job_status ($jobname) ne "done" ) {
         set_job_status ($jobname, "abort", $tim);
     }
@@ -555,14 +555,18 @@ sub print_all_job_status {
 # "start"なジョブ一覧の更新
 sub entry_running_job {
     my ($jobname) = @_;
+    my $req_id = get_job_request_id ($jobname);
     lock (%running_jobs);
-    $running_jobs{get_job_request_id ($jobname)} = $jobname;
-    # print "entry_running_job: " . (keys %running_jobs) . "\n";
+    $running_jobs{$req_id} = $jobname;
+    # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %running_jobs) . "\n";
 }
 sub delete_running_job {
     my ($jobname) = @_;
-    lock (%running_jobs);
-    delete ($running_jobs{get_job_request_id ($jobname)});
+    my $req_id = get_job_request_id ($jobname);
+    if ($req_id) {
+        lock (%running_jobs);
+        delete ($running_jobs{$req_id});
+    }
 }
 
 # running_jobsのジョブがabortになってないかチェック
@@ -572,49 +576,59 @@ sub delete_running_job {
 ### Note:
 # ジョブ終了後（done書き込みはスクリプト内なので終わっているはず．
 # ただし，NFSのコンシステンシ戦略によっては危ないかも）
-# linventory_watchからdone書き込みの通知がXcryptに届くまでの間に
+# inventory_watchからdone書き込みの通知がXcryptに届くまでの間に
 # abort_checkが入ると，abortを書き込んでしまう．
 # ただし，書き込みはdone→abortの順であり，set_job_statusもその順
 # なのでおそらく問題ない．
 # doneなジョブの状態はabortに変更できないようにすべき？
 # →とりあえずそうしている（ref. set_job_abort）
 sub check_and_write_abort {
-    lock (%running_jobs);
-    print "check_and_write_abort:\n";
-    # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
-    # print "\n";
-    my %unchecked = %running_jobs;
-    open (QSTATOUT, "$qstat_command |");
-    while (<QSTATOUT>) {
-        chomp;
-	# depend on outputs of NQS's qstat
-        # SGEでも動くようにしたつもり
-	if ($sge) {
-            print "--- $_\n";
-	    my @list = split(/ /, $_);
-	    if ($list[0] =~ /^\s*([0-9]+)/) {
-		my $req_id = $1;
-print "foo\n";
-                # print "$_ --- " . $unchecked{$req_id} . "\n";
+    my %unchecked;
+    {
+        lock (%running_jobs);
+        print "check_and_write_abort:\n";
+        # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
+        # print "\n";
+        %unchecked = %running_jobs;
+        open (QSTATOUT, "$qstat_command |");
+        while (<QSTATOUT>) {
+            chomp;
+            my $req_id = extract_req_id_from_qstat_line ($_);
+            if ($req_id) {
+                # print STDERR "$req_id: " . $unchecked{$req_id} . "\n";
                 delete ($unchecked{$req_id});
-	    } else {
-print "bar\n";
-	    }
-	} else {
-            print "=== $_\n";
-	    if ( $_ =~ /([0-9]+)\.nqs/ ) {
-		my $req_id = $1;
-                # print "$_ === " . $unchecked{$req_id} . "\n";
-		delete ($unchecked{$req_id});
-	    }
-	}
+            }
+        }
+        close (QSTATOUT);
     }
-    close (QSTATOUT);
     # "abort"をインベントリファイルに書き込み
     foreach my $req_id ( keys %unchecked ){
+        print STDERR "abort: $req_id: " . $unchecked{$req_id} . "\n";
         inventory_write ($unchecked{$req_id}, "abort");
     }
 }
+sub extract_req_id_from_qstat_line {
+    my ($line) = @_;
+    ## depend on outputs of NQS's qstat
+    ## SGEでも動くようにしたつもり
+    # print STDERR $_ . "\n";
+    if ($sge) {
+        # print "--- $_\n";
+        if ($line =~ /^\s*([0-9]+)/) {
+            return $1;
+        } else {
+            return 0;
+        }
+    } else {
+        # print "=== $_\n";
+        if ( $line =~ /([0-9]+)\.nqs/ ) {
+            return $1;
+        } else {
+            return 0;
+        }
+    }
+}
+
 sub invoke_abort_check {
     $abort_check_thread = threads->new( sub {
         while (1) {
