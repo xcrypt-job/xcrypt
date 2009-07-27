@@ -9,9 +9,9 @@ use File::Spec;
 my $write_command = undef;
 my $inventory_port = 9999;
 if ($inventory_port > 0) {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'inventory_write_sock.pl');
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
 } else {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
 }
 
 my $tmp = File::Spec->catfile($ARGV[0], "request_id");

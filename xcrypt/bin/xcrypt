@@ -3,6 +3,7 @@ package xcrypt;
 
 use strict;
 use File::Copy;
+use File::Spec;
 use Getopt::Long;
 
 #my $opt_dry = 0;
@@ -15,8 +16,8 @@ if ( $ENV{XCRYPT} ) {
     if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
     else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
 
-    if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = $ENV{XCRYPT}; }
-    else { $ENV{PERL5LIB} = $ENV{XCRYPT} . ":" . $ENV{PERL5LIB}; }
+    if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
+    else { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ":" . $ENV{PERL5LIB}; }
 } else {
     die "Set the environment varialble XCRYPT\n";
 }
