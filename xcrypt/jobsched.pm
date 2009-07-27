@@ -623,7 +623,7 @@ sub extract_req_id_from_qstat_line {
         }
     } else {
         # print "=== $_\n";
-        if ( $line =~ /([0-9]+)\.nqs/ ) {
+        if ( $line =~ /([0-9]+\.nqs)/ ) {
             return $1;
         } else {
             return 0;
