@@ -31,13 +31,13 @@ my $inventory_save_path=$inventory_path;
 
 my $write_command = undef;
 if ($inventory_port > 0) {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'inventory_write_sock.pl');
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
 } else {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
 }
 # pjo_inventory_watch.pl は出力をバッファリングしない設定 ($|=1)
 # にしておくこと（fujitsuオリジナルはそうなってない）
-my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_watch.pl');
+my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_watch.pl');
 my $watch_opt="-i summary -e all -t 86400 -s"; # -s: signal end mode
 our $watch_thread=undef;
 
