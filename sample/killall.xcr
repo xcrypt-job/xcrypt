@@ -10,11 +10,8 @@ use base qw(core);
     'option' => '# @$-g gh10034'
 );
 
+# stdoutキーはSGEでのみ正常に動作する
 my @jobs = &prepare(%xyz, 'RANGE0' => [0..2], 'arg1S' => [0..2],
  'after' => 'eval(if ($self->{stdout} == 11) { system("qdel -u username"); })');
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
-
-foreach (@results) {
-    print $_->{stdout} , "\n";
-}

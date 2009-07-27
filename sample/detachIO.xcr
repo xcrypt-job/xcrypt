@@ -31,5 +31,3 @@ $After1->do();
 my @list = &pickup('job100_/hoge/pbody', ',');
 print $list[0] , "\n";
 =cut
-
-foreach (@results) { print $_->{stdout} , "\n"; }
