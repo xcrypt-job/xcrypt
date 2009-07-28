@@ -43,13 +43,11 @@ sub generate {
 		my @tmp = @{$job{"$members"}};
 		$job{"$_"} = $tmp[$_[0]];
 	    } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-		my $tmp = ${$job{"$members"}};
+#		my $tmp = ${$job{"$members"}};
+		my $tmp = eval(${$job{"$members"}});
 		$job{"$_"} = $tmp;
 	    } else {
-		unless ($job{"$members"}) {
-		} else {
-		    warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
-		}
+		warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
 	    }
 	}
     }
