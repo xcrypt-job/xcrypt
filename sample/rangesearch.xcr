@@ -8,7 +8,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'id' => 'job100',
 #    'exe' => './kempo',
     'exe' => './a.out',
-    'arg0' => '100',
+    'arg0' => '20',
 #    'arg1' => 'plasma.inp',
     'linkedfile0' => 'kempo',
     'linkedfile1' => 'a.out',
@@ -21,12 +21,13 @@ $limit::smph=Thread::Semaphore->new(100);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'RANGE0' => [1,30], 'RANGE2' => [10],
-		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg1S' => [2,4]);
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => \3);
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg1S' => 3); # error
-#my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
+#my @jobs = &prepare(%xyz, 'RANGE0' => [1,20], 'RANGE2' => [10],
+#		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
+#my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg0S' => [2,4]);
+#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => \3);
+#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => 3); # error
+#my @jobs = &prepare(%xyz, 'RANGE0' => [10], 'arg0S' => \'$_[0]');
+#my @jobs = &prepare(%xyz, 'arg0S' => \1);
 #my @jobs = &prepare(%xyz);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
