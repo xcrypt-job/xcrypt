@@ -1,16 +1,11 @@
 use base qw(GA core);
 
 %xyz = (
-    'id' => 'job200',
-    'exe' => './GA.sh',
+    'id' => 'job0',
+    'exe' => '/home/abet/e-science/xcrypt/bin/GA',
     'GA_lengthOfStr' => '5',
     'GA_howToCrossover' => 'onePointCrossover',
     'GA_howToSelect' => 'equivalence',
-    'linkedfile0' => 'GA.sh',
-    'stdofile' => 'hogeout',
-    'stdodlmtr' => ',',
-    'stdoclmn' => '0',
-    'stdefile' => 'hogeerr',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
@@ -18,5 +13,4 @@ use base qw(GA core);
 @results = &prepare_submit_sync(%xyz, 'GA_count' => '100',
 				'arg0S' => ['12345 54321 abcde edcba',
 					    '00000 11111 22222 33333 44444']);
-# stdoutキーはSGEでのみ正常に動作する
 foreach (@results) { print $_->{stdout} , "\n"; }

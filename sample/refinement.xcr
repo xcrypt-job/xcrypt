@@ -1,27 +1,26 @@
 use base qw(core);
 
 %xyz = (
-    'id' => 'job1',
+    'id' => 'job8',
     'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '10',
-    'linkedfile1' => 'plasma.inp',
+    'arg0' => '20',
+    'arg1' => 'plasma.inp',
     'linkedfile0' => 'kempo',
-#    'trace' => [10, 100],
-    'queue' => 'eh'
+    'copiedfile0' => 'plasma.inp',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 
 my $today = 10;
 my $yesterday = 10;
-my $arg1 = 10;
+my $arg0 = 10;
 my %job = %xyz;
 
 until (abs($today - $yesterday) > 20) {
     $yesterday = $today;
     $job{'id'} = $job{'id'} . '_';
-    $job{'arg1'} = $job{'arg1'} * 2;
+    $job{'arg0'} = $job{'arg0'} * 2;
     @results = &prepare_submit_sync(%job) , "\n";
-# stdoutキーはSGEでのみ正常に動作する
     $today = $results[0]->{stdout};
 }
 print $today, "\n";

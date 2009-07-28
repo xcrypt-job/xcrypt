@@ -3,10 +3,10 @@ use Data_Generation;
 use Data_Extraction;
 
 %xyz = (
-    'id' => 'job100',
+    'id' => 'job1',
     'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
+    'arg0' => '100',
+    'arg1' => 'plasma.inp',
     'arg2' => '> pbody',
     'copiedfile0' => 'plasma.inp',
     'linkedfile0' => 'kempo',

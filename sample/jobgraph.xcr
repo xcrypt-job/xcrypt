@@ -1,38 +1,30 @@
 use base qw(core);
 
 %abc = (
-    'id' => 'job0',
+    'id' => 'job2',
     'exe' => 'echo',
-    'queue' => 'eh',
-    'successor' => ['dee','ghi','jkl']
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034',
+    'successor' => ['def','ghi','jkl']
 );
 %def = (
-    'id' => 'job3',
-    'predecessor' => ['job1','job2'],
-    'exe' => './kempo',
-    'queue' => 'eh',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'linkedfile0' => 'plasma.inp',
-    'linkedfile1' => 'kempo'
+    'id' => 'job5',
+    'predecessor' => ['job3','job4'],
+    'exe' => 'echo',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 %ghi = (
-    'id' => 'job1',
-    'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'linkedfile0' => 'plasma.inp',
-    'linkedfile1' => 'kempo',
-    'queue' => 'eh'
+    'id' => 'job3',
+    'exe' => 'echo',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 %jkl = (
-    'id' => 'job2',
-    'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'linkedfile1' => 'kempo',
-    'linkedfile0' => 'plasma.inp',
-    'queue' => 'eh'
+    'id' => 'job4',
+    'exe' => 'echo',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 
 &prepare_submit_sync(%abc);

@@ -5,31 +5,23 @@ $limit::smph=Thread::Semaphore->new(100);
 #$separation_symbol = '-';
 
 %xyz = (
-    'id' => 'job100',
-#    'exe' => './kempo',
-    'exe' => './a.out',
+    'id' => 'job7',
+    'exe' => './fib',
     'arg0' => '20',
-#    'arg1' => 'plasma.inp',
-    'linkedfile0' => 'kempo',
-    'linkedfile1' => 'a.out',
-    'copiedfile0' => 'plasma.inp',
-    'stdofile' => 'hogeout',
-    'stdodlmtr' => ',',
-    'stdoclmn' => '0',
-    'stdefile' => 'hogeerr',
+    'linkedfile1' => 'fib',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
-#my @jobs = &prepare(%xyz, 'RANGE0' => [1,20], 'RANGE2' => [10],
-#		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg0S' => [2,4]);
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => \3);
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => '3');
-my @jobs = &prepare(%xyz, 'RANGE0' => [10], 'arg0S' => '$_[0]');
-#my @jobs = &prepare(%xyz, 'arg0S' => \1);
-#my @jobs = &prepare(%xyz);
+my @jobs = &prepare(%xyz,
+# 'RANGE0' => [1,5], 'RANGE2' => [2,9], 'arg0S' => sub { 6 + $_[0] + $_[2]; }
+# 'RANGE0' => [0,1], 'arg0S' => [2,4]
+# 'RANGE0' => [0,1], 'arg0S' => \3
+# 'RANGE0' => [0,1], 'arg0S' => '3'
+# 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 3'
+# 'arg0S' => [1,2]
+# 'arg0S' => \1
+);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 foreach (@results) { print $_->{stdout} , "\n"; }
-#print &repickup();
