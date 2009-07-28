@@ -84,7 +84,12 @@ sub start {
         unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
         my $hoge = File::Spec->catfile($self->{id}, $stdofile);
 
-        until (-e $hoge) { sleep 1; }
+	# NFSの書込み遅延に対する暫定的対応
+	sleep(3);
+
+        until ( (-e $hoge) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
+	    sleep 1;
+	}
         my @stdlist = &pickup($hoge, $self->{stdodlmtr});
         $self->{stdout} = $stdlist[$self->{stdoclmn}];
     }

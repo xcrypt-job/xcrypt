@@ -44,7 +44,7 @@ our $watch_thread=undef;
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
 # ジョブ名→ジョブの状態
-my %job_status : shared;
+our %job_status : shared;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
