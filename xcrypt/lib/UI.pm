@@ -49,8 +49,10 @@ sub generate {
 		} elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
 		    my $tmp = ${$job{"$members"}};
 		    $job{"$_"} = $tmp;
+		} elsif ( ref($job{"$members"}) eq 'GLOB' ) {
+		    die "Can't take GLOB at prepare.\n";
 		} else {
-		    warn "Not supported the form at $members";
+		    die "Can't take your format at prepare.\n";
 		}
 	    }
 	}
