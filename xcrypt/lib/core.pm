@@ -15,12 +15,7 @@ sub new {
 
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
-    my $dotdir;
-    if ($dir eq '') {
-	die "Can't generate any job without id\n";
-    } else {
-	$dotdir = '.' . $dir;
-    }
+    if ($dir eq '') { die "Can't generate any job without id\n"; }
 
     # 前回実行時にできたインベントリファイルがあれば反映
     &jobsched::load_inventory ($self->{id});
@@ -32,12 +27,7 @@ sub new {
             print "Delete directory $dir\n";
             File::Path::rmtree ($dir);
         }
-
-	if ( -e $dotdir ) {
-            print "Delete directory $dotdir\n";
-	    File::Path::rmtree ($dotdir);
-	}
-        mkdir $dotdir , 0755;
+        mkdir $dir , 0755;
 
         for ( my $i = 0; $i <= $user::max; $i++ ) {
             if ($self->{"copieddir$i"}) {
@@ -47,25 +37,20 @@ sub new {
                 closedir(DIR);
                 foreach (@params) {
                     my $tmp = File::Spec->catfile($copied, $_);
-                    my $temp = File::Spec->catfile($dotdir, $_);
+                    my $temp = File::Spec->catfile($dir, $_);
                     rcopy $tmp, $temp;
                 }
             }
             if ($self->{"copiedfile$i"}) {
-#	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dotdir);
-                fcopy $self->{"copiedfile$i"}, $dotdir;
+#	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dir);
+                fcopy $self->{"copiedfile$i"}, $dir;
             }
             if ($self->{"linkedfile$i"}) {
-                my $link = File::Spec->catfile($dotdir, $self->{"linkedfile$i"});
+                my $link = File::Spec->catfile($dir, $self->{"linkedfile$i"});
                 my $file = File::Spec->catfile('..', $self->{"linkedfile$i"});
                 symlink($file, $link) or warn "Can't link to $file";
             }
         }
-	if ( -e $dir ) {
-            print "Delete directory $dir\n";
-	    File::Path::rmtree ($dir);
-	}
-        rename $dotdir, $dir;
     }
     return bless $self, $class;
 }
@@ -96,6 +81,9 @@ sub start {
         until ( (-e $hoge) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
 	    sleep 1;
 	}
+
+	unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ','; }
+	unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
         my @stdlist = &pickup($hoge, $self->{stdodlmtr});
         $self->{stdout} = $stdlist[$self->{stdoclmn}];
     }
