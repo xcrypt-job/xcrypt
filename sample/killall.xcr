@@ -2,16 +2,14 @@ use base qw(core);
 
 %xyz = (
     'id' => 'job100',
-    'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
+    'exe' => 'echo',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
-# stdoutキーはSGEでのみ正常に動作する
-my @jobs = &prepare(%xyz, 'RANGE0' => [0..2], 'arg1S' => [0..2],
- 'after' => 'eval(if ($self->{stdout} == 11) { system("qdel -u username"); })');
+my @jobs = &prepare(%xyz, 'arg0S' => [10],
+ 'after' => 'if ($self->{stdout} == 1) { system("qdel -u $ENV{USERNAME}"); }'
+);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
+foreach (@results) { print $_->{stdout} , "\n"; }

@@ -4,7 +4,7 @@ use base qw(core);
     'id' => 'job0',
     'exe' => 'echo',
     'queue' => 'eh',
-    'successor' => ['def','ghi','jkl']
+    'successor' => ['dee','ghi','jkl']
 );
 %def = (
     'id' => 'job3',
