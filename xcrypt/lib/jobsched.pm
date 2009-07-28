@@ -97,7 +97,7 @@ sub qsub {
     }
     my $queue = $self->{queue};
     if ($sge) {
-
+	print SCRIPT "#\$-q $queue\n";
     } else {
 	print SCRIPT "# @\$-q $queue\n";
     }

@@ -41,14 +41,25 @@ sub new {
                     rcopy $tmp, $temp;
                 }
             }
+
             if ($self->{"copiedfile$i"}) {
+                my $copied = $self->{"copiedfile$i"};
 #	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dir);
-                fcopy $self->{"copiedfile$i"}, $dir;
+		if ( -e $copied ) {
+		    fcopy($copied, $dir);
+		} else {
+		    warn "Can't copy $copied\n";
+		}
             }
             if ($self->{"linkedfile$i"}) {
                 my $link = File::Spec->catfile($dir, $self->{"linkedfile$i"});
-                my $file = File::Spec->catfile('..', $self->{"linkedfile$i"});
-                symlink($file, $link) or warn "Can't link to $file";
+                my $file1 = $self->{"linkedfile$i"};
+                my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
+		if ( -e $file1 ) {
+		    symlink($file2, $link);
+		} else {
+		    warn "Can't link to $file1";
+		}
             }
         }
     }
@@ -73,18 +84,18 @@ sub start {
 
         my $stdofile = 'stdout';
         unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
-        my $hoge = File::Spec->catfile($self->{id}, $stdofile);
 
 	# NFSの書込み遅延に対する暫定的対応
 	sleep(3);
 
-        until ( (-e $hoge) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
+        my $pwdstdo = File::Spec->catfile($self->{id}, $stdofile);
+        until ( (-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
 	    sleep 1;
 	}
 
 	unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ','; }
 	unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
-        my @stdlist = &pickup($hoge, $self->{stdodlmtr});
+        my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
         $self->{stdout} = $stdlist[$self->{stdoclmn}];
     }
 
