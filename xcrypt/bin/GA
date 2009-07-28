@@ -1,12 +1,7 @@
 #!/usr/bin/perl
 
 my @words = &mainfun(@ARGV);
-print join (' ', @words), "\n";
-
-sub fitness {
-    if ($_[0] == "123456") {return 4;}
-    else {return 6;}
-}
+print join (' ', @words);
 
 sub equivalence {
     $sum = @_;
@@ -37,6 +32,12 @@ sub mainfun {
     }
 }
 
+=comment
+sub fitness {
+    if ($_[0] == "123456") {return 4;}
+    else {return 6;}
+}
+
 sub roulette (@) {
 #
 # Fast, but hard.
@@ -60,6 +61,7 @@ sub roulette (@) {
 #    my $sum  = Prelude::summation(map{fitness($_)}, @_);
 #    return (map{$_ / $sum}, @tmps);
 }
+=cut
 
 sub selection {
     my $random = $_[0];

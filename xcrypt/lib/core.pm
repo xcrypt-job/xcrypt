@@ -12,9 +12,15 @@ use Data_Generation;
 sub new {
     my $class = shift;
     my $self = shift;
+
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
-    my $dotdir = '.' . $dir;
+    my $dotdir;
+    if ($dir eq '') {
+	die "Can't generate any job without id\n";
+    } else {
+	$dotdir = '.' . $dir;
+    }
 
     # 前回実行時にできたインベントリファイルがあれば反映
     &jobsched::load_inventory ($self->{id});
