@@ -425,10 +425,10 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 
 \begin{boxnote}
 \begin{alltt}
-prepare(ジョブ定義ハッシュ[,'RANGE0' => リファレンス]
-                      ...[,'RANGE255' => リファレンス]
-                         [,'ジョブ定義ハッシュキーS' => リファレンス]
-                      ...[,'ジョブ定義ハッシュキーS' => リファレンス]);
+prepare(ジョブ定義ハッシュ[,'RANGE0' => (リファレンス||スカラ)]
+                      ...[,'RANGE255' => (リファレンス||スカラ)]
+                         [,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]
+                      ...[,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]);
 \end{alltt}
 \end{boxnote}
 
@@ -536,6 +536,19 @@ push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
 \end{alltt}
 \end{boxnote}
 
+引数がリファレンスでなくスカラである時，引数は \texttt{eval} される．ゆ
+えに，上記は，
+\begin{boxnote}
+\begin{alltt}
+%abc = (
+    'id' => 'xyz',
+    'exe' => './kempo'
+);
+@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
+                'arg0S' => '$_[0] + $_[1]');
+\end{alltt}
+\end{boxnote}
+とも書くこともできる．
 
 \section{\texttt{submit}}
 

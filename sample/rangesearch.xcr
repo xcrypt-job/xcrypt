@@ -25,8 +25,8 @@ $limit::smph=Thread::Semaphore->new(100);
 #		    'arg0S' => sub { 10 + $_[0] + $_[2]; });
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,3], 'arg0S' => [2,4]);
 #my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => \3);
-#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => 3); # error
-#my @jobs = &prepare(%xyz, 'RANGE0' => [10], 'arg0S' => \'$_[0]');
+#my @jobs = &prepare(%xyz, 'RANGE0' => [0,1], 'arg0S' => '3');
+my @jobs = &prepare(%xyz, 'RANGE0' => [10], 'arg0S' => '$_[0]');
 #my @jobs = &prepare(%xyz, 'arg0S' => \1);
 #my @jobs = &prepare(%xyz);
 my @thrds = &submit(@jobs);
