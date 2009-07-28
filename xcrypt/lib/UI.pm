@@ -37,17 +37,21 @@ sub generate {
     foreach (@allmembers) {
 	my $members = "$_" . 'S';
 	if ( exists($job{"$members"}) ) {
-	    if ( ref($job{"$members"}) eq 'CODE' ) {
-		$job{"$_"} = &{$job{"$members"}}(@ranges);
-	    } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-		my @tmp = @{$job{"$members"}};
-		$job{"$_"} = $tmp[$_[0]];
-	    } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-#		my $tmp = ${$job{"$members"}};
-		my $tmp = eval(${$job{"$members"}});
+	    unless ( ref($job{"$members"}) ) {
+		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
 	    } else {
-		warn "X must be a reference at \&prepare(\.\.\.\, \'$members\'\=\> X\,\.\.\.)";
+		if ( ref($job{"$members"}) eq 'CODE' ) {
+		    $job{"$_"} = &{$job{"$members"}}(@ranges);
+		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+		    my @tmp = @{$job{"$members"}};
+		    $job{"$_"} = $tmp[$_[0]];
+		} elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+		    my $tmp = ${$job{"$members"}};
+		    $job{"$_"} = $tmp;
+		} else {
+		    warn "Not supported the form at $members";
+		}
 	    }
 	}
     }
