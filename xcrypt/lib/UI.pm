@@ -33,7 +33,11 @@ sub generate {
     shift;
 
     my @ranges = &rm_tailnis(@_);
-    unless ( $user::separator =~ /^[!#+,-.@\^_~a-zA-Z0-9]$/ ) { die "Can't support $user::separator as \$separator.\n"; }
+    unless ( $user::separator_nocheck) {
+	unless ( $user::separator =~ /^[!#+,-.@\^_~a-zA-Z0-9]$/ ) {
+	    die "Can't support $user::separator as \$separator.\n";
+	}
+    }
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
     foreach (@allmembers) {
 	my $members = "$_" . 'S';

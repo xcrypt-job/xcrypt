@@ -2,7 +2,8 @@ use base qw(limit dry core);
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
-$separator = '-';
+$separator_nocheck = 1;
+$separator = 'aaa';
 
 %xyz = (
     'id' => 'job7',
