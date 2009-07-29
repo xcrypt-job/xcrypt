@@ -2,7 +2,7 @@ use base qw(limit dry core);
 
 $limit::smph=Thread::Semaphore->new(100);
 #$dry::dry = 0;
-#$separation_symbol = '-';
+$separator = '-';
 
 %xyz = (
     'id' => 'job7',
@@ -18,7 +18,7 @@ my @jobs = &prepare(%xyz,
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 # 'RANGE0' => [0,1], 'arg0S' => '3'
-# 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 3'
+ 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 3'
 # 'arg0S' => [1,2]
 # 'arg0S' => \1
 );
