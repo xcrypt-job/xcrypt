@@ -1,6 +1,6 @@
 \documentclass[report]{jsbook}
 
-\usepackage{alltt,tascmac}
+\usepackage{tascmac}
 \usepackage[all]{xy}
 
 \title{Xcrypt マニュアル}
@@ -72,16 +72,16 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 
 モジュールは
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 use base qw(core);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 \noindent
 と記述して読み込む．複数読み込む場合は読み込みたい順に
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 use base qw(dry core);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 \noindent
 と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
@@ -90,11 +90,11 @@ use base qw(dry core);
 \section{\setglobalvar}
 
 Xcrypt スクリプトの動作全体に関わる大域変数（例えば
-\texttt{\$separation\_symbol} ）は
+\texttt{\$separator} ）は
 \begin{boxnote}
-\begin{alltt}
-$separation_symbol = '-';
-\end{alltt}
+\begin{verbatim}
+$separator = '-';
+\end{verbatim}
 \end{boxnote}
 \noindent
 と記述してセットする．
@@ -106,21 +106,20 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 と呼ばれるハッシュを記述すれば，ジョブを生成する際，さらにパラメタを与
 えることで多数のジョブを一度に生成できる．例えば，
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %xyz = (
     'id' => 'job100',
     'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'copieddir0' => 'forcopieddir',
+    'arg0' => '100',
+    'arg1' => 'plasma.inp',
     'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'stdofile' => 'hogeout',
     'stdefile' => 'hogeerr',
     'queue' => 'gh10034',
-    'option' => '# @\$-g gh10034'
+    'option' => '# @$-g gh10034'
 );
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 \noindent
 と記述する．定義可能なジョブ定義ハッシュのキーに関しては
@@ -136,11 +135,11 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 use base qw(limit core);
 
 \$limit::smph=Thread::Semaphore->new(10);
-\$separation\_symbol = '-';
+\$separator = '-';
 
 %xyz = (
     'id' => 'job100',
@@ -162,8 +161,8 @@ my @jobs = &prepare(%xyz, 'arg1s' => [2,4]);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
-foreach (@results) \{ print \$\_->{stdout} , "\verb?\?n"; \}
-\end{alltt}
+foreach (@results) { print $_->{stdout} , "\n"; }
+\end{verbatim}
 \end{boxnote}
 
 \chapter{ジョブ処理の流れ}
@@ -261,9 +260,9 @@ Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
 
 Xcrypt スクリプトに
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 \$dry::dry = 1;
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 \noindent
 と記述することで Xcrypt がドライモードで動作する．
@@ -289,26 +288,29 @@ Xcrypt スクリプトに
 一度に投入されるジョブの数の上限を指定する．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 \$limit::smph=Thread::Semaphore->new(100);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \chapter{大域変数}\label{globalvar}
 
-\section{\texttt{separation\_symbol}}
+\section{\texttt{separator}}
 
 ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separation\_symbol}で区切った
-名前のディレクトリを作成する．\texttt{\$separation\_symbol}のデフォルト
-値は「!」である．「-」に変えたい場合は，
+\texttt{id,arg0,\ldots,arg255}を\texttt{\$separator}で区切った
+名前のディレクトリを作成する．\texttt{\$separator}のデフォルト
+値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
 \begin{boxnote}
-\begin{alltt}
-\texttt{\$jobsched::separation\_symbol = '-';}
-\end{alltt}
+\begin{verbatim}
+\texttt{\$separator = '-';}
+\end{verbatim}
 \end{boxnote}
 とする．
 
+使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+
+\section{\texttt{separator\_nocheck}}
 
 \chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 
@@ -317,6 +319,8 @@ Xcrypt スクリプトに
 \section{\texttt{id}}
 
 実行されるジョブを識別する語を記述する．
+
+使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \section{\texttt{exe}}
 
@@ -425,67 +429,69 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \subsection{\format}
 
 \begin{boxnote}
-\begin{alltt}
-prepare(ジョブ定義ハッシュ[,'RANGE0' => (リファレンス||スカラ)]
-                      ...[,'RANGE255' => (リファレンス||スカラ)]
+\begin{verbatim}
+prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
+                      ...[,'RANGE255' => (配列リファレンス)]
                          [,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]
                       ...[,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 ただし，「ジョブ定義ハッシュキー\texttt{S}」はジョブ定義ハッシュキー
 （\texttt{arg0}等）の語尾に\texttt{S}をつけ加えたもの
 （\texttt{arg0S}等）を意味するものとする．
 
+\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+
 \subsection{\example}
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 これは以下と同義である．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = ();
 push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10']);
 push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20']);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 宣言的に書くこともできる．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo',
     'arg0S' => [10,20]
 );
 prepare(%abc);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 ジョブ定義ハッシュとパラメタを分けて書くこともできる．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo'
 );
 prepare(%abc, 'arg0S' => [10,20]);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \texttt{RANGE0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
 を生成することができる．例えば，
 \begin{boxnote}
-\begin{alltt}
-@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0S' => sub \{ 2 * $_[0] \});
-\end{alltt}
+\begin{verbatim}
+@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0S' => sub { 2 * $_[0] });
+\end{verbatim}
 \end{boxnote}
 は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
 198)}を順番に行ったものと同義である．
@@ -497,57 +503,57 @@ prepare(%abc, 'arg0S' => [10,20]);
 される．例えば，
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo'
 );
 @jobs = prepare(%abc, 'arg0s' => [0,1], 'arg1S' => [2,3]);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 は以下と同義である．
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = ();
 push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2']);
 push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3']);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \texttt{RANGE0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
 ブを生成することができる．例えば，
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
-                'arg0S' => sub \{ $_[0] + $_[1] \});
-\end{alltt}
+                'arg0S' => sub { $_[0] + $_[1] });
+\end{verbatim}
 \end{boxnote}
 は以下と同義である．
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = ();
 push(@jobs, ['id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2']);
 push(@jobs, ['id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4']);
 push(@jobs, ['id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3']);
 push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 引数がリファレンスでなくスカラである時，引数は \texttt{eval} される．ゆ
 えに，上記は，
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0S' => '$_[0] + $_[1]');
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 とも書くこともできる．
 
@@ -559,9 +565,9 @@ push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
 \subsection{\format}
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 submit(ジョブリファレンスの配列);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \subsection{\example}
@@ -569,19 +575,19 @@ submit(ジョブリファレンスの配列);
 典型的には\texttt{prepare}の返り値を引数にとる．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 submit(@jobs);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 自力でジョブリファレンスの配列を書いてもよい．
 
 \begin{boxnote}
-\begin{alltt}
-submit(\{'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'\},
-       \{'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'\});
-\end{alltt}
+\begin{verbatim}
+submit({'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'},
+       {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
+\end{verbatim}
 \end{boxnote}
 
 \section{\texttt{sync}}
@@ -592,9 +598,9 @@ submit(\{'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'\},
 \subsection{\format}
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 sync(ジョブスレッドの配列);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \subsection{\example}
@@ -602,11 +608,11 @@ sync(ジョブスレッドの配列);
 典型的には\texttt{submit}の返り値を引数にとる．
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 @jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 @thrds = submit(@jobs);
 sync(@thrds);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \section{\texttt{prepare\_submit\_sync}}
@@ -633,9 +639,9 @@ sync(@thrds);
 \subsection{\format}
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 pickup(ファイル名，区切り文字);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \section{\texttt{repickup}}
@@ -648,9 +654,9 @@ pickup(ファイル名，区切り文字);
 \subsection{\format}
 
 \begin{boxnote}
-\begin{alltt}
+\begin{verbatim}
 repickup(ジョブハッシュリファレンスの配列);
-\end{alltt}
+\end{verbatim}
 \end{boxnote}
 
 \chapter{}

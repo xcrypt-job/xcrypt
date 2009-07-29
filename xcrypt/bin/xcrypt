@@ -33,7 +33,7 @@ print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
 #print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
 print TMP '$max = 255;' . "\n";
-print TMP '$separation_symbol = \'!\';' . "\n";
+print TMP '$separator = \'!\';' . "\n";
 if ( $ENV{XCRJOBSCHED} eq 'NQS' ) {
     print TMP '$jobsched::sge = 0;' . "\n";
 } elsif ( $ENV{XCRJOBSCHED} eq 'SGE' ) {

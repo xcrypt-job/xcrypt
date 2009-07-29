@@ -1,5 +1,5 @@
 use base qw(core);
-$separation_symbol = '-';
+$separator = '-';
 
 # 並列LU分解を，N=2000,4000，コア数1,2,4,8,16でそれそれ3回実行して性能評価
 prepare_submit_sync (
