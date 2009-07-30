@@ -7,9 +7,9 @@ $separator = 'aaa';
 
 %xyz = (
     'id' => 'job7',
-    'exe' => './fib',
+    'exe' => './fib.pl',
     'arg0' => '20',
-    'linkedfile1' => 'fib',
+    'linkedfile0' => 'fib.pl',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

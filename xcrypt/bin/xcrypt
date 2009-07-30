@@ -32,9 +32,9 @@ print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
 #print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
-print TMP '$max = 255;' . "\n";
-print TMP '$separator_nocheck = \'0\';' . "\n";
-print TMP '$separator = \'!\';' . "\n";
+print TMP 'our $max = 255;' . "\n";
+print TMP 'our $separator_nocheck = \'0\';' . "\n";
+print TMP 'our $separator = \'!\';' . "\n";
 if ( $ENV{XCRJOBSCHED} eq 'NQS' ) {
     print TMP '$jobsched::sge = 0;' . "\n";
 } elsif ( $ENV{XCRJOBSCHED} eq 'SGE' ) {
