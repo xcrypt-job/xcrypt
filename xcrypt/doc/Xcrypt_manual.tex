@@ -169,6 +169,25 @@ foreach (@results) { print $_->{stdout} , "\n"; }
 
 実際のジョブ処理の流れについて概観する．
 
+\section{}
+
+{\large
+\[
+\entrymodifiers={+[F-:<10pt>]}
+\xymatrix@=100pt{
+  *{}
+  \ar[r]|(.4){\txt{\small オブジェクト生成}} &
+  \txt{active} \ar[rrd]|(.3){\txt{\small \texttt{xcryptdel}入力}}|\hole \ar[r]|{\txt{\small \texttt{qsub}実行}} &
+  \txt{submitted} \ar[rd]|!{[r];[dl]}\hole|{\txt{\small \texttt{qsub}失敗}} \ar[r]|{\txt{\small \texttt{qsub}成功}} &
+  \txt{queued} \ar[lld]|(.7){\txt{\small スクリプト開始}} \ar[d]|{\txt{\small 当該ジョブ消滅}}\\
+  *{} &
+  \txt{running} \ar[r]|{\txt{\small スクリプト終了}} \ar@/_5pc/[rr]|{\txt{\small 当該ジョブ消滅}}&
+  \txt{done} &
+  \txt{aborted}
+}
+\]
+}
+
 \section{実行方法}
 
 環境変数 \texttt{XCRYPT} を Xcrypt をインストールしたディレクトリで定義
@@ -261,7 +280,7 @@ Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
 Xcrypt スクリプトに
 \begin{boxnote}
 \begin{verbatim}
-\$dry::dry = 1;
+$dry::dry = 1;
 \end{verbatim}
 \end{boxnote}
 \noindent
@@ -289,7 +308,7 @@ Xcrypt スクリプトに
 
 \begin{boxnote}
 \begin{verbatim}
-\$limit::smph=Thread::Semaphore->new(100);
+$limit::smph=Thread::Semaphore->new(100);
 \end{verbatim}
 \end{boxnote}
 
@@ -303,7 +322,7 @@ Xcrypt スクリプトに
 値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
 \begin{boxnote}
 \begin{verbatim}
-\texttt{\$separator = '-';}
+$separator = '-';
 \end{verbatim}
 \end{boxnote}
 とする．
@@ -661,24 +680,5 @@ pickup(ファイル名，区切り文字);
 repickup(ジョブハッシュリファレンスの配列);
 \end{verbatim}
 \end{boxnote}
-
-\chapter{}
-
-{\Large
-\[
-\entrymodifiers={+[F-:<10pt>]}
-\xymatrix@=100pt{
-  *{}
-  \ar[r]^{\txt{\normalsize オブジェクト生成}} &
-  \txt{active} \ar[rrd]^(.3){\txt{\normalsize \texttt{xcryptdel}}}|\hole \ar[r]^{\txt{\normalsize qsub実行}} &
-  \txt{submit} \ar[rd]^{\txt{\normalsize qsub失敗}}|!{[r];[dl]}\hole \ar[r]^{\txt{\normalsize qsub成功}} &
-  \txt{qsub} \ar[lld]_(.7){\txt{\normalsize プログラム開始}} \ar[d]^{\txt{\normalsize 当該ジョブ消滅}}\\
-  *{} &
-  \txt{start} \ar[r]^{\txt{\normalsize プログラム終了}} \ar@/_5pc/[rr]^{\txt{\normalsize 当該ジョブ消滅}}&
-  \txt{done} &
-  \txt{abort}
-}
-\]
-}
 
 \end{document}
