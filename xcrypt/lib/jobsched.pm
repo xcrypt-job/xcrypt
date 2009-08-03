@@ -173,9 +173,11 @@ sub qsub {
 #    print SCRIPT "PATH=$ENV{'PATH'}\n";
 #    print SCRIPT "set -x\n";
     print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
-    print SCRIPT "cd $ENV{'PWD'}/$dir\n";
-#    print SCRIPT "cd \$QSUB_WORKDIR/$dir\n";
-
+    if ($sge) {
+	print SCRIPT "cd $ENV{'PWD'}/$dir\n";
+    } else {
+	print SCRIPT "cd \$QSUB_WORKDIR/$dir\n";
+    }
 #    print SCRIPT "$command\n";
     my @args = ();
     for ( my $i = 0; $i <= $user::max; $i++ ) { push(@args, $self->{"arg$i"}); }
