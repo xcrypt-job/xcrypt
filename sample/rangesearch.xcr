@@ -1,14 +1,15 @@
 use base qw(limit dry core);
 
 $limit::smph=Thread::Semaphore->new(100);
-#$dry::dry = 0;
-$separator_nocheck = 1;
-$separator = 'aaa';
+$dry::dry = 0;
+$separator_nocheck = 0;
+$separator = '-';
 
 %xyz = (
     'id' => 'job7',
     'exe' => './fib.pl',
     'arg0' => '20',
+#    'copieddir0' => '.',
     'linkedfile0' => 'fib.pl',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
@@ -18,11 +19,15 @@ my @jobs = &prepare(%xyz,
 # 'RANGE0' => [1,5], 'RANGE2' => [2,9], 'arg0S' => sub { 6 + $_[0] + $_[2]; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
+#
+# 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 20'
 # 'RANGE0' => [0,1], 'arg0S' => '3'
- 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 3'
+#
 # 'arg0S' => [1,2]
 # 'arg0S' => \1
+#
+# 'arg0S' => 1
 );
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
-foreach (@results) { print $_->{stdout} , "\n"; }
+foreach (@results) { print $_->{stdout}; }
