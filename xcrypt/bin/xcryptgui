@@ -1,0 +1,67 @@
+#! /usr/bin/wish
+
+frame .f1
+text .f1.t0 -wrap none \
+            -xscrollcommand ".f1.sx set" \
+            -yscrollcommand ".f1.sy set"
+scrollbar .f1.sx -orient horizontal -command ".f1.t0 xview"
+scrollbar .f1.sy -orient vertical   -command ".f1.t0 yview"
+
+set pipe 0
+
+proc showtext { } {
+    global pipe
+    if [eof $pipe] {
+        catch {close $pipe}
+        return
+    }
+        set t [read $pipe 1]
+        set s $t
+        while { $s > 127 } {
+            set s [read $pipe 1]
+            append t $s
+        }
+        .f1.t0 insert end $t
+        update idletasks
+}
+
+button .b1 -text "xcrypt" -command {
+    global pipe
+    set fileTypeList {
+	{{Xcrypt Files} {.xcr}}
+	{{All Files} {*}}
+    }
+    set filePath [tk_getOpenFile -filetypes $fileTypeList]
+    if {$filePath != ""} {
+	set pipe [open "|xcrypt $filePath"]
+        fconfigure $pipe -buffering none
+	fileevent $pipe readable showtext
+    }
+}
+
+button .b2 -text "xcryptdel" -command {}
+
+button .b3 -text "xcryptstat" -command {}
+
+button .b4 -text cleanup -command {
+    exec ./cleanup.sh
+}
+
+button .b5 -text "quit" -command exit
+
+. configure -width 400 -height 800
+wm title . "Xcryptdemo"
+place .b1 -relx 0.0 -rely 0.0 -relwidth 0.2 -relheight 0.1
+place .b2 -relx 0.2 -rely 0.0 -relwidth 0.2 -relheight 0.1
+place .b3 -relx 0.4 -rely 0.0 -relwidth 0.2 -relheight 0.1
+place .b4 -relx 0.6 -rely 0.0 -relwidth 0.2 -relheight 0.1
+place .b5 -relx 0.8 -rely 0.0 -relwidth 0.2 -relheight 0.1
+place .f1 -relx 0.0 -rely 0.1 -relwidth 1.0 -relheight 0.9
+pack .f1.sx -side bottom -fill x
+pack .f1.sy -side right  -fill y
+pack .f1.t0 -side left -fill both -expand true
+
+while {1} {
+    update
+    after 100
+}
