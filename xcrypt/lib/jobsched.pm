@@ -197,6 +197,10 @@ sub qsub {
 	open (REQUESTID, ">> $idfile");
 	print REQUESTID $req_id;
 	close (REQUESTID);
+	my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
+	open (REQUESTIDS, ">> $idfiles");
+	print REQUESTIDS $req_id . ' ' . $dir . ' ';
+	close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
         inventory_write ($job_name, "qsub");
 	return $req_id;
