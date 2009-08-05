@@ -197,7 +197,7 @@ sub qsub {
 	open (REQUESTID, ">> $idfile");
 	print REQUESTID $req_id;
 	close (REQUESTID);
-	my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
+	my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
 	open (REQUESTIDS, ">> $idfiles");
 	print REQUESTIDS $req_id . ' ' . $dir . ' ';
 	close (REQUESTIDS);
