@@ -1,13 +1,113 @@
-#! /usr/bin/wish
+#!/usr/bin/wish
 
 frame .f1
-text .f1.t0 -wrap none \
+label .f1.l0 -text "Main"
+text .f1.t0 -wrap none -bg white \
             -xscrollcommand ".f1.sx set" \
             -yscrollcommand ".f1.sy set"
 scrollbar .f1.sx -orient horizontal -command ".f1.t0 xview"
 scrollbar .f1.sy -orient vertical   -command ".f1.t0 yview"
 
+frame .f2
+label .f2.l0 -text "Stat"
+text .f2.t0 -wrap none -bg white \
+            -xscrollcommand ".f2.sx set" \
+            -yscrollcommand ".f2.sy set"
+scrollbar .f2.sx -orient horizontal -command ".f2.t0 xview"
+scrollbar .f2.sy -orient vertical   -command ".f2.t0 yview"
+
+frame .f3
+label .f3.l0 -text "Del"
+text .f3.t0 -wrap none -bg white \
+            -xscrollcommand ".f3.sx set" \
+            -yscrollcommand ".f3.sy set"
+scrollbar .f3.sx -orient horizontal -command ".f3.t0 xview"
+scrollbar .f3.sy -orient vertical   -command ".f3.t0 yview"
+
+label .l1 -text ""
+button .b1 -text "xcrypt" -command {
+    global pipe
+    set fileTypeList {
+	{{Xcrypt Files} {.xcr}}
+	{{All Files} {*}}
+    }
+    set filePath [tk_getOpenFile -filetypes $fileTypeList]
+    .l1 configure -text "$filePath"
+    if {$filePath != ""} {
+	set pipe [open "|xcrypt $filePath"]
+        fconfigure $pipe -buffering none
+	fileevent $pipe readable showtext
+    }
+}
+
+button .b2 -text "xcryptstat" -command {
+    set pipe2 [open "|xcryptstat"]
+    fconfigure $pipe2 -buffering none
+    fileevent $pipe2 readable showtext2
+}
+
+
+label .l3 -text ""
+button .b3 -text "xcryptdel" -command {
+    toplevel .t3
+    listbox .t3.l0 -bg white \
+	           -xscrollcommand ".t3.sx set" \
+                   -yscrollcommand ".t3.sy set"
+    scrollbar .t3.sx -orient horizontal -command ".t3.l0 xview"
+    scrollbar .t3.sy -orient vertical   -command ".t3.l0 yview"
+    .t3.l0 insert end job7-5-nil-7
+    pack .t3.sx -side bottom -fill x
+    pack .t3.sy -side right -fill y
+    pack .t3.l0 -side left -fill both -expand true
+
+    set selectedIndex [.t3.l0 curselection]
+    if {$selectedIndex == ""} {
+	.l3 configure -text ""
+    } else {
+	.l3 configure -text [.t3.l0 get $selectedIndex]
+    }
+}
+
+label .l4 -text ""
+button .b4 -text cleanup -command {
+    .l4 configure -text "Clean-up!"
+    exec "./cleanup.sh"
+}
+
+button .b5 -text "quit" -command exit
+
+. configure -width 600 -height 800
+wm title . "Xcryptgui"
+
+place .b1 -relx 0.0 -rely 0.0  -relwidth 0.2 -relheight 0.04
+place .b2 -relx 0.0 -rely 0.04 -relwidth 0.2 -relheight 0.04
+place .b3 -relx 0.0 -rely 0.08 -relwidth 0.2 -relheight 0.04
+place .b4 -relx 0.0 -rely 0.12 -relwidth 0.2 -relheight 0.04
+place .b5 -relx 0.0 -rely 0.16 -relwidth 0.2 -relheight 0.04
+place .l1 -relx 0.1 -rely 0.0  -relwidth 0.8 -relheight 0.04
+place .l3 -relx 0.1 -rely 0.08 -relwidth 0.8 -relheight 0.04
+place .l4 -relx 0.1 -rely 0.12 -relwidth 0.8 -relheight 0.04
+
+place .f1 -relx 0.0 -rely 0.2 -relwidth 0.5 -relheight 0.8
+pack .f1.l0
+pack .f1.sx -side bottom -fill x
+pack .f1.sy -side right  -fill y
+pack .f1.t0 -side left -fill both -expand true
+
+place .f2 -relx 0.5 -rely 0.2 -relwidth 0.5 -relheight 0.4
+pack .f2.l0
+pack .f2.sx -side bottom -fill x
+pack .f2.sy -side right  -fill y
+pack .f2.t0 -side left -fill both -expand true
+
+place .f3 -relx 0.5 -rely 0.6 -relwidth 0.5 -relheight 0.4
+pack .f3.l0
+pack .f3.sx -side bottom -fill x
+pack .f3.sy -side right -fill y
+pack .f3.t0 -side left -fill both -expand true
+
 set pipe 0
+set pipe2 0
 
 proc showtext { } {
     global pipe
@@ -25,41 +125,21 @@ proc showtext { } {
         update idletasks
 }
 
-button .b1 -text "xcrypt" -command {
-    global pipe
-    set fileTypeList {
-	{{Xcrypt Files} {.xcr}}
-	{{All Files} {*}}
+proc showtext2 { } {
+    global pipe2
+    if [eof $pipe2] {
+        catch {close $pipe2}
+        return
     }
-    set filePath [tk_getOpenFile -filetypes $fileTypeList]
-    if {$filePath != ""} {
-	set pipe [open "|xcrypt $filePath"]
-        fconfigure $pipe -buffering none
-	fileevent $pipe readable showtext
-    }
+        set v [read $pipe2 1]
+        set u $v
+        while { $u > 127 } {
+            set u [read $pipe2 1]
+            append v $u
+        }
+        .f2.t0 insert end $v
+        update idletasks
 }
-
-button .b2 -text "xcryptdel" -command {}
-
-button .b3 -text "xcryptstat" -command {}
-
-button .b4 -text cleanup -command {
-    exec ./cleanup.sh
-}
-
-button .b5 -text "quit" -command exit
-
-. configure -width 400 -height 800
-wm title . "Xcryptdemo"
-place .b1 -relx 0.0 -rely 0.0 -relwidth 0.2 -relheight 0.1
-place .b2 -relx 0.2 -rely 0.0 -relwidth 0.2 -relheight 0.1
-place .b3 -relx 0.4 -rely 0.0 -relwidth 0.2 -relheight 0.1
-place .b4 -relx 0.6 -rely 0.0 -relwidth 0.2 -relheight 0.1
-place .b5 -relx 0.8 -rely 0.0 -relwidth 0.2 -relheight 0.1
-place .f1 -relx 0.0 -rely 0.1 -relwidth 1.0 -relheight 0.9
-pack .f1.sx -side bottom -fill x
-pack .f1.sy -side right  -fill y
-pack .f1.t0 -side left -fill both -expand true
 
 while {1} {
     update
