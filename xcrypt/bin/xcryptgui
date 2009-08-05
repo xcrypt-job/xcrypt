@@ -2,31 +2,27 @@
 
 frame .f1
 label .f1.l0 -text "Main"
-text .f1.t0 -wrap none -bg white \
-            -xscrollcommand ".f1.sx set" \
-            -yscrollcommand ".f1.sy set"
+text .f1.t0 -wrap none -bg white -xscrollcommand ".f1.sx set" \
+                                 -yscrollcommand ".f1.sy set"
 scrollbar .f1.sx -orient horizontal -command ".f1.t0 xview"
 scrollbar .f1.sy -orient vertical   -command ".f1.t0 yview"
 
 frame .f2
-label .f2.l0 -text "Stat"
-text .f2.t0 -wrap none -bg white \
-            -xscrollcommand ".f2.sx set" \
-            -yscrollcommand ".f2.sy set"
+label .f2.l0 -text "State"
+text .f2.t0 -wrap none -bg white -xscrollcommand ".f2.sx set" \
+                                 -yscrollcommand ".f2.sy set"
 scrollbar .f2.sx -orient horizontal -command ".f2.t0 xview"
 scrollbar .f2.sy -orient vertical   -command ".f2.t0 yview"
 
 frame .f3
-label .f3.l0 -text "Del"
-text .f3.t0 -wrap none -bg white \
-            -xscrollcommand ".f3.sx set" \
-            -yscrollcommand ".f3.sy set"
+label .f3.l0 -text "Delete"
+text .f3.t0 -wrap none -bg white -xscrollcommand ".f3.sx set" \
+                                 -yscrollcommand ".f3.sy set"
 scrollbar .f3.sx -orient horizontal -command ".f3.t0 xview"
 scrollbar .f3.sy -orient vertical   -command ".f3.t0 yview"
 
 label .l1 -text ""
 button .b1 -text "xcrypt" -command {
-    global pipe
     set fileTypeList {
 	{{Xcrypt Files} {.xcr}}
 	{{All Files} {*}}
@@ -34,9 +30,9 @@ button .b1 -text "xcrypt" -command {
     set filePath [tk_getOpenFile -filetypes $fileTypeList]
     .l1 configure -text "$filePath"
     if {$filePath != ""} {
-	set pipe [open "|xcrypt $filePath"]
-        fconfigure $pipe -buffering none
-	fileevent $pipe readable showtext
+	set pipe1 [open "|xcrypt $filePath"]
+        fconfigure $pipe1 -buffering none
+	fileevent $pipe1 readable showtext1
     }
 }
 
@@ -49,22 +45,39 @@ button .b2 -text "xcryptstat" -command {
 
 label .l3 -text ""
 button .b3 -text "xcryptdel" -command {
-    toplevel .t3
-    listbox .t3.l0 -bg white \
-	           -xscrollcommand ".t3.sx set" \
-                   -yscrollcommand ".t3.sy set"
-    scrollbar .t3.sx -orient horizontal -command ".t3.l0 xview"
-    scrollbar .t3.sy -orient vertical   -command ".t3.l0 yview"
-    .t3.l0 insert end job7-5-nil-7
-    pack .t3.sx -side bottom -fill x
-    pack .t3.sy -side right -fill y
-    pack .t3.l0 -side left -fill both -expand true
+    if {![winfo exists .t3]} {
+	toplevel .t3
+	wm title .t3 "Xcryptdel"
+	listbox .t3.l0 -bg white -xscrollcommand ".t3.sx set" \
+                                 -yscrollcommand ".t3.sy set"
+	scrollbar .t3.sx -orient horizontal -command ".t3.l0 xview"
+	scrollbar .t3.sy -orient vertical   -command ".t3.l0 yview"
 
-    set selectedIndex [.t3.l0 curselection]
-    if {$selectedIndex == ""} {
-	.l3 configure -text ""
-    } else {
-	.l3 configure -text [.t3.l0 get $selectedIndex]
+	set fileID [open "inv_watch/.request_ids"]
+	array set line [gets $fileID]
+	foreach elem [array names line] {
+	    .t3.l0 insert end $line($elem)
+	}
+	close $fileID
+	button .t3.b0 -text "OK" -command {
+	    set selectedIndex [.t3.l0 curselection]
+	    set job [.t3.l0 get $selectedIndex]
+	    if {$selectedIndex == ""} {
+		.l3 configure -text ""
+	    } else {
+		.l3 configure -text $job
+		set pipe3 [open "|xcryptdel $job"]
+		fconfigure $pipe3 -buffering none
+		fileevent $pipe3 readable showtext3
+		destroy .t3
+	    }
+	}
+	button .t3.b1 -text "Cancel" -command { destroy .t3 }
+	pack .t3.sx -side bottom -fill x
+	pack .t3.sy -side right -fill y
+	pack .t3.l0 -side left -fill both -expand true
+	pack .t3.b0 -fill x
+	pack .t3.b1 -fill x
     }
 }
 
@@ -84,9 +97,9 @@ place .b2 -relx 0.0 -rely 0.04 -relwidth 0.2 -relheight 0.04
 place .b3 -relx 0.0 -rely 0.08 -relwidth 0.2 -relheight 0.04
 place .b4 -relx 0.0 -rely 0.12 -relwidth 0.2 -relheight 0.04
 place .b5 -relx 0.0 -rely 0.16 -relwidth 0.2 -relheight 0.04
-place .l1 -relx 0.1 -rely 0.0  -relwidth 0.8 -relheight 0.04
-place .l3 -relx 0.1 -rely 0.08 -relwidth 0.8 -relheight 0.04
-place .l4 -relx 0.1 -rely 0.12 -relwidth 0.8 -relheight 0.04
+place .l1 -relx 0.2 -rely 0.0  -relwidth 0.8 -relheight 0.04
+place .l3 -relx 0.2 -rely 0.08 -relwidth 0.8 -relheight 0.04
+place .l4 -relx 0.2 -rely 0.12 -relwidth 0.8 -relheight 0.04
 
 place .f1 -relx 0.0 -rely 0.2 -relwidth 0.5 -relheight 0.8
 pack .f1.l0
@@ -106,23 +119,25 @@ pack .f3.sx -side bottom -fill x
 pack .f3.sy -side right -fill y
 pack .f3.t0 -side left -fill both -expand true
 
-set pipe 0
-set pipe2 0
 
-proc showtext { } {
-    global pipe
-    if [eof $pipe] {
-        catch {close $pipe}
+set pipe1 0
+set pipe2 0
+set pipe3 0
+
+proc showtext1 { } {
+    global pipe1
+    if [eof $pipe1] {
+        catch {close $pipe1}
         return
     }
-        set t [read $pipe 1]
-        set s $t
-        while { $s > 127 } {
-            set s [read $pipe 1]
-            append t $s
-        }
-        .f1.t0 insert end $t
-        update idletasks
+    set t [read $pipe1 1]
+    set s $t
+    while { $s > 127 } {
+	set s [read $pipe1 1]
+	append t $s
+    }
+    .f1.t0 insert end $t
+    update idletasks
 }
 
 proc showtext2 { } {
@@ -131,14 +146,30 @@ proc showtext2 { } {
         catch {close $pipe2}
         return
     }
-        set v [read $pipe2 1]
-        set u $v
-        while { $u > 127 } {
-            set u [read $pipe2 1]
-            append v $u
-        }
-        .f2.t0 insert end $v
-        update idletasks
+    set v [read $pipe2 1]
+    set u $v
+    while { $u > 127 } {
+	set u [read $pipe2 1]
+	append v $u
+    }
+    .f2.t0 insert end $v
+    update idletasks
+}
+
+proc showtext3 { } {
+    global pipe3
+    if [eof $pipe3] {
+        catch {close $pipe3}
+        return
+    }
+    set r [read $pipe3 1]
+    set q $r
+    while { $q > 127 } {
+	set q [read $pipe3 1]
+	append r $q
+    }
+    .f3.t0 insert end $r
+    update idletasks
 }
 
 while {1} {
