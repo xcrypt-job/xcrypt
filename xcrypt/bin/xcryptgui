@@ -42,7 +42,6 @@ button .b2 -text "xcryptstat" -command {
     fileevent $pipe2 readable showtext2
 }
 
-
 label .l3 -text ""
 button .b3 -text "xcryptdel" -command {
     if {![winfo exists .t3]} {
