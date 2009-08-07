@@ -22,8 +22,8 @@ $bn2->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.08', -relheight => '0.04' );
 
 $bn3 = $mw->Button( -text => 'cleanup',
-		     -command => sub { $br3 = 'Clean-up!';
-				       system( "./cleanup.sh" ); } );
+		    -command => sub { $br3 = 'Clean-up!';
+				      system( "./cleanup.sh" ); } );
 $br3 = '';
 $ll3  = $mw->Label( -textvariable => \$br3 );
 $bn3->place( -relx => '0.00', -relwidth  => '0.20',
@@ -89,7 +89,6 @@ sub fun2 {
 	    $lx20->insert('end', $_);
 	    $lx20->yview('end');
 	}
-	close( ID );
     }
 }
 
@@ -99,7 +98,7 @@ sub foo {
     unless (@index eq ()) {
 	foreach (@index) {
 	    $job = $lx20->get($_);
-	    open( PIPE2, "xcryptdel $job |" ) or die "Can't delete $job";
+	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
 	    $fm2->fileevent(\*PIPE2, 'readable', [\&bar, $tt20, 'PIPE2']);
 	    $tl20->destroy();
 	}
@@ -110,7 +109,7 @@ sub fun0 {
     $filename = $mw->getOpenFile( -filetypes => [['Xcrypt Files', ['.xcr']]]);
     unless ($filename eq '') {
 	$br0 = "$filename";
-	open( PIPE0, "xcrypt $filename|" ) or die "Can't execute $filename";
+	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
 	$fm0->fileevent(\*PIPE0, 'readable', [\&bar, $tt00, 'PIPE0']);
 #	$tt10->focusForce();
     }
@@ -122,14 +121,23 @@ sub fun1 {
 	$tt10->insert('end', $_);
 	$tt10->yview('end');
     }
-    close( PIPE1 );
 }
+
+
 
 sub bar {
     my ($widget, $pipe) = @_;
-    $_ = <$pipe>;
-    $widget->insert('end', $_);
+
+#    $_ = <$pipe>;
+#    $widget->insert('end', $_);
+#    $widget->yview('end');
+
+    my($stat, $data);
+    $stat = sysread $pipe, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    $widget->insert('end', $data);
     $widget->yview('end');
+
 }
 
 MainLoop();
