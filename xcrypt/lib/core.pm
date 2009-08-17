@@ -66,11 +66,15 @@ sub new {
     return bless $self, $class;
 }
 
+sub before {}
+
+sub after {}
+
 sub start {
     my $self = shift;
     my $dir = $self->{id};
 
-    $self->before();
+#    $self->before();
 
     # NQS スクリプトを作成・投入
 
@@ -98,8 +102,7 @@ sub start {
         my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
         $self->{stdout} = $stdlist[$self->{stdoclmn}];
     }
-
-    $self->after();
+#    $self->after();
 }
 
 sub before {

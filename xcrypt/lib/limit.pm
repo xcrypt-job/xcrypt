@@ -15,7 +15,9 @@ sub new {
 
 sub start {
     my $self = shift;
+    $self->before();
     $self->NEXT::start();
+    $self->after();
 }
 
 sub before {
