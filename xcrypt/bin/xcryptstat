@@ -62,5 +62,5 @@ while (<QSTATO>) {
 	print "$hash{$req_id} is waiting or running.\n";
     }
 }
-print "--- 8< --- 8< --- 8< ---\n";
+#print "--- 8< --- 8< --- 8< ---\n";
 close (QSTATO);

@@ -16,7 +16,7 @@ my $yesterday = 10;
 my $arg0 = 10;
 my %job = %xyz;
 
-until (abs($today - $yesterday) > 20) {
+until (abs($today - $yesterday) > 45) {
     $yesterday = $today;
     $job{'id'} = $job{'id'} . '_';
     $job{'arg0'} = $job{'arg0'} * 2;

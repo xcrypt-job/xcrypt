@@ -2,15 +2,15 @@
 
 use Tk;
 
-my $eof;
+my ($eof0, $eof2);
 
 my $mw = MainWindow->new( -title => 'Xcryptgui' );
 $mw->geometry( '600x600' );
 
 my $br0 = '';
-my $bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
 my $ll0 = $mw->Label( -textvariable => \$br0 );
-$bn0->place( -relx => '0.00', -relwidth  => '0.20',
+my $bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
+$bn0->place( -relx => '0.0', -relwidth  => '0.2',
 	     -rely => '0.00', -relheight => '0.04' );
 $ll0->place( -relx => '0.20', -relwidth  => '0.80',
 	     -rely => '0.00', -relheight => '0.04' );
@@ -24,11 +24,12 @@ $bn2->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.08', -relheight => '0.04' );
 
 my $br3 = '';
-my $bn3 = $mw->Button( -text => 'cleanup',
-		       -command => sub { $br3 = 'Clean-up!';
-					 system( "./cleanup.sh" ); } );
-
+my $ct3 = 0;
 my $ll3 = $mw->Label( -textvariable => \$br3 );
+my $bn3 = $mw->Button( -text => 'cleanup',
+		       -command => sub { $ct3 = $ct3 + 1;
+					 $br3 = 'The ' . $ct3 . '-th Clean-up!';
+					 system( "./cleanup.sh" ); } );
 $bn3->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.12', -relheight => '0.04' );
 $ll3->place( -relx => '0.20', -relwidth  => '0.80',
@@ -73,21 +74,21 @@ $tt20->pack( -fill => 'both', -expand => 'true' );
 
 sub fun2 {
     unless ( Exists( $tl20 ) ) {
-	$tl20 = $mw->Toplevel( -title => 'Xcryptdel' );
-	$lx20 = $tl20->Listbox();
+	my $tl20 = $mw->Toplevel( -title => 'Xcryptdel' );
+	my $lx20 = $tl20->Listbox();
 	$lx20->pack( -side => 'left' );
 
-	$bn20 = $tl20->Button( -text => 'OK', -command => \&foo );
+	my $bn20 = $tl20->Button( -text => 'OK', -command => \&foo );
 	$bn20->pack( -fill => 'x' );
 
-	$bn21 = $tl20->Button( -text => 'Cancel',
-			       -command => ['destroy', $tl20] );
+	my $bn21 = $tl20->Button( -text => 'Cancel',
+				  -command => ['destroy', $tl20] );
 	$bn21->pack( -fill => 'x' );
 
 	open( ID, '< inv_watch/.request_ids' );
-	@allarr = split( / /, <ID> );
-	%allhash = @allarr;
-	@fileID = values(%allhash);
+	my @allarr = split( / /, <ID> );
+	my %allhash = @allarr;
+	my @fileID = values(%allhash);
 	foreach (@fileID) {
 	    $lx20->insert('end', $_);
 	    $lx20->yview('end');
@@ -96,17 +97,17 @@ sub fun2 {
 }
 
 sub foo {
-    @index = $lx20->curselection();
-
+    my @index = $lx20->curselection();
     unless (@index eq ()) {
 	foreach (@index) {
-	    $job = $lx20->get($_);
+	    my $job = $lx20->get($_);
+	    $eof2 = 0;
 	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
 	    $mw->fileevent( \*PIPE2, 'readable', \&bar2 );
 
-	$mw->waitVariable(\$eof);
-	$mw->fileevent( \*PIPE2, 'readable' => '' );
-	close PIPE2;
+	    $mw->waitVariable(\$eof2);
+	    $mw->fileevent( \*PIPE2, 'readable' => '' );
+	    close PIPE2;
 
 	    $tl20->destroy();
 	}
@@ -131,7 +132,7 @@ sub bar0 {
     $tt00->insert('end', $data);
     $tt00->yview('end');
 
-    if ($stat == 0) { $eof = 1; }
+    if ($stat == 0) { $eof0 = 1; }
 }
 
 sub bar2 {
@@ -141,22 +142,20 @@ sub bar2 {
     $tt20->insert('end', $data);
     $tt20->yview('end');
 
-    if ($stat == 0) { $eof = 1; }
+    if ($stat == 0) { $eof2 = 1; }
 }
 
 sub fun0 {
     my $filename = $mw->getOpenFile( -filetypes => [['Xcrypt Files', ['.xcr']]]);
     unless ($filename eq '') {
 	$br0 = "$filename";
+	$eof0 = 0;
 	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
 	$mw->fileevent( \*PIPE0, 'readable', \&bar0 );
 
-	$mw->waitVariable(\$eof);
+	$mw->waitVariable(\$eof0);
 	$mw->fileevent( \*PIPE0, 'readable' => '' );
 	close PIPE0;
-
-    } else {
-	print "hoge\n";
     }
 }
 
@@ -166,6 +165,8 @@ sub fun1 {
 	$tt10->insert('end', $_);
 	$tt10->yview('end');
     }
+    $tt10->insert('end', "--- 8< --- 8< --- 8< ---\n");
+    $tt10->yview('end');
 }
 
 
