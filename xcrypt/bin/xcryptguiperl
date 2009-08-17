@@ -2,67 +2,70 @@
 
 use Tk;
 
-$mw = MainWindow->new( -title => 'Xcryptgui' );
+my $eof;
+
+my $mw = MainWindow->new( -title => 'Xcryptgui' );
 $mw->geometry( '600x600' );
 
-$bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
-$br0 = '';
-$ll0  = $mw->Label( -textvariable => \$br0 );
+my $br0 = '';
+my $bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
+my $ll0 = $mw->Label( -textvariable => \$br0 );
 $bn0->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.00', -relheight => '0.04' );
 $ll0->place( -relx => '0.20', -relwidth  => '0.80',
 	     -rely => '0.00', -relheight => '0.04' );
 
-$bn1 = $mw->Button( -text => 'xcryptstat', -command => \&fun1 );
+my $bn1 = $mw->Button( -text => 'xcryptstat', -command => \&fun1 );
 $bn1->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.04', -relheight => '0.04' );
 
-$bn2 = $mw->Button( -text => 'xcryptdel', -command => \&fun2 );
+my $bn2 = $mw->Button( -text => 'xcryptdel', -command => \&fun2 );
 $bn2->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.08', -relheight => '0.04' );
 
-$bn3 = $mw->Button( -text => 'cleanup',
-		    -command => sub { $br3 = 'Clean-up!';
-				      system( "./cleanup.sh" ); } );
-$br3 = '';
-$ll3  = $mw->Label( -textvariable => \$br3 );
+my $br3 = '';
+my $bn3 = $mw->Button( -text => 'cleanup',
+		       -command => sub { $br3 = 'Clean-up!';
+					 system( "./cleanup.sh" ); } );
+
+my $ll3 = $mw->Label( -textvariable => \$br3 );
 $bn3->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.12', -relheight => '0.04' );
 $ll3->place( -relx => '0.20', -relwidth  => '0.80',
 	     -rely => '0.12', -relheight => '0.04' );
 
-$bn4 = $mw->Button( -text => 'quit', -command => \&exit );
+my $bn4 = $mw->Button( -text => 'quit', -command => \&exit );
 $bn4->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.16', -relheight => '0.04' );
 
-$fm0  = $mw->Frame();
-$ll00 = $fm0->Label( -text => 'Main' );
-$tt00 = $fm0->Scrolled( 'Text',
-			 -background => 'white',
-			 -scrollbars => 'se',
-			 -wrap => 'none' );
+my $fm0 = $mw->Frame();
+my $ll00 = $fm0->Label( -text => 'Main' );
+my $tt00 = $fm0->Scrolled( 'Text',
+			   -background => 'white',
+			   -scrollbars => 'se',
+			   -wrap => 'none' );
 $fm0->place( -relx => '0.00', -relwidth  => '0.50',
 	     -rely => '0.20', -relheight => '0.80' );
 $ll00->pack( -fill => 'both' );
 $tt00->pack( -fill => 'both', -expand => 'true' );
 
-$fm1  = $mw->Frame();
-$ll10 = $fm1->Label( -text => 'State' );
-$tt10 = $fm1->Scrolled( 'Text',
-			 -background => 'white',
-			 -scrollbars => 'se',
-			 -wrap => 'none' );
+my $fm1 = $mw->Frame();
+my $ll10 = $fm1->Label( -text => 'State' );
+my $tt10 = $fm1->Scrolled( 'Text',
+			   -background => 'white',
+			   -scrollbars => 'se',
+			   -wrap => 'none' );
 $fm1->place( -relx => '0.50', -relwidth  => '0.50',
 	     -rely => '0.20', -relheight => '0.40' );
 $ll10->pack( -fill => 'both' );
 $tt10->pack( -fill => 'both', -expand => 'true' );
 
-$fm2  = $mw->Frame();
-$ll20 = $fm2->Label( -text => 'Delete' );
-$tt20 = $fm2->Scrolled( 'Text',
-			 -background => 'white',
-			 -scrollbars => 'se',
-			 -wrap => 'none' );
+my $fm2 = $mw->Frame();
+my $ll20 = $fm2->Label( -text => 'Delete' );
+my $tt20 = $fm2->Scrolled( 'Text',
+			   -background => 'white',
+			   -scrollbars => 'se',
+			   -wrap => 'none' );
 $fm2->place( -relx => '0.50', -relwidth  => '0.50',
 	     -rely => '0.60', -relheight => '0.40' );
 $ll20->pack( -fill => 'both' );
@@ -99,19 +102,61 @@ sub foo {
 	foreach (@index) {
 	    $job = $lx20->get($_);
 	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	    $fm2->fileevent(\*PIPE2, 'readable', [\&bar, $tt20, 'PIPE2']);
+	    $mw->fileevent( \*PIPE2, 'readable', \&bar2 );
+
+	$mw->waitVariable(\$eof);
+	$mw->fileevent( \*PIPE2, 'readable' => '' );
+	close PIPE2;
+
 	    $tl20->destroy();
 	}
     }
 }
 
+sub bar {
+    my ($widget, $pipe) = @_;
+
+    my($stat, $data);
+    $stat = sysread $pipe, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    $widget->insert('end', $data);
+    $widget->yview('end');
+
+}
+
+sub bar0 {
+    my $data;
+    my $stat = sysread PIPE0, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    $tt00->insert('end', $data);
+    $tt00->yview('end');
+
+    if ($stat == 0) { $eof = 1; }
+}
+
+sub bar2 {
+    my $data;
+    my $stat = sysread PIPE2, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    $tt20->insert('end', $data);
+    $tt20->yview('end');
+
+    if ($stat == 0) { $eof = 1; }
+}
+
 sub fun0 {
-    $filename = $mw->getOpenFile( -filetypes => [['Xcrypt Files', ['.xcr']]]);
+    my $filename = $mw->getOpenFile( -filetypes => [['Xcrypt Files', ['.xcr']]]);
     unless ($filename eq '') {
 	$br0 = "$filename";
 	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
-	$fm0->fileevent(\*PIPE0, 'readable', [\&bar, $tt00, 'PIPE0']);
-#	$tt10->focusForce();
+	$mw->fileevent( \*PIPE0, 'readable', \&bar0 );
+
+	$mw->waitVariable(\$eof);
+	$mw->fileevent( \*PIPE0, 'readable' => '' );
+	close PIPE0;
+
+    } else {
+	print "hoge\n";
     }
 }
 
@@ -125,19 +170,5 @@ sub fun1 {
 
 
 
-sub bar {
-    my ($widget, $pipe) = @_;
-
-#    $_ = <$pipe>;
-#    $widget->insert('end', $_);
-#    $widget->yview('end');
-
-    my($stat, $data);
-    $stat = sysread $pipe, $data, 4096;
-    die "sysread error:  $!" unless defined $stat;
-    $widget->insert('end', $data);
-    $widget->yview('end');
-
-}
 
 MainLoop();
