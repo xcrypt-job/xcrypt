@@ -7,7 +7,8 @@ my ($eof0, $eof2);
 my $mw = MainWindow->new( -title => 'Xcryptgui' );
 #$mw->geometry( '1000x1000' );
 
-my @fontlist = sort $mw->fontFamilies;
+#my @fontlist = sort $mw->fontFamilies;
+my @fontlist = ('Helvetica');
 my $menufontsize = 12;
 my $fontsize = 16;
 
@@ -163,7 +164,9 @@ sub bar2 {
 }
 
 sub fun0 {
-    my $filename = $mw->getOpenFile( -filetypes => [['Xcrypt Files', ['.xcr']]]);
+    my $filename = $mw->getOpenFile( -font => [$fontlist[0], $fontsize, 'normal'],
+				     -filetypes => [['Xcrypt Files', ['.xcr']],
+						    ['All Files', ['*']]]);
     unless ($filename eq '') {
 	$br0 = "$filename";
 	$eof0 = 0;
