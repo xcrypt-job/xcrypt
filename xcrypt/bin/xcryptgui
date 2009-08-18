@@ -5,7 +5,7 @@ use Tk;
 my ($eof0, $eof2);
 
 my $mw = MainWindow->new( -title => 'Xcryptgui' );
-$mw->geometry( '1000x1000' );
+#$mw->geometry( '1000x1000' );
 
 my @fontlist = sort $mw->fontFamilies;
 my $menufontsize = 12;
@@ -36,7 +36,7 @@ my $ct3 = 0;
 my $ll3 = $mw->Label( -textvariable => \$br3 );
 my $bn3 = $mw->Button( -text => 'cleanup',
 		       -command => sub { $ct3 = $ct3 + 1;
-					 $br3 = 'The ' . $ct3 . '-th Clean-up!';
+					 $br3 = 'Clean-up (' . $ct3 . ' times)' ;
 					 system( "./cleanup.sh" ); } );
 $bn3->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.12', -relheight => '0.04' );
@@ -76,7 +76,7 @@ $tt10->pack( -fill => 'both', -expand => 'true' );
 
 my $fm2 = $mw->Frame();
 my $ll20 = $fm2->Label( -font => [$fontlist[0], $fontsize, 'bold'],
-			-text => 'Delete' );
+			-text => 'Deleted' );
 my $tt20 = $fm2->Scrolled( 'Text',
 			   -font => [$fontlist[0], $fontsize, 'normal'],
 			   -background => 'white',
