@@ -19,7 +19,7 @@ $mw->optionAdd( '*Label.font' => [$fontlist[0], $fontsize, 'bold'] );
 my $br0 = '';
 my $ll0 = $mw->Label( -textvariable => \$br0 );
 my $bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
-$bn0->place( -relx => '0.0', -relwidth  => '0.2',
+$bn0->place( -relx => '0.00', -relwidth  => '0.20',
 	     -rely => '0.00', -relheight => '0.04' );
 $ll0->place( -relx => '0.20', -relwidth  => '0.80',
 	     -rely => '0.00', -relheight => '0.04' );
