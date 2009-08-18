@@ -2,7 +2,7 @@ use base qw(GA core);
 
 %xyz = (
     'id' => 'job0',
-    'exe' => '/home/abet/e-science/xcrypt/bin/GA',
+    'exe' => '../xcrypt/bin/GA',
     'GA_lengthOfStr' => '5',
     'GA_howToCrossover' => 'onePointCrossover',
     'GA_howToSelect' => 'equivalence',
