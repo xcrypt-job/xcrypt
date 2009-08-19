@@ -1,5 +1,4 @@
-# Config file for NQS
-
+# Config file for SGE
 $jobsched::jobsched_config{"SGE"} = {
     qsub_command => "/usr/bin/qsub",
     qdel_command => "/usr/bin/qdel",

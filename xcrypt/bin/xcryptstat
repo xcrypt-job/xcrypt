@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
-
-package xcryptstat;
+package jobsched;
 
 use strict;
 use Cwd;
@@ -15,56 +14,54 @@ if ( $ENV{XCRYPT} ) {
     die "Set the environment varialble XCRYPT\n";
 }
 
-my $sge;
-if ( $ENV{XCRJOBSCHED} eq 'NQS' ) {
-    $sge = 0;
-} elsif ( $ENV{XCRJOBSCHED} eq 'SGE' ) {
-    $sge = 1;
+# Load jobscheduler config files.
+my $jobsched = undef;
+my $jobsched_config_dir = undef;
+our %jobsched_config = undef;
+if ( $ENV{XCRYPT} ) {
+    $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
 } else {
-    die "Set the environment varialble XCRJOBSCHED (NQS or SGE)\n";
+    die "Set the environment varialble XCRYPT\n";
 }
-
-sub extract_req_id_from_qstat_line {
-    my ($line) = @_;
-    ## depend on outputs of NQS's qstat
-    ## SGEでも動くようにしたつもり
-    # print STDERR $_ . "\n";
-    if ($sge) {
-        # print "--- $_\n";
-        if ($line =~ /^\s*([0-9]+)/) {
-            return $1;
-        } else {
-            return 0;
-        }
-    } else {
-        # print "=== $_\n";
-        if ( $line =~ /([0-9]+\.nqs)/ ) {
-            return $1;
-        } else {
-            return 0;
-        }
+unless ( $ENV{XCRJOBSCHED} ) {
+    die "Set the environment varialble XCRJOBSCHED.\n";
+} else {
+    $jobsched = $ENV{XCRJOBSCHED};
+    unless ( -f File::Spec->catfile ($jobsched_config_dir, $jobsched . ".pm") ) {
+        die "No config file for $jobsched ($jobsched.pm) in $jobsched_config_dir";
     }
 }
+foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
+    do $_;
+}
 
-my $qstat_command="qstat";
+my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
+unless ( defined $qstat_command ) {
+    die "qstat_command is not defined in $jobsched.pm";
+}
+unless (-x $qstat_command) {
+    die "$qstat_command not executable";
+}
+
+my $qstat_extractor = $jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+unless ( defined $qstat_extractor ) {
+    die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
+} elsif ( ref ($qstat_extractor) ne 'CODE' ) {
+    die "Error in $jobsched.pm: extract_req_ids_from_qstat_output must be a function.";
+}
+
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
-open (QSTATO, "$qstat_command |");
-while (<QSTATO>) {
-    chomp;
-    my $req_id = &extract_req_id_from_qstat_line($_);
-    if ($req_id) {
-
-	open (REQIDS, "< $idfiles");
-	my $line = <REQIDS>;
-	my @array = split(/ /, $line);
-	my %hash = @array;
-	close (REQIDS);
-
-	my $hoge = $hash{"$req_id"};
-	print "$hoge is waiting or running.\n";
-    }
+my @qstat_out = qx/$qstat_command/;
+my @ids = &$qstat_extractor (@qstat_out);
+foreach my $req_id (@ids) {
+    open (REQIDS, "< $idfiles");
+    my $line = <REQIDS>;
+    my @array = split(/ /, $line);
+    my %hash = @array;
+    close (REQIDS);
+    my $hoge = $hash{"$req_id"};
+    print "$hoge is waiting or running.\n";
 }
 #print "--- 8< --- 8< --- 8< ---\n";
-close (QSTATO);
