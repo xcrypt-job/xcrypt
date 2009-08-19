@@ -3,8 +3,8 @@ use base qw(core);
 %xyz = (
     'id' => 'job6',
     'exe' => 'echo',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'queue' => 'all.q',
+#    'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz, 'arg0S' => [0..9],
