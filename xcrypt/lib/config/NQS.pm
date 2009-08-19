@@ -1,9 +1,8 @@
 # Config file for NQS
-
-$jobsched_config{"NQS"} = {
-    qsub_command => "/usr/bin/qsub",
-    qdel_command => "/usr/bin/qdel -K",
-    qstat_command => "/usr/bin/qstat",
+$jobsched::jobsched_config{"NQS"} = {
+    qsub_command => "/thin/local/bin/qsub",
+    qdel_command => "/thin/local/bin/qdel -K",
+    qstat_command => "/thin/local/bin/qstat",
     jobscript_queue => '# @$-q ',
     jobscript_stdout => '# @$-o ',
     jobscript_stderr => '# @$-e ',
