@@ -5,7 +5,7 @@ use Tk;
 my ($eof0, $eof2);
 
 my $mw = MainWindow->new( -title => 'Xcryptgui' );
-#$mw->geometry( '1000x1000' );
+$mw->geometry( '1000x1000' );
 
 #my @fontlist = sort $mw->fontFamilies;
 my @fontlist = ('Helvetica');
@@ -203,11 +203,21 @@ $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 $view = $mn->Menu();
 $mn->entryconfigure( 'Size', -menu => $view );
-$view->add( 'command', -label => 8, -command => [\&hoge, 8] );
+=comment
+foreach (4..12) {
+    my $ddd = 2 * $_;
+    $view->add( 'command', -label => $ddd, -command => [\&hoge, $ddd] );
+}
+=cut
+$view->add( 'command', -label => 8,  -command => [\&hoge, 8] );
 $view->add( 'command', -label => 10, -command => [\&hoge, 10] );
 $view->add( 'command', -label => 12, -command => [\&hoge, 12] );
 $view->add( 'command', -label => 14, -command => [\&hoge, 14] );
 $view->add( 'command', -label => 16, -command => [\&hoge, 16] );
+$view->add( 'command', -label => 18, -command => [\&hoge, 18] );
+$view->add( 'command', -label => 20, -command => [\&hoge, 20] );
+$view->add( 'command', -label => 22, -command => [\&hoge, 22] );
+$view->add( 'command', -label => 24, -command => [\&hoge, 24] );
 
 sub hoge { $fontsize = $_[0];
 =comment
