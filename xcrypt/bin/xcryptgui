@@ -2,104 +2,67 @@
 
 use Tk;
 
-my ($eof0, $eof2);
-
-my $mw = MainWindow->new( -title => 'Xcryptgui' );
+my $mw = MainWindow->new( -title => 'Xcrypt' );
 $mw->geometry( '1000x1000' );
 
 #my @fontlist = sort $mw->fontFamilies;
 my @fontlist = ('Helvetica');
 my $menufontsize = 12;
-my $fontsize = 16;
+my $fontsize = 14;
 
 $mw->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
-$mw->optionAdd( '*Button.font' => [$fontlist[0], $fontsize, 'bold'] );
-$mw->optionAdd( '*Label.font' => [$fontlist[0], $fontsize, 'bold'] );
+foreach ('*Button.font', '*Label.font') {
+    $mw->optionAdd( "$_" => [$fontlist[0], $fontsize, 'bold'] );
+}
+
+our ($eof0, $eof2);
+
+my @cor = ('xcrypt', 'xcryptstat', 'xcryptdel');
 
 my $br0 = '';
-my $ll0 = $mw->Label( -textvariable => \$br0 );
-my $bn0 = $mw->Button( -text => 'xcrypt', -command => \&fun0 );
-$bn0->place( -relx => '0.00', -relwidth  => '0.20',
-	     -rely => '0.00', -relheight => '0.04' );
-$ll0->place( -relx => '0.20', -relwidth  => '0.80',
-	     -rely => '0.00', -relheight => '0.04' );
+our $ll0 = $mw->Label( -textvariable => \$br0 );
+$ll0->place( -relx => 0.2, -relwidth  => 0.8, -rely => 0, -relheight => 0.05 );
 
-my $bn1 = $mw->Button( -text => 'xcryptstat', -command => \&fun1 );
-$bn1->place( -relx => '0.00', -relwidth  => '0.20',
-	     -rely => '0.04', -relheight => '0.04' );
+foreach (0..2) {
+    my $aaa = $cor[$_];
+    my $ccc = 'bn' . $_;
+    my $bbb = 'fm' . $_;
+    my $foo = 'll' . $_ . '0';
+    my $bar = 'tt' . $_ . '0';
 
-my $bn2 = $mw->Button( -text => 'xcryptdel', -command => \&fun2 );
-$bn2->place( -relx => '0.00', -relwidth  => '0.20',
-	     -rely => '0.08', -relheight => '0.04' );
+    eval "our \$$ccc = \$mw->Button();";
+    ${$ccc}->configure( -text => $aaa, -command => [\&fun, $_] );
+    ${$ccc}->place( -relx => 0,         -relwidth  => 0.2,
+		    -rely => $_ * 0.05, -relheight => 0.05 );
+    eval "our \$$bbb = \$mw->Frame();";
+    eval "our \$$foo = \$$bbb->Label();";
+    ${$foo}->configure( -text => $aaa  );
+    eval "our \$$bar = \$$bbb->Scrolled( \'Text\' );";
+    ${$bar}->configure( -font => [$fontlist[0], $fontsize, 'normal'],
+			-background => 'white',
+			-scrollbars => 'se',
+			-wrap => 'none' );
 
-my $br3 = '';
-my $ct3 = 0;
-my $ll3 = $mw->Label( -textvariable => \$br3 );
-my $bn3 = $mw->Button( -text => 'cleanup',
-		       -command => sub { $ct3 = $ct3 + 1;
-					 $br3 = 'Clean-up (' . $ct3 . ' times)' ;
-					 system( "./cleanup.sh" ); } );
-$bn3->place( -relx => '0.00', -relwidth  => '0.20',
-	     -rely => '0.12', -relheight => '0.04' );
-$ll3->place( -relx => '0.20', -relwidth  => '0.80',
-	     -rely => '0.12', -relheight => '0.04' );
+    ${$bbb}->place( -relx => $_ * 0.33, -relwidth  => 0.33,
+		    -rely => 0.15,      -relheight => 0.85 );
+    ${$foo}->pack( -fill => 'both' );
+    ${$bar}->pack( -fill => 'both', -expand => 'true' );
+}
 
-my $bn4 = $mw->Button( -text => 'exit',
-		       -command => \&exit );
-$bn4->place( -relx => '0.00', -relwidth  => '0.20',
-	     -rely => '0.16', -relheight => '0.04' );
 
-my $fm0 = $mw->Frame();
-my $ll00 = $fm0->Label( -font => [$fontlist[0], $fontsize, 'bold'],
-			-text => 'Main' );
-my $tt00 = $fm0->Scrolled( 'Text',
-			   -font => [$fontlist[0], $fontsize, 'normal'],
-			   -background => 'white',
-			   -scrollbars => 'se',
-			   -wrap => 'none' );
-$fm0->place( -relx => '0.00', -relwidth  => '0.50',
-	     -rely => '0.20', -relheight => '0.80' );
-$ll00->pack( -fill => 'both' );
-$tt00->pack( -fill => 'both', -expand => 'true' );
-
-my $fm1 = $mw->Frame();
-my $ll10 = $fm1->Label( -font => [$fontlist[0], $fontsize, 'bold'],
-			-text => 'State' );
-my $tt10 = $fm1->Scrolled( 'Text',
-			   -font => [$fontlist[0], $fontsize, 'normal'],
-			   -background => 'white',
-			   -scrollbars => 'se',
-			   -wrap => 'none' );
-$fm1->place( -relx => '0.50', -relwidth  => '0.50',
-	     -rely => '0.20', -relheight => '0.40' );
-$ll10->pack( -fill => 'both' );
-$tt10->pack( -fill => 'both', -expand => 'true' );
-
-my $fm2 = $mw->Frame();
-my $ll20 = $fm2->Label( -font => [$fontlist[0], $fontsize, 'bold'],
-			-text => 'Deleted' );
-my $tt20 = $fm2->Scrolled( 'Text',
-			   -font => [$fontlist[0], $fontsize, 'normal'],
-			   -background => 'white',
-			   -scrollbars => 'se',
-			   -wrap => 'none' );
-$fm2->place( -relx => '0.50', -relwidth  => '0.50',
-	     -rely => '0.60', -relheight => '0.40' );
-$ll20->pack( -fill => 'both' );
-$tt20->pack( -fill => 'both', -expand => 'true' );
+sub fun { eval "fun$_[0];"; }
 
 sub fun2 {
     unless ( Exists( $tl20 ) ) {
 	$tl20 = $mw->Toplevel( -title => 'Xcryptdel' );
-	$lx20 = $tl20->Listbox( -font => [$fontlist[0], $fontsize, 'bold'] );
+	$lx20 = $tl20->Scrolled( 'Listbox',
+				 -font => [$fontlist[0], $fontsize, 'bold'] );
 	$lx20->pack( -side => 'left' );
 
-	my $bn20 = $tl20->Button( -font => [$fontlist[0], $fontsize, 'bold'],
-				  -text => 'OK', -command => \&foo );
+	my $bn20 = $tl20->Button( -text => 'OK', -command => \&foo );
 	$bn20->pack( -fill => 'x' );
 
-	my $bn21 = $tl20->Button( -font => [$fontlist[0], $fontsize, 'bold'],
-				  -text => 'Cancel',
+	my $bn21 = $tl20->Button( -text => 'Cancel',
 				  -command => ['destroy', $tl20] );
 	$bn21->pack( -fill => 'x' );
 
@@ -114,64 +77,16 @@ sub fun2 {
     }
 }
 
-sub foo {
-    my @index = $lx20->curselection();
-    unless (@index eq ()) {
-	foreach (@index) {
-	    my $job = $lx20->get($_);
-	    $eof2 = 0;
-	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	    $mw->fileevent( \*PIPE2, 'readable', \&bar2 );
-
-	    $mw->waitVariable(\$eof2);
-	    $mw->fileevent( \*PIPE2, 'readable' => '' );
-	    close PIPE2;
-
-	    $tl20->destroy();
-	}
-    }
-}
-
-sub bar {
-    my ($widget, $pipe) = @_;
-
-    my($stat, $data);
-    $stat = sysread $pipe, $data, 4096;
-    die "sysread error:  $!" unless defined $stat;
-    $widget->insert('end', $data);
-    $widget->yview('end');
-
-}
-
-sub bar0 {
-    my $data;
-    my $stat = sysread PIPE0, $data, 4096;
-    die "sysread error:  $!" unless defined $stat;
-    $tt00->insert('end', $data);
-    $tt00->yview('end');
-
-    if ($stat == 0) { $eof0 = 1; }
-}
-
-sub bar2 {
-    my $data;
-    my $stat = sysread PIPE2, $data, 4096;
-    die "sysread error:  $!" unless defined $stat;
-    $tt20->insert('end', $data);
-    $tt20->yview('end');
-
-    if ($stat == 0) { $eof2 = 1; }
-}
-
 sub fun0 {
-    my $filename = $mw->getOpenFile( -font => [$fontlist[0], $fontsize, 'normal'],
-				     -filetypes => [['Xcrypt Files', ['.xcr']],
-						    ['All Files', ['*']]]);
+    my $filename = $mw->getOpenFile(
+	-font => [$fontlist[0], $fontsize, 'normal'],
+	-filetypes => [['Xcrypt Files', ['.xcr']],
+		       ['All Files', ['*']]]);
     unless ($filename eq '') {
 	$br0 = "$filename";
 	$eof0 = 0;
 	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
-	$mw->fileevent( \*PIPE0, 'readable', \&bar0 );
+	$mw->fileevent( \*PIPE0, 'readable', [\&bar, 'tt00', 'PIPE0', 'eof0'] );
 
 	$mw->waitVariable(\$eof0);
 	$mw->fileevent( \*PIPE0, 'readable' => '' );
@@ -185,8 +100,36 @@ sub fun1 {
 	$tt10->insert('end', $_);
 	$tt10->yview('end');
     }
-#    $tt10->insert('end', "--- 8< --- 8< --- 8< ---\n");
-#    $tt10->yview('end');
+}
+
+sub foo {
+    my @index = $lx20->curselection();
+    unless (@index eq ()) {
+	foreach (@index) {
+	    my $job = $lx20->get($_);
+	    $eof2 = 0;
+	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
+	    $mw->fileevent( \*PIPE2, 'readable', [\&bar, 'tt20', 'PIPE2', 'eof2'] );
+
+	    $mw->waitVariable(\$eof2);
+	    $mw->fileevent( \*PIPE2, 'readable' => '' );
+	    close PIPE2;
+
+	    $tl20->destroy();
+	}
+    }
+}
+
+sub bar {
+    my ($widget, $pipe, $eof) = @_;
+
+    my($stat, $data);
+    $stat = sysread $pipe, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    ${$widget}->insert('end', $data);
+    ${$widget}->yview('end');
+
+    if ($stat == 0) { ${$eof} = 1; }
 }
 
 
@@ -196,6 +139,7 @@ $mn->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 $mw->configure( -menu => $mn );
 $mn->add( 'cascade', -label => 'File' );
 $mn->add( 'cascade', -label => 'Size' );
+$mn->add( 'cascade', -label => 'Tool' );
 
 $file = $mn->Menu();
 $mn->entryconfigure( 'File', -menu => $file );
@@ -203,47 +147,26 @@ $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 $view = $mn->Menu();
 $mn->entryconfigure( 'Size', -menu => $view );
-=comment
+
+$tool = $mn->Menu();
+$mn->entryconfigure( 'Tool', -menu => $tool );
+$tool->add( 'command', -label => 'Clean', -command => sub { system( "./cleanup.sh" ); } );
+
 foreach (4..12) {
     my $ddd = 2 * $_;
     $view->add( 'command', -label => $ddd, -command => [\&hoge, $ddd] );
 }
-=cut
-$view->add( 'command', -label => 8,  -command => [\&hoge, 8] );
-$view->add( 'command', -label => 10, -command => [\&hoge, 10] );
-$view->add( 'command', -label => 12, -command => [\&hoge, 12] );
-$view->add( 'command', -label => 14, -command => [\&hoge, 14] );
-$view->add( 'command', -label => 16, -command => [\&hoge, 16] );
-$view->add( 'command', -label => 18, -command => [\&hoge, 18] );
-$view->add( 'command', -label => 20, -command => [\&hoge, 20] );
-$view->add( 'command', -label => 22, -command => [\&hoge, 22] );
-$view->add( 'command', -label => 24, -command => [\&hoge, 24] );
 
-sub hoge { $fontsize = $_[0];
-=comment
-	   @bold = ('ll3', 'll0', 'bn0', 'bn1', 'bn2', 'bn3', 'bn4', 'll00', 'll10', 'll20');
-	   foreach (@bold) {
-	       $$_->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   }
-	   @normal = ('tt00', 'tt10', 'tt20');
-	   foreach (@normal) {
-	       $$_->configure( -font => [$fontlist[0], $fontsize, 'normal']);
-	   }
-=cut
-	   $ll3->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $ll0->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $bn0->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $bn1->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $bn2->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $bn3->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $bn4->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $ll00->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $ll10->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $ll20->configure( -font => [$fontlist[0], $fontsize, 'bold']);
-	   $tt00->configure( -font => [$fontlist[0], $fontsize, 'normal']);
-	   $tt10->configure( -font => [$fontlist[0], $fontsize, 'normal']);
-	   $tt20->configure( -font => [$fontlist[0], $fontsize, 'normal']);
+sub hoge {
+    $fontsize = $_[0];
+    my @bold = ('ll0', 'bn0', 'bn1', 'bn2', 'll00', 'll10', 'll20');
+    foreach (@bold) {
+	${$_}->configure( -font => [$fontlist[0], $fontsize, 'bold']);
+    }
+    my @normal = ('tt00', 'tt10', 'tt20');
+    foreach (@normal) {
+	${$_}->configure( -font => [$fontlist[0], $fontsize, 'normal']);
+    }
 }
-
 
 MainLoop();
