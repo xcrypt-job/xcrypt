@@ -36,13 +36,6 @@ print TMP 'use jobsched;' . "\n";
 print TMP 'our $max = 255;' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
-if ( $ENV{XCRJOBSCHED} eq 'NQS' ) {
-    print TMP '$jobsched::sge = 0;' . "\n";
-} elsif ( $ENV{XCRJOBSCHED} eq 'SGE' ) {
-    print TMP '$jobsched::sge = 1;' . "\n";
-} else {
-    die "Set the environment varialble XCRJOBSCHED (NQS or SGE)\n";
-}
 print TMP '&jobsched::invoke_watch ();' . "\n";
 print TMP '&jobsched::invoke_abort_check ();' . "\n";
 open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
