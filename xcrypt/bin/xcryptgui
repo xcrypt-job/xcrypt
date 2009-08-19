@@ -7,7 +7,7 @@ my ($eof0, $eof2);
 my $mw = MainWindow->new( -title => 'Xcryptgui' );
 #$mw->geometry( '1000x1000' );
 
-my @fontlist = sort $mw->fontFamilies;
+my @fontlist = ("Helvetica"); # sort $mw->fontFamilies;
 my $menufontsize = 12;
 my $fontsize = 16;
 

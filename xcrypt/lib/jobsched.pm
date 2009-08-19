@@ -15,12 +15,37 @@ use IO::Socket;
 my $current_directory=Cwd::getcwd();
 
 ### qsub, qdel qstat
-# my $qsub_command="../kahanka/qsub";
-# my $qdel_command="../kahanka/qdel";
-# my $qstat_command="../kahanka/qstat";
-my $qsub_command="qsub";
-my $qdel_command="qdel";
-my $qstat_command="qstat";
+my $jobsched = undef;
+my $jobsched_config_dir = undef;
+my %jobsched_config = undef;
+if ( $ENV{XCRYPT} ) {
+    $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
+} else {
+    die "Set the environment varialble XCRYPT\n";
+}
+unless ( $ENV{XCRJOBSCHED} ) {
+    die "Set the environment varialble XCRJOBSCHED.\n";
+} else {
+    $jobsched = $ENV{XCRJOBSCHED};
+    if ( -f File::Spec->catfile ($jobsched_config_dir, $jobsched . ".pm") ) {
+        die "No config file for $jobsched ({$jobsched}.pm) in $jobsched_config_dir";
+    }
+}
+# Load jobscheduler config files.
+foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
+    require $_;
+}
+
+# my $qsub_command="qsub";
+# my $qdel_command="qdel";
+# my $qstat_command="qstat";
+
+my $write_command = undef;
+if ($inventory_port > 0) {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
+} else {
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
+}
 
 ### Inventory
 my $inventory_host = qx/hostname/;
@@ -29,12 +54,6 @@ my $inventory_port = 9999;           # ¥¤¥ó¥Ù¥ó¥È¥êÄÌÃÎÂÔ¤Á¼õ¤±¥Ý¡¼¥È¡¥0¤Ê¤éNFS·
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $inventory_save_path=$inventory_path;
 
-my $write_command = undef;
-if ($inventory_port > 0) {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
-} else {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
-}
 # pjo_inventory_watch.pl ¤Ï½ÐÎÏ¤ò¥Ð¥Ã¥Õ¥¡¥ê¥ó¥°¤·¤Ê¤¤ÀßÄê ($|=1)
 # ¤Ë¤·¤Æ¤ª¤¯¤³¤È¡Êfujitsu¥ª¥ê¥¸¥Ê¥ë¤Ï¤½¤¦¤Ê¤Ã¤Æ¤Ê¤¤¡Ë
 my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_watch.pl');
@@ -53,11 +72,30 @@ my %status_level = ("active"=>0, "submit"=>1, "qsub"=>2, "start"=>3, "done"=>4, 
 my %running_jobs : shared;
 our $abort_check_thread=undef;
 
-our $sge : shared = 0;
-
 # ½ÐÎÏ¤ò¥Ð¥Ã¥Õ¥¡¥ê¥ó¥°¤·¤Ê¤¤¡ÊSTDOUT & STDERR¡Ë
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
+
+##################################################
+sub any_to_string {
+    my ($x, @args) = @_;
+    my $r = ref ($x);
+    if ( $r eq '' ) {
+        return $x . join(' ', @args);
+    } elsif ( $r eq 'ARRAY' ) {
+        my $buf = '';
+        foreach (@$x) { $buf .= $_ . "\n"; }
+        foreach (@args) { $buf .= $_ . "\n"; }
+        chomp $buf;
+        return $buf;
+    } elsif ( $r eq 'CODE' ) {
+        return &$x(@args);
+    } elsif ( $r eq 'SCALAR' ) {
+        return $$x . join(' ', @args);
+    } else {
+        die "any_to_string: Unexpected referene $r";
+    }
+}
 
 ##################################################
 # ¥¸¥ç¥Ö¥¹¥¯¥ê¥×¥È¤òÀ¸À®¤·¡¤É¬Í×¤Êwrite¤ò¹Ô¤Ã¤¿¸å¡¤¥¸¥ç¥ÖÅêÆþ
@@ -65,166 +103,141 @@ select(STDERR); $|=1; select(STDOUT);
 sub qsub {
     my $self = shift;
 
-=comment
-    my ($job_name, # ¥¸¥ç¥ÖÌ¾
-        $command,  # ¼Â¹Ô¤¹¤ë¥³¥Þ¥ó¥É¤ÎÊ¸»úÎó
-        $dirname,      # ¼Â¹Ô¥Õ¥¡¥¤¥ëÃÖ¤­¾ì¡Ê¥¹¥¯¥ê¥×¥È¼Â¹Ô¾ì½ê¤«¤é¤ÎÁêÂÐ¥Ñ¥¹¡Ë
-        $scriptfile, # ¥¹¥¯¥ê¥×¥È¥Õ¥¡¥¤¥ëÌ¾
-        # °Ê²¼¤Î°ú¿ô¤Ïoptional
-	$queue,
-        $option,
-        $stdofile, $stdefile, # É¸½à¡¿¥¨¥é¡¼½ÐÎÏÀè¡Êqsub¤Î¥ª¥×¥·¥ç¥ó¡Ë
-        # °Ê²¼¡¤NQS¤Î¥ª¥×¥·¥ç¥ó
-        $proc, $cpu, $memory, $verbose, $verbose_node,
-        ) = @_;
-=cut
-
     my $job_name = $self->{id};
     my $dir = $self->{id};
 
-    ## <-- Create job script file <--
-    my $scriptfile;
-    if ($sge) {
-	$scriptfile = File::Spec->catfile($dir, 'sge.sh');
-    } else {
-	$scriptfile = File::Spec->catfile($dir, 'nqs.sh');
-    }
+    ### <-- Create job script file <--
+    ## Preamble
+    my $scriptfile = File::Spec->catfile($dir, $jobsched . '.sh');
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS ¤â SGE ¤â¡¤¥ª¥×¥·¥ç¥óÃæ¤Î´Ä¶­ÊÑ¿ô¤òÅ¸³«¤·¤Ê¤¤¤Î¤ÇÃí°Õ¡ª
-    if ($sge) {
-	print SCRIPT "#\$ -S /bin/sh\n";
+    if ( defined $jobsched_config{$jobsched}{josbscript_preamble} ) {
+        foreach (@{$jobsched_config{$jobsched}{josbscript_preamble}}) {
+            print SCRIPT $_ . "\n":
+        }
     }
+
+    ## Options
+    # queue
     my $queue = $self->{queue};
-    if ($sge) {
-	print SCRIPT "#\$-q $queue\n";
-    } else {
-	print SCRIPT "# @\$-q $queue\n";
+    if ( defined $jobsched_config{$jobsched}{josbscript_queue} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_queue}, $queue) . "\n";
     }
+    # stderr & stdout
+    my $stdofile;
+    $stdofile = File::Spec->catfile($dir, $self->{stdofile} ? $self->{stdofile} : 'stdout');
+    if ( -e $stdofile) { unlink $stdofile; }
+    if ( defined $jobsched_config{$jobsched}{josbscript_stdout} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
+    }
+    my $stdefile;
+    $stdefile = File::Spec->catfile($dir, $self->{stdefile} ? $self->{stdefile} : 'stderr');
+    if ( -e $stdefile) { unlink $stdefile; }
+    if ( defined $jobsched_config{$jobsched}{josbscript_stderr} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
+    }
+    # computing resources
+    my $proc = $self->{proc};
+    if ( $proc ne '' && defined $jobsched_config{$jobsched}{josbscript_proc} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_proc}, $proc) . "\n";
+    }
+    my $cpu = $self->{cpu};
+    if ( $cpu ne '' && defined $jobsched_config{$jobsched}{josbscript_cpu} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_cpu}, $cpu) . "\n";
+    }
+    my $memory = $self->{memory};
+    if ( $memory ne '' && defined $jobsched_config{$jobsched}{josbscript_memory} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_memory}, $memory) . "\n";
+    }
+    # verbosity
+    my $verbose = $self->{verbose};
+    if ( $verbose ne '' && defined $jobsched_config{$jobsched}{josbscript_verbose} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_verbose}) . "\n";
+    }
+    my $verbose_node = $self->{verbose_node};
+    if ( $verbose_node ne '' && defined $jobsched_config{$jobsched}{josbscript_verbose_node} ) {
+        print SCRIPT any_to_string ($jobsched_config{$jobsched}{josbscript_verbose_node}) . "\n";
+    }
+    # other options
     my $option = $self->{option};
     print SCRIPT "$option\n";
 
-    my $stdofile;
-    if ($self->{stdofile}) {
-	$stdofile = File::Spec->catfile($dir, $self->{stdofile});
-    } else {
-	$stdofile = File::Spec->catfile($dir, 'stdout');
-    }
-    if ( -e $stdofile) { unlink $stdofile; }
-    if ($sge) {
-	print SCRIPT "#\$ -o $ENV{'PWD'}/$stdofile\n";
-    } else {
-	print SCRIPT "# @\$-o $ENV{'PWD'}/$stdofile\n";
-    }
+    ## Commands
+    # print SCRIPT "PATH=$ENV{'PATH'}\n";
+    # print SCRIPT "set -x\n";
+    # Move to the job directory
+    my $wkdir_str = defined ($jobsched_config{$jobsched}{josbscript_workdir})
+        ? any_to_string ($jobsched_config{$jobsched}{josbscript_workdir})
+        : $ENV{'PWD'};
+    print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
 
-    my $stdefile;
-    if ($self->{stdefile}) {
-	$stdefile = File::Spec->catfile($dir, $self->{stdefile});
-    } else {
-	$stdefile = File::Spec->catfile($dir, 'stderr');
-    }
-    if ( -e $stdefile) { unlink $stdefile; }
-    if ($sge) {
-	print SCRIPT "#\$ -e $ENV{'PWD'}/$stdefile\n";
-    } else {
-	print SCRIPT "# @\$-e $ENV{'PWD'}/$stdefile\n";
-    }
-
-    my $proc = $self->{proc};
-    unless ($proc eq '') {
-	if ($sge) {
-
-	} else {
-	    print SCRIPT "# @\$-lP $proc\n";
-	}
-    }
-    my $cpu = $self->{cpu};
-    unless ($cpu eq '') {
-	if ($sge) {
-
-	} else {
-	    print SCRIPT "# @\$-lp $cpu\n";
-	}
-    }
-    my $memory = $self->{memory};
-    unless ($memory eq '') {
-	if ($sge) {
-
-	} else {
-	    print SCRIPT "# @\$-lm $memory\n";
-	}
-    }
-    my $verbose = $self->{verbose};
-    unless ($verbose eq '') {
-	if ($sge) {
-
-	} else {
-	    print SCRIPT "# @\$-oi\n";
-	}
-    }
-    my $verbose_node = $self->{verbose_node};
-    unless ($verbose_node eq '') {
-	if ($sge) {
-
-	} else {
-	    print SCRIPT "# @\$-OI\n";
-	}
-    }
-#    print SCRIPT "PATH=$ENV{'PATH'}\n";
-#    print SCRIPT "set -x\n";
+    # Set job's status "start"
     print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
-    if ($sge) {
-	print SCRIPT "cd $ENV{'PWD'}/$dir\n";
-    } else {
-	print SCRIPT "cd \$QSUB_WORKDIR/$dir\n";
-    }
-#    print SCRIPT "$command\n";
+
+    # Execute a program
     my @args = ();
     for ( my $i = 0; $i <= $user::max; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
-    # Àµ¾ï½ªÎ»¤Ç¤Ê¤±¤ì¤Ð "abort" ¤ò½ñ¤­¹þ¤à¤Ù¤­
+    # Àµ¾ï½ªÎ»¤Ç¤Ê¤±¤ì¤Ð "abort" ¤ò½ñ¤­¹þ¤à¤Ù¤­¡©
+
+    # Set job's status "exit"
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
     close (SCRIPT);
-    ## --> Create job script file -->
-    
+    ### --> Create job script file -->
+
+    # Set job's status "submit"
     inventory_write ($job_name, "submit");
-    my $existence = qx/which $qsub_command \> \/dev\/null; echo \$\?/;
-    if ($existence == 0) {
-	my $qsub_output = qx/$qsub_command $scriptfile/;
-	my $req_id = extract_req_id_from_qsub_output ($qsub_output);
-	my $idfile = File::Spec->catfile($dir, 'request_id');
-	open (REQUESTID, ">> $idfile");
-	print REQUESTID $req_id;
-	close (REQUESTID);
-	my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
-	open (REQUESTIDS, ">> $idfiles");
-	print REQUESTIDS $req_id . ' ' . $dir . ' ';
-	close (REQUESTIDS);
+
+    my $qsub_command = $jobsched_config{$jobsched}{qsub_command};
+    if (-x $qsub_command) {
+        my @qsub_output = qx/$qsub_command $scriptfile/;
+        my $req_id;
+        if ( defined ($jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
+            unless ( ref $jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
+                die "Error in $jobsched.pm: extract_req_id_from_qsub_output must be a function";
+            }
+            $req_id = &{jobsched_config{$jobsched}{extract_req_id_from_qsub_output}} (@qsub_output);
+        } else { # defaulat extractor
+            $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
+        }
+        if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
+        my $idfile = File::Spec->catfile($dir, 'request_id');
+        open (REQUESTID, ">> $idfile");
+        print REQUESTID $req_id;
+        close (REQUESTID);
+        my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
+        open (REQUESTIDS, ">> $idfiles");
+        print REQUESTIDS $req_id . ' ' . $dir . ' ';
+        close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
         inventory_write ($job_name, "qsub");
-	return $req_id;
-    } else { die "qsub not found\n"; }
+        return $req_id;
+    } else {
+        die "$qsub_command not executable\n";
+    }
 }
 
-sub extract_req_id_from_qsub_output {
-    my ($line) = @_;
-    my $req_id;
-    if ($sge) {
-        if ( $line =~ /^\s*Your\s+job\s+([0-9]+)/ ) {
-            $req_id = $1;
-        } else {
-            die "Can't extract request_id: $line";
-        }
-    } else {
-        if ( $line =~ /([0-9]*)\.nqs/ ) {
-            $req_id = $1 . '.nqs';
-        } else {
-            die "Can't extract request_id: $line";
-        }
-    }
-    return $req_id;
-}
+## Obsoleted: config¥Õ¥¡¥¤¥ë¤Ë¥¹¥±¥¸¥å¡¼¥é¤´¤È¤Ëµ­½Ò
+# sub extract_req_id_from_qsub_output {
+#     my ($line) = @_;
+#     my $req_id;
+#     if ($sge) {
+#         if ( $line =~ /^\s*Your\s+job\s+([0-9]+)/ ) {
+#             $req_id = $1;
+#         } else {
+#             die "Can't extract request_id: $line";
+#         }
+#     } else {
+#         if ( $line =~ /([0-9]*)\.nqs/ ) {
+#             $req_id = $1 . '.nqs';
+#         } else {
+#             die "Can't extract request_id: $line";
+#         }
+#     }
+#     return $req_id;
+# }
 
 ##############################
 # ³°Éô¥×¥í¥°¥é¥àinventory_write¤òµ¯Æ°¤·¡¤
@@ -591,21 +604,26 @@ sub delete_running_job {
 sub check_and_write_abort {
     my %unchecked;
     {
-        lock (%running_jobs);
+        my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
+        unless (-x $qstat_command) {
+            die "$qstat_command not executable";
+        }
+        my $qstat_extractor = $jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+        unless ( defined $qstat_extractor ) {
+            die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
+        } elsif ( $qstat_extractor ne 'CODE' ) {
+            die "Error in $jobsched.pm: extract_req_ids_from_qstat_output must be a function.";
+        }
+        {
+            lock (%running_jobs);
+            %unchecked = %running_jobs;
+        }
         print "check_and_write_abort:\n";
         # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
         # print "\n";
-        %unchecked = %running_jobs;
-        open (QSTATOUT, "$qstat_command |");
-        while (<QSTATOUT>) {
-            chomp;
-            my $req_id = extract_req_id_from_qstat_line ($_);
-            if ($req_id) {
-                # print STDERR "$req_id: " . $unchecked{$req_id} . "\n";
-                delete ($unchecked{$req_id});
-            }
-        }
-        close (QSTATOUT);
+        my @qstat_out = qx/$qstat_command/;
+        my @ids = &$qstat_extractor(@qstat_out);
+        foreach (@ids) { delete ($unchecked{$_}); }
     }
     # "abort"¤ò¥¤¥ó¥Ù¥ó¥È¥ê¥Õ¥¡¥¤¥ë¤Ë½ñ¤­¹þ¤ß
     foreach my $req_id ( keys %unchecked ){
@@ -615,27 +633,28 @@ sub check_and_write_abort {
         }
     }
 }
-sub extract_req_id_from_qstat_line {
-    my ($line) = @_;
-    ## depend on outputs of NQS's qstat
-    ## SGE¤Ç¤âÆ°¤¯¤è¤¦¤Ë¤·¤¿¤Ä¤â¤ê
-    # print STDERR $_ . "\n";
-    if ($sge) {
-        # print "--- $_\n";
-        if ($line =~ /^\s*([0-9]+)/) {
-            return $1;
-        } else {
-            return 0;
-        }
-    } else {
-        # print "=== $_\n";
-        if ( $line =~ /([0-9]+\.nqs)/ ) {
-            return $1;
-        } else {
-            return 0;
-        }
-    }
-}
+## Obsoleted: config¥Õ¥¡¥¤¥ë¤Ë¥¹¥±¥¸¥å¡¼¥é¤´¤È¤Ëµ­½Ò
+# sub extract_req_id_from_qstat_line {
+#     my ($line) = @_;
+#     ## depend on outputs of NQS's qstat
+#     ## SGE¤Ç¤âÆ°¤¯¤è¤¦¤Ë¤·¤¿¤Ä¤â¤ê
+#     # print STDERR $_ . "\n";
+#     if ($sge) {
+#         # print "--- $_\n";
+#         if ($line =~ /^\s*([0-9]+)/) {
+#             return $1;
+#         } else {
+#             return 0;
+#         }
+#     } else {
+#         # print "=== $_\n";
+#         if ( $line =~ /([0-9]+\.nqs)/ ) {
+#             return $1;
+#         } else {
+#             return 0;
+#         }
+#     }
+# }
 
 sub invoke_abort_check {
     $abort_check_thread = threads->new( sub {
