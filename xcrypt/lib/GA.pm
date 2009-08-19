@@ -22,31 +22,7 @@ sub new {
 
 sub start {
     my $self = shift;
-
-    # 前回doneになったジョブならとばす．
-    if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
-        print "Skipping " . $self->{id} . " because already done.\n";
-    } else {
-        $self->{request_id} = &jobsched::qsub($self);
-        # 結果ファイルから結果を取得
-        &jobsched::wait_job_done($self->{id});
-
-        my $stdofile = 'stdout';
-        unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
-
-	# NFSの書込み遅延に対する暫定的対応
-	sleep(3);
-
-        my $pwdstdo = File::Spec->catfile($self->{id}, $stdofile);
-        until ( (-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
-	    sleep 1;
-	}
-
-	unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ','; }
-	unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
-        my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
-        $self->{stdout} = $stdlist[$self->{stdoclmn}];
-    }
+    $self->NEXT::start();
 }
 
 sub before {
