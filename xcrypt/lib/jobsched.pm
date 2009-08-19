@@ -14,7 +14,7 @@ use IO::Socket;
 
 my $current_directory=Cwd::getcwd();
 
-### qsub, qdel qstat
+# Load jobscheduler config files.
 my $jobsched = undef;
 my $jobsched_config_dir = undef;
 our %jobsched_config = undef;
@@ -31,14 +31,9 @@ unless ( $ENV{XCRJOBSCHED} ) {
         die "No config file for $jobsched ($jobsched.pm) in $jobsched_config_dir";
     }
 }
-# Load jobscheduler config files.
 foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
     do $_;
 }
-
-# my $qsub_command="qsub";
-# my $qdel_command="qdel";
-# my $qstat_command="qstat";
 
 ### Inventory
 my $inventory_host = qx/hostname/;
@@ -191,6 +186,9 @@ sub qsub {
     inventory_write ($job_name, "submit");
 
     my $qsub_command = $jobsched_config{$jobsched}{qsub_command};
+    unless ( defined $qsub_command ) {
+        die "qsub_command is not defined in $jobsched.pm";
+    }
     if (-x $qsub_command) {
         my @qsub_output = qx/$qsub_command $scriptfile/;
         my $req_id;
@@ -605,6 +603,9 @@ sub check_and_write_abort {
     my %unchecked;
     {
         my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
+        unless ( defined $qstat_command ) {
+            die "qstat_command is not defined in $jobsched.pm";
+        }
         unless (-x $qstat_command) {
             die "$qstat_command not executable";
         }
