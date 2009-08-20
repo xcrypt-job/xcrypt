@@ -1,4 +1,4 @@
-package GA;
+package Minimax;
 
 use strict;
 use NEXT;
@@ -13,10 +13,7 @@ use Data_Generation;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    $self->{exe} = $ENV{XCRYPT} . '/bin/GA ' . $self->{GA_count}
-                                . ' ' . $self->{GA_lengthOfStr}
-                                . ' ' . $self->{GA_howToCrossover}
-                                . ' ' . $self->{GA_howToSelect};
+    $self->{exe} = $ENV{XCRYPT} . '/lib/algorithm/bin/Minimax ';
     return bless $self, $class;
 }
 
@@ -33,6 +30,11 @@ sub before {
 sub after {
     my $self = shift;
     $self->NEXT::after();
+}
+
+sub getChildren {
+    my $self = shift;
+
 }
 
 1;

@@ -1,0 +1,20 @@
+use base qw(Minimax core);
+
+%xyz = (
+    'id' => 'job9',
+    'linkedfile0' => 'getChildren.pl',
+    'linkedfile1' => 'komadoku.pl',
+    'linkedfile2' => 'kuraidori.pl',
+    'linkedfile3' => 'ikiataribattari.pl',
+    'arg0' => '10',
+    'arg1' => '0',
+    'arg2' => 'getChildren.pl',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
+);
+
+@results = &prepare_submit_sync(%xyz,
+				'arg3S' => ['komadoku.pl',
+					    'kuraidori.pl',
+					    'ikiataribattari.pl']);
+foreach (@results) { print $_->{stdout} , "\n"; }
