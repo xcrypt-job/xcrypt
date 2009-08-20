@@ -6,15 +6,15 @@ use base qw(Minimax core);
     'linkedfile1' => 'komadoku.pl',
     'linkedfile2' => 'kuraidori.pl',
     'linkedfile3' => 'ikiataribattari.pl',
-    'arg0' => '10',
-    'arg1' => '0',
-    'arg2' => 'getChildren.pl',
+    'arg0' => '10',             # depth of lookahead
+    'arg1' => '0',              # position
+    'arg2' => 'getChildren.pl', # get next positions
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
 @results = &prepare_submit_sync(%xyz,
-				'arg3S' => ['komadoku.pl',
+				'arg3S' => ['komadoku.pl',  # static evaluation
 					    'kuraidori.pl',
 					    'ikiataribattari.pl']);
 foreach (@results) { print $_->{stdout} , "\n"; }

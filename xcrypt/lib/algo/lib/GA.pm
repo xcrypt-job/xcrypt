@@ -13,10 +13,7 @@ use Data_Generation;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    $self->{exe} = $ENV{XCRYPT} . '/lib/algorithm/bin/GA ' . $self->{GA_count}
-                                . ' ' . $self->{GA_lengthOfStr}
-                                . ' ' . $self->{GA_howToCrossover}
-                                . ' ' . $self->{GA_howToSelect};
+    $self->{exe} = $ENV{XCRYPT} . '/lib/algo/bin/GA ';
     return bless $self, $class;
 }
 
