@@ -18,12 +18,15 @@ foreach ('*Button.font', '*Label.font') {
 our ($eof0, $eof2);
 
 my @cor = ('xcrypt', 'xcryptstat', 'xcryptdel');
+my $max = 2;
+my $height = 0.15 / (1+$max);
+my $width = 1 / (1+$max);
 
 my $br0 = '';
 our $ll0 = $mw->Label( -textvariable => \$br0 );
-$ll0->place( -relx => 0.2, -relwidth  => 0.8, -rely => 0, -relheight => 0.05 );
+$ll0->place( -relx => 0.2, -relwidth  => 0.8, -rely => 0, -relheight => $height );
 
-foreach (0..2) {
+foreach (0..$max) {
     my $aaa = $cor[$_];
     my $ccc = 'bn' . $_;
     my $bbb = 'fm' . $_;
@@ -32,8 +35,8 @@ foreach (0..2) {
 
     eval "our \$$ccc = \$mw->Button();";
     ${$ccc}->configure( -text => $aaa, -command => [\&fun, $_] );
-    ${$ccc}->place( -relx => 0,         -relwidth  => 0.2,
-		    -rely => $_ * 0.05, -relheight => 0.05 );
+    ${$ccc}->place( -relx => 0,              -relwidth  => 0.2,
+		    -rely => ($_ * $height), -relheight => $height );
     eval "our \$$bbb = \$mw->Frame();";
     eval "our \$$foo = \$$bbb->Label();";
     ${$foo}->configure( -text => $aaa  );
@@ -43,8 +46,8 @@ foreach (0..2) {
 			-scrollbars => 'se',
 			-wrap => 'none' );
 
-    ${$bbb}->place( -relx => $_ * 0.33, -relwidth  => 0.33,
-		    -rely => 0.15,      -relheight => 0.85 );
+    ${$bbb}->place( -relx => ($_ * $width), -relwidth  => $width,
+		    -rely => 0.15,          -relheight => 0.85    );
     ${$foo}->pack( -fill => 'both' );
     ${$bar}->pack( -fill => 'both', -expand => 'true' );
 }
@@ -140,6 +143,7 @@ $mw->configure( -menu => $mn );
 $mn->add( 'cascade', -label => 'File' );
 $mn->add( 'cascade', -label => 'Size' );
 $mn->add( 'cascade', -label => 'Tool' );
+$mn->add( 'cascade', -label => 'Help' );
 
 $file = $mn->Menu();
 $mn->entryconfigure( 'File', -menu => $file );
@@ -151,6 +155,10 @@ $mn->entryconfigure( 'Size', -menu => $view );
 $tool = $mn->Menu();
 $mn->entryconfigure( 'Tool', -menu => $tool );
 $tool->add( 'command', -label => 'Clean', -command => sub { system( "./cleanup.sh" ); } );
+
+$help = $mn->Menu();
+$mn->entryconfigure( 'Help', -menu => $help );
+$help->add( 'command', -label => 'Manual', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
 
 foreach (4..12) {
     my $ddd = 2 * $_;

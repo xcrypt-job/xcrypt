@@ -157,7 +157,7 @@ use base qw(limit core);
     'option' => '# @\$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'arg1s' => [2,4]);
+my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
@@ -169,7 +169,7 @@ foreach (@results) { print $_->{stdout} , "\n"; }
 
 実際のジョブ処理の流れについて概観する．
 
-\section{}
+\section{概念図}
 
 {\large
 \[
@@ -530,7 +530,7 @@ prepare(%abc, 'arg0S' => [10,20]);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'arg0s' => [0,1], 'arg1S' => [2,3]);
+@jobs = prepare(%abc, 'arg0S' => [0,1], 'arg1S' => [2,3]);
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
