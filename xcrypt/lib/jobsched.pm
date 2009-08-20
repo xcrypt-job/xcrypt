@@ -73,16 +73,12 @@ select(STDERR); $|=1; select(STDOUT);
 
 ##################################################
 sub any_to_string {
-    my ($x, @args) = @_;
+    my ($arraysep, $x, @args) = @_;
     my $r = ref ($x);
     if ( $r eq '' ) {
         return $x . join(' ', @args);
     } elsif ( $r eq 'ARRAY' ) {
-        my $buf = '';
-        foreach (@$x) { $buf .= $_ . "\n"; }
-        foreach (@args) { $buf .= $_ . "\n"; }
-        chomp $buf;
-        return $buf;
+        return join ($arraysep, @$x) . $arraysep . join($arraysep, @args);
     } elsif ( $r eq 'CODE' ) {
         return &$x(@args);
     } elsif ( $r eq 'SCALAR' ) {
@@ -91,7 +87,17 @@ sub any_to_string {
         die "any_to_string: Unexpected referene $r";
     }
 }
+sub any_to_string_nl  { any_to_string ("\n", @_); }
+sub any_to_string_spc { any_to_string (" ", @_); }
 
+sub cmd_executable {
+    my ($cmd) = @_;
+    my @cmd0 = split(/\s+/,$cmd);
+    qx/which $cmd0[0]/;
+    my $ex_code = $? >> 8;
+    # print "$? $ex_code ";
+    return ($ex_code==0)? 1 : 0;
+}
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
 # ジョブスケジューラ（NQSであるかSGEであるか）によって吐くものが違う
@@ -117,42 +123,42 @@ sub qsub {
     # queue
     my $queue = $self->{queue};
     if ( defined $jobsched_config{$jobsched}{jobscript_queue} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_queue}, $queue) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_queue}, $queue) . "\n";
     }
     # stderr & stdout
     my $stdofile;
     $stdofile = File::Spec->catfile($dir, $self->{stdofile} ? $self->{stdofile} : 'stdout');
     if ( -e $stdofile) { unlink $stdofile; }
     if ( defined $jobsched_config{$jobsched}{jobscript_stdout} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
     }
     my $stdefile;
     $stdefile = File::Spec->catfile($dir, $self->{stdefile} ? $self->{stdefile} : 'stderr');
     if ( -e $stdefile) { unlink $stdefile; }
     if ( defined $jobsched_config{$jobsched}{jobscript_stderr} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
     }
     # computing resources
     my $proc = $self->{proc};
     if ( $proc ne '' && defined $jobsched_config{$jobsched}{jobscript_proc} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_proc}, $proc) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_proc}, $proc) . "\n";
     }
     my $cpu = $self->{cpu};
     if ( $cpu ne '' && defined $jobsched_config{$jobsched}{jobscript_cpu} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_cpu}, $cpu) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_cpu}, $cpu) . "\n";
     }
     my $memory = $self->{memory};
     if ( $memory ne '' && defined $jobsched_config{$jobsched}{jobscript_memory} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_memory}, $memory) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_memory}, $memory) . "\n";
     }
     # verbosity
     my $verbose = $self->{verbose};
     if ( $verbose ne '' && defined $jobsched_config{$jobsched}{jobscript_verbose} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_verbose}) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_verbose}) . "\n";
     }
     my $verbose_node = $self->{verbose_node};
     if ( $verbose_node ne '' && defined $jobsched_config{$jobsched}{jobscript_verbose_node} ) {
-        print SCRIPT any_to_string ($jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
+        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
     }
     # other options
     my $option = $self->{option};
@@ -163,7 +169,7 @@ sub qsub {
     # print SCRIPT "set -x\n";
     # Move to the job directory
     my $wkdir_str = defined ($jobsched_config{$jobsched}{jobscript_workdir})
-        ? any_to_string ($jobsched_config{$jobsched}{jobscript_workdir})
+        ? any_to_string_nl ($jobsched_config{$jobsched}{jobscript_workdir})
         : $ENV{'PWD'};
     print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
 
@@ -182,6 +188,17 @@ sub qsub {
     close (SCRIPT);
     ### --> Create job script file -->
 
+    ### <-- Create qsub options <--
+    my $qsub_options = '';
+    # stderr & stdout
+    if ( defined $jobsched_config{$jobsched}{qsub_stdout_option} ) {
+        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stdout_option}, $stdofile);
+    }
+    if ( defined $jobsched_config{$jobsched}{qsub_stderr_option} ) {
+        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stderr_option}, $stdofile);
+    }
+    ### --> Create qsub options -->
+
     # Set job's status "submit"
     inventory_write ($job_name, "submit");
 
@@ -189,8 +206,9 @@ sub qsub {
     unless ( defined $qsub_command ) {
         die "qsub_command is not defined in $jobsched.pm";
     }
-    if (-x $qsub_command) {
-        my @qsub_output = qx/$qsub_command $scriptfile/;
+    if (cmd_executable ($qsub_command)) {
+        print STDERR "$qsub_command $qsub_options $scriptfile\n";
+        my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
         if ( defined ($jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
             unless ( ref $jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
@@ -606,7 +624,7 @@ sub check_and_write_abort {
         unless ( defined $qstat_command ) {
             die "qstat_command is not defined in $jobsched.pm";
         }
-        unless (-x $qstat_command) {
+        unless (cmd_executable ($qstat_command)) {
             die "$qstat_command not executable";
         }
         my $qstat_extractor = $jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
