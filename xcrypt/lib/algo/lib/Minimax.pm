@@ -13,7 +13,7 @@ use Data_Generation;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    $self->{exe} = $ENV{XCRYPT} . '/lib/algorithm/bin/Minimax ';
+    $self->{exe} = $ENV{XCRYPT} . '/lib/algo/bin/Minimax ';
     return bless $self, $class;
 }
 
