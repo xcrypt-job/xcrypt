@@ -141,7 +141,7 @@ $mn->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 
 $mw->configure( -menu => $mn );
 $mn->add( 'cascade', -label => 'File' );
-$mn->add( 'cascade', -label => 'Size' );
+$mn->add( 'cascade', -label => 'View' );
 $mn->add( 'cascade', -label => 'Tool' );
 $mn->add( 'cascade', -label => 'Help' );
 
@@ -150,7 +150,14 @@ $mn->entryconfigure( 'File', -menu => $file );
 $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 $view = $mn->Menu();
-$mn->entryconfigure( 'Size', -menu => $view );
+$mn->entryconfigure( 'View', -menu => $view );
+$view->add( 'cascade', -label => 'Size' );
+$size = $view->Menu();
+$view->entryconfigure( 'Size', -menu => $size );
+foreach (4..12) {
+    my $ddd = 2 * $_;
+    $size->add( 'command', -label => $ddd, -command => [\&hoge, $ddd] );
+}
 
 $tool = $mn->Menu();
 $mn->entryconfigure( 'Tool', -menu => $tool );
@@ -159,11 +166,6 @@ $tool->add( 'command', -label => 'Clean', -command => sub { system( "./cleanup.s
 $help = $mn->Menu();
 $mn->entryconfigure( 'Help', -menu => $help );
 $help->add( 'command', -label => 'Manual', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
-
-foreach (4..12) {
-    my $ddd = 2 * $_;
-    $view->add( 'command', -label => $ddd, -command => [\&hoge, $ddd] );
-}
 
 sub hoge {
     $fontsize = $_[0];
