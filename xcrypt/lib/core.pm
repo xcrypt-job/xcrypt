@@ -83,19 +83,6 @@ sub start {
         print "Skipping " . $self->{id} . " because already done.\n";
     } else {
         $self->{request_id} = &jobsched::qsub($self);
-    }
-#    $self->after();
-}
-
-sub before {
-    my $self = shift;
-    foreach (@{$self->{predecessor}}) {
-	&jobsched::wait_job_done($_);
-    }
-}
-
-sub after {
-    my $self = shift;
 
     # 結果ファイルから結果を取得
     &jobsched::wait_job_done($self->{id});
@@ -115,6 +102,21 @@ sub after {
     unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
     my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
     $self->{stdout} = $stdlist[$self->{stdoclmn}];
+
+    }
+#    $self->after();
+}
+
+sub before {
+    my $self = shift;
+    foreach (@{$self->{predecessor}}) {
+	&jobsched::wait_job_done($_);
+    }
+}
+
+sub after {
+    my $self = shift;
+
 
     my @thrds = ();
     foreach (@{$self->{successor}}) {
