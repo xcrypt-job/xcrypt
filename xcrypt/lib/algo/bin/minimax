@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+
+my $word = &minimax((- (2 ** 31) + 1), ((2 ** 31) - 1), @ARGV);
+print $word;
+
+sub isMyTurn { # Int -> Bool
+    if ($_[0] == 0) {
+	return 1;
+    } else {
+	my $i = 0;
+	while (2 ** ($i + 1) - 2 < $_[0]) { $i = $i + 1; }
+	return ($i + 1) % 2;
+    }
+}
+
+sub minimax {
+    my ($inf, $sup, $depth, $pos, $getChildren,  $staticEvaluation) = @_;
+
+    my $gc ='./' . $getChildren;
+    my $pre_children = qx/$gc $pos/;
+    my @children = split(/ /, $pre_children);
+    if (($depth == 0) || ($#children == -1)) {
+	my $se ='./' . $staticEvaluation;
+	my $result = qx/$se $pos/;
+	return $result;
+    }
+    my $max = $inf;
+    my $min = $sup;
+    if (isMyTurn($pos)) {
+	foreach (@children) {
+	    my $score = minimax($max, $min, ($depth - 1), $_,
+				$getChildren, $staticEvaluation);
+	    if ($score > $max) { $max = $score; }
+	}
+	return $max;
+    } else {
+	foreach (@children) {
+	    my $score = minimax($max, $min, ($depth - 1), $_,
+				$getChildren, $staticEvaluation);
+	    if ($score < $min) { $min = $score; }
+	}
+     return $min;
+    }
+}

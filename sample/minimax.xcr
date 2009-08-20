@@ -1,4 +1,4 @@
-use base qw(Minimax core);
+use base qw(minimax core);
 
 %xyz = (
     'id' => 'job9',
@@ -13,8 +13,8 @@ use base qw(Minimax core);
     'option' => '# @$-g gh10034'
 );
 
-@results = &prepare_submit_sync(%xyz,
-				'arg3S' => ['komadoku.pl',  # static evaluation
-					    'kuraidori.pl',
-					    'ikiataribattari.pl']);
+@results = &prepare_submit_sync(%xyz, 'arg3S' =>
+				['komadoku.pl',  # static evaluations
+				 'kuraidori.pl',
+				 'ikiataribattari.pl']);
 foreach (@results) { print $_->{stdout} , "\n"; }
