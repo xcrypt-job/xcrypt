@@ -7,6 +7,17 @@ use File::Basename;
 use File::Spec;
 #use jobsched;
 
+##############################
+sub cmd_executable {
+    my ($cmd) = @_;
+    my @cmd0 = split(/\s+/,$cmd);
+    qx/which $cmd0[0]/;
+    my $ex_code = $? >> 8;
+    # print "$? $ex_code ";
+    return ($ex_code==0)? 1 : 0;
+}
+##############################
+
 if ( $ENV{XCRYPT} ) {
     if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
     else { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ":" . $ENV{PERL5LIB}; }
@@ -39,7 +50,7 @@ my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
 unless ( defined $qstat_command ) {
     die "qstat_command is not defined in $jobsched.pm";
 }
-unless (-x $qstat_command) {
+unless (cmd_executable ($qstat_command)) {
     die "$qstat_command not executable";
 }
 
