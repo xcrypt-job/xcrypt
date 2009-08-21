@@ -42,14 +42,16 @@ foreach (0..$max) {
     my $ccc = 'bn' . $_;
     my $fff = 'br' . $_;
     my $bbb = 'fm' . $_;
+    my $ggg = 'll' . $_ ;
     my $foo = 'll' . $_ . '0';
     my $bar = 'tt' . $_ . '0';
 
     eval "our \$$fff = \'\';";
     eval "our \$$foo = \$mw->Label();";
-    ${$foo}->configure( -textvariable => \$$fff );
+    eval "our \$$ggg = \$mw->Label();";
+    ${$ggg}->configure( -textvariable => \$$fff );
 
-    ${$foo}->place( -relx => 0.2,            -relwidth  => 0.8,
+    ${$ggg}->place( -relx => 0.2,            -relwidth  => 0.8,
 		    -rely => ($_ * $height), -relheight => $height );
 
 
