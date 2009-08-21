@@ -74,6 +74,7 @@ foreach (0..$max) {
     ${$bar}->pack( -fill => 'both', -expand => 'true' );
 }
 
+$file->add( 'separator' );
 $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 sub fun { eval "fun$_[0];"; }
