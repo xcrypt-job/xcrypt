@@ -4,7 +4,7 @@ use base qw(GA core);
     'id' => 'job0',
     'arg1' => '5',                 # length of string
     'arg2' => 'onePointCrossover', # how to crossover
-    'arg3' => 'equivalence',       # how to identify
+    'arg3' => 'equivalence',       # probability of choice
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

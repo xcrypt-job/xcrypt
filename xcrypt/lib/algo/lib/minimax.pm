@@ -12,8 +12,6 @@ sub new {
     return bless $self, $class;
 }
 
-
-
 sub start {
     my $self = shift;
     $self->NEXT::start();
@@ -27,11 +25,6 @@ sub before {
 sub after {
     my $self = shift;
     $self->NEXT::after();
-}
-
-sub getChildren {
-    my $self = shift;
-
 }
 
 1;

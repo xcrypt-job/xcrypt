@@ -14,9 +14,9 @@ sub isMyTurn { # Int -> Bool
 }
 
 sub minimax {
-    my ($inf, $sup, $depth, $pos, $getChildren,  $staticEvaluation) = @_;
+    my ($inf, $sup, $depth, $pos, $getchildren,  $staticEvaluation) = @_;
 
-    my $gc ='./' . $getChildren;
+    my $gc ='./' . $getchildren;
     my $pre_children = qx/$gc $pos/;
     my @children = split(/ /, $pre_children);
     if (($depth == 0) || ($#children == -1)) {
@@ -29,14 +29,14 @@ sub minimax {
     if (isMyTurn($pos)) {
 	foreach (@children) {
 	    my $score = minimax($max, $min, ($depth - 1), $_,
-				$getChildren, $staticEvaluation);
+				$getchildren, $staticEvaluation);
 	    if ($score > $max) { $max = $score; }
 	}
 	return $max;
     } else {
 	foreach (@children) {
 	    my $score = minimax($max, $min, ($depth - 1), $_,
-				$getChildren, $staticEvaluation);
+				$getchildren, $staticEvaluation);
 	    if ($score < $min) { $min = $score; }
 	}
      return $min;
