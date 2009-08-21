@@ -1,7 +1,7 @@
 use base qw(GA core);
 
 %xyz = (
-    'id' => 'job0',
+    'id' => 'job11',
     'arg1' => '5',                 # length of string
     'arg2' => 'onePointCrossover', # how to crossover
     'arg3' => 'equivalence',       # probability of choice
