@@ -159,7 +159,7 @@ sub bar {
     my($stat, $data);
     $stat = sysread $pipe, $data, 4096;
     die "sysread error:  $!" unless defined $stat;
-    if ($data =~ /abort/) { $tt20->insert('end', $data); }
+    if ($data =~ / abort$/) { $tt20->insert('end', $data); }
     ${$widget}->insert('end', $data);
     ${$widget}->yview('end');
 
