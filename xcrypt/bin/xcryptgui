@@ -19,7 +19,7 @@ our ($eof0, $eof2);
 our $statcount;
 
 my @cor = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
-my @corr = ('Main', 'State', 'Deleted');
+my @corr = ('Main', 'State', 'Aborted');
 my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
@@ -159,6 +159,7 @@ sub bar {
     my($stat, $data);
     $stat = sysread $pipe, $data, 4096;
     die "sysread error:  $!" unless defined $stat;
+    if ($data =~ /abort/) { $tt20->insert('end', $data); }
     ${$widget}->insert('end', $data);
     ${$widget}->yview('end');
 
@@ -189,7 +190,7 @@ sub hoge {
     foreach (@bold) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'bold']);
     }
-    my @normal = ('tt00', 'tt10', 'tt20');
+    my @normal = ('tt00', 'tt10', 'tt20', 'tt30');
     foreach (@normal) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'normal']);
     }
