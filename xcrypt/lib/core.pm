@@ -117,7 +117,6 @@ sub before {
 sub after {
     my $self = shift;
 
-
     my @thrds = ();
     foreach (@{$self->{successor}}) {
 	no strict 'refs';

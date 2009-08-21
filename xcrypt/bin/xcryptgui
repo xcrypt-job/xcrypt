@@ -16,22 +16,44 @@ foreach ('*Button.font', '*Label.font') {
 }
 
 our ($eof0, $eof2);
+our $statcount;
 
-my @cor = ('xcrypt', 'xcryptstat', 'xcryptdel');
+my @cor = ('xcrypt...', 'xcryptstat', 'xcryptdel...');
+my @corr = ('Main', 'State', 'Deleted');
 my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
 
-my $br0 = '';
-our $ll0 = $mw->Label( -textvariable => \$br0 );
-$ll0->place( -relx => 0.2, -relwidth  => 0.8, -rely => 0, -relheight => $height );
+$mn = $mw->Menu();
+$mn->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
+
+$mw->configure( -menu => $mn );
+$mn->add( 'cascade', -label => 'File' );
+$mn->add( 'cascade', -label => 'View' );
+$mn->add( 'cascade', -label => 'Tool' );
+$mn->add( 'cascade', -label => 'Help' );
+
+$file = $mn->Menu();
+$mn->entryconfigure( 'File', -menu => $file );
 
 foreach (0..$max) {
     my $aaa = $cor[$_];
+    my $eee = $corr[$_];
     my $ccc = 'bn' . $_;
+    my $fff = 'br' . $_;
     my $bbb = 'fm' . $_;
     my $foo = 'll' . $_ . '0';
     my $bar = 'tt' . $_ . '0';
+
+    eval "our \$$fff = \'\';";
+    eval "our \$$foo = \$mw->Label();";
+    ${$foo}->configure( -textvariable => \$$fff );
+
+    ${$foo}->place( -relx => 0.2,            -relwidth  => 0.8,
+		    -rely => ($_ * $height), -relheight => $height );
+
+
+    $file->add( 'command', -label => "$aaa", -command => [\&fun, $_] );
 
     eval "our \$$ccc = \$mw->Button();";
     ${$ccc}->configure( -text => $aaa, -command => [\&fun, $_] );
@@ -39,7 +61,7 @@ foreach (0..$max) {
 		    -rely => ($_ * $height), -relheight => $height );
     eval "our \$$bbb = \$mw->Frame();";
     eval "our \$$foo = \$$bbb->Label();";
-    ${$foo}->configure( -text => $aaa  );
+    ${$foo}->configure( -text => $eee );
     eval "our \$$bar = \$$bbb->Scrolled( \'Text\' );";
     ${$bar}->configure( -font => [$fontlist[0], $fontsize, 'normal'],
 			-background => 'white',
@@ -52,6 +74,7 @@ foreach (0..$max) {
     ${$bar}->pack( -fill => 'both', -expand => 'true' );
 }
 
+$file->add( 'command', -label => 'exit', -command => \&exit );
 
 sub fun { eval "fun$_[0];"; }
 
@@ -86,7 +109,7 @@ sub fun0 {
 	-filetypes => [['Xcrypt Files', ['.xcr']],
 		       ['All Files', ['*']]]);
     unless ($filename eq '') {
-	$br0 = "$filename";
+	$br0 = "xcrypt $filename";
 	$eof0 = 0;
 	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
 	$mw->fileevent( \*PIPE0, 'readable', [\&bar, 'tt00', 'PIPE0', 'eof0'] );
@@ -98,6 +121,8 @@ sub fun0 {
 }
 
 sub fun1 {
+    $statcount = $statcount + 1;
+    $br1 = "xcryptstat executed ($statcount times)";
     open( PIPE1, "xcryptstat|" );
     while (<PIPE1>) {
 	$tt10->insert('end', $_);
@@ -119,6 +144,8 @@ sub foo {
 	    close PIPE2;
 
 	    $tl20->destroy();
+
+	    $br2 = "xcryptdel $job";
 	}
     }
 }
@@ -134,20 +161,6 @@ sub bar {
 
     if ($stat == 0) { ${$eof} = 1; }
 }
-
-
-$mn = $mw->Menu();
-$mn->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
-
-$mw->configure( -menu => $mn );
-$mn->add( 'cascade', -label => 'File' );
-$mn->add( 'cascade', -label => 'View' );
-$mn->add( 'cascade', -label => 'Tool' );
-$mn->add( 'cascade', -label => 'Help' );
-
-$file = $mn->Menu();
-$mn->entryconfigure( 'File', -menu => $file );
-$file->add( 'command', -label => 'Exit', -command => \&exit );
 
 $view = $mn->Menu();
 $mn->entryconfigure( 'View', -menu => $view );
@@ -165,11 +178,11 @@ $tool->add( 'command', -label => 'Clean', -command => sub { system( "./cleanup.s
 
 $help = $mn->Menu();
 $mn->entryconfigure( 'Help', -menu => $help );
-$help->add( 'command', -label => 'Manual', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
+$help->add( 'command', -label => 'Manual...', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
 
 sub hoge {
     $fontsize = $_[0];
-    my @bold = ('ll0', 'bn0', 'bn1', 'bn2', 'll00', 'll10', 'll20');
+    my @bold = ('ll0', 'll1', 'll2', 'bn0', 'bn1', 'bn2', 'll00', 'll10', 'll20');
     foreach (@bold) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'bold']);
     }

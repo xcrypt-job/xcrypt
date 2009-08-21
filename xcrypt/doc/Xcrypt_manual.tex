@@ -197,10 +197,11 @@ foreach (@results) { print $_->{stdout} , "\n"; }
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
 
-環境変数 \texttt{XCRJOBSCHED} を適切に設定する．シェルが bash なら，
+環境変数 \texttt{XCRJOBSCHED} を適切に設定する（NQSとSGEとshが設定可能である）．シェルが bash なら，
 \begin{screen}
 \texttt{\$ XCRJOBSCHED=SGE; export XCRJOBSCHED}
 \end{screen}
+とする．
 
 NQS を使う場合は
 \begin{screen}
