@@ -236,15 +236,17 @@ sub monitoring {
 sub monitor {
 #    unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
+
+	my $button1 = $toplevel3->Button( -text => 'Close',
+					  -command => ['destroy', $toplevel3] );
+	$button1->pack( -expand => 'yes', -fill => 'both', -side => 'right' );
+
 	my $tiler0 = &monitoring();
-	$tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+	$tiler0->pack( -expand => 'yes', -fill => 'both' );
 
 #	my $button0 = $toplevel3->Button( -text => 'Reload',
 #					  -command => \&monitoring );
 #	$button0->pack( -fill => 'x' );
-	my $button1 = $toplevel3->Button( -text => 'Close',
-					  -command => ['destroy', $toplevel3] );
-	$button1->pack( -fill => 'x' );
 #    }
 }
 
