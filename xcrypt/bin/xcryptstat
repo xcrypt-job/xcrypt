@@ -22,7 +22,7 @@ if ( $ENV{XCRYPT} ) {
     if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
     else { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ":" . $ENV{PERL5LIB}; }
 } else {
-    die "Set the environment varialble XCRYPT\n";
+    die "Set the environment varialble XCRYPT.\n";
 }
 
 # Load jobscheduler config files.
@@ -32,7 +32,7 @@ our %jobsched_config = undef;
 if ( $ENV{XCRYPT} ) {
     $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
 } else {
-    die "Set the environment varialble XCRYPT\n";
+    die "Set the environment varialble XCRYPT.\n";
 }
 unless ( $ENV{XCRJOBSCHED} ) {
     die "Set the environment varialble XCRJOBSCHED.\n";

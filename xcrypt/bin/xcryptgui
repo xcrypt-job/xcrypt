@@ -1,79 +1,80 @@
 #!/usr/bin/env perl
 
 use Tk;
+use Tk::Tiler;
 
-my $mw = MainWindow->new( -title => 'Xcrypt' );
-$mw->geometry( '1000x1000' );
+my $mainwindow = MainWindow->new( -title => 'Xcrypt' );
+$mainwindow->geometry( '1000x1000' );
 
-#my @fontlist = sort $mw->fontFamilies;
+#my @fontlist = sort $mainwindow->fontFamilies;
 my @fontlist = ('Helvetica');
 my $menufontsize = 12;
 my $fontsize = 14;
 
-$mw->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
+$mainwindow->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 foreach ('*Button.font', '*Label.font') {
-    $mw->optionAdd( "$_" => [$fontlist[0], $fontsize, 'bold'] );
+    $mainwindow->optionAdd( "$_" => [$fontlist[0], $fontsize, 'bold'] );
 }
 
 our ($eof0, $eof2);
 our $statcount;
 
-my @cor = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
-my @corr = ('Main', 'State', 'Aborted');
+my @buttonnames = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
+my @labelnames = ('Main', 'Status', 'Aborted');
 my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
 
-$mn = $mw->Menu();
-$mn->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
+$menu = $mainwindow->Menu();
+$menu->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 
-$mw->configure( -menu => $mn );
-$mn->add( 'cascade', -label => 'File' );
-$mn->add( 'cascade', -label => 'View' );
-$mn->add( 'cascade', -label => 'Tool' );
-$mn->add( 'cascade', -label => 'Help' );
+$mainwindow->configure( -menu => $menu );
+$menu->add( 'cascade', -label => 'File' );
+$menu->add( 'cascade', -label => 'View' );
+$menu->add( 'cascade', -label => 'Tool' );
+$menu->add( 'cascade', -label => 'Help' );
 
-$file = $mn->Menu();
-$mn->entryconfigure( 'File', -menu => $file );
+$file = $menu->Menu();
+$menu->entryconfigure( 'File', -menu => $file );
 
 foreach (0..$max) {
-    my $aaa = $cor[$_];
-    my $eee = $corr[$_];
-    my $ccc = 'bn' . $_;
-    my $fff = 'br' . $_;
-    my $bbb = 'fm' . $_;
-    my $ggg = 'll' . $_ ;
-    my $foo = 'll' . $_ . '0';
-    my $bar = 'tt' . $_ . '0';
+    my $button = $buttonnames[$_];
+    my $label = $labelnames[$_];
 
-    eval "our \$$fff = \'\';";
-    eval "our \$$foo = \$mw->Label();";
-    eval "our \$$ggg = \$mw->Label();";
-    ${$ggg}->configure( -textvariable => \$$fff );
+    my $buttonname = 'button' . $_;
+    eval "our \$$buttonname = \$mainwindow->Button();";
+    ${$buttonname}->configure( -text => $button, -command => [\&fun, $_] );
+    ${$buttonname}->place( -relx => 0,              -relwidth  => 0.2,
+			   -rely => ($_ * $height), -relheight => $height );
 
-    ${$ggg}->place( -relx => 0.2,            -relwidth  => 0.8,
-		    -rely => ($_ * $height), -relheight => $height );
+    my $buffername = 'buffer' . $_;
+    eval "our \$$buffername = \'\';";
 
+    my $framename = 'frame' . $_;
+    eval "our \$$framename = \$mainwindow->Frame();";
+    ${$framename}->place( -relx => ($_ * $width), -relwidth  => $width,
+			  -rely => 0.15,          -relheight => 0.85    );
 
-    $file->add( 'command', -label => "$aaa", -command => [\&fun, $_] );
+    my $labelname = 'label' . $_ ;
+    eval "our \$$labelname = \$mainwindow->Label();";
+    ${$labelname}->configure( -textvariable => \$$buffername );
+    ${$labelname}->place( -relx => 0.2,            -relwidth  => 0.8,
+			  -rely => ($_ * $height), -relheight => $height );
 
-    eval "our \$$ccc = \$mw->Button();";
-    ${$ccc}->configure( -text => $aaa, -command => [\&fun, $_] );
-    ${$ccc}->place( -relx => 0,              -relwidth  => 0.2,
-		    -rely => ($_ * $height), -relheight => $height );
-    eval "our \$$bbb = \$mw->Frame();";
-    eval "our \$$foo = \$$bbb->Label();";
-    ${$foo}->configure( -text => $eee );
-    eval "our \$$bar = \$$bbb->Scrolled( \'Text\' );";
-    ${$bar}->configure( -font => [$fontlist[0], $fontsize, 'normal'],
+    my $sublabel = 'sublabel' . $_;
+    eval "our \$$sublabel = \$$framename->Label();";
+    ${$sublabel}->configure( -text => $label );
+    ${$sublabel}->pack( -fill => 'both' );
+
+    my $text = 'text' . $_;
+    eval "our \$$text = \$$framename->Scrolled( \'Text\' );";
+    ${$text}->configure( -font => [$fontlist[0], $fontsize, 'normal'],
 			-background => 'white',
 			-scrollbars => 'se',
 			-wrap => 'none' );
+    ${$text}->pack( -fill => 'both', -expand => 'true' );
 
-    ${$bbb}->place( -relx => ($_ * $width), -relwidth  => $width,
-		    -rely => 0.15,          -relheight => 0.85    );
-    ${$foo}->pack( -fill => 'both' );
-    ${$bar}->pack( -fill => 'both', -expand => 'true' );
+    $file->add( 'command', -label => "$button", -command => [\&fun, $_] );
 }
 
 $file->add( 'separator' );
@@ -82,118 +83,173 @@ $file->add( 'command', -label => 'Exit', -command => \&exit );
 sub fun { eval "fun$_[0];"; }
 
 sub fun2 {
-    unless ( Exists( $tl20 ) ) {
-	$tl20 = $mw->Toplevel( -title => 'Xcryptdel' );
-	$lx20 = $tl20->Scrolled( 'Listbox',
-				 -font => [$fontlist[0], $fontsize, 'bold'] );
-	$lx20->pack( -side => 'left' );
+    unless ( Exists( $toplevel2 ) ) {
+	$toplevel2 = $mainwindow->Toplevel( -title => 'Xcryptdel' );
+	my $listbox = $toplevel2->Scrolled( 'Listbox',
+					    -font => [$fontlist[0],
+						      $fontsize, 'bold'] );
+	$listbox->pack( -side => 'left' );
 
-	my $bn20 = $tl20->Button( -text => 'OK', -command => \&foo );
-	$bn20->pack( -fill => 'x' );
+	my $button0 = $toplevel2->Button( -text => 'OK',
+					  -command => sub {
+my @index = $listbox->curselection();
+unless (@index eq ()) {
+    foreach (@index) {
+	my $job = $listbox->get($_);
+	$eof2 = 0;
+	open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
+	$mainwindow->fileevent( \*PIPE2, 'readable',
+				[\&connect, 'text2', 'PIPE2', 'eof2'] );
 
-	my $bn21 = $tl20->Button( -text => 'Cancel',
-				  -command => ['destroy', $tl20] );
-	$bn21->pack( -fill => 'x' );
+	$mainwindow->waitVariable(\$eof2);
+	$mainwindow->fileevent( \*PIPE2, 'readable' => '' );
+	close PIPE2;
+
+	$toplevel2->destroy();
+
+	$buffer2 = "xcryptdel $job";
+    }
+}
+					 });
+
+	$button0->pack( -fill => 'x' );
+
+	my $button1 = $toplevel2->Button( -text => 'Cancel',
+					  -command => ['destroy', $toplevel2] );
+	$button1->pack( -fill => 'x' );
 
 	open( ID, '< inv_watch/.request_ids' );
-	my @allarr = split( / /, <ID> );
-	my %allhash = @allarr;
-	my @fileID = values(%allhash);
-	foreach (@fileID) {
-	    $lx20->insert('end', $_);
-	    $lx20->yview('end');
+	my @reqid_jobids = split( / /, <ID> );
+	my %hash = @reqid_jobids;
+	my @jobids = values(%hash);
+	foreach (@jobids) {
+	    $listbox->insert('end', $_);
+	    $listbox->yview('end');
 	}
     }
 }
 
 sub fun0 {
-    my $filename = $mw->getOpenFile(
+    my $filename = $mainwindow->getOpenFile(
 	-font => [$fontlist[0], $fontsize, 'normal'],
 	-filetypes => [['Xcrypt Files', ['.xcr']],
 		       ['All Files', ['*']]]);
     unless ($filename eq '') {
-	$br0 = "xcrypt $filename";
+	$buffer0 = "xcrypt $filename";
 	$eof0 = 0;
 	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
-	$mw->fileevent( \*PIPE0, 'readable', [\&bar, 'tt00', 'PIPE0', 'eof0'] );
+	$mainwindow->fileevent( \*PIPE0, 'readable',
+				[\&connect, 'text0', 'PIPE0', 'eof0'] );
 
-	$mw->waitVariable(\$eof0);
-	$mw->fileevent( \*PIPE0, 'readable' => '' );
+	$mainwindow->waitVariable(\$eof0);
+	$mainwindow->fileevent( \*PIPE0, 'readable' => '' );
 	close PIPE0;
     }
 }
 
 sub fun1 {
     $statcount = $statcount + 1;
-    $br1 = "xcryptstat executed ($statcount times)";
+    $buffer1 = "xcryptstat executed ($statcount times)";
     open( PIPE1, "xcryptstat|" );
     while (<PIPE1>) {
-	$tt10->insert('end', $_);
-	$tt10->yview('end');
+	$text1->insert('end', $_);
+	$text1->yview('end');
     }
 }
 
-sub foo {
-    my @index = $lx20->curselection();
-    unless (@index eq ()) {
-	foreach (@index) {
-	    my $job = $lx20->get($_);
-	    $eof2 = 0;
-	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	    $mw->fileevent( \*PIPE2, 'readable', [\&bar, 'tt20', 'PIPE2', 'eof2'] );
 
-	    $mw->waitVariable(\$eof2);
-	    $mw->fileevent( \*PIPE2, 'readable' => '' );
-	    close PIPE2;
-
-	    $tl20->destroy();
-
-	    $br2 = "xcryptdel $job";
-	}
-    }
-}
-
-sub bar {
+sub connect {
     my ($widget, $pipe, $eof) = @_;
 
     my($stat, $data);
     $stat = sysread $pipe, $data, 4096;
     die "sysread error:  $!" unless defined $stat;
-    if ($data =~ / abort$/) { $tt20->insert('end', $data); }
+    if ($data =~ / abort$/) { $text2->insert('end', $data); }
     ${$widget}->insert('end', $data);
     ${$widget}->yview('end');
 
     if ($stat == 0) { ${$eof} = 1; }
 }
 
-$view = $mn->Menu();
-$mn->entryconfigure( 'View', -menu => $view );
+$view = $menu->Menu();
+$menu->entryconfigure( 'View', -menu => $view );
 $view->add( 'cascade', -label => 'Size' );
 $size = $view->Menu();
 $view->entryconfigure( 'Size', -menu => $size );
-foreach (4..12) {
-    my $ddd = 2 * $_;
-    $size->add( 'command', -label => $ddd, -command => [\&hoge, $ddd] );
+foreach (8..24) {
+    $size->add( 'command', -label => $_, -command => [\&sizechange, $_] );
 }
 
-$tool = $mn->Menu();
-$mn->entryconfigure( 'Tool', -menu => $tool );
-$tool->add( 'command', -label => 'Clean', -command => sub { system( "./cleanup.sh" ); } );
-
-$help = $mn->Menu();
-$mn->entryconfigure( 'Help', -menu => $help );
-$help->add( 'command', -label => 'Manual...', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
-
-sub hoge {
+sub sizechange {
     $fontsize = $_[0];
-    my @bold = ('ll0', 'll1', 'll2', 'bn0', 'bn1', 'bn2', 'll00', 'll10', 'll20');
+    my @bold = ('label0', 'label1', 'label2',
+		'button0', 'button1', 'button2',
+		'sublabel0', 'sublabel1', 'sublabel2');
     foreach (@bold) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'bold']);
     }
-    my @normal = ('tt00', 'tt10', 'tt20', 'tt30');
+    my @normal = ('text0', 'text1', 'text2');
     foreach (@normal) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'normal']);
     }
 }
+
+$tool = $menu->Menu();
+$menu->entryconfigure( 'Tool', -menu => $tool );
+$tool->add( 'command', -label => 'Clean',
+	    -command => sub { system( "./cleanup.sh" ); } );
+$tool->add( 'command', -label => 'Monitor', -command => \&monitor );
+
+sub monitoring {
+    my $tiler0 = $toplevel3->Scrolled( 'Tiler', -scrollbars => 'e',
+				       -columns => 10,
+				       -rows => 30 );
+
+    open( REQ, '< inv_watch/.request_ids' );
+    my %reqid_jobids = split(' ', <REQ>);
+    my @jobids = sort values(%reqid_jobids);
+    close( REQ );
+    my %jobcolors = ( 'done' => 'green',
+		      'abort' => 'red',
+		      'submit' => 'yellow',
+		      'qsub' => 'yellow',
+		      'active' => 'yellow' );
+
+    my @labels;
+    foreach (@jobids) {
+	open( JOB, "< inv_watch/$_" );
+	while( $line = <JOB> ){
+	    if ($line =~ /^status\:\s*(.+)/) {
+		$status = $1;
+	    }
+	}
+	close( JOB );
+	push @labels, $tiler0->Label( -text => $_,
+				      -relief => 'raised',
+				      -borderwidth => '2',
+				      -background => $jobcolors{$status} );
+    }
+    $tiler0->Manage(@labels);
+    return $tiler0;
+}
+
+sub monitor {
+#    unless ( Exists( $toplevel3 ) ) {
+	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
+	my $tiler0 = &monitoring();
+	$tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+
+#	my $button0 = $toplevel3->Button( -text => 'Reload',
+#					  -command => \&monitoring );
+#	$button0->pack( -fill => 'x' );
+	my $button1 = $toplevel3->Button( -text => 'Close',
+					  -command => ['destroy', $toplevel3] );
+	$button1->pack( -fill => 'x' );
+#    }
+}
+
+$help = $menu->Menu();
+$menu->entryconfigure( 'Help', -menu => $help );
+$help->add( 'command', -label => 'Manual...', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
 
 MainLoop();
