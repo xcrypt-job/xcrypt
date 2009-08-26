@@ -197,15 +197,14 @@ foreach (@results) { print $_->{stdout} , "\n"; }
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
 
-環境変数 \texttt{XCRJOBSCHED} を適切に設定する（NQSとSGEとshが設定可能である）．シェルが bash なら，
+環境変数 \texttt{XCRJOBSCHED} をジョブスケジューラの名前
+\footnote{\texttt{NQS}と\texttt{SGE}とが利用可能である．また，環境変数
+\texttt{XCRJOBSCHED} に \texttt{sh} も利用可能である．この場合，ジョブ
+をOSのプロセスとして扱い，ジョブスケジューラが導入されていない環境にお
+けるジョブの投入・削除・状態取得を行う．}に設定する．シェルが bash
+なら，例えば，
 \begin{screen}
 \texttt{\$ XCRJOBSCHED=SGE; export XCRJOBSCHED}
-\end{screen}
-とする．
-
-NQS を使う場合は
-\begin{screen}
-\texttt{\$ XCRJOBSCHED=NQS; export XCRJOBSCHED}
 \end{screen}
 とする．
 
