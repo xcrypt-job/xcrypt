@@ -200,10 +200,14 @@ $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
+my $tiler0;
 sub monitoring {
-    my $tiler0 = $toplevel3->Scrolled( 'Tiler', -scrollbars => 'e',
-				       -columns => 10,
-				       -rows => 30 );
+
+    if ( Exists( $tiler0 ) ) { $tiler0->destroy; }
+
+    $tiler0 = $toplevel3->Scrolled( 'Tiler', -scrollbars => 'e',
+				    -columns => 10,
+				    -rows => 5 );
 
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
@@ -211,7 +215,11 @@ sub monitoring {
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
 		      'abort' => 'red',
+		      'aborted' => 'red',
 		      'submit' => 'yellow',
+		      'submitted' => 'yellow',
+		      'queued' => 'yellow',
+		      'runnning' => 'yellow',
 		      'qsub' => 'yellow',
 		      'active' => 'yellow' );
 
@@ -230,24 +238,23 @@ sub monitoring {
 				      -background => $jobcolors{$status} );
     }
     $tiler0->Manage(@labels);
-    return $tiler0;
+    $tiler0->pack( -expand => 'yes', -fill => 'both' );
 }
 
 sub monitor {
-#    unless ( Exists( $toplevel3 ) ) {
+    unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 
 	my $button1 = $toplevel3->Button( -text => 'Close',
 					  -command => ['destroy', $toplevel3] );
 	$button1->pack( -expand => 'yes', -fill => 'both', -side => 'right' );
 
-	my $tiler0 = &monitoring();
-	$tiler0->pack( -expand => 'yes', -fill => 'both' );
+	my $button0 = $toplevel3->Button( -text => 'Reload',
+					  -command => \&monitoring );
+	$button0->pack( -expand => 'yes', -fill => 'both', -side => 'right' );
 
-#	my $button0 = $toplevel3->Button( -text => 'Reload',
-#					  -command => \&monitoring );
-#	$button0->pack( -fill => 'x' );
-#    }
+	&monitoring();
+    }
 }
 
 $help = $menu->Menu();
