@@ -117,7 +117,10 @@ sub fun2 {
 	open( ID, '< inv_watch/.request_ids' );
 	my @reqid_jobids = split( / /, <ID> );
 	my %hash = @reqid_jobids;
-	my @jobids = sort values(%hash);
+	my %count;
+	my @vals = values(%hash);
+	@vals = grep(!$count{$_}++, @vals);
+	my @jobids = sort @vals;
 	foreach (@jobids) {
 	    $listbox->insert('end', $_);
 	    $listbox->yview('end');
@@ -214,7 +217,10 @@ sub monitoring {
 
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
-    my @jobids = sort values(%reqid_jobids);
+    my %count;
+    my @vals = values(%reqid_jobids);
+    @vals = grep(!$count{$_}++, @vals);
+    my @jobids = sort @vals;
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
 		      'abort' => 'red',
@@ -275,7 +281,7 @@ sub monitor {
     unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 	$toplevel3->geometry( '600x600' );
-	$toplevel3->Label( -text => 'Click a job-button if you want to delete it')->pack();
+	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
 	&monitoring();
     }
 }
