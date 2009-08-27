@@ -1,4 +1,7 @@
+#use base qw(limit core);
 use base qw(core);
+
+#$limit::smph=Thread::Semaphore->new(3);
 
 %xyz = (
     'id' => 'job6',

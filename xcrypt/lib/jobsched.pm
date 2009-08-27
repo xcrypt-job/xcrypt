@@ -195,7 +195,7 @@ sub qsub {
         $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stdout_option}, $stdofile);
     }
     if ( defined $jobsched_config{$jobsched}{qsub_stderr_option} ) {
-        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stderr_option}, $stdofile);
+        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stderr_option}, $stdefile);
     }
     ### --> Create qsub options -->
 
@@ -593,6 +593,8 @@ sub entry_running_job {
     my $req_id = get_job_request_id ($jobname);
     lock (%running_jobs);
     $running_jobs{$req_id} = $jobname;
+print $req_id , "\n";
+print %running_jobs , "\n";
     # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %running_jobs) . "\n";
 }
 sub delete_running_job {
