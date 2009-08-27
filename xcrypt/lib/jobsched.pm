@@ -593,8 +593,6 @@ sub entry_running_job {
     my $req_id = get_job_request_id ($jobname);
     lock (%running_jobs);
     $running_jobs{$req_id} = $jobname;
-print $req_id , "\n";
-print %running_jobs , "\n";
     # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %running_jobs) . "\n";
 }
 sub delete_running_job {
