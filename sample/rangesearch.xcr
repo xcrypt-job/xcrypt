@@ -1,6 +1,5 @@
-use base qw(limit dry core);
+use base qw(dry core);
 
-$limit::smph=Thread::Semaphore->new(100);
 $dry::dry = 0;
 $separator_nocheck = 0;
 $separator = '-';
