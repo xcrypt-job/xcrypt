@@ -6,16 +6,16 @@ $separator = '-';
 
 %xyz = (
     'id' => 'job7',
-    'exe' => './fib.pl',
+    'exe' => './fib',
     'arg0' => '20',
 #    'copieddir0' => '.',
-    'linkedfile0' => 'fib.pl',
+    'linkedfile0' => 'fib',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz,
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 6 + $_[0] + $_[2]; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #

@@ -2,20 +2,20 @@ use base qw(minimax core);
 
 %xyz = (
     'id'          => 'job10',
-    'linkedfile0' => 'getchildren.pl',
-    'linkedfile1' => 'komadoku.pl',
-    'linkedfile2' => 'kuraidori.pl',
-    'linkedfile3' => 'ikiataribattari.pl',
-    'arg0'        => '9',                  # depth of lookahead
-    'arg1'        => '0',                  # position
-    'arg2'        => 'getchildren.pl',     # get next positions
+    'linkedfile0' => 'getchildren',
+    'linkedfile1' => 'komadoku',
+    'linkedfile2' => 'kuraidori',
+    'linkedfile3' => 'ikiataribattari',
+    'arg0'        => '9',               # depth of lookahead
+    'arg1'        => '0',               # position
+    'arg2'        => 'getchildren',     # get next positions
     'queue'       => 'gh10034',
     'option'      => '# @$-g gh10034'
 );
 
 @results = &prepare_submit_sync(%xyz, 'arg3S' => [
-				    'komadoku.pl',
-				    'kuraidori.pl',
-				    'ikiataribattari.pl'
+				    'komadoku',
+				    'kuraidori',
+				    'ikiataribattari'
 				]);
 foreach (@results) { print $_->{stdout} , "\n"; }
