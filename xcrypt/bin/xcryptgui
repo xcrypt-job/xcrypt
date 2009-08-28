@@ -79,7 +79,7 @@ $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 sub fun { eval "fun$_[0];"; }
 
-sub hoge {
+sub del2 {
     my @index = $_[0]->curselection();
     unless (@index eq ()) {
 	foreach (@index) {
@@ -104,12 +104,13 @@ sub fun2 {
     unless ( Exists( $toplevel2 ) ) {
 	$toplevel2 = $mainwindow->Toplevel( -title => 'Xcryptdel' );
 	my $listbox = $toplevel2->Scrolled( 'Listbox',
+					    -scrollbars => 'se',
 					    -font => [$fontlist[0],
 						      $fontsize, 'bold'] );
 	$listbox->pack( -side => 'left' );
 
 	my $button0 = $toplevel2->Button( -text => 'OK',
-					  -command => [\&hoge, $listbox] );
+					  -command => [\&del2, $listbox] );
 	$button0->pack( -fill => 'x' );
 
 	my $button1 = $toplevel2->Button( -text => 'Cancel',
@@ -225,15 +226,11 @@ sub monitoring {
     my @jobids = sort @vals;
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
-		      'abort' => 'red',
 		      'aborted' => 'red',
 		      'active' => 'yellow',
-		      'submit' => 'yellow',
 		      'submitted' => 'yellow',
-		      'qsub' => 'yellow',
 		      'queued' => 'yellow',
-		      'runnning' => 'yellow',
-		      'start' => 'yellow',
+		      'running' => 'yellow'
 	);
 
     my @labels;
@@ -247,7 +244,7 @@ sub monitoring {
 	close( JOB );
 	my $button = $tiler0->Button( -text => $_,
 				      -background => $jobcolors{$status},
-				      -command => [\&hage, $_]
+				      -command => [\&del3, $_]
 	    );
 	$tiler0->insert('end',
 			-itemtype => 'window',
@@ -265,7 +262,7 @@ sub monitoring {
     $button1_m->pack( -fill => 'x' );
 }
 
-sub hage {
+sub del3 {
     my $job = $_[0];
     $eof2 = 0;
     open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
