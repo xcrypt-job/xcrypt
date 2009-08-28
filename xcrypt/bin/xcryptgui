@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
+#use strict;
 use Tk;
-use Tk::Tiler;
 use Tk::TList;
 
 my $mainwindow = MainWindow->new( -title => 'Xcrypt' );
@@ -19,6 +19,8 @@ foreach ('*Button.font', '*Label.font') {
 
 our ($eof0, $eof2);
 our $statcount;
+our $toplevel2;
+our $toplevel3;
 
 my @buttonnames = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
 my @labelnames = ('Main', 'Status', 'Aborted');
@@ -26,7 +28,7 @@ my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
 
-$menu = $mainwindow->Menu();
+our $menu = $mainwindow->Menu();
 $menu->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 
 $mainwindow->configure( -menu => $menu );
@@ -35,7 +37,7 @@ $menu->add( 'cascade', -label => 'View' );
 $menu->add( 'cascade', -label => 'Tool' );
 $menu->add( 'cascade', -label => 'Help' );
 
-$file = $menu->Menu();
+our $file = $menu->Menu();
 $menu->entryconfigure( 'File', -menu => $file );
 
 foreach (0..$max) {
@@ -170,10 +172,10 @@ sub connect {
     if ($stat == 0) { ${$eof} = 1; }
 }
 
-$view = $menu->Menu();
+our $view = $menu->Menu();
 $menu->entryconfigure( 'View', -menu => $view );
 $view->add( 'cascade', -label => 'Size' );
-$size = $view->Menu();
+our $size = $view->Menu();
 $view->entryconfigure( 'Size', -menu => $size );
 foreach (8..24) {
     $size->add( 'command', -label => $_, -command => [\&sizechange, $_] );
@@ -193,7 +195,7 @@ sub sizechange {
     }
 }
 
-$tool = $menu->Menu();
+our $tool = $menu->Menu();
 $menu->entryconfigure( 'Tool', -menu => $tool );
 $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
@@ -285,7 +287,7 @@ sub monitor {
     }
 }
 
-$help = $menu->Menu();
+our $help = $menu->Menu();
 $menu->entryconfigure( 'Help', -menu => $help );
 $help->add( 'command', -label => 'Manual...', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
 
