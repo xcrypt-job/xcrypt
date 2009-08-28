@@ -339,14 +339,25 @@ sub invoke_watch_by_socket {
             my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
             my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
             my $cl_ip = inet_ntoa ($cl_iaddr);
+            my $handle_inventory_ret = 0;
             select(CLIENT); $|=1; select(STDOUT);
             while (<CLIENT>) {
-                if ( $_ =~ /^:end/ ) { last; }
-                handle_inventory ($_, 1);
+                if ( $_ =~ /^:end/ ) {
+                    # print STDERR "received :end\n";
+                    last;
+                }
+                # 一度エラーがでたら以降のhandle_inventoryはとばす
+                if ( $handle_inventory_ret >= 0 ) {
+                    $handle_inventory_ret = handle_inventory ($_, 1);
+                }
             }
-            # print STDERR "received :end\n";
-            print CLIENT ":ack\n";
-            # print STDERR "sent :ack\n";
+            if ($handle_inventory_ret >= 0) {
+                print CLIENT ":ack\n";
+                # print STDERR "sent :ack\n";
+            } else {
+                print CLIENT ":failed\n";
+                print STDERR "sent :failed\n";
+            }
             close (CLIENT);
         }
     });
@@ -367,9 +378,11 @@ sub load_inventory {
 }
 
 # watchの出力一行を処理
+# set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
 sub handle_inventory {
     my ($line, $write_p) = @_;
+    my $ret = 0;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
 #     } elsif ($line =~ /^status\:\s*active/) {   # ジョブ実行予定
@@ -390,17 +403,28 @@ sub handle_inventory {
     ## 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
     } elsif ($line =~ /^time_active\:\s*([0-9]*)/) {   # ジョブ実行予定
         set_job_active ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^time_submit\:\s*([0-9]*)/) {   # ジョブ投入直前
         set_job_submit ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^time_qsub\:\s*([0-9]*)/) {   # qsub成功
         set_job_qsub ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^time_start\:\s*([0-9]*)/) {   # プログラム開始
-        wait_job_qsub ($last_jobname);
-        set_job_start ($last_jobname, $1);
+        # まだqsubになっていなければ書き込まず，0を返す
+        # ここでwaitしないのはデッドロック防止のため
+        if ( get_job_status ($last_jobname) eq "qsub" ) {
+            set_job_start ($last_jobname, $1);
+            $ret = 1;
+        } else {
+            $ret = -1;
+        }
     } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
         set_job_done ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^time_abort\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
         set_job_abort ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
         # とりあえず何もなし
     } elsif (/^date\_.*\:\s*(.+)/){             # ジョブ状態変化の時刻
@@ -418,6 +442,7 @@ sub handle_inventory {
         print SAVE $line;
         close (SAVE);
     }
+    return $ret;
 }
 
 ##############################

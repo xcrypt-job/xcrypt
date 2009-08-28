@@ -10,7 +10,7 @@ $separator = '-';
     'arg0' => '20',
 #    'copieddir0' => '.',
     'linkedfile0' => 'fib',
-    'queue' => 'gh10034',
+    'queue' => 'all.q',
     'option' => '# @$-g gh10034'
 );
 

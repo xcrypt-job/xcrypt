@@ -22,8 +22,10 @@ my $port = $ARGV[1];
 my $jobname = $ARGV[2];
 my $status = $ARGV[3];
 
+my $retry = 1;
+
 # if ($status ne 'qsub' ) {
-if (1) {
+while ($retry) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
@@ -57,11 +59,18 @@ if (1) {
     
     print $log "$jobname\[$status\]: waiting ack\n";
     my $ackline =  <$socket>;
-    unless ( $ackline =~ /^:ack/ ) {
-        warn "Unexpected ack message: $ackline";
+    chomp $ackline;
+    if ( $ackline =~ /^:ack/ ) {
+        $retry = 0;
+    } elsif ( $ackline =~ /^:failed/ ) {
+        my $slp = 0.1+rand(1.0);
+        Time::HiRes::sleep $slp;
+    } else {
+        die "Unexpected ack message: $ackline";
     }
-    print $log "$jobname\[$status\]: received ack\n";
+    print $log "$jobname\[$status\]: received $ackline\n";
     $socket->close();
-    print $log "$jobname\[$status\]: successfully done\n";
-    close($log);
 }
+
+print $log "$jobname\[$status\]: successfully done\n";
+close($log);
