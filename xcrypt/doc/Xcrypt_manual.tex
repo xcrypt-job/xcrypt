@@ -138,8 +138,8 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 \begin{verbatim}
 use base qw(limit core);
 
-\$limit::smph=Thread::Semaphore->new(10);
-\$separator = '-';
+$limit::smph=Thread::Semaphore->new(10);
+$separator = '-';
 
 %xyz = (
     'id' => 'job100',
