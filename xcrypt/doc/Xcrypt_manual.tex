@@ -11,13 +11,9 @@
 \tableofcontents
 
 \paragraph{メモ}
-定義すべき用語
-ジョブスレッド
 
-重要
-
-Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ないは
-ず．
+Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ない
+はず．
 
 \part{総論}
 \chapter{はじめに}
@@ -45,9 +41,9 @@ TODO: サーチアルゴリズム等のアルゴリズムモジュールの提供についても記述
 
 \section{動作環境}
 
-・Perl 5.10.0
+・sh 系（sh，bash，zsh 等）または csh 系（csh，tcsh 等）シェル
 
-・他
+・Perl 5.10.0（GUI 利用時には Perl/Tk 8.4 も要）
 
 
 \chapter{Xcrypt スクリプトの記述}
@@ -214,7 +210,7 @@ foreach (@results) { print $_->{stdout} , "\n"; }
 \end{screen}
 
 Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
-sample.xcr とする）．
+\texttt{sample.xcr} とする）．
 
 実行する．
 \begin{screen}
@@ -433,7 +429,8 @@ $separator = '-';
 
 \section{\texttt{predecessor}}
 
-ジョブを，値であるところのジョブたちの処理が終わるまで投入されず，
+ジョブを，値であるところのジョブたちの処理が終わるまで投入しないものと
+する．
 
 \section{\texttt{successor}}
 
