@@ -206,18 +206,6 @@ my $tiler0;
 my $button0_m;
 my $button1_m;
 sub monitoring {
-
-    if ( Exists( $tiler0 ) ) { $tiler0->destroy; }
-    if ( Exists( $button0_m ) ) { $button0_m->destroy; }
-    if ( Exists( $button1_m ) ) { $button1_m->destroy; }
-
-    $tiler0 = $toplevel3->Scrolled( 'TList',
-				    -font => [$fontlist[0], $fontsize, 'bold'],
-				    -background => 'white',
-				    -scrollbars => 'e',
-				    -orient => 'horizontal'
-	);
-
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
     my %count;
@@ -233,7 +221,10 @@ sub monitoring {
 		      'running' => 'yellow'
 	);
 
-    my @labels;
+    my $lt = @jobids;
+    if ($lt > 0) {
+	$tiler0->delete(0, $lt-1);
+    }
     foreach (@jobids) {
 	open( JOB, "< inv_watch/$_" );
 	while( $line = <JOB> ){
@@ -251,15 +242,6 @@ sub monitoring {
 			-window => $button
 	    );
     }
-    $tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
-
-    $button0_m = $toplevel3->Button( -text => 'Reload',
-				     -command => \&monitoring );
-    $button0_m->pack( -fill => 'x' );
-
-    $button1_m = $toplevel3->Button( -text => 'Close',
-				     -command => ['destroy', $toplevel3] );
-    $button1_m->pack( -fill => 'x' );
 }
 
 sub del3 {
@@ -281,6 +263,25 @@ sub monitor {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 	$toplevel3->geometry( '600x600' );
 	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
+
+	$tiler0 = $toplevel3->Scrolled( 'TList',
+					-font => [$fontlist[0],
+						  $fontsize, 'bold'],
+					-background => 'white',
+					-scrollbars => 'e',
+					-orient => 'horizontal'
+	    );
+
+	$tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+
+	$button0_m = $toplevel3->Button( -text => 'Reload',
+					 -command => \&monitoring );
+	$button0_m->pack( -fill => 'x' );
+
+	$button1_m = $toplevel3->Button( -text => 'Close',
+					 -command => ['destroy', $toplevel3] );
+	$button1_m->pack( -fill => 'x' );
+
 	&monitoring();
     }
 }
