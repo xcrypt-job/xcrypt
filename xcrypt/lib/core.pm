@@ -5,7 +5,6 @@ use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
 use UI;
-use function;
 use jobsched;
 use Data_Generation;
 
