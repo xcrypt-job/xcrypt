@@ -104,6 +104,7 @@ sub fun2 {
     unless ( Exists( $toplevel2 ) ) {
 	$toplevel2 = $mainwindow->Toplevel( -title => 'Xcryptdel' );
 	my $listbox = $toplevel2->Scrolled( 'Listbox',
+					    -scrollbars => 'se',
 					    -font => [$fontlist[0],
 						      $fontsize, 'bold'] );
 	$listbox->pack( -side => 'left' );
@@ -201,16 +202,16 @@ $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
-my $tiler0;
+my $tlist0;
 my $button0_m;
 my $button1_m;
 sub monitoring {
 
-    if ( Exists( $tiler0 ) ) { $tiler0->destroy; }
+    if ( Exists( $tlist0 ) ) { $tlist0->destroy; }
     if ( Exists( $button0_m ) ) { $button0_m->destroy; }
     if ( Exists( $button1_m ) ) { $button1_m->destroy; }
 
-    $tiler0 = $toplevel3->Scrolled( 'TList',
+    $tlist0 = $toplevel3->Scrolled( 'TList',
 				    -font => [$fontlist[0], $fontsize, 'bold'],
 				    -background => 'white',
 				    -scrollbars => 'e',
@@ -245,16 +246,16 @@ sub monitoring {
 	    }
 	}
 	close( JOB );
-	my $button = $tiler0->Button( -text => $_,
+	my $button = $tlist0->Button( -text => $_,
 				      -background => $jobcolors{$status},
 				      -command => [\&hage, $_]
 	    );
-	$tiler0->insert('end',
+	$tlist0->insert('end',
 			-itemtype => 'window',
 			-window => $button
 	    );
     }
-    $tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+    $tlist0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
 
     $button0_m = $toplevel3->Button( -text => 'Reload',
 				     -command => \&monitoring );
