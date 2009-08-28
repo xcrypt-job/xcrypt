@@ -67,12 +67,14 @@ my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
 my @qstat_out = qx/$qstat_command/;
 my @ids = &$qstat_extractor (@qstat_out);
 foreach my $req_id (@ids) {
-    open (REQIDS, "< $idfiles");
-    my $line = <REQIDS>;
-    my @array = split(/ /, $line);
-    my %hash = @array;
-    close (REQIDS);
-    my $hoge = $hash{"$req_id"};
-    print "$hoge is waiting or running.\n";
+    open ( REQIDS, "< $idfiles" );
+    my $reqid_jobids = <REQIDS>;
+    my @reqid_jobids_array = split(/ /, $reqid_jobids);
+    my %reqid_jobids_hash = @reqid_jobids_array;
+    close ( REQIDS );
+    if ( defined($reqid_jobids_hash{$req_id}) ) {
+	my $jobid = $reqid_jobids_hash{"$req_id"};
+	print "$jobid is waiting or running.\n";
+    }
 }
 #print "--- 8< --- 8< --- 8< ---\n";
