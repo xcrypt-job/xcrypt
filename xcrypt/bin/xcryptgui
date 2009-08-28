@@ -227,13 +227,14 @@ sub monitoring {
     my %jobcolors = ( 'done' => 'green',
 		      'abort' => 'red',
 		      'aborted' => 'red',
+		      'active' => 'yellow',
 		      'submit' => 'yellow',
 		      'submitted' => 'yellow',
-		      'queued' => 'yellow',
-		      'runnning' => 'yellow',
-		      'start' => 'yellow',
 		      'qsub' => 'yellow',
-		      'active' => 'yellow' );
+		      'queued' => 'yellow',
+		      'start' => 'yellow',
+		      'runnning' => 'yellow'
+	);
 
     my @labels;
     foreach (@jobids) {

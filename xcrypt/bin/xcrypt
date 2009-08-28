@@ -27,6 +27,7 @@ if ( $ENV{XCRYPT} ) {
 
 if ( -e $savefile ) { unlink $savefile; }
 
+open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
 open ( TMP , "> $savefile") or die "Can't open $savefile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use UI;' . "\n";
@@ -40,9 +41,7 @@ print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
 print TMP '&jobsched::invoke_watch ();' . "\n";
 print TMP '&jobsched::invoke_abort_check ();' . "\n";
-open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
 foreach (<USER>) { print TMP "$_"; }
-close ( USER );
 print TMP '$jobsched::abort_check_thread->detach;' . "\n";
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->before();$self->SUPER::start();$self->after();return $self;}' . "\n";
@@ -51,6 +50,7 @@ print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after}
 
 #print TMP 'return 0;' . "\n";
 close ( TMP );
+close ( USER );
 
 chmod 0755, $savefile or die "Can't chmod $savefile\n";
 my $exitcode = system("perl $savefile");
