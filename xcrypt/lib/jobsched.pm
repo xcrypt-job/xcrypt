@@ -333,8 +333,7 @@ sub invoke_watch_by_socket {
         bind (CLIENT_WAITING, pack_sockaddr_in ($inventory_port, inet_aton($inventory_host)))
             or die "Can't bind socket. $!";
         listen (CLIENT_WAITING, SOMAXCONN)
-            or die "listen: $!";        
-
+            or die "listen: $!";
         while (1) {
             my $paddr = accept (CLIENT, CLIENT_WAITING);
             my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
@@ -396,6 +395,7 @@ sub handle_inventory {
     } elsif ($line =~ /^time_qsub\:\s*([0-9]*)/) {   # qsub成功
         set_job_qsub ($last_jobname, $1);
     } elsif ($line =~ /^time_start\:\s*([0-9]*)/) {   # プログラム開始
+        wait_job_qsub ($last_jobname);
         set_job_start ($last_jobname, $1);
     } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
         set_job_done ($last_jobname, $1);
@@ -573,7 +573,7 @@ sub wait_job_status {
 }
 sub wait_job_active { wait_job_status ($_[0], "active"); }
 sub wait_job_submit { wait_job_status ($_[0], "submit"); }
-# sub wait_job_qsub   { wait_job_status ($_[0], "qsub"); }
+sub wait_job_qsub   { wait_job_status ($_[0], "qsub"); }
 sub wait_job_start  { wait_job_status ($_[0], "start"); }
 sub wait_job_done   { wait_job_status ($_[0], "done"); }
 sub wait_job_abort  { wait_job_status ($_[0], "abort"); }
