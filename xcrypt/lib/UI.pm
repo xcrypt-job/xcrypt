@@ -2,7 +2,6 @@ package UI;
 
 use strict;
 use File::Copy;
-use function;
 
 use base qw(Exporter);
 our @EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
