@@ -6,10 +6,10 @@ $separator = '-';
 
 %xyz = (
     'id' => 'job7',
-    'exe' => './fib.pl',
+    'exe' => './fib',
     'arg0' => '20',
 #    'copieddir0' => '.',
-    'linkedfile0' => 'fib.pl',
+    'linkedfile0' => 'fib',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

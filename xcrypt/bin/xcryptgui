@@ -2,6 +2,7 @@
 
 use Tk;
 use Tk::Tiler;
+use Tk::TList;
 
 my $mainwindow = MainWindow->new( -title => 'Xcrypt' );
 $mainwindow->geometry( '1000x1000' );
@@ -38,22 +39,18 @@ $file = $menu->Menu();
 $menu->entryconfigure( 'File', -menu => $file );
 
 foreach (0..$max) {
-    my $button = $buttonnames[$_];
-    my $label = $labelnames[$_];
+    my $button = $mainwindow->Button();
+    $button->configure( -text => $buttonnames[$_], -command => [\&fun, $_] );
+    $button->place( -relx => 0,              -relwidth  => 0.2,
+		    -rely => ($_ * $height), -relheight => $height );
+    $file->add( 'command', -label => "$buttonnames[$_]", -command => [\&fun, $_] );
 
-    my $buttonname = 'button' . $_;
-    eval "our \$$buttonname = \$mainwindow->Button();";
-    ${$buttonname}->configure( -text => $button, -command => [\&fun, $_] );
-    ${$buttonname}->place( -relx => 0,              -relwidth  => 0.2,
-			   -rely => ($_ * $height), -relheight => $height );
+    my $frame = $mainwindow->Frame();
+    $frame->place( -relx => ($_ * $width), -relwidth  => $width,
+		   -rely => 0.15,          -relheight => 0.85    );
 
     my $buffername = 'buffer' . $_;
     eval "our \$$buffername = \'\';";
-
-    my $framename = 'frame' . $_;
-    eval "our \$$framename = \$mainwindow->Frame();";
-    ${$framename}->place( -relx => ($_ * $width), -relwidth  => $width,
-			  -rely => 0.15,          -relheight => 0.85    );
 
     my $labelname = 'label' . $_ ;
     eval "our \$$labelname = \$mainwindow->Label();";
@@ -62,25 +59,44 @@ foreach (0..$max) {
 			  -rely => ($_ * $height), -relheight => $height );
 
     my $sublabel = 'sublabel' . $_;
-    eval "our \$$sublabel = \$$framename->Label();";
-    ${$sublabel}->configure( -text => $label );
+    eval "our \$$sublabel = \$frame->Label();";
+    ${$sublabel}->configure( -text => "$labelnames[$_]" );
     ${$sublabel}->pack( -fill => 'both' );
 
     my $text = 'text' . $_;
-    eval "our \$$text = \$$framename->Scrolled( \'Text\' );";
+    eval "our \$$text = \$frame->Scrolled( \'Text\' );";
     ${$text}->configure( -font => [$fontlist[0], $fontsize, 'normal'],
 			-background => 'white',
 			-scrollbars => 'se',
 			-wrap => 'none' );
     ${$text}->pack( -fill => 'both', -expand => 'true' );
-
-    $file->add( 'command', -label => "$button", -command => [\&fun, $_] );
 }
 
 $file->add( 'separator' );
 $file->add( 'command', -label => 'Exit', -command => \&exit );
 
 sub fun { eval "fun$_[0];"; }
+
+sub hoge {
+    my @index = $_[0]->curselection();
+    unless (@index eq ()) {
+	foreach (@index) {
+	    my $job = $_[0]->get($_);
+	    $eof2 = 0;
+	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
+	    $mainwindow->fileevent( \*PIPE2, 'readable',
+				    [\&connect, 'text2', 'PIPE2', 'eof2'] );
+
+	    $mainwindow->waitVariable(\$eof2);
+	    $mainwindow->fileevent( \*PIPE2, 'readable' => '' );
+	    close PIPE2;
+
+	    $toplevel2->destroy();
+
+	    $buffer2 = "xcryptdel $job";
+	}
+    }
+}
 
 sub fun2 {
     unless ( Exists( $toplevel2 ) ) {
@@ -91,27 +107,7 @@ sub fun2 {
 	$listbox->pack( -side => 'left' );
 
 	my $button0 = $toplevel2->Button( -text => 'OK',
-					  -command => sub {
-my @index = $listbox->curselection();
-unless (@index eq ()) {
-    foreach (@index) {
-	my $job = $listbox->get($_);
-	$eof2 = 0;
-	open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	$mainwindow->fileevent( \*PIPE2, 'readable',
-				[\&connect, 'text2', 'PIPE2', 'eof2'] );
-
-	$mainwindow->waitVariable(\$eof2);
-	$mainwindow->fileevent( \*PIPE2, 'readable' => '' );
-	close PIPE2;
-
-	$toplevel2->destroy();
-
-	$buffer2 = "xcryptdel $job";
-    }
-}
-					 });
-
+					  -command => [\&hoge, $listbox] );
 	$button0->pack( -fill => 'x' );
 
 	my $button1 = $toplevel2->Button( -text => 'Cancel',
@@ -121,7 +117,10 @@ unless (@index eq ()) {
 	open( ID, '< inv_watch/.request_ids' );
 	my @reqid_jobids = split( / /, <ID> );
 	my %hash = @reqid_jobids;
-	my @jobids = values(%hash);
+	my %count;
+	my @vals = values(%hash);
+	@vals = grep(!$count{$_}++, @vals);
+	my @jobids = sort @vals;
 	foreach (@jobids) {
 	    $listbox->insert('end', $_);
 	    $listbox->yview('end');
@@ -201,17 +200,27 @@ $tool->add( 'command', -label => 'Clean',
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 my $tiler0;
+my $button0_m;
+my $button1_m;
 sub monitoring {
 
     if ( Exists( $tiler0 ) ) { $tiler0->destroy; }
+    if ( Exists( $button0_m ) ) { $button0_m->destroy; }
+    if ( Exists( $button1_m ) ) { $button1_m->destroy; }
 
-    $tiler0 = $toplevel3->Scrolled( 'Tiler', -scrollbars => 'e',
-				    -columns => 10,
-				    -rows => 5 );
+    $tiler0 = $toplevel3->Scrolled( 'TList',
+				    -font => [$fontlist[0], $fontsize, 'bold'],
+				    -background => 'white',
+				    -scrollbars => 'e',
+				    -orient => 'horizontal'
+	);
 
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
-    my @jobids = sort values(%reqid_jobids);
+    my %count;
+    my @vals = values(%reqid_jobids);
+    @vals = grep(!$count{$_}++, @vals);
+    my @jobids = sort @vals;
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
 		      'abort' => 'red',
@@ -220,6 +229,7 @@ sub monitoring {
 		      'submitted' => 'yellow',
 		      'queued' => 'yellow',
 		      'runnning' => 'yellow',
+		      'start' => 'yellow',
 		      'qsub' => 'yellow',
 		      'active' => 'yellow' );
 
@@ -232,27 +242,45 @@ sub monitoring {
 	    }
 	}
 	close( JOB );
-	push @labels, $tiler0->Label( -text => $_,
-				      -relief => 'raised',
-				      -borderwidth => '2',
-				      -background => $jobcolors{$status} );
+	my $button = $tiler0->Button( -text => $_,
+				      -background => $jobcolors{$status},
+				      -command => [\&hage, $_]
+	    );
+	$tiler0->insert('end',
+			-itemtype => 'window',
+			-window => $button
+	    );
     }
-    $tiler0->Manage(@labels);
-    $tiler0->pack( -expand => 'yes', -fill => 'both' );
+    $tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+
+    $button0_m = $toplevel3->Button( -text => 'Reload',
+				     -command => \&monitoring );
+    $button0_m->pack( -fill => 'x' );
+
+    $button1_m = $toplevel3->Button( -text => 'Close',
+				     -command => ['destroy', $toplevel3] );
+    $button1_m->pack( -fill => 'x' );
+}
+
+sub hage {
+    my $job = $_[0];
+    $eof2 = 0;
+    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
+    $mainwindow->fileevent( \*PIPE2, 'readable',
+			    [\&connect, 'text2', 'PIPE2', 'eof2'] );
+
+    $mainwindow->waitVariable(\$eof2);
+    $mainwindow->fileevent( \*PIPE2, 'readable' => '' );
+    close PIPE2;
+
+    $buffer2 = "xcryptdel $job";
 }
 
 sub monitor {
     unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
-
-	my $button1 = $toplevel3->Button( -text => 'Close',
-					  -command => ['destroy', $toplevel3] );
-	$button1->pack( -expand => 'yes', -fill => 'both', -side => 'right' );
-
-	my $button0 = $toplevel3->Button( -text => 'Reload',
-					  -command => \&monitoring );
-	$button0->pack( -expand => 'yes', -fill => 'both', -side => 'right' );
-
+	$toplevel3->geometry( '600x600' );
+	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
 	&monitoring();
     }
 }
