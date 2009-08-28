@@ -226,14 +226,10 @@ sub monitoring {
     my @jobids = sort @vals;
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
-		      'abort' => 'red',
 		      'aborted' => 'red',
 		      'active' => 'yellow',
-		      'submit' => 'yellow',
 		      'submitted' => 'yellow',
-		      'qsub' => 'yellow',
 		      'queued' => 'yellow',
-		      'start' => 'yellow',
 		      'runnning' => 'yellow'
 	);
 
