@@ -84,7 +84,7 @@ sub any_to_string {
     } elsif ( $r eq 'SCALAR' ) {
         return $$x . join(' ', @args);
     } else {
-        die "any_to_string: Unexpected referene $r";
+        die "any_to_string: Unexpected reference $r";
     }
 }
 sub any_to_string_nl  { any_to_string ("\n", @_); }
@@ -100,7 +100,7 @@ sub cmd_executable {
 }
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
-# ジョブスケジューラ（NQSであるかSGEであるか）によって吐くものが違う
+# ジョブスケジューラによって吐くものが違う
 sub qsub {
     my $self = shift;
 
