@@ -93,7 +93,7 @@ sub start {
     sleep(3);
 
     my $pwdstdo = File::Spec->catfile($self->{id}, $stdofile);
-    until ( (-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'abort')  ) {
+    until ( (-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'aborted')  ) {
 	sleep 1;
     }
 

@@ -24,7 +24,6 @@ my $status = $ARGV[3];
 
 my $retry = 1;
 
-# if ($status ne 'qsub' ) {
 while ($retry) {
     my $socket = 0;
     my $n_trial = 0;

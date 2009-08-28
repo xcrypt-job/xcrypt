@@ -208,10 +208,10 @@ sub get_inventory_files_status {
             }
         }
         close (CHECK_FILE);
-        if ($check_status ne 'done' and $check_status ne 'abort' and $check_status ne 'undo' and $check_status ne '') {
+        if ($check_status ne 'done' and $check_status ne 'aborted' and $check_status ne 'undo' and $check_status ne '') {
             $check_return = 1;
         } elsif (! defined( $check_status_kbn)) {
-            if ($check_status eq 'done' or $check_status eq 'abort') {
+            if ($check_status eq 'done' or $check_status eq 'aborted') {
                 $check_status_kbn = 1;
             } else {
                 $check_status_kbn = 2;
@@ -272,11 +272,11 @@ sub check_diff {
             } elsif (/^time\_.*\:\s*(.+)/){
                 push(@check_data , $_);
             }
-            if ($check_status eq 'start' and $option_i eq 'all') {
+            if ($check_status eq 'running' and $option_i eq 'all') {
                 if (/^hostname\:\s*(.+)/){
                     push(@check_data , $_);
                 }
-            } elsif ($check_status eq 'submit' and $option_i eq 'all') {
+            } elsif ($check_status eq 'submitted' and $option_i eq 'all') {
                 if (/^command\:\s*(.+)/){
                     push(@check_data , $_);
                 } elsif (/^workdir\:\s*(.+)/){
@@ -337,7 +337,7 @@ sub check_diff {
         close (CEHCK_FILE);
         # æ Û√ﬂ¿—
         if ($check_status eq 'done' or
-            $check_status eq 'abort' or
+            $check_status eq 'aborted' or
             $option_e eq 'all') {
             push(@stdout_data , $check_spec);
             push(@stdout_data , "status: $check_status\n");
