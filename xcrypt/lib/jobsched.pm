@@ -356,7 +356,7 @@ sub invoke_watch_by_socket {
                 # print STDERR "sent :ack\n";
             } else {
                 print CLIENT ":failed\n";
-                print STDERR "sent :failed\n";
+                # print STDERR "sent :failed\n";
             }
             close (CLIENT);
         }
