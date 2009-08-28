@@ -229,6 +229,7 @@ sub monitoring {
 		      'submitted' => 'yellow',
 		      'queued' => 'yellow',
 		      'runnning' => 'yellow',
+		      'start' => 'yellow',
 		      'qsub' => 'yellow',
 		      'active' => 'yellow' );
 
@@ -244,14 +245,12 @@ sub monitoring {
 	my $button = $tiler0->Button( -text => $_,
 				      -background => $jobcolors{$status},
 				      -command => [\&hage, $_]
-#				      -command => [sub {print "$_[0] \n";}, $_]
 	    );
 	$tiler0->insert('end',
 			-itemtype => 'window',
 			-window => $button
 	    );
     }
-#    $tiler0->Manage(@labels);
     $tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
 
     $button0_m = $toplevel3->Button( -text => 'Reload',
