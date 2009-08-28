@@ -62,8 +62,8 @@ our %job_status : shared;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
-my %status_level = ("active"=>0, "submit"=>1, "qsub"=>2, "start"=>3, "done"=>4, "abort"=>5);
-# "start"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
+my %status_level = ("active"=>0, "submitted"=>1, "queued"=>2, "running"=>3, "done"=>4, "aborted"=>5);
+# "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared;
 our $abort_check_thread=undef;
 
@@ -173,15 +173,15 @@ sub qsub {
         : $ENV{'PWD'};
     print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
 
-    # Set job's status "start"
-    print SCRIPT inventory_write_cmdline($job_name, "start") . " || exit 1\n";
+    # Set job's status "running"
+    print SCRIPT inventory_write_cmdline($job_name, "running") . " || exit 1\n";
 
     # Execute a program
     my @args = ();
     for ( my $i = 0; $i <= $user::max; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
-    # 正常終了でなければ "abort" を書き込むべき？
+    # 正常終了でなければ "aborted" を書き込むべき？
 
     # Set job's status "exit"
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
@@ -199,8 +199,8 @@ sub qsub {
     }
     ### --> Create qsub options -->
 
-    # Set job's status "submit"
-    inventory_write ($job_name, "submit");
+    # Set job's status "submitted"
+    inventory_write ($job_name, "submitted");
 
     my $qsub_command = $jobsched_config{$jobsched}{qsub_command};
     unless ( defined $qsub_command ) {
@@ -228,7 +228,7 @@ sub qsub {
         print REQUESTIDS $req_id . ' ' . $dir . ' ';
         close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
-        inventory_write ($job_name, "qsub");
+        inventory_write ($job_name, "queued");
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -387,34 +387,34 @@ sub handle_inventory {
         $last_jobname = $1;
 #     } elsif ($line =~ /^status\:\s*active/) {   # ジョブ実行予定
 #         set_job_active ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*submit/) {   # ジョブ投入直前
-#         set_job_submit ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-# #     } elsif ($line =~ /^status\:\s*qsub/) {     # qsub成功
-# #         set_job_qsub ($last_jobname);   # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*start/) {    # プログラム開始
-#         set_job_start ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+#     } elsif ($line =~ /^status\:\s*submitted/) {   # ジョブ投入直前
+#         set_job_submitted ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+# #     } elsif ($line =~ /^status\:\s*queued/) {     # qsub成功
+# #         set_job_queued ($last_jobname);   # ジョブ状態ハッシュを更新（＆通知）
+#     } elsif ($line =~ /^status\:\s*running/) {    # プログラム開始
+#         set_job_running ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
 #     } elsif ($line =~ /^status\:\s*done/) {     # プログラムの終了（正常）
 #         set_job_done ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*abort/) {    # ジョブの終了（正常以外）
-#         set_job_abort ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-    ## ↑から変更： "time_submit: <更新時刻>"  の行を見るようにした
+#     } elsif ($line =~ /^status\:\s*aborted/) {    # ジョブの終了（正常以外）
+#         set_job_aborted ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
+    ## ↑から変更： "time_submitted: <更新時刻>"  の行を見るようにした
     ## inventory_watch は同じ更新情報を何度も出力するので，
     ## 最後の更新より古い情報は無視する
     ## 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
     } elsif ($line =~ /^time_active\:\s*([0-9]*)/) {   # ジョブ実行予定
         set_job_active ($last_jobname, $1);
         $ret = 1;
-    } elsif ($line =~ /^time_submit\:\s*([0-9]*)/) {   # ジョブ投入直前
-        set_job_submit ($last_jobname, $1);
+    } elsif ($line =~ /^time_submitted\:\s*([0-9]*)/) {   # ジョブ投入直前
+        set_job_submitted ($last_jobname, $1);
         $ret = 1;
-    } elsif ($line =~ /^time_qsub\:\s*([0-9]*)/) {   # qsub成功
-        set_job_qsub ($last_jobname, $1);
+    } elsif ($line =~ /^time_queued\:\s*([0-9]*)/) {   # qsub成功
+        set_job_queued ($last_jobname, $1);
         $ret = 1;
-    } elsif ($line =~ /^time_start\:\s*([0-9]*)/) {   # プログラム開始
-        # まだqsubになっていなければ書き込まず，0を返す
+    } elsif ($line =~ /^time_running\:\s*([0-9]*)/) {   # プログラム開始
+        # まだqueuedになっていなければ書き込まず，0を返す
         # ここでwaitしないのはデッドロック防止のため
-        if ( get_job_status ($last_jobname) eq "qsub" ) {
-            set_job_start ($last_jobname, $1);
+        if ( get_job_status ($last_jobname) eq "queued" ) {
+            set_job_running ($last_jobname, $1);
             $ret = 1;
         } else {
             $ret = -1;
@@ -422,8 +422,8 @@ sub handle_inventory {
     } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
         set_job_done ($last_jobname, $1);
         $ret = 1;
-    } elsif ($line =~ /^time_abort\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
-        set_job_abort ($last_jobname, $1);
+    } elsif ($line =~ /^time_aborted\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
+        set_job_aborted ($last_jobname, $1);
         $ret = 1;
     } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
         # とりあえず何もなし
@@ -507,7 +507,7 @@ sub set_job_status {
         cond_broadcast (%job_status);
     }
     # 実行中ジョブ一覧に登録／削除
-    if ( $stat eq "qsub" || $stat eq "start" ) {
+    if ( $stat eq "queued" || $stat eq "running" ) {
         entry_running_job ($jobname);
     } else {
         delete_running_job ($jobname);
@@ -515,39 +515,39 @@ sub set_job_status {
 }
 sub set_job_active  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "active", "done", "abort") ) {
+    if ( do_set_p ($jobname, $tim, "active", "done", "aborted") ) {
         set_job_status ($jobname, "active", $tim);
     }
 }
-sub set_job_submit {
+sub set_job_submitted {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "submit", "active", "done", "abort") ) {
-        set_job_status ($jobname, "submit", $tim);
+    if ( do_set_p ($jobname, $tim, "submitted", "active", "done", "aborted") ) {
+        set_job_status ($jobname, "submitted", $tim);
     }
 }
-sub set_job_qsub {
+sub set_job_queued {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "qsub", "submit" ) ) {
-        set_job_status ($_[0], "qsub", $tim);
+    if ( do_set_p ($jobname, $tim, "queued", "submitted" ) ) {
+        set_job_status ($_[0], "queued", $tim);
     }
 }
-sub set_job_start  {
+sub set_job_running  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "start", "qsub" ) ) {
-        set_job_status ($jobname, "start", $tim);
+    if ( do_set_p ($jobname, $tim, "running", "queued" ) ) {
+        set_job_status ($jobname, "running", $tim);
     }
 }
 sub set_job_done   {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "done", "start" ) ) {
+    if ( do_set_p ($jobname, $tim, "done", "running" ) ) {
         set_job_status ($jobname, "done", $tim);
     }
 }
-sub set_job_abort  {
+sub set_job_aborted  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "abort", "submit", "qsub", "start" )
+    if ( do_set_p ($jobname, $tim, "aborted", "submitted", "queued", "running" )
          && get_job_status ($jobname) ne "done" ) {
-        set_job_status ($jobname, "abort", $tim);
+        set_job_status ($jobname, "aborted", $tim);
     }
 }
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
@@ -597,11 +597,11 @@ sub wait_job_status {
     # print "$jobname: exit wait_job_status\n";
 }
 sub wait_job_active { wait_job_status ($_[0], "active"); }
-sub wait_job_submit { wait_job_status ($_[0], "submit"); }
-sub wait_job_qsub   { wait_job_status ($_[0], "qsub"); }
-sub wait_job_start  { wait_job_status ($_[0], "start"); }
+sub wait_job_submitted { wait_job_status ($_[0], "submitted"); }
+sub wait_job_queued   { wait_job_status ($_[0], "queued"); }
+sub wait_job_running  { wait_job_status ($_[0], "running"); }
 sub wait_job_done   { wait_job_status ($_[0], "done"); }
-sub wait_job_abort  { wait_job_status ($_[0], "abort"); }
+sub wait_job_aborted  { wait_job_status ($_[0], "aborted"); }
 
 # すべてのジョブの状態を出力（デバッグ用）
 sub print_all_job_status {
@@ -612,7 +612,7 @@ sub print_all_job_status {
 }
 
 ##################################################
-# "start"なジョブ一覧の更新
+# "running"なジョブ一覧の更新
 sub entry_running_job {
     my ($jobname) = @_;
     my $req_id = get_job_request_id ($jobname);
@@ -629,20 +629,20 @@ sub delete_running_job {
     }
 }
 
-# running_jobsのジョブがabortになってないかチェック
-# 状態が"start"にもかかわらず，qstatで当該ジョブが出力されないものを
-# abortとみなす．
-# abortと思われるものはinventory_write("abort")する
+# running_jobsのジョブがabortedになってないかチェック
+# 状態が"running"にもかかわらず，qstatで当該ジョブが出力されないものを
+# abortedとみなす．
+# abortedと思われるものはinventory_write("aborted")する
 ### Note:
 # ジョブ終了後（done書き込みはスクリプト内なので終わっているはず．
 # ただし，NFSのコンシステンシ戦略によっては危ないかも）
 # inventory_watchからdone書き込みの通知がXcryptに届くまでの間に
-# abort_checkが入ると，abortを書き込んでしまう．
-# ただし，書き込みはdone→abortの順であり，set_job_statusもその順
+# abort_checkが入ると，abortedを書き込んでしまう．
+# ただし，書き込みはdone→abortedの順であり，set_job_statusもその順
 # なのでおそらく問題ない．
-# doneなジョブの状態はabortに変更できないようにすべき？
-# →とりあえずそうしている（ref. set_job_abort）
-sub check_and_write_abort {
+# doneなジョブの状態はabortedに変更できないようにすべき？
+# →とりあえずそうしている（ref. set_job_aborted）
+sub check_and_write_aborted {
     my %unchecked;
     {
         my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
@@ -662,18 +662,18 @@ sub check_and_write_abort {
             lock (%running_jobs);
             %unchecked = %running_jobs;
         }
-        print "check_and_write_abort:\n";
+        print "check_and_write_aborted:\n";
         # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
         # print "\n";
         my @qstat_out = qx/$qstat_command/;
         my @ids = &$qstat_extractor(@qstat_out);
         foreach (@ids) { delete ($unchecked{$_}); }
     }
-    # "abort"をインベントリファイルに書き込み
+    # "aborted"をインベントリファイルに書き込み
     foreach my $req_id ( keys %unchecked ){
         if ( exists $running_jobs{$req_id} ) {
-            print STDERR "abort: $req_id: " . $unchecked{$req_id} . "\n";
-            inventory_write ($unchecked{$req_id}, "abort");
+            print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
+            inventory_write ($unchecked{$req_id}, "aborted");
         }
     }
 }
@@ -704,7 +704,7 @@ sub invoke_abort_check {
     $abort_check_thread = threads->new( sub {
         while (1) {
             sleep 19;
-            check_and_write_abort();
+            check_and_write_aborted();
             # print_all_job_status();
         }
     });

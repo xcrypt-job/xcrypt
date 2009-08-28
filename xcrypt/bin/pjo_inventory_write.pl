@@ -64,8 +64,8 @@ sub check_cmdline {
 #   ＜＜ Put_inventory_update(Inventoryファイル出力)の定義 ＞＞                #
 #------------------------------------------------------------------------------#
 sub Put_inventory_update {
-    if ($inventory_status ne 'qsub' and
-        $inventory_status ne 'abort') {
+    if ($inventory_status ne 'queued' and
+        $inventory_status ne 'aborted') {
                 # ロックファイル存在確認(削除されるまで待つ)
         if (-e "${inventory_dir}/${inventory_lock_dir}/${inventory_name}") {
             my $check_lock_fkg = 0;
@@ -102,7 +102,7 @@ sub Put_inventory_update {
     flock(INVENTORY_FILE, 2);
         
         # 基本情報の出力
-    if ($inventory_status ne 'qsub') {
+    if ($inventory_status ne 'queued') {
                 # statusの出力
         print INVENTORY_FILE "status: $inventory_status\n";
                 # 年月日時分秒を取得
@@ -130,8 +130,8 @@ sub Put_inventory_update {
         }
     }
         # ロックファイル削除
-    if ($inventory_status eq 'qsub' or
-        $inventory_status eq 'abort') {
+    if ($inventory_status eq 'queued' or
+        $inventory_status eq 'aborted') {
         if (-e "${inventory_dir}/${inventory_lock_dir}/${inventory_name}") {
             unlink "${inventory_dir}/${inventory_lock_dir}/${inventory_name}";
         }
