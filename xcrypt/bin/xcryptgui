@@ -238,8 +238,9 @@ sub monitoring {
 				    -background => $jobcolors{$status},
 	    );
 	$tiler0->insert('end',
-			-itemtype => 'window',
-			-window => $label
+#			-itemtype => 'window',
+#			-window => $label
+-text => $_
 	    );
     }
 }
