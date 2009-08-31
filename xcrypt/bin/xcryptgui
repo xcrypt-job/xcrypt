@@ -20,23 +20,23 @@ foreach ('*Button.font', '*Label.font') {
 
 our ($eof0, $eof2);
 
-my $yellow = $mainwindow->ItemStyle('text',
-				    -padx => 10,
-				    -font => [$fontlist[0],
-					      $fontsize,
-					      'bold'] );
-my $red    = $mainwindow->ItemStyle('text', -foreground => 'red',
-				    -padx => 10,
-				    -selectbackground => 'red',
-				    -font => [$fontlist[0],
-					      $fontsize,
-					      'bold'] );
-my $green  = $mainwindow->ItemStyle('text', -foreground => 'green',
-				    -padx => 10,
-				    -selectbackground => 'green',
-				    -font => [$fontlist[0],
-					      $fontsize,
-					      'bold'] );
+my $black = $mainwindow->ItemStyle('text',
+				   -padx => 10,
+				   -font => [$fontlist[0],
+					     $fontsize,
+					     'bold'] );
+my $red   = $mainwindow->ItemStyle('text', -foreground => 'red',
+				   -padx => 10,
+				   -selectbackground => 'red',
+				   -font => [$fontlist[0],
+					     $fontsize,
+					     'bold'] );
+my $green = $mainwindow->ItemStyle('text', -foreground => 'green',
+				   -padx => 10,
+				   -selectbackground => 'green',
+				   -font => [$fontlist[0],
+					     $fontsize,
+					     'bold'] );
 
 my $toplevel2;
 my $toplevel3;
@@ -55,7 +55,7 @@ sub connect {
     my($stat, $data);
     $stat = sysread $pipe, $data, 4096;
     die "sysread error:  $!" unless defined $stat;
-    if (($data =~ / abort$/) || ($data =~ / aborted$/)) {
+    if ($data =~ / aborted$/) {
 	$text2->insert('end', $data);
     }
     ${$widget}->insert('end', $data);
@@ -221,8 +221,6 @@ $tool->add( 'command', -label => 'Clean',
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 sub monitoring {
-#    lock($tiler0);
-
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
     my %count;
@@ -233,15 +231,11 @@ sub monitoring {
 
 
     my %jobcolors = ( 'done'      => $green,
-		      'abort'     => $red,
 		      'aborted'   => $red,
-		      'active'    => $yellow,
-		      'submit'    => $yellow,
-		      'submitted' => $yellow,
-		      'qsub'      => $yellow,
-		      'queued'    => $yellow,
-		      'start'     => $yellow,
-		      'running'   => $yellow
+		      'active'    => $black,
+		      'submitted' => $black,
+		      'queued'    => $black,
+		      'running'   => $black
 	);
 
     my $lt = @jobids;
@@ -256,16 +250,6 @@ sub monitoring {
 	    }
 	}
 	close( JOB );
-=comment
-	my $button = $tiler0->Button( -text => $_,
-				      -background => $jobcolors{$status},
-#				      -command => [\&del3, $_]
-	    );
-	my $label = $tiler0->Label( -text => $_,
-#				    -foreground => $jobcolors{$status},
-				    -background => $jobcolors{$status},
-	    );
-=cut
 
 	$tiler0->insert('end',
 			-itemtype => 'text',
@@ -280,7 +264,6 @@ sub monitor {
     unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 	$toplevel3->geometry( '600x600' );
-#	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
 
 	$tiler0 = $toplevel3->Scrolled( 'TList',
 					-font => [$fontlist[0],

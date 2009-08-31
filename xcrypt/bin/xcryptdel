@@ -63,7 +63,8 @@ $temp = <DEL>;
 close (DEL);
 
 system ("$qdel_command $temp");
-system (inventory_write_cmdline($ARGV[0], "abort"));
+#system (inventory_write_cmdline($ARGV[0], "abort"));
+system (inventory_write_cmdline($ARGV[0], "aborted"));
 
 sub inventory_write_cmdline {
     my ($jobname, $stat) = @_;
