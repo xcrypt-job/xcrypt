@@ -21,6 +21,7 @@ our ($eof0, $eof2);
 our $statcount;
 our $toplevel2;
 our $toplevel3;
+our $tiler0;
 
 my @buttonnames = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
 my @labelnames = ('Main', 'Status', 'Aborted');
@@ -202,10 +203,8 @@ $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
-my $tiler0;
-my $button0_m;
-my $button1_m;
 sub monitoring {
+    lock($tiler0);
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
     my %count;
@@ -235,7 +234,7 @@ sub monitoring {
 	close( JOB );
 	my $button = $tiler0->Button( -text => $_,
 				      -background => $jobcolors{$status},
-				      -command => [\&del3, $_]
+#				      -command => [\&del3, $_]
 	    );
 	$tiler0->insert('end',
 			-itemtype => 'window',
@@ -262,7 +261,7 @@ sub monitor {
     unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 	$toplevel3->geometry( '600x600' );
-	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
+#	$toplevel3->Label( -text => 'Click a job-button if you want to kill it')->pack();
 
 	$tiler0 = $toplevel3->Scrolled( 'TList',
 					-font => [$fontlist[0],
@@ -274,12 +273,12 @@ sub monitor {
 
 	$tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
 
-	$button0_m = $toplevel3->Button( -text => 'Reload',
-					 -command => \&monitoring );
+	my $button0_m = $toplevel3->Button( -text => 'Reload',
+					    -command => [\&monitoring] );
 	$button0_m->pack( -fill => 'x' );
 
-	$button1_m = $toplevel3->Button( -text => 'Close',
-					 -command => ['destroy', $toplevel3] );
+	my $button1_m = $toplevel3->Button( -text => 'Close',
+					    -command => ['destroy', $toplevel3] );
 	$button1_m->pack( -fill => 'x' );
 
 	&monitoring();
