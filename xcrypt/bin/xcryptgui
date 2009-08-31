@@ -3,6 +3,7 @@
 #use strict;
 use Tk;
 use Tk::TList;
+use Tk::ItemStyle;
 
 my $mainwindow = MainWindow->new( -title => 'Xcrypt' );
 $mainwindow->geometry( '1000x1000' );
@@ -18,6 +19,24 @@ foreach ('*Button.font', '*Label.font') {
 }
 
 our ($eof0, $eof2);
+
+my $yellow = $mainwindow->ItemStyle('text',
+				    -padx => 10,
+				    -font => [$fontlist[0],
+					      $fontsize,
+					      'bold'] );
+my $red    = $mainwindow->ItemStyle('text', -foreground => 'red',
+				    -padx => 10,
+				    -selectbackground => 'red',
+				    -font => [$fontlist[0],
+					      $fontsize,
+					      'bold'] );
+my $green  = $mainwindow->ItemStyle('text', -foreground => 'green',
+				    -padx => 10,
+				    -selectbackground => 'green',
+				    -font => [$fontlist[0],
+					      $fontsize,
+					      'bold'] );
 
 my $toplevel2;
 my $toplevel3;
@@ -36,7 +55,9 @@ sub connect {
     my($stat, $data);
     $stat = sysread $pipe, $data, 4096;
     die "sysread error:  $!" unless defined $stat;
-    if ($data =~ / abort$/) { $text2->insert('end', $data); }
+    if (($data =~ / abort$/) || ($data =~ / aborted$/)) {
+	$text2->insert('end', $data);
+    }
     ${$widget}->insert('end', $data);
     ${$widget}->yview('end');
 
@@ -201,6 +222,7 @@ $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 sub monitoring {
 #    lock($tiler0);
+
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
     my %count;
@@ -208,13 +230,18 @@ sub monitoring {
     @vals = grep(!$count{$_}++, @vals);
     my @jobids = sort @vals;
     close( REQ );
-    my %jobcolors = ( 'done' => 'green',
-		      'abort' => 'red',
-		      'aborted' => 'red',
-		      'active' => 'yellow',
-		      'submitted' => 'yellow',
-		      'queued' => 'yellow',
-		      'running' => 'yellow'
+
+
+    my %jobcolors = ( 'done'      => $green,
+		      'abort'     => $red,
+		      'aborted'   => $red,
+		      'active'    => $yellow,
+		      'submit'    => $yellow,
+		      'submitted' => $yellow,
+		      'qsub'      => $yellow,
+		      'queued'    => $yellow,
+		      'start'     => $yellow,
+		      'running'   => $yellow
 	);
 
     my $lt = @jobids;
@@ -229,6 +256,7 @@ sub monitoring {
 	    }
 	}
 	close( JOB );
+=comment
 	my $button = $tiler0->Button( -text => $_,
 				      -background => $jobcolors{$status},
 #				      -command => [\&del3, $_]
@@ -237,10 +265,13 @@ sub monitoring {
 #				    -foreground => $jobcolors{$status},
 				    -background => $jobcolors{$status},
 	    );
+=cut
+
 	$tiler0->insert('end',
-#			-itemtype => 'window',
-#			-window => $label
--text => $_
+			-itemtype => 'text',
+			-state => 'normal',
+			-text => $_,
+			-style => $jobcolors{$status}
 	    );
     }
 }
@@ -265,15 +296,14 @@ sub monitor {
 					    -command => [\&monitoring] );
 	$button0_m->pack( -fill => 'x' );
 
-	my $button1_m = $toplevel3->Button( -text => 'Close',
-					    -command => ['destroy', $toplevel3] );
-	$button1_m->pack( -fill => 'x' );
-
 	my $button2_m = $toplevel3->Button( -text => 'Delete',
-#					    -command => [\&del3, $tiler0->curselection] );
-#					    -command => sub { print $tiler0->infoSelection(); } );
 					    -command => [\&del3, $tiler0] );
 	$button2_m->pack( -fill => 'x' );
+
+	my $button1_m = $toplevel3->Button( -text => 'Close',
+					    -command => ['destroy',
+							 $toplevel3] );
+	$button1_m->pack( -fill => 'x' );
 
 	&monitoring();
     }
