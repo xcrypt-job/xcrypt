@@ -18,18 +18,32 @@ foreach ('*Button.font', '*Label.font') {
 }
 
 our ($eof0, $eof2);
-our $statcount;
-our $toplevel2;
-our $toplevel3;
-our $tiler0;
+
+my $toplevel2;
+my $toplevel3;
+my $tiler0;
 
 my @buttonnames = ('Xcrypt...', 'Xcryptstat', 'Xcryptdel...');
 my @labelnames = ('Main', 'Status', 'Aborted');
 my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
+my $statcount;
 
-our $menu = $mainwindow->Menu();
+sub connect {
+    my ($widget, $pipe, $eof) = @_;
+
+    my($stat, $data);
+    $stat = sysread $pipe, $data, 4096;
+    die "sysread error:  $!" unless defined $stat;
+    if ($data =~ / abort$/) { $text2->insert('end', $data); }
+    ${$widget}->insert('end', $data);
+    ${$widget}->yview('end');
+
+    if ($stat == 0) { ${$eof} = 1; }
+}
+
+my $menu = $mainwindow->Menu();
 $menu->optionAdd( '*Menu.font' => [$fontlist[0], $menufontsize, 'bold'] );
 
 $mainwindow->configure( -menu => $menu );
@@ -38,7 +52,7 @@ $menu->add( 'cascade', -label => 'View' );
 $menu->add( 'cascade', -label => 'Tool' );
 $menu->add( 'cascade', -label => 'Help' );
 
-our $file = $menu->Menu();
+my $file = $menu->Menu();
 $menu->entryconfigure( 'File', -menu => $file );
 
 foreach (0..$max) {
@@ -78,7 +92,62 @@ foreach (0..$max) {
 $file->add( 'separator' );
 $file->add( 'command', -label => 'Exit', -command => \&exit );
 
-sub fun { eval "fun$_[0];"; }
+sub fun {
+    if ($_[0] == 0) {
+	my $filename = $mainwindow->getOpenFile(
+	    -font => [$fontlist[0], $fontsize, 'normal'],
+	    -filetypes => [['Xcrypt Files', ['.xcr']],
+			   ['All Files', ['*']]]);
+	unless ($filename eq '') {
+	    $buffer0 = "xcrypt $filename";
+	    $eof0 = 0;
+	    open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
+	    $mainwindow->fileevent( \*PIPE0, 'readable',
+				    [\&connect, 'text0', 'PIPE0', 'eof0'] );
+
+	    $mainwindow->waitVariable(\$eof0);
+	    $mainwindow->fileevent( \*PIPE0, 'readable' => '' );
+	    close PIPE0;
+	}
+    } elsif ($_[0] == 1) {
+	$statcount = $statcount + 1;
+	$buffer1 = "xcryptstat executed ($statcount times)";
+	open( PIPE1, "xcryptstat|" );
+	while (<PIPE1>) {
+	    $text1->insert('end', $_);
+	    $text1->yview('end');
+	}
+    } elsif ($_[0] == 2) {
+	unless ( Exists( $toplevel2 ) ) {
+	    $toplevel2 = $mainwindow->Toplevel( -title => 'Xcryptdel' );
+	    my $listbox = $toplevel2->Scrolled( 'Listbox',
+						-scrollbars => 'se',
+						-font => [$fontlist[0],
+							  $fontsize, 'bold'] );
+	    $listbox->pack( -side => 'left' );
+
+	    my $button0 = $toplevel2->Button( -text => 'OK',
+					      -command => [\&del2, $listbox] );
+	    $button0->pack( -fill => 'x' );
+
+	    my $button1 = $toplevel2->Button( -text => 'Cancel',
+					      -command => ['destroy', $toplevel2] );
+	    $button1->pack( -fill => 'x' );
+
+	    open( ID, '< inv_watch/.request_ids' );
+	    my @reqid_jobids = split( / /, <ID> );
+	    my %hash = @reqid_jobids;
+	    my %count;
+	    my @vals = values(%hash);
+	    @vals = grep(!$count{$_}++, @vals);
+	    my @jobids = sort @vals;
+	    foreach (@jobids) {
+		$listbox->insert('end', $_);
+		$listbox->yview('end');
+	    }
+	}
+    } else {}
+}
 
 sub del2 {
     my @index = $_[0]->curselection();
@@ -101,83 +170,10 @@ sub del2 {
     }
 }
 
-sub fun2 {
-    unless ( Exists( $toplevel2 ) ) {
-	$toplevel2 = $mainwindow->Toplevel( -title => 'Xcryptdel' );
-	my $listbox = $toplevel2->Scrolled( 'Listbox',
-					    -scrollbars => 'se',
-					    -font => [$fontlist[0],
-						      $fontsize, 'bold'] );
-	$listbox->pack( -side => 'left' );
-
-	my $button0 = $toplevel2->Button( -text => 'OK',
-					  -command => [\&del2, $listbox] );
-	$button0->pack( -fill => 'x' );
-
-	my $button1 = $toplevel2->Button( -text => 'Cancel',
-					  -command => ['destroy', $toplevel2] );
-	$button1->pack( -fill => 'x' );
-
-	open( ID, '< inv_watch/.request_ids' );
-	my @reqid_jobids = split( / /, <ID> );
-	my %hash = @reqid_jobids;
-	my %count;
-	my @vals = values(%hash);
-	@vals = grep(!$count{$_}++, @vals);
-	my @jobids = sort @vals;
-	foreach (@jobids) {
-	    $listbox->insert('end', $_);
-	    $listbox->yview('end');
-	}
-    }
-}
-
-sub fun0 {
-    my $filename = $mainwindow->getOpenFile(
-	-font => [$fontlist[0], $fontsize, 'normal'],
-	-filetypes => [['Xcrypt Files', ['.xcr']],
-		       ['All Files', ['*']]]);
-    unless ($filename eq '') {
-	$buffer0 = "xcrypt $filename";
-	$eof0 = 0;
-	open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
-	$mainwindow->fileevent( \*PIPE0, 'readable',
-				[\&connect, 'text0', 'PIPE0', 'eof0'] );
-
-	$mainwindow->waitVariable(\$eof0);
-	$mainwindow->fileevent( \*PIPE0, 'readable' => '' );
-	close PIPE0;
-    }
-}
-
-sub fun1 {
-    $statcount = $statcount + 1;
-    $buffer1 = "xcryptstat executed ($statcount times)";
-    open( PIPE1, "xcryptstat|" );
-    while (<PIPE1>) {
-	$text1->insert('end', $_);
-	$text1->yview('end');
-    }
-}
-
-
-sub connect {
-    my ($widget, $pipe, $eof) = @_;
-
-    my($stat, $data);
-    $stat = sysread $pipe, $data, 4096;
-    die "sysread error:  $!" unless defined $stat;
-    if ($data =~ / abort$/) { $text2->insert('end', $data); }
-    ${$widget}->insert('end', $data);
-    ${$widget}->yview('end');
-
-    if ($stat == 0) { ${$eof} = 1; }
-}
-
-our $view = $menu->Menu();
+my $view = $menu->Menu();
 $menu->entryconfigure( 'View', -menu => $view );
 $view->add( 'cascade', -label => 'Size' );
-our $size = $view->Menu();
+my $size = $view->Menu();
 $view->entryconfigure( 'Size', -menu => $size );
 foreach (8..24) {
     $size->add( 'command', -label => $_, -command => [\&sizechange, $_] );
@@ -197,14 +193,14 @@ sub sizechange {
     }
 }
 
-our $tool = $menu->Menu();
+my $tool = $menu->Menu();
 $menu->entryconfigure( 'Tool', -menu => $tool );
 $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 sub monitoring {
-    lock($tiler0);
+#    lock($tiler0);
     open( REQ, '< inv_watch/.request_ids' );
     my %reqid_jobids = split(' ', <REQ>);
     my %count;
@@ -213,6 +209,7 @@ sub monitoring {
     my @jobids = sort @vals;
     close( REQ );
     my %jobcolors = ( 'done' => 'green',
+		      'abort' => 'red',
 		      'aborted' => 'red',
 		      'active' => 'yellow',
 		      'submitted' => 'yellow',
@@ -236,25 +233,15 @@ sub monitoring {
 				      -background => $jobcolors{$status},
 #				      -command => [\&del3, $_]
 	    );
+	my $label = $tiler0->Label( -text => $_,
+#				    -foreground => $jobcolors{$status},
+				    -background => $jobcolors{$status},
+	    );
 	$tiler0->insert('end',
 			-itemtype => 'window',
-			-window => $button
+			-window => $label
 	    );
     }
-}
-
-sub del3 {
-    my $job = $_[0];
-    $eof2 = 0;
-    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-    $mainwindow->fileevent( \*PIPE2, 'readable',
-			    [\&connect, 'text2', 'PIPE2', 'eof2'] );
-
-    $mainwindow->waitVariable(\$eof2);
-    $mainwindow->fileevent( \*PIPE2, 'readable' => '' );
-    close PIPE2;
-
-    $buffer2 = "xcryptdel $job";
 }
 
 sub monitor {
@@ -281,12 +268,47 @@ sub monitor {
 					    -command => ['destroy', $toplevel3] );
 	$button1_m->pack( -fill => 'x' );
 
+	my $button2_m = $toplevel3->Button( -text => 'Delete',
+#					    -command => [\&del3, $tiler0->curselection] );
+#					    -command => sub { print $tiler0->infoSelection(); } );
+					    -command => [\&del3, $tiler0] );
+	$button2_m->pack( -fill => 'x' );
+
 	&monitoring();
     }
 }
 
-our $help = $menu->Menu();
+sub del3 {
+    if (defined $_[0]) {
+	open( REQ, '< inv_watch/.request_ids' );
+	my %reqid_jobids = split(' ', <REQ>);
+	my %count;
+	my @vals = values(%reqid_jobids);
+	@vals = grep(!$count{$_}++, @vals);
+	my @jobids = sort @vals;
+	close( REQ );
+
+#	print $_[0]->infoSelection() , "\n";
+	my @hoge = $_[0]->infoSelection();
+	my $job = $jobids[$hoge[0]];
+	$eof2 = 0;
+	open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
+	$mainwindow->fileevent( \*PIPE2, 'readable',
+				[\&connect, 'text2', 'PIPE2', 'eof2'] );
+
+	$mainwindow->waitVariable(\$eof2);
+	$mainwindow->fileevent( \*PIPE2, 'readable' => '' );
+	close PIPE2;
+
+	$buffer2 = "xcryptdel $job";
+    }
+}
+
+my $help = $menu->Menu();
 $menu->entryconfigure( 'Help', -menu => $help );
-$help->add( 'command', -label => 'Manual...', -command => sub { system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" ); } );
+$help->add( 'command', -label => 'Manual...',
+	    -command => sub {
+		system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" );
+	    } );
 
 MainLoop();
