@@ -1,8 +1,8 @@
 use base qw(dry core);
 
 $dry::dry = 0;
-$separator_nocheck = 0;
-$separator = '-';
+#$separator_nocheck = 0;
+#$separator = '-';
 
 %xyz = (
     'id' => 'job7',
@@ -15,14 +15,14 @@ $separator = '-';
 );
 
 my @jobs = &prepare(%xyz,
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 6 + $_[0] + $_[2]; }
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 6 + $_[0] + $_[2]; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #
 # 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 20'
 # 'RANGE0' => [0,1], 'arg0S' => '3'
 #
-# 'arg0S' => [1,2]
+ 'arg0S' => [0..8,37]
 # 'arg0S' => \1
 #
 # 'arg0S' => 1
