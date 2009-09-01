@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 #use strict;
+use File::Spec;
 use Tk;
 use Tk::TList;
 use Tk::ItemStyle;
@@ -22,22 +23,15 @@ our ($eof0, $eof2);
 
 my $black = $mainwindow->ItemStyle('text',
 				   -padx => 10,
-				   -font => [$fontlist[0],
-					     $fontsize,
-					     'bold'] );
-my $red   = $mainwindow->ItemStyle('text', -foreground => 'red',
+				   -font => [$fontlist[0], $fontsize, 'bold'] );
+my $red   = $mainwindow->ItemStyle('text',
 				   -padx => 10,
-				   -selectbackground => 'red',
-				   -font => [$fontlist[0],
-					     $fontsize,
-					     'bold'] );
-my $green = $mainwindow->ItemStyle('text', -foreground => 'green',
+				   -foreground => 'red',
+				   -font => [$fontlist[0], $fontsize, 'bold'] );
+my $green = $mainwindow->ItemStyle('text',
 				   -padx => 10,
-				   -selectbackground => 'green',
-				   -font => [$fontlist[0],
-					     $fontsize,
-					     'bold'] );
-
+				   -foreground => 'green',
+				   -font => [$fontlist[0], $fontsize, 'bold'] );
 my $toplevel2;
 my $toplevel3;
 my $tiler0;
@@ -48,6 +42,9 @@ my $max = 2;
 my $height = 0.15 / (1+$max);
 my $width = 1 / (1+$max);
 my $statcount;
+
+my $inventorydir = 'inv_watch';
+my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
 
 sub connect {
     my ($widget, $pipe, $eof) = @_;
@@ -62,6 +59,29 @@ sub connect {
     ${$widget}->yview('end');
 
     if ($stat == 0) { ${$eof} = 1; }
+}
+
+sub getjobids {
+    open( JOBIDS, '< $reqidfile' );
+    my %reqid_jobids = split(' ', <JOBIDS>);
+    my %count;
+    my @vals = values(%reqid_jobids);
+    @vals = grep(!$count{$_}++, @vals);
+    my @jobids = sort @vals;
+    close( JOBIDS );
+
+    return @jobids;
+}
+
+sub del {
+    $eof2 = 0;
+    open( PIPE2, "xcryptdel $_[0] |" ) or warn "Can't delete $_[0]";
+    $mainwindow->fileevent( \*PIPE2, 'readable',
+			    [\&connect, 'text2', 'PIPE2', 'eof2'] );
+    $mainwindow->waitVariable(\$eof2);
+    $mainwindow->fileevent( \*PIPE2, 'readable' => '' );
+    close PIPE2;
+    $buffer2 = "xcryptdel $_[0]";
 }
 
 my $menu = $mainwindow->Menu();
@@ -155,40 +175,13 @@ sub fun {
 					      -command => ['destroy', $toplevel2] );
 	    $button1->pack( -fill => 'x' );
 
-	    open( ID, '< inv_watch/.request_ids' );
-	    my @reqid_jobids = split( / /, <ID> );
-	    my %hash = @reqid_jobids;
-	    my %count;
-	    my @vals = values(%hash);
-	    @vals = grep(!$count{$_}++, @vals);
-	    my @jobids = sort @vals;
+	    my @jobids = &getjobids();
 	    foreach (@jobids) {
 		$listbox->insert('end', $_);
 		$listbox->yview('end');
 	    }
 	}
     } else {}
-}
-
-sub del2 {
-    my @index = $_[0]->curselection();
-    unless (@index eq ()) {
-	foreach (@index) {
-	    my $job = $_[0]->get($_);
-	    $eof2 = 0;
-	    open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	    $mainwindow->fileevent( \*PIPE2, 'readable',
-				    [\&connect, 'text2', 'PIPE2', 'eof2'] );
-
-	    $mainwindow->waitVariable(\$eof2);
-	    $mainwindow->fileevent( \*PIPE2, 'readable' => '' );
-	    close PIPE2;
-
-	    $toplevel2->destroy();
-
-	    $buffer2 = "xcryptdel $job";
-	}
-    }
 }
 
 my $view = $menu->Menu();
@@ -221,14 +214,7 @@ $tool->add( 'command', -label => 'Clean',
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 sub monitoring {
-    open( REQ, '< inv_watch/.request_ids' );
-    my %reqid_jobids = split(' ', <REQ>);
-    my %count;
-    my @vals = values(%reqid_jobids);
-    @vals = grep(!$count{$_}++, @vals);
-    my @jobids = sort @vals;
-    close( REQ );
-
+    my @jobids = &getjobids();
 
     my %jobcolors = ( 'done'      => $green,
 		      'aborted'   => $red,
@@ -243,7 +229,8 @@ sub monitoring {
 	$tiler0->delete(0, $lt-1);
     }
     foreach (@jobids) {
-	open( JOB, "< inv_watch/$_" );
+	my $inv = File::Spec->catfile ("$inventorydir", "$_");
+	open( JOB, "< $inv" );
 	while( $line = <JOB> ){
 	    if ($line =~ /^status\:\s*(.+)/) {
 		$status = $1;
@@ -251,12 +238,8 @@ sub monitoring {
 	}
 	close( JOB );
 
-	$tiler0->insert('end',
-			-itemtype => 'text',
-			-state => 'normal',
-			-text => $_,
-			-style => $jobcolors{$status}
-	    );
+	$tiler0->insert( 'end', -itemtype => 'text', -state => 'normal',
+			 -text => $_, -style => $jobcolors{$status} );
     }
 }
 
@@ -266,56 +249,41 @@ sub monitor {
 	$toplevel3->geometry( '600x600' );
 
 	$tiler0 = $toplevel3->Scrolled( 'TList',
-					-font => [$fontlist[0],
-						  $fontsize, 'bold'],
+					-font => [$fontlist[0], $fontsize, 'bold'],
 					-background => 'white',
 					-scrollbars => 'e',
-					-orient => 'horizontal'
-	    );
+					-orient => 'horizontal' )
+	    ->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+	my $bn0_m = $toplevel3
+	    ->Button( -text => 'Reload', -command => [\&monitoring] )
+	    ->pack( -fill => 'x' );
 
-	$tiler0->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
+	my $bn2_m = $toplevel3
+	    ->Button( -text => 'Delete', -command => [\&del3, $tiler0] )
+	    ->pack( -fill => 'x' );
 
-	my $button0_m = $toplevel3->Button( -text => 'Reload',
-					    -command => [\&monitoring] );
-	$button0_m->pack( -fill => 'x' );
-
-	my $button2_m = $toplevel3->Button( -text => 'Delete',
-					    -command => [\&del3, $tiler0] );
-	$button2_m->pack( -fill => 'x' );
-
-	my $button1_m = $toplevel3->Button( -text => 'Close',
-					    -command => ['destroy',
-							 $toplevel3] );
-	$button1_m->pack( -fill => 'x' );
+	my $bn1_m = $toplevel3
+	    ->Button( -text => 'Close',	-command => ['destroy', $toplevel3] )
+	    ->pack( -fill => 'x' );
 
 	&monitoring();
     }
 }
 
-sub del3 {
-    if (defined $_[0]) {
-	open( REQ, '< inv_watch/.request_ids' );
-	my %reqid_jobids = split(' ', <REQ>);
-	my %count;
-	my @vals = values(%reqid_jobids);
-	@vals = grep(!$count{$_}++, @vals);
-	my @jobids = sort @vals;
-	close( REQ );
-
-#	print $_[0]->infoSelection() , "\n";
-	my @hoge = $_[0]->infoSelection();
-	my $job = $jobids[$hoge[0]];
-	$eof2 = 0;
-	open( PIPE2, "xcryptdel $job |" ) or warn "Can't delete $job";
-	$mainwindow->fileevent( \*PIPE2, 'readable',
-				[\&connect, 'text2', 'PIPE2', 'eof2'] );
-
-	$mainwindow->waitVariable(\$eof2);
-	$mainwindow->fileevent( \*PIPE2, 'readable' => '' );
-	close PIPE2;
-
-	$buffer2 = "xcryptdel $job";
+sub del2 {
+    my @index = $_[0]->curselection();
+    unless (@index eq ()) {
+	my $job = $_[0]->get($index[0]);
+	&del($job);
+	$toplevel2->destroy();
     }
+}
+
+sub del3 {
+    my @jobids = &getjobids();
+    my @index = $_[0]->infoSelection();
+    my $job = $jobids[$index[0]];
+    &del($job);
 }
 
 my $help = $menu->Menu();
