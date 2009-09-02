@@ -62,7 +62,7 @@ sub connect {
 }
 
 sub getjobids {
-    open( JOBIDS, '< $reqidfile' );
+    open( JOBIDS, "< $_[0]" );
     my %reqid_jobids = split(' ', <JOBIDS>);
     my %count;
     my @vals = values(%reqid_jobids);
@@ -175,7 +175,7 @@ sub fun {
 					      -command => ['destroy', $toplevel2] );
 	    $button1->pack( -fill => 'x' );
 
-	    my @jobids = &getjobids();
+	    my @jobids = &getjobids($reqidfile);
 	    foreach (@jobids) {
 		$listbox->insert('end', $_);
 		$listbox->yview('end');
@@ -214,7 +214,7 @@ $tool->add( 'command', -label => 'Clean',
 $tool->add( 'command', -label => 'Monitor', -command => \&monitor );
 
 sub monitoring {
-    my @jobids = &getjobids();
+    my @jobids = &getjobids($reqidfile);
 
     my %jobcolors = ( 'done'      => $green,
 		      'aborted'   => $red,
@@ -280,7 +280,7 @@ sub del2 {
 }
 
 sub del3 {
-    my @jobids = &getjobids();
+    my @jobids = &getjobids($reqidfile);
     my @index = $_[0]->infoSelection();
     my $job = $jobids[$index[0]];
     &del($job);
