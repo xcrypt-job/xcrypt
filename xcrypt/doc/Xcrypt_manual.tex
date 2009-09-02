@@ -244,6 +244,11 @@ Xcrypt はジョブごとにディレクトリ（ジョブ作業ディレクトリと呼ぶ）を作成
 ジョブスケジューラが Sun Grid Engine である際，Sun Grid Engine に渡され
 るスクリプトである．
 
+\subsection*{\texttt{sh.sh}}
+
+シェルをジョブスケジューラとして仮想的に利用す際，シェルに渡されるスク
+リプトである．
+
 \subsection*{\texttt{request\_id}}
 
 Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
@@ -291,13 +296,6 @@ $dry::dry = 1;
 とオプションつきで実行することでドライモードで動作させることもできる．
 \fi
 
-\if0
-\section{\texttt{function}}
-
-頻繁に使用される関数を定義している．
-
-\fi
-
 \section{\texttt{limit}}
 
 一度に投入されるジョブの数の上限を指定する．
@@ -307,6 +305,41 @@ $dry::dry = 1;
 $limit::smph=Thread::Semaphore->new(100);
 \end{verbatim}
 \end{boxnote}
+
+\section{\texttt{minimax}}
+
+あるノードからその子ノードを与えるプログラムと，ノードに対する評価関数
+であるプログラムとを与えることで，木アルゴリズムであるミニマックス法を
+行う．
+
+例えば，前者のプログラムを \texttt{getchildren}，後者のプログラムを
+\texttt{komadoku}，\texttt{kuraidori}，\texttt{ikiataribattari} とする
+時，
+
+\begin{boxnote}
+\begin{verbatim}
+%xyz = (
+    'id'          => 'job10',
+    'linkedfile0' => 'getchildren',
+    'linkedfile1' => 'komadoku',
+    'linkedfile2' => 'kuraidori',
+    'linkedfile3' => 'ikiataribattari',
+    'arg0'        => '9',               # depth of lookahead
+    'arg1'        => '0',               # position
+    'arg2'        => 'getchildren'      # get next positions
+);
+
+@results = &prepare_submit_sync(%xyz, 'arg3S' => ['komadoku',
+				                  'kuraidori',
+				                  'ikiataribattari']);
+\end{verbatim}
+\end{boxnote}
+
+\noindent
+と記述すること
+で，\texttt{komadoku}，\texttt{kuraidori}，\texttt{ikiataribattari}，の
+三つの評価関数下における \texttt{0} の位置のノードから \texttt{9} の深
+さで先読みした際の値をそれぞれ返す．
 
 \chapter{大域変数}\label{globalvar}
 
@@ -483,8 +516,8 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10']);
-push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20']);
+push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'});
+push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
 \end{verbatim}
 \end{boxnote}
 
@@ -542,8 +575,8 @@ prepare(%abc, 'arg0S' => [10,20]);
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, ['id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2']);
-push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3']);
+push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2'});
+push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'});
 \end{verbatim}
 \end{boxnote}
 
@@ -563,10 +596,10 @@ push(@jobs, ['id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'])
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, ['id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2']);
-push(@jobs, ['id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4']);
-push(@jobs, ['id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3']);
-push(@jobs, ['id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5']);
+push(@jobs, {'id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2'});
+push(@jobs, {'id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4'});
+push(@jobs, {'id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3'});
+push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
 \end{verbatim}
 \end{boxnote}
 
