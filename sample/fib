@@ -1,7 +1,9 @@
 #!/usr/bin/env perl
 
 sub body {
-    if ($_[0] <= 1) {
+    if ($_[0] <= 0) {
+	return 0;
+    } elsif ($_[0] == 1) {
 	return 1;
     } else {
 	return &body($_[0] - 1) + &body($_[0] - 2);

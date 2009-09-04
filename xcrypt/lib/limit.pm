@@ -9,7 +9,6 @@ our $smph;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    if ($self->{limit} eq '') { $self->{limit} = 100; }
     return bless $self, $class;
 }
 
@@ -20,14 +19,23 @@ sub start {
 
 sub before {
     my $self = shift;
-    $smph->down;
+    if (defined $smph) {
+	$smph->down;
+    } else {
+	warn "Not given \$limit.  Not using limit.pm.\n";
+    }
     $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
     $self->NEXT::after();
-    $smph->up;
+    if (defined $smph) {
+	$smph->up;
+    } else {
+	warn "Not given \$limit.  Not using limit.pm.\n";
+    }
+
 }
 
 1;

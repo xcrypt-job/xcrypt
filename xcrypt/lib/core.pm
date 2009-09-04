@@ -6,7 +6,6 @@ use File::Spec;
 use File::Path;
 use UI;
 use jobsched;
-use Data_Generation;
 
 sub new {
     my $class = shift;
@@ -43,7 +42,6 @@ sub new {
 
             if ($self->{"copiedfile$i"}) {
                 my $copied = $self->{"copiedfile$i"};
-#	    $self->{"input$i"} = &Data_Generation::CF($self->{"copiedfile$i"}, $dir);
 		if ( -e $copied ) {
 		    fcopy($copied, $dir);
 		} else {
@@ -65,17 +63,9 @@ sub new {
     return bless $self, $class;
 }
 
-sub before {}
-
-sub after {}
-
 sub start {
     my $self = shift;
     my $dir = $self->{id};
-
-#    $self->before();
-
-    # NQS スクリプトを作成・投入
 
     # 前回doneになったジョブならとばす．
     if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
@@ -93,17 +83,14 @@ sub start {
     sleep(3);
 
     my $pwdstdo = File::Spec->catfile($self->{id}, $stdofile);
-    until ( (-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'aborted')  ) {
+    until ((-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'aborted')) {
 	sleep 1;
     }
-
     unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ','; }
     unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
     my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
     $self->{stdout} = $stdlist[$self->{stdoclmn}];
-
     }
-#    $self->after();
 }
 
 sub before {

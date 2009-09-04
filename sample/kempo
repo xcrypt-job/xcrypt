@@ -10,7 +10,7 @@ foreach my $item (<PLASMA>) {
 		sleep(1);
 	    }
 #	    open ( PBODY , "> pbody" );
-	    print $ARGV[0] + $num;
+	    print $ARGV[0] + $num . ' ' . '100';
 #	    close ( PBODY );
 	}
     }
