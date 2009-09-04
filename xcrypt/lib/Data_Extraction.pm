@@ -6,7 +6,7 @@
 package Data_Extraction;
 use Exporter;
 @ISA    = (Exporter);
-@EXPORT = qw(EF ED);
+@EXPORT = qw(EF);
 use strict;
 use File::Basename;
 use Cwd;
