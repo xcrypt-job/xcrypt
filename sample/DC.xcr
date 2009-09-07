@@ -1,0 +1,85 @@
+use base qw(limit DC core);
+$limit::smph=Thread::Semaphore->new(100);
+
+sub func0
+{
+	$job = shift;
+	print "User function"."\n";
+	if($job->{arg0} > 10)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+sub func1
+{
+	my $job = shift;
+	print "User Function devide"."\n";
+	
+	my %j1 = (
+		'id' => $job->{id}."_".($job->{arg0}-1),
+		'exe' => $job->{exe},
+		'arg0' => $job->{arg0}-1,
+		'queue' => $job->{queue},
+		'canDivideFunc' => $job->{canDivideFunc},
+		'divideFunc' => $job->{divideFunc},
+		'mergeFunc' => $job->{mergeFunc},
+		'option' => $job->{option},
+		'ofname' => $job->{ofname}
+	);
+	my %j2 = (
+		'id' => $job->{id}."_".($job->{arg0}-2),
+		'exe' => $job->{exe},
+		'arg0' => $job->{arg0}-2,
+		'canDivideFunc' => $job->{canDivideFunc},
+		'divideFunc' => $job->{divideFunc},
+		'mergeFunc' => $job->{mergeFunc},
+		'queue' => $job->{queue},
+		'option' => $job->{option},
+		'ofname' => $job->{ofname}
+	);
+	my @children = ();
+	push(@children, \%j1);
+	push(@children, \%j2);
+	return @children;
+}
+
+sub func2
+{
+	my $ofname = shift;
+	#my @results = @{shift};
+	print "User Function merge"."\n";
+	my $val = 0;
+	foreach my $result (@_)
+	{
+		open(FH,"<".$result->{id}."/".$result->{ofname});
+		my $line = <FH>;
+		$val += $line;
+		print $line."\n";
+		close(FH);
+	}
+	print $ofname."\n";
+	open(OUT,">".$ofname);
+	print OUT $val;
+	close(OUT);
+}
+
+%xyz = (
+	'id' => 'job0',
+	'exe' => '/home/ksuke/e-science/wd/fib.out',
+	'arg0' => 12,
+	'canDivideFunc' => \&func0,
+	'divideFunc' => \&func1,
+	'mergeFunc' => \&func2,
+	'queue' => 'gh10034',
+	'option' => '# @$-g gh10034',
+	'ofname' => 'out'
+);
+
+@results = &prepare_submit_sync(%xyz);
+#foreach (@results) { print $_->{stdout} , "\n"; }
+#print "---------------\n";
