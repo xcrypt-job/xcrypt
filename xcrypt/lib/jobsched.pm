@@ -275,113 +275,12 @@ sub inventory_write_cmdline {
 }
 
 ##############################
-# ジョブの状態変化を監視するスレッドを起動
-sub invoke_watch {
-    # インベントリファイルの置き場所ディレクトリを作成
-    if ( !(-d $inventory_path) ) {
-        mkdir $inventory_path or
-        die "Can't make $inventory_path: $!.\n";
-    }
-    foreach (".tmp", ".lock") {
-        my $newdir = File::Spec->catfile($inventory_path, $_);
-        if ( !(-d $newdir) ) {
-            mkdir $newdir or
-                die "Can't make $newdir: $!.\n";
-        }
-    }
-    # 起動
-    if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
-        invoke_watch_by_socket ();
-    } else {                       # NFS経由で通知を受ける
-        invoke_watch_by_file ();
-    }
-}
-
-# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
-sub invoke_watch_by_file {
-    # inventory_watchが，監視準備ができたことを通知するために設置するファイル
-    my $invwatch_ok_file = "$inventory_path/.tmp/.pjo_invwatch_ok";
-    # 起動前にもしあれば消しておく
-    if ( -f $invwatch_ok_file ) { unlink $invwatch_ok_file; }
-    # 以下，監視スレッドの処理
-    $watch_thread =  threads->new( sub {
-        # open (INVWATCH_LOG, ">", "$inventory_path/log");
-        open (INVWATCH, "$watch_command $inventory_path $watch_opt |")
-            or die "Failed to execute inventory_watch.";
-        while (1) {
-            while (<INVWATCH>){
-                # print INVWATCH_LOG "$_";
-                handle_inventory ($_, 0);
-            }
-            close (INVWATCH);
-            # print "watch finished.\n";
-            open (INVWATCH, "$watch_command $inventory_path $watch_opt -c |");
-        }
-        # close (INVWATCH_LOG);
-    });
-    # inventory_watchの準備ができるまで待つ
-    until ( -f $invwatch_ok_file ) { sleep 1; }
-}
-
-# TCP/IP通信によりジョブ状態の変更通知を受け付けるスレッドを起動
-sub invoke_watch_by_socket {
-    $watch_thread = threads-> new ( sub {
-        socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
-            or die "Can't make socket. $!";
-        setsockopt (CLIENT_WAITING, SOL_SOCKET, SO_REUSEADDR, 1)
-            or die "setsockopt failed. $!";
-        bind (CLIENT_WAITING, pack_sockaddr_in ($inventory_port, inet_aton($inventory_host)))
-            or die "Can't bind socket. $!";
-        listen (CLIENT_WAITING, SOMAXCONN)
-            or die "listen: $!";
-        while (1) {
-            my $paddr = accept (CLIENT, CLIENT_WAITING);
-            my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
-            my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
-            my $cl_ip = inet_ntoa ($cl_iaddr);
-            my $handle_inventory_ret = 0;
-            select(CLIENT); $|=1; select(STDOUT);
-            while (<CLIENT>) {
-                if ( $_ =~ /^:end/ ) {
-                    # print STDERR "received :end\n";
-                    last;
-                }
-                # 一度エラーがでたら以降のhandle_inventoryはとばす
-                if ( $handle_inventory_ret >= 0 ) {
-                    $handle_inventory_ret = handle_inventory ($_, 1);
-                }
-            }
-            if ($handle_inventory_ret >= 0) {
-                print CLIENT ":ack\n";
-                # print STDERR "sent :ack\n";
-            } else {
-                print CLIENT ":failed\n";
-                # print STDERR "sent :failed\n";
-            }
-            close (CLIENT);
-        }
-    });
-}
-
-# $jobnameに対応するインベントリファイルを読み込んで反映
-sub load_inventory {
-    my ($jobname) = @_;
-    my $invfile = File::Spec->catfile($inventory_path, $jobname);
-    if ( -e $invfile ) {
-        open ( IN, "< $invfile" )
-            or warn "Can't open $invfile: $!\n";
-        while (<IN>) {
-            handle_inventory ($_, 0);
-        }
-        close (IN);
-    }
-}
-
 # watchの出力一行を処理
 # set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
+                        # handle_inventoryとinvoke_watch_by_socketから参照
 sub handle_inventory {
-    my ($line, $write_p) = @_;
+    my ($line) = @_;
     my $ret = 0;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
@@ -432,18 +331,122 @@ sub handle_inventory {
     } elsif (/^time\_.*\:\s*(.+)/){             # ジョブ状態変化の時刻
         # とりあえず何もなし
     } else {
-        warn "unexpected inventory output: \"$line\"\n";
-    }
-    # TCP/IP通信モードの場合，inventoryをファイルに保存
-    if ( $write_p ) {
-        my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
-        open ( SAVE, ">> $inv_save")
-            or die "Can't open $inv_save\n";
-        print SAVE $line;
-        close (SAVE);
+        warn "unexpected inventory: \"$line\"\n";
+        $ret = -1;
     }
     return $ret;
 }
+
+# ジョブの状態変化を監視するスレッドを起動
+sub invoke_watch {
+    # インベントリファイルの置き場所ディレクトリを作成
+    if ( !(-d $inventory_path) ) {
+        mkdir $inventory_path or
+        die "Can't make $inventory_path: $!.\n";
+    }
+    foreach (".tmp", ".lock") {
+        my $newdir = File::Spec->catfile($inventory_path, $_);
+        if ( !(-d $newdir) ) {
+            mkdir $newdir or
+                die "Can't make $newdir: $!.\n";
+        }
+    }
+    # 起動
+    if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
+        invoke_watch_by_socket ();
+    } else {                       # NFS経由で通知を受ける
+        invoke_watch_by_file ();
+    }
+}
+
+# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+sub invoke_watch_by_file {
+    # inventory_watchが，監視準備ができたことを通知するために設置するファイル
+    my $invwatch_ok_file = "$inventory_path/.tmp/.pjo_invwatch_ok";
+    # 起動前にもしあれば消しておく
+    if ( -f $invwatch_ok_file ) { unlink $invwatch_ok_file; }
+    # 以下，監視スレッドの処理
+    $watch_thread =  threads->new( sub {
+        # open (INVWATCH_LOG, ">", "$inventory_path/log");
+        open (INVWATCH, "$watch_command $inventory_path $watch_opt |")
+            or die "Failed to execute inventory_watch.";
+        while (1) {
+            while (<INVWATCH>){
+                # print INVWATCH_LOG "$_";
+                handle_inventory ($_);
+            }
+            close (INVWATCH);
+            # print "watch finished.\n";
+            open (INVWATCH, "$watch_command $inventory_path $watch_opt -c |");
+        }
+        # close (INVWATCH_LOG);
+    });
+    # inventory_watchの準備ができるまで待つ
+    until ( -f $invwatch_ok_file ) { sleep 1; }
+}
+
+# TCP/IP通信によりジョブ状態の変更通知を受け付けるスレッドを起動
+sub invoke_watch_by_socket {
+    $watch_thread = threads-> new ( sub {
+        socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
+            or die "Can't make socket. $!";
+        setsockopt (CLIENT_WAITING, SOL_SOCKET, SO_REUSEADDR, 1)
+            or die "setsockopt failed. $!";
+        bind (CLIENT_WAITING, pack_sockaddr_in ($inventory_port, inet_aton($inventory_host)))
+            or die "Can't bind socket. $!";
+        listen (CLIENT_WAITING, SOMAXCONN)
+            or die "listen: $!";
+        while (1) {
+            my $paddr = accept (CLIENT, CLIENT_WAITING);
+            my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
+            my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
+            my $cl_ip = inet_ntoa ($cl_iaddr);
+            my $inv_text = '';
+            my $handle_inventory_ret = 0;
+            select(CLIENT); $|=1; select(STDOUT);
+            while (<CLIENT>) {
+                if ( $_ =~ /^:end/ ) {
+                    # print STDERR "received :end\n";
+                    last;
+                }
+                $inv_text .= $_;
+                # 一度エラーがでたら以降のhandle_inventoryはとばす
+                if ( $handle_inventory_ret >= 0 ) {
+                    $handle_inventory_ret = handle_inventory ($_, 1);
+                }
+            }
+            if ($handle_inventory_ret >= 0) {
+                # エラーがなければinventoryファイルにログを書き込んで:ackを返す
+                my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
+                open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
+                print SAVE $inv_text;
+                close (SAVE);
+                print CLIENT ":ack\n";
+                # print STDERR "sent :ack\n";
+            } else {
+                # エラーがあれば:failedを返す（inventory fileには書き込まない）
+                print CLIENT ":failed\n";
+                # print STDERR "sent :failed\n";
+            }
+            close (CLIENT);
+        }
+    });
+}
+
+# $jobnameに対応するインベントリファイルを読み込んで反映
+sub load_inventory {
+    my ($jobname) = @_;
+    my $invfile = File::Spec->catfile($inventory_path, $jobname);
+    if ( -e $invfile ) {
+        open ( IN, "< $invfile" )
+            or warn "Can't open $invfile: $!\n";
+        while (<IN>) {
+            handle_inventory ($_);
+        }
+        close (IN);
+    }
+}
+
 
 ##############################
 # ジョブ名→request_id
