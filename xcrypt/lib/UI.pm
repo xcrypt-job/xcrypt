@@ -4,14 +4,19 @@ use strict;
 use File::Copy;
 
 use base qw(Exporter);
-our @EXPORT = qw(pickup prepare_submit_sync prepare_submit submit_sync prepare submit repickup sync);
+our @EXPORT = qw(pickup repickup
+ prepare submit sync
+ prepare_submit_sync prepare_submit submit_sync
+ );
 
 my $nilchar = 'nil';
-my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'queue', 'stdofile', 'stdefile', 'proc', 'cpu');
+my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'stdofile',
+		  'stdefile', 'queue', 'proc', 'cpu');
+my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
 my $max = 255;
 for ( my $i = 0; $i <= $max; $i++ ) {
-    foreach (('arg', 'linkedfile', 'copiedfile', 'copieddir')) {
+    foreach (@premembers) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
     }

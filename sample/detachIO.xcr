@@ -1,5 +1,4 @@
 use base qw(core);
-use Data_Generation;
 use Data_Extraction;
 
 %xyz = (
@@ -22,12 +21,11 @@ foreach (@jobs) {
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
-=comment
-mkdir 'job100_/hoge', 0755;
-$After1 = EF("$ENV{'PWD'}/job100_/pbody", "$ENV{'PWD'}/job100_/hoge");
-$After1->LE("1");
-$After1->do();
+my $datum = EF("file:$ENV{PWD}/job1/pbody");
+print $datum->ED("L/1");
 
-my @list = &pickup('job100_/hoge/pbody', ',');
-print $list[0] , "\n";
+=comment
+%foo = %$datum;
+$bar = $foo{'out_data'};
+print join(' ', @$bar);
 =cut
