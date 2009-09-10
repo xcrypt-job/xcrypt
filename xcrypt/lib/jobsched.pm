@@ -742,7 +742,7 @@ sub check_and_alert_elapsed {
     my $average = $sum / $length;
     foreach (@jobids) {
 	if ( $elapseds{$_} - $average > 10 ) {
-	    print "Warning: $_ takes more time than other jobs.\n";
+	    print "Warning: $_ takes more time than the other jobs.\n";
 	}
     }
 }

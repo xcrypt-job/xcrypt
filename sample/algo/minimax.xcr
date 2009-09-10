@@ -6,16 +6,17 @@ use base qw(minimax core);
     'linkedfile1' => 'komadoku',
     'linkedfile2' => 'kuraidori',
     'linkedfile3' => 'ikiataribattari',
-    'arg0'        => '9',               # depth of lookahead
+    'arg0'        => '20',               # depth of lookahead
     'arg1'        => '0',               # position
     'arg2'        => 'getchildren',     # get next positions
-    'queue'       => 'gh10034',
-    'option'      => '# @$-g gh10034'
+#    'queue'       => 'gh10034',
+    'queue'       => 'all.q',
+#    'option'      => '# @$-g gh10034'
 );
 
 @results = &prepare_submit_sync(%xyz, 'arg3S' => [
-				    'komadoku',
+#				    'komadoku',
 				    'kuraidori',
-				    'ikiataribattari'
+#				    'ikiataribattari'
 				]);
 foreach (@results) { print $_->{stdout} , "\n"; }

@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+
+open (PLASMA, "< $ARGV[1]");
+foreach my $item (<PLASMA>) {
+    my $str = $item;
+    if ($str =~ m/^(param)/) {
+	if ($str =~ m/(\d+)/) {
+	    my $num = $1;
+	    if ($num => 2) {
+		sleep(1);
+	    }
+#	    open ( PBODY , "> pbody" );
+	    print $ARGV[0] + $num . ' ' . '100';
+#	    close ( PBODY );
+	}
+    }
+}
+close (PLASMA);
