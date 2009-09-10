@@ -1,0 +1,22 @@
+use base qw(core);
+
+%xyz = (
+    'id'          => 'job13',
+    'exe'         => 'time',
+    'linkedfile0' => 'minimax',
+    'linkedfile1' => 'alphabeta',
+    'linkedfile2' => 'tree',
+    'arg0S'        => ['./minimax', './alphabeta'],
+    'arg1'        => '4',              # depth of lookahead
+    'arg2'        => '0',               # position
+    'arg3'        => 'tree',            # static evaluation
+    'queue'       => 'gh10034',
+#    'option'      => '# @$-g gh10034'
+);
+
+@results = &prepare_submit_sync(%xyz);
+foreach (@results) {
+    print $_->{arg0} . ': '
+	. $_->{stdout} . ' '
+	. $_->{stderr} , "\n";
+}
