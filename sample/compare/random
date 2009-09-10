@@ -1,0 +1,8 @@
+#!/usr/bin/env perl
+
+my @array;
+foreach (0..2222222) {
+	push(@array, $_, rand(1000));
+}
+
+print join(' ', @array);
