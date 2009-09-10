@@ -70,8 +70,8 @@ sub func2
 
 %xyz = (
 	'id' => 'job0',
-	'exe' => '/home/ksuke/e-science/wd/fib.out',
-	'arg0' => 12,
+	'exe' => '/home/abet/e-science/sample/fib.out',
+	'arg0' => 15,
 	'canDivideFunc' => \&func0,
 	'divideFunc' => \&func1,
 	'mergeFunc' => \&func2,

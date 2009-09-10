@@ -4,7 +4,7 @@ use strict;
 use File::Copy;
 
 use base qw(Exporter);
-our @EXPORT = qw(pickup repickup
+our @EXPORT = qw(pickup repickup pickupfirst
  prepare submit sync
  prepare_submit_sync prepare_submit submit_sync
  );
@@ -221,6 +221,16 @@ sub pickup {
     foreach (<OUTPUT>) {
 	$line = $_;
     }
+    my $delimit = $_[1];
+    my @list = split(/$delimit/, $line);
+    close ( OUTPUT );
+    return @list;
+}
+
+sub pickupfirst {
+    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
+    my $line;
+    $line = <OUTPUT>;
     my $delimit = $_[1];
     my @list = split(/$delimit/, $line);
     close ( OUTPUT );

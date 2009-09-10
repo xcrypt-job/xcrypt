@@ -79,6 +79,9 @@ sub start {
     my $stdofile = 'stdout';
     unless ($self->{stdofile} eq '') { $stdofile = $self->{stdofile}; }
 
+    my $stdefile = 'stderr';
+    unless ($self->{stdefile} eq '') { $stdefile = $self->{stdefile}; }
+
     # NFSの書込み遅延に対する暫定的対応
     sleep(3);
 
@@ -86,10 +89,19 @@ sub start {
     until ((-e $pwdstdo) or ($jobsched::job_status{$self->{id}} eq 'aborted')) {
 	sleep 1;
     }
-    unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ','; }
+    unless ($self->{stdodlmtr}) { $self->{stdodlmtr} = ' '; }
     unless ($self->{stdoclmn}) { $self->{stdoclmn} = '0'; }
     my @stdlist = &pickup($pwdstdo, $self->{stdodlmtr});
     $self->{stdout} = $stdlist[$self->{stdoclmn}];
+
+    my $pwdstde = File::Spec->catfile($self->{id}, $stdefile);
+    until ((-e $pwdstde) or ($jobsched::job_status{$self->{id}} eq 'aborted')) {
+	sleep 1;
+    }
+    unless ($self->{stdedlmtr}) { $self->{stdedlmtr} = ' '; }
+    unless ($self->{stdeclmn}) { $self->{stdeclmn} = '0'; }
+    my @stderrlist = &pickupfirst($pwdstde, $self->{stdedlmtr});
+    $self->{stderr} = $stderrlist[$self->{stdeclmn}];
     }
 }
 

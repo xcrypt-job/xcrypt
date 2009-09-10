@@ -23,7 +23,8 @@ my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
 my $datum = EF("file:$ENV{PWD}/job1/pbody");
-print $datum->ED("L/1");
+$datum->ED("L/1");
+#print $datum->ER();
 
 =comment
 %foo = %$datum;
