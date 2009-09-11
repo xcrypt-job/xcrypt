@@ -11,7 +11,7 @@ close(TREE);
 
 my $word = &alphabeta((- (2 ** 31) + 1), ((2 ** 31) - 1),
 		      (- (2 ** 31) + 1), ((2 ** 31) - 1),
-		      $ARGV[0], $ARGV[1]);
+		      @ARGV);
 print $word;
 
 sub isMyTurn { # Int -> Bool
@@ -35,7 +35,7 @@ sub inverse {
 
 sub alphabeta {
     my ($inf, $sup, $alpha, $beta, $depth, $pos,
-	$getchildren, $staticevaluation) = @_;
+	$staticevaluation, $getchildren) = @_;
 
 #    my $gc ='./' . $getchildren;
 #    my $pre_children = qx/$gc $pos/;
@@ -54,7 +54,7 @@ sub alphabeta {
     if (isMyTurn($pos)) {
 	foreach (@children) {
 	    my $score = alphabeta($max, $min, $alpha, $beta, ($depth - 1), $_,
-				  $getchildren, $staticevaluation);
+				  $staticevaluation, $getchildren);
 	    if ($alpha <= $score) {
 		$alpha = $score;}
 	    if ($beta <= $alpha) {
@@ -66,7 +66,7 @@ sub alphabeta {
     } else {
 	foreach (@children) {
 	    my $score = alphabeta($max, $min, $alpha, $beta, ($depth - 1), $_,
-				$getchildren, $staticevaluation);
+				  $staticevaluation, $getchildren);
 	    if ($score <= $beta) {
 		$beta = $score;
 	    }

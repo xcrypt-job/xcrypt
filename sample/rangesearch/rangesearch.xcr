@@ -29,4 +29,3 @@ my @jobs = &prepare(%xyz,
 );
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
-foreach (@results) { print ${$_->{stdout}}[0]; }
