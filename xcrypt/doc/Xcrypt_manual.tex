@@ -154,8 +154,6 @@ $separator = '-';
 my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
-
-foreach (@results) { print ${$_->{stdout}}[0] , "\n"; }
 \end{verbatim}
 \end{boxnote}
 
@@ -408,18 +406,10 @@ $separator = '-';
 この値のファイル名で実行プログラムとジョブスケジューラの標準出力を格納
 する．空の場合は「stdout」というファイル名になる．
 
-\section{\texttt{stdout}}
-
-実行プログラムの標準出力が格納される．
-
 \section{\texttt{stdefile}}
 
 この値のファイル名で実行プログラムとジョブスケジューラの標準エラー出力
 を格納する．空の場合は「stderr」というファイル名になる．
-
-\section{\texttt{stderr}}
-
-実行プログラムの標準エラー出力が格納される．
 
 \section{\texttt{ofile}}
 

@@ -5,11 +5,11 @@ use base qw(core);
     'exe'          => 'time',
     'linkedfile0'  => 'minimax',
     'linkedfile1'  => 'alphabeta',
-#    'linkedfile2'  => 'tree',
+#    'linkedfile2'  => 'tree1',
 #    'arg0'         => './minimax',      # algorithm
 #    'arg1'         => '3',              # depth of lookahead
     'arg2'         => '0',               # position
-#    'arg3'         => 'tree1',            # static evaluation
+#    'arg3'         => 'tree1',           # static evaluation
     'queue'        => 'all.q',
 #    'option'      => '# @$-g gh10034'
 );
@@ -23,8 +23,3 @@ use base qw(core);
 				'arg3S'  => sub { $_[1]; },
 				'linkedfile2S' => sub { "$_[1]"; }
     );
-foreach (@results) {
-    print $_->{arg0} . ' ' . $_->{arg1} . ' ' . $_->{arg3} . ":\t"
-	. ${$_->{stdout}}[0] . "\t"
-	. ${$_->{stderr}}[0] , "\n";
-}

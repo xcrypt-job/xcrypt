@@ -32,7 +32,7 @@ sub inverse {
 }
 
 sub minimax {
-    my ($inf, $sup, $depth, $pos, $getchildren,  $staticevaluation) = @_;
+    my ($inf, $sup, $depth, $pos, $staticevaluation, $getchildren) = @_;
 
 #    my $gc ='./' . $getchildren;
 #    my $pre_children = qx/$gc $pos/;
@@ -51,14 +51,14 @@ sub minimax {
     if (isMyTurn($pos)) {
 	foreach (@children) {
 	    my $score = minimax($max, $min, ($depth - 1), $_,
-				$getchildren, $staticevaluation);
+				$staticevaluation, $getchildren);
 	    if ($score > $max) { $max = $score; }
 	}
 	return $max;
     } else {
 	foreach (@children) {
 	    my $score = minimax($max, $min, ($depth - 1), $_,
-				$getchildren, $staticevaluation);
+				$staticevaluation, $getchildren);
 	    if ($score < $min) { $min = $score; }
 	}
      return $min;

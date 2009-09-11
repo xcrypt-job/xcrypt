@@ -8,7 +8,7 @@ use base qw(core);
 );
 
 my @jobs = &prepare(%xyz, 'arg0S' => [0..9],
- 'after' => 'if ($self->{stdout} == 2) { system("qdel -u $ENV{USERNAME}"); }'
+# 'after' => 'if ($self->{stdout} == 2) { system("qdel -u $ENV{USERNAME}"); }'
 );
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
