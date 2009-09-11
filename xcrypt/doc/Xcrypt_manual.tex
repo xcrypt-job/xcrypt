@@ -213,7 +213,7 @@ Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
 \texttt{\$ \$XCRYPT/xcrypt sample.xcr}
 \end{screen}
 
-\section{作成される物}
+\section{作成物}
 
 Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 
@@ -222,6 +222,12 @@ Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 Xcrypt はジョブごとにディレクトリ（ジョブ作業ディレクトリと呼ぶ）を作成
 する．ディレクトリの名前はジョブハッシュの\texttt{id}キーの値である．
 ジョブ処理はジョブ作業ディレクトリで行われる．
+
+\subsection*{(Xcrypt スクリプト名)\texttt{.pl}}
+
+Xcrypt が Xcrypt スクリプトから作成する Perl スクリプトである．Xcryptが
+行う Xcryptスクリプトの実行は，Perl が行うこの Perl スクリプトの実行を
+含む．
 
 \subsection*{ジョブリンク・ジョブファイル}
 

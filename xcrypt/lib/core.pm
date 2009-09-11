@@ -4,7 +4,6 @@ use strict;
 use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
-use UI;
 use jobsched;
 
 sub new {

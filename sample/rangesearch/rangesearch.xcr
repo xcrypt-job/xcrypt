@@ -11,7 +11,7 @@ $limit::smph=Thread::Semaphore->new(100);
     'arg0' => '20',
 #    'copieddir0' => '.',
     'linkedfile0' => 'fib',
-    'dry' => 1,
+    'dry' => 0,
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
