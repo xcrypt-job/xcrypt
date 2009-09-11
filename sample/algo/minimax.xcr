@@ -6,7 +6,7 @@ use base qw(minimax core);
     'linkedfile1' => 'komadoku',
     'linkedfile2' => 'kuraidori',
     'linkedfile3' => 'ikiataribattari',
-    'arg0'        => '20',               # depth of lookahead
+    'arg0'        => '4',               # depth of lookahead
     'arg1'        => '0',               # position
     'arg2'        => 'getchildren',     # get next positions
 #    'queue'       => 'gh10034',
@@ -19,4 +19,4 @@ use base qw(minimax core);
 				    'kuraidori',
 #				    'ikiataribattari'
 				]);
-foreach (@results) { print $_->{stdout} , "\n"; }
+foreach (@results) { print ${$_->{stdout}}[0] , "\n"; }

@@ -146,18 +146,16 @@ $separator = '-';
     'linkedfile0' => 'kempo',
     'copiedfile0' => 'plasma.inp',
     'stdofile' => 'hogeout',
-    'stdodlmtr' => ',',
-    'stdoclmn' => '0',
     'stdefile' => 'hogeerr',
     'queue' => 'gh10034',
-    'option' => '# @\$-g gh10034'
+    'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
 
-foreach (@results) { print $_->{stdout} , "\n"; }
+foreach (@results) { print ${$_->{stdout}}[0] , "\n"; }
 \end{verbatim}
 \end{boxnote}
 
@@ -410,23 +408,18 @@ $separator = '-';
 この値のファイル名で実行プログラムとジョブスケジューラの標準出力を格納
 する．空の場合は「stdout」というファイル名になる．
 
-\section{\texttt{stdodlmtr}}
-
-実行プログラムの標準出力ファイルの行を区切る際の区切り文字を指定する．
-デフォルト値は \texttt{,} である．
-
-\section{\texttt{stdoclmn}}
-
-実行プログラムの標準出力ファイルの列を指定する．デフォルト値は \texttt{0} である．
-
 \section{\texttt{stdout}}
 
-実行プログラムの標準出力を上記三つで整形したものが格納される．
+実行プログラムの標準出力が格納される．
 
 \section{\texttt{stdefile}}
 
 この値のファイル名で実行プログラムとジョブスケジューラの標準エラー出力
 を格納する．空の場合は「stderr」というファイル名になる．
+
+\section{\texttt{stderr}}
+
+実行プログラムの標準エラー出力が格納される．
 
 \section{\texttt{ofile}}
 
