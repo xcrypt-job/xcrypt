@@ -12,4 +12,4 @@ my @jobs = &prepare(%xyz, 'arg0S' => [0..9],
 );
 my @thrds = &submit(@jobs);
 my @results  = &sync(@thrds);
-foreach (@results) { print $_->{stdout}; }
+foreach (@results) { print ${$_->{stdout}}[0]; }

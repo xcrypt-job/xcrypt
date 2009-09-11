@@ -9,39 +9,18 @@ my @array = split(' ', $line);
 %val = @array;
 close(TREE);
 
-my $start;
-open(ELAPSED, "> elapsed_alphabeta");
-$start = time();
-print ELAPSED $start, "\n";
-close(ELAPSED);
-
-my $word = &alphabeta((- (2 ** 31) + 1), ((2 ** 31) - 1), @ARGV);
-my $word = &alphabeta((- (2 ** 31) + 1), ((2 ** 31) - 1), $ARGV[0], $ARGV[1],
-		      (- (2 ** 31) + 1), ((2 ** 31) - 1));
+my $word = &alphabeta((- (2 ** 31) + 1), ((2 ** 31) - 1),
+		      (- (2 ** 31) + 1), ((2 ** 31) - 1),
+		      $ARGV[0], $ARGV[1]);
 print $word;
 
-my $end;
-my $elapsed;
-open(ELAPSED, ">> elapsed_alphabeta");
-$end = time();
-print ELAPSED $end, "\n";
-$elapsed = $end - $start;
-print ELAPSED $elapsed, "\n";
-close(ELAPSED);
-
 sub isMyTurn { # Int -> Bool
-#    if ($_[0] == 0) {
-#	return 1;
-#    } else {
-	my $i = 1;
-	while ((($branch ** $i - 1) / 3) <= $_[0]) { $i = $i + 1; }
-	return ($i) % 2;
-#    }
+    my $i = 1;
+    while ((($branch ** $i - 1) / 3) <= $_[0]) { $i = $i + 1; }
+    return ($i) % 2;
 }
 
 sub getchildren {
-#    my $foo = 2 * $_[0] + 1;
-#    my $bar = 2 * $_[0] + 2;
     my @bar;
     foreach (1..$branch) {
 	my $foo = $branch * $_[0] + $_;
@@ -55,26 +34,27 @@ sub inverse {
 }
 
 sub alphabeta {
-    my ($inf, $sup, $depth, $pos, $alpha, $beta,
-	$getchildren,  $staticevaluation) = @_;
+    my ($inf, $sup, $alpha, $beta, $depth, $pos,
+	$getchildren, $staticevaluation) = @_;
 
 #    my $gc ='./' . $getchildren;
 #    my $pre_children = qx/$gc $pos/;
 #    my @children = split(/ /, $pre_children);
     my @children = &getchildren($pos);
     if (($depth == 0) || ($#children == -1)) {
-#	my $se ='./' . $staticevaluation;
-#	my $result = qx/$se $pos/;
+	my $se ='./' . $staticevaluation;
+	my $result = qx/$se $pos/;
 #	my $result = &inverse($pos);
-	my $result = $val{"$pos"};
+#	my $result = int(rand(1000));
+#	my $result = $val{"$pos"};
 	return $result;
     }
     my $max = $inf;
     my $min = $sup;
     if (isMyTurn($pos)) {
 	foreach (@children) {
-	    my $score = alphabeta($max, $min, ($depth - 1), $_, $alpha, $beta,
-				$getchildren, $staticevaluation);
+	    my $score = alphabeta($max, $min, $alpha, $beta, ($depth - 1), $_,
+				  $getchildren, $staticevaluation);
 	    if ($alpha <= $score) {
 		$alpha = $score;}
 	    if ($beta <= $alpha) {
@@ -85,7 +65,7 @@ sub alphabeta {
 	return $max;
     } else {
 	foreach (@children) {
-	    my $score = alphabeta($max, $min, ($depth - 1), $_, $alpha, $beta,
+	    my $score = alphabeta($max, $min, $alpha, $beta, ($depth - 1), $_,
 				$getchildren, $staticevaluation);
 	    if ($score <= $beta) {
 		$beta = $score;

@@ -4,7 +4,7 @@ use strict;
 use File::Copy;
 
 use base qw(Exporter);
-our @EXPORT = qw(pickup repickup pickupfirst
+our @EXPORT = qw(pickup repickup pickupfirst pickupall
  prepare submit sync
  prepare_submit_sync prepare_submit submit_sync
  );
@@ -214,6 +214,19 @@ sub killall {
     }
 }
 =cut
+
+sub pickupall {
+    my @list;
+    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
+    my $line;
+    foreach (<OUTPUT>) {
+	$line = $_;
+	chomp($line);
+	push(@list, $line);
+    }
+    close ( OUTPUT );
+    return \@list;
+}
 
 sub pickup {
     open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";

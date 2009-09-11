@@ -1,26 +1,22 @@
 use base qw(core);
 
-# do the following for trying this sample
-# $ ./random > tree1
-# $ ./random > tree2
-# $ xcrypt compare.xcr
-
 %xyz = (
     'id'           => 'job13',
     'exe'          => 'time',
     'linkedfile0'  => 'minimax',
     'linkedfile1'  => 'alphabeta',
 #    'linkedfile2'  => 'tree',
+#    'arg0'         => './minimax',      # algorithm
 #    'arg1'         => '3',              # depth of lookahead
     'arg2'         => '0',               # position
-#    'arg3'         => 'tree',            # static evaluation
-    'queue'        => 'gh10034',
+#    'arg3'         => 'tree1',            # static evaluation
+    'queue'        => 'all.q',
 #    'option'      => '# @$-g gh10034'
 );
 
 @results = &prepare_submit_sync(%xyz,
-				'RANGE0' => [8, 9],
-				'RANGE1' => ['tree1', 'tree2'],
+				'RANGE0' => [4],
+				'RANGE1' => ['inversetree'],
 				'RANGE2' => ['minimax', 'alphabeta'],
 				'arg0S'  => sub { "./$_[2]";},
 				'arg1S'  => sub { $_[0]; },
@@ -29,6 +25,6 @@ use base qw(core);
     );
 foreach (@results) {
     print $_->{arg0} . ' ' . $_->{arg1} . ' ' . $_->{arg3} . ":\t"
-	. $_->{stdout} . ' '
-	. $_->{stderr} , "\n";
+	. ${$_->{stdout}}[0] . "\t"
+	. ${$_->{stderr}}[0] , "\n";
 }
