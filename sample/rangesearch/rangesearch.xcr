@@ -1,8 +1,9 @@
-use base qw(dry core);
+use base qw(limit dry core);
 
-$dry::dry = 0;
 $separator_nocheck = 0;
 $separator = '-';
+
+$limit::smph=Thread::Semaphore->new(100);
 
 %xyz = (
     'id' => 'job7',
@@ -10,6 +11,7 @@ $separator = '-';
     'arg0' => '20',
 #    'copieddir0' => '.',
     'linkedfile0' => 'fib',
+    'dry' => 1,
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );

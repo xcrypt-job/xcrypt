@@ -16,5 +16,6 @@ use Data_Extraction;
 foreach (@results) {
     my $datum = EF("file:$ENV{PWD}/$_->{id}/$_->{stdofile}");
     $datum->ED("L/1");
-    $datum->ER();
+    @hoge = $datum->ER();
+    print join(' ', @hoge);
 }

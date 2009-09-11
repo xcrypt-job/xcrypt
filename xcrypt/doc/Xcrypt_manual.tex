@@ -272,16 +272,20 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 
 \section{\texttt{dry}}
 
-Xcrypt をドライモード（実行コマンドなしで）で動作させることができる．
+Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
+とができる．
 
-Xcrypt スクリプトに
+ジョブ定義ハッシュに $\texttt{dry}$ というキーが使えるようになる．ジョ
+ブ定義ハッシュに
 \begin{boxnote}
 \begin{verbatim}
-$dry::dry = 1;
+...
+'dry' => 1,
+...
 \end{verbatim}
 \end{boxnote}
 \noindent
-と記述することで Xcrypt がドライモードで動作する．
+と記述することでジョブがドライモードで動作する．
 
 \if0
 また，
@@ -302,6 +306,7 @@ $limit::smph=Thread::Semaphore->new(100);
 \end{verbatim}
 \end{boxnote}
 
+\if0
 \section{\texttt{minimax}}
 
 あるノードからその子ノードを与えるプログラムと，ノードに対する評価関数
@@ -336,6 +341,7 @@ $limit::smph=Thread::Semaphore->new(100);
 で，\texttt{komadoku}，\texttt{kuraidori}，\texttt{ikiataribattari}，の
 三つの評価関数下における \texttt{0} の位置のノードから \texttt{9} の深
 さで先読みした際の値をそれぞれ返す．
+\fi
 
 \chapter{大域変数}\label{globalvar}
 
