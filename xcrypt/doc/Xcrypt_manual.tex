@@ -411,22 +411,6 @@ $separator = '-';
 この値のファイル名で実行プログラムとジョブスケジューラの標準エラー出力
 を格納する．空の場合は「stderr」というファイル名になる．
 
-\section{\texttt{ofile}}
-
-実行プログラムの出力ファイルを記述する．
-
-\section{\texttt{odlmtr}}
-
-実行プログラムの出力ファイルの行を区切る際の区切り文字を指定する．
-
-\section{\texttt{oclmn}}
-
-実行プログラムの出力ファイルの列を指定する．
-
-\section{\texttt{output}}
-
-実行プログラムの出力を上記三つで整形したものが格納される．
-
 \section{\texttt{queue}}
 
 実行するジョブを投入するキューの名前を記述する．
@@ -672,34 +656,5 @@ sync(@thrds);
 
 \texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
 ずる．
-
-
-\section{\texttt{pickup}}
-
-ファイル名と区切り文字を受け取り，ファイルの先頭行を区切り文字で分割
-し，それらからなる配列を返す．
-
-\subsection{\format}
-
-\begin{boxnote}
-\begin{verbatim}
-pickup(ファイル名，区切り文字);
-\end{verbatim}
-\end{boxnote}
-
-\section{\texttt{repickup}}
-
-ジョブハッシュリファレンスの配列を受け取り，\texttt{ofile}キーの値であ
-るところのファイルの先頭行を\texttt{odlmtr}キーの値であるところの区
-切り文字で区切った際の\texttt{oclmn}キーの値であるところの数番目の列
-からなる配列を返す．
-
-\subsection{\format}
-
-\begin{boxnote}
-\begin{verbatim}
-repickup(ジョブハッシュリファレンスの配列);
-\end{verbatim}
-\end{boxnote}
 
 \end{document}

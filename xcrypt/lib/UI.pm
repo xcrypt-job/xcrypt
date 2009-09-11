@@ -4,14 +4,12 @@ use strict;
 use File::Copy;
 
 use base qw(Exporter);
-our @EXPORT = qw(pickup repickup pickupfirst pickupall
- prepare submit sync
- prepare_submit_sync prepare_submit submit_sync
- );
+our @EXPORT = qw(prepare submit sync
+prepare_submit_sync prepare_submit submit_sync
+);
 
 my $nilchar = 'nil';
-my @allmembers = ('exe', 'ofile', 'oclmn', 'odlmtr', 'stdofile',
-		  'stdefile', 'queue', 'proc', 'cpu');
+my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
 my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
 my $max = 255;
@@ -198,69 +196,6 @@ sub sync {
 	push (@outputs , $output);
     }
     return @outputs;
-}
-
-=comment
-my $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'pjo_inventory_write.pl');
-sub killall {
-    my $prefix = shift;
-    foreach (@_) {
-	my $id = $prefix . '_' . $_;
-	my @list = &pickup("$id/request_id", ' ');
-	my @revlist = reverse(@list);
-	system("qdel -k $revlist[4]");
-	system("qdel $revlist[4]");
-	system("$write_command inv_watch/$id \"done\" \"spec: $id\"");
-    }
-}
-=cut
-
-sub pickupall {
-    my @list;
-    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
-    my $line;
-    foreach (<OUTPUT>) {
-	$line = $_;
-	chomp($line);
-	push(@list, $line);
-    }
-    close ( OUTPUT );
-    return \@list;
-}
-
-sub pickup {
-    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
-    my $line;
-    foreach (<OUTPUT>) {
-	$line = $_;
-    }
-    my $delimit = $_[1];
-    my @list = split(/$delimit/, $line);
-    close ( OUTPUT );
-    return @list;
-}
-
-sub pickupfirst {
-    open ( OUTPUT , "< $_[0]" ) or warn "Can't open $_[0]";
-    my $line;
-    $line = <OUTPUT>;
-    my $delimit = $_[1];
-    my @list = split(/$delimit/, $line);
-    close ( OUTPUT );
-    return @list;
-}
-
-sub repickup {
-    my @outputs = ();
-    foreach (@_) {
-	my @stdouts;
-	if ($_->{ofile}) {
-	    my @stdlist = &pickup(File::Spec->catfile($_->{id}, $_->{ofile}),
-				  $_->{odlmtr});
-	    push (@stdouts, $stdlist[$_->{oclmn}]);
-	}
-	return @stdouts;
-    }
 }
 
 sub prepare_submit_sync {
