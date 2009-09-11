@@ -18,7 +18,7 @@ sub start {
 
 sub before {
     my $self = shift;
-    if ($dry) {
+    if ($self->{dry} == 1) {
 	$self->{exe} = '';
 	for ( my $i = 0; $i <= $user::max; $i++ ) {
 	    my $arg = 'arg' . $i;
