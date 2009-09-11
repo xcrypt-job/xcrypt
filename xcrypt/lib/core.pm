@@ -97,24 +97,6 @@ sub after {
 	push(@thrds , $thrd);
     }
     foreach (@thrds) { $_->join; }
-
-    my $dir = $self->{id};
-    unless ($self->{ofile}) {}
-    else {
-	my $outputfile = File::Spec->catfile($dir, $self->{ofile});
-	my @list = &pickup($outputfile, $self->{odlmtr});
-	$self->{output} = $list[$self->{oclmn}];
-	unshift (@{$self->{trace}} , $list[$self->{oclmn}]);
-    }
-
-    # exit_cond により生成されるジョブの結果もディレクトリ以下に保存
-=comment
-    my $tracelog_filename = 'trace.log';
-    my $tracelog = File::Spec->catfile($dir, $tracelog_filename);
-    open ( EXITOUTPUT , ">> $tracelog" );
-    print EXITOUTPUT join (' ', @{$self->{trace}}), "\n";
-    close ( EXITOUTPUT );
-=cut
 }
 
 1;
