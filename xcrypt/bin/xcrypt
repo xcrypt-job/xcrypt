@@ -5,6 +5,7 @@ package xcrypt;
 use strict;
 use File::Copy;
 use File::Spec;
+use File::Basename;
 use Getopt::Long;
 
 #my $opt_dry = 0;
@@ -35,7 +36,6 @@ print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
-#print TMP '$dry::dry = ' . $opt_dry .  ';' . "\n";
 print TMP 'our $max = 255;' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
@@ -53,8 +53,7 @@ close ( TMP );
 close ( USER );
 
 chmod 0755, $savefile or die "Can't chmod $savefile\n";
-my $exitcode = system("perl $savefile");
-unless ($exitcode == 0) { die "Can't perl $savefile"; }
-
-#system("perl $savefile");
-#unlink $savefile or die "Can't remove $savefile";
+my $dir = File::Spec->catfile(dirname($savefile));
+my $file = File::Spec->catfile(basename($savefile));
+my $exitcode = system("cd $dir; perl $file");
+unless ($exitcode == 0) { die "Can't perl $file"; }
