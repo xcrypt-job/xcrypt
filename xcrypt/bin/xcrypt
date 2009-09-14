@@ -55,7 +55,8 @@ close ( TMP );
 close ( USER );
 
 chmod 0755, $savefile or die "Can't chmod $savefile\n";
-my $dir = File::Spec->catfile(dirname($savefile));
-my $file = File::Spec->catfile(basename($savefile));
-my $exitcode = system("cd $dir; perl $file");
-unless ($exitcode == 0) { die "Can't perl $file"; }
+#my $dir = File::Spec->catfile(dirname($savefile));
+#my $file = File::Spec->catfile(basename($savefile));
+#my $exitcode = system("cd $dir; perl $file");
+my $exitcode = system("perl $savefile");
+unless ($exitcode == 0) { die "Can't perl $savefile"; }
