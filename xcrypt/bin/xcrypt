@@ -12,7 +12,9 @@ use Getopt::Long;
 #my $opt_sge = 0;
 #GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
 
-if ($ARGV[0] eq '') { die "A first argument should be an Xcrypt script.\n"; }
+if (File::Spec->catfile(basename($ARGV[0])) !~ /xcr/) {
+    die "A first argument should be an Xcrypt script.\n";
+}
 
 my $savefile = "$ARGV[0]" . '.pl';
 
