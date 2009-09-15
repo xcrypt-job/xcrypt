@@ -4,6 +4,7 @@ use strict;
 use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
+use File::Basename;
 use jobsched;
 
 sub new {
@@ -48,10 +49,13 @@ sub new {
 		}
             }
             if ($self->{"linkedfile$i"}) {
-                my $link = File::Spec->catfile($dir, $self->{"linkedfile$i"});
+                my $prelink = File::Spec->catfile(basename($self->{"linkedfile$i"}));
+                my $link = File::Spec->catfile($dir, $prelink);
                 my $file1 = $self->{"linkedfile$i"};
                 my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
 		if ( -e $file1 ) {
+		    print $link, "\n";
+		    print $file2, "\n";
 		    symlink($file2, $link);
 		} else {
 		    warn "Can't link to $file1";
