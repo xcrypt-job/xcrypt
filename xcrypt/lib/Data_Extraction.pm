@@ -8,6 +8,7 @@ use Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(EF);
 use strict;
+#use warnings;
 use File::Basename;
 use Cwd;
 
@@ -217,13 +218,26 @@ sub check_fixed_form_cond {
         print STDERR "Regular Expression Character string is not Found\n";
         exit 99;
     }
-    if ($_[2] =~ /R/ and $_[4] =~ /^\+\d+/ and ($_[4] !~ /^\+\d+$/ or $_[4] == 0))  {
+    if ($_[2] =~ /R/ and $_[4] =~ /^[\+-]\d+/ and ($_[4] !~ /^[\+-]\d+$/ or $_[4] == 0))  {
         # 抽出範囲誤り
         print STDERR "End Range Number is an Error \($_[4]\)\n";
         exit 99;
     }
+    ############################################################################################＜ver0.2制限チェック＞
+    if ($_[2] eq 'LR' and $_[4] =~ /^-\d+$/)  {
+        # ver0.2制限（正規表現のマイナス範囲）
+        print STDERR "Ver0.2 restrictions is an Error \($_[4]\)\n";
+        exit 99;
+    }
+    if ($_[2] eq 'LR' and $_[1] eq '!')  {
+        # ver0.2制限（正規表現の否定）
+        print STDERR "Ver0.2 restrictions is an Error \($_[4]\)\n";
+        exit 99;
+    }
+    ############################################################################################＜ver0.2制限チェック＞
     if ($_[2] eq 'L' or $_[2] eq 'C') {
         if ($_[4] eq '') {
+            $_[4] = $_[3];
         } elsif ($_[4] =~ /^\d+$/ and $_[4] > 0) {
             if ($_[3] > $_[4]) {
                 my $temp_su = $_[3];
@@ -533,12 +547,10 @@ sub get_line {
         }
     } else {
         # 抽出結果
-        if ($_[0]->{line_now} >= $_[0]->{line_seek}) {
-            for (my $index1=0 ; $index1 <= $#{$_[0]->{out_data_line}}; $index1++) {
-                if ($_[0]->{line_seek} == (&change_16to10(${$_[0]->{out_data_line}}[$index1]))) {
-                    $line = $_[0]->{out_data}[$index1];
-                    last;
-                }
+        for (my $index1=0 ; $index1 <= $#{$_[0]->{out_data_line}}; $index1++) {
+            if ($_[0]->{line_seek} == (&change_16to10(${$_[0]->{out_data_line}}[$index1]))) {
+                $line = $_[0]->{out_data}[$index1];
+                last;
             }
         }
     }
@@ -613,7 +625,7 @@ sub add_data {
             return;
         }
     }
-    push(@{$_[0]->{out_data_line}}, (&change_10to16($_[1])));
+    push(@{$_[0]->{out_data_line}}, &change_10to16($_[1]));
     push(@{$_[0]->{out_data}}, $_[2]);
 }
 ###################################################################################################
@@ -669,9 +681,11 @@ sub get_cond_lr_s {
     # 正規表現指定を行番号指定に変換（起点行）
     foreach (@_) {
         if (${$_}[3] eq '') {
-            push(@add_cond, ['L', "${$_}[1]", "$line_now", "${$_}[3]", "${$_}[4]", "${$_}[5]", "${$_}[6]", "${$_}[7]"]);
-        } elsif (${$_}[3] =~ /^[\+-]\d+$/ ) {
+            push(@add_cond, ['L', "${$_}[1]", "$line_now", "$line_now", "${$_}[4]", "${$_}[5]", "${$_}[6]", "${$_}[7]"]);
+        } elsif (${$_}[3] =~ /^\+\d+$/ ) {
             push(@add_cond, ['L', "${$_}[1]", "$line_now", ($line_now + ${$_}[3]), "${$_}[4]", "${$_}[5]", "${$_}[6]", "${$_}[7]"]);
+        } elsif (${$_}[3] =~ /^-\d+$/ ) {
+            push(@add_cond, ['L', "${$_}[1]", ($line_now + ${$_}[3]), "$line_now", "${$_}[4]", "${$_}[5]", "${$_}[6]", "${$_}[7]"]);
         } else {
             push(@add_cond, ['r', "${$_}[1]", "$line_now", "${$_}[3]", "${$_}[4]", "${$_}[5]", "${$_}[6]", "${$_}[7]"]);
         }
@@ -714,9 +728,12 @@ sub get_cond_user {
     foreach (@_) {
         &seek_line($obj, $obj->{line_now});
         # ユーザー関数の呼出し
-        my $user_sub = '&'.${$_}[1].'('."\"$obj->{line_now}\"";
+        my $user_sub = '&'.${$_}[1].'(';
         for (my $index1=2 ; $index1 <= $#{$_}; $index1++) {
-            $user_sub .= ', "'.${$_}[$index1].'"';
+            if ($index1 > 2) {
+                $user_sub .= ', ';
+            }
+            $user_sub .= '"'.${$_}[$index1].'"';
         }
         $user_sub .= ');';
         $extraction_data = $extraction_data | eval($user_sub);
@@ -856,7 +873,8 @@ sub get_cond_cr {
             $check_key1 .= '[^\s\,]*';
         }
         my $check_key2 = '';
-        if (${$_}[(3 + $col_add)] ne '' and ${$_}[(3 + $col_add)] !~ /^\+\d+$/) {
+        if (${$_}[(3 + $col_add)] ne '' and ${$_}[(3 + $col_add)] !~ /^[\+-]\d+$/) {
+      ##if (${$_}[(3 + $col_add)] ne '' and ${$_}[(3 + $col_add)] !~ /^\+\d+$/) {
             ${$_}[(3 + $col_add)] =~  s/^\\s\*|^\\,\*|^,\*|^\[\\s\]\*|^\[\\,\]\*|^\[,\]\*|^\[\\,\\s\]\*|^\[,\\s\]\*|^\[\\s\\,\]\*|^\[\\s,\]\*//;
             ${$_}[(3 + $col_add)] =~  s/^(\[.*)\\s(.*\]\*)/$1$2/;
             ${$_}[(3 + $col_add)] =~  s/^(\[.*)\\,(.*\]\*)/$1$2/;
@@ -887,13 +905,16 @@ sub get_cond_cr {
             $col_start = $col_start + (&get_col_data("", "$split_out1[0]")) + $split_out1_add + 1;
             my $col_split_out1 = &get_col_data("", "$split_out1[1]");
             my $col_end2 = $col_start + $col_split_out1 - 1;
-
             if (${$_}[(3 + $col_add)] eq '') {
                 # 範囲なし
                 $col_end = $col_end2;
             } elsif (${$_}[(3 + $col_add)] =~ /^\+(\d+)$/) {
                 # ＋ｎ列まで
                 $col_end = $col_end2 + ${$_}[(3 + $col_add)];
+            } elsif (${$_}[(3 + $col_add)] =~ /^-(\d+)$/) {
+                # －ｎ列まで
+                $col_start = $col_start + ${$_}[(3 + $col_add)];
+                $col_end   = $col_end2;
             } else {
                 # 正規表現の列まで
                 if ($next_data =~ /($check_key2)(.*)/) {
