@@ -8,6 +8,7 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use IO::Socket;
+use xcropt;
 # use Thread::Semaphore;
 
 ##################################################
@@ -38,7 +39,8 @@ foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
 ### Inventory
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
-my $inventory_port = 9999;           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
+my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
+print "inventory_port: $inventory_port\n";
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $inventory_save_path=$inventory_path;
 

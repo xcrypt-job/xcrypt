@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-
 package xcrypt;
 
 use strict;
@@ -33,6 +32,7 @@ if ( -e $savefile ) { unlink $savefile; }
 open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
 open ( TMP , "> $savefile") or die "Can't open $savefile\n";
 print TMP 'package user;' . "\n";
+print TMP 'use xcropt;' . "\n";
 print TMP 'use UI;' . "\n";
 print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
@@ -58,5 +58,6 @@ chmod 0755, $savefile or die "Can't chmod $savefile\n";
 #my $dir = File::Spec->catfile(dirname($savefile));
 #my $file = File::Spec->catfile(basename($savefile));
 #my $exitcode = system("cd $dir; perl $file");
-my $exitcode = system("perl $savefile");
+shift @ARGV;
+my $exitcode = system("perl $savefile " . join(' ', @ARGV));
 unless ($exitcode == 0) { die "Can't perl $savefile"; }
