@@ -40,7 +40,7 @@ foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
 my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
-print "inventory_port: $inventory_port\n";
+# print "inventory_port: $inventory_port\n"
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $inventory_save_path=$inventory_path;
 
