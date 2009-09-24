@@ -43,8 +43,8 @@ sub alphabeta {
     my @children = &getchildren($pos);
     if (($depth == 0) || ($#children == -1)) {
 	my $se ='./' . $staticevaluation;
-	my $result = qx/$se $pos/;
-#	my $result = &inverse($pos);
+#	my $result = qx/$se $pos/;
+	my $result = &inverse($pos);
 #	my $result = int(rand(1000));
 #	my $result = $val{"$pos"};
 	return $result;

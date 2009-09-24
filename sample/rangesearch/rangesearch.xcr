@@ -8,16 +8,16 @@ $limit::smph=Thread::Semaphore->new(100);
 %xyz = (
     'id' => 'job7',
     'exe' => './fib',
-    'arg0' => '20',
+    'arg0' => '50',
 #    'copieddir0' => '.',
-    'linkedfile0' => '../fib',
+    'linkedfile0' => 'fib',
     'dry' => 0,
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz,
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 36 + $_[0] + $_[2]; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #
