@@ -16,10 +16,10 @@ use base qw(core);
 
 @results = &prepare_submit_sync(%xyz,
 				'RANGE0' => [15,16,17],
-				'RANGE1' => ['inversetree'],
+#				'RANGE1' => ['inversetree'],
 				'RANGE2' => ['minimax', 'alphabeta'],
 				'arg0S'  => sub { "./$_[2]";},
 				'arg1S'  => sub { $_[0]; },
-				'arg3S'  => sub { $_[1]; },
+#				'arg3S'  => sub { $_[1]; },
 				'linkedfile2S' => sub { "$_[1]"; }
     );
