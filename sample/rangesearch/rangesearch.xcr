@@ -3,7 +3,7 @@ use base qw(limit dry core);
 $separator_nocheck = 0;
 $separator = '-';
 
-$limit::smph=Thread::Semaphore->new(100);
+$limit::smph=Thread::Semaphore->new(10000);
 
 %xyz = (
     'id' => 'job7',
@@ -12,12 +12,14 @@ $limit::smph=Thread::Semaphore->new(100);
 #    'copieddir0' => '.',
     'linkedfile0' => 'fib',
     'dry' => 0,
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'queue' => 'all.q',
+#    'queue' => 'gh10034',
+#    'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz,
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 36 + $_[0] + $_[2]; }
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
+ 'RANGE0' => [1..1000], 'arg0S' => sub { 40; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #
@@ -30,4 +32,7 @@ my @jobs = &prepare(%xyz,
 # 'arg0S' => 1
 );
 my @thrds = &submit(@jobs);
+print STDOUT "HOGE\n";
+print STDOUT $#thrds;
+print STDOUT "HOGE\n";
 my @results  = &sync(@thrds);

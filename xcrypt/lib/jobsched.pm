@@ -722,10 +722,12 @@ sub check_and_alert_elapsed {
 
     my $sum = 0;
     my %elapseds = ();
+    my $length = 0;
     foreach my $i (@jobids) {
+	$elapseds{"$i"} = undef;
 	my $time_done_now = time();
 	my $inventoryfile = File::Spec->catfile ('inv_watch', "$i");
-	my $time_running;
+	my $time_running = 0;
 	open( INV, "$inventoryfile" );
 	while (<INV>) {
 	    if ($_ =~ /^time_running\:\s*([0-9]*)/) {
@@ -736,15 +738,22 @@ sub check_and_alert_elapsed {
 	    }
 	}
 	close( INV );
-	my $elapsed = $time_done_now - $time_running;
-	$sum = $sum + $elapsed;
-	$elapseds{"$i"} = $elapsed;
+	unless ($time_running == 0) {
+	    my $elapsed = $time_done_now - $time_running;
+	    $sum = $sum + $elapsed;
+	    $elapseds{"$i"} = $elapsed;
+	    $length = $length + 1;
+	}
     }
-    my $length =  @jobids;
-    my $average = $sum / $length;
+    my $average = 0;
+    unless ($length == 0) {
+	$average = $sum / $length;
+    }
     foreach (@jobids) {
-	if ( $elapseds{$_} - $average > 10 ) {
-	    print "Warning: $_ takes more time than the other jobs.\n";
+	if (defined $elapseds{$_}) {
+	    if ( $elapseds{$_} - $average > 300 ) {
+		print "Warning: $_ takes more time than the other jobs.\n";
+	    }
 	}
     }
 }
