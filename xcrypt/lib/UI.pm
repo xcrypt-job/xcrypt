@@ -4,6 +4,7 @@ use strict;
 use File::Copy;
 use threads;
 use threads::shared;
+use Thread::Semaphore;
 use xcropt;
 
 use base qw(Exporter);
@@ -12,6 +13,9 @@ prepare_submit_sync prepare_submit submit_sync
 );
 
 threads->set_stack_size($xcropt::options{stack_size});
+if ( $xcropt::options{limit} > 0 ) {
+    $user::smph = Thread::Semaphore->new($xcropt::options{limit});
+}
 
 my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
