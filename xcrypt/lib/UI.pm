@@ -4,11 +4,14 @@ use strict;
 use File::Copy;
 use threads;
 use threads::shared;
+use xcropt;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit submit_nosync sync
 prepare_submit_sync prepare_submit submit_sync
 );
+
+threads->set_stack_size($xcropt::options{stack_size});
 
 my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
