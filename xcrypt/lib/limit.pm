@@ -4,7 +4,7 @@ use strict;
 use NEXT;
 use Thread::Semaphore;
 
-our $smph;
+#our $smph;
 
 sub new {
     my $class = shift;
@@ -19,19 +19,21 @@ sub start {
 
 sub before {
     my $self = shift;
-    if (defined $smph) {
-	$smph->down;
+=comment
+    if (defined $user::smph) {
+	$user::smph->down;
     } else {
 	warn "Not given \$limit.  Not using limit.pm.\n";
     }
+=cut
     $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
     $self->NEXT::after();
-    if (defined $smph) {
-	$smph->up;
+    if (defined $user::smph) {
+	$user::smph->up;
     } else {
 	warn "Not given \$limit.  Not using limit.pm.\n";
     }

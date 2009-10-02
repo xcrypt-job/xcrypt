@@ -60,4 +60,4 @@ chmod 0755, $savefile or die "Can't chmod $savefile\n";
 #my $exitcode = system("cd $dir; perl $file");
 shift @ARGV;
 my $exitcode = system("perl $savefile " . join(' ', @ARGV));
-unless ($exitcode == 0) { die "Can't perl $savefile"; }
+unless ($exitcode == 0) { die "Can't perl $savefile\n"; }

@@ -28,7 +28,8 @@ while ($retry) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
-        if ( $n_trial >= $retry ) {
+#        if ( $n_trial >= $retry ) {
+        if ( 0 ) {
             die "Failed to connect $host:$port. $!\n";
         }
         $n_trial++;

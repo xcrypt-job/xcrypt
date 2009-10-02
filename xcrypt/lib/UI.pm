@@ -2,9 +2,11 @@ package UI;
 
 use strict;
 use File::Copy;
+use threads;
+use threads::shared;
 
 use base qw(Exporter);
-our @EXPORT = qw(prepare submit sync
+our @EXPORT = qw(prepare submit submit_nosync sync
 prepare_submit_sync prepare_submit submit_sync
 );
 
@@ -182,11 +184,32 @@ sub MIN {
 sub submit {
     my @thrds = ();
     foreach (@_) {
-	$_->{thrds} = \@thrds;
+	# ここでよい？
+	if (defined $user::smph) {
+	    $user::smph->down;
+	} else {
+	    warn "Not given \$limit.  Not using limit.pm.\n";
+	}
+
 	my $thrd = threads->new(\&user::start, $_);
 	push(@thrds , $thrd);
     }
     return @thrds;
+}
+
+sub submit_nosync {
+    foreach (@_) {
+	# ここでよい？
+	if (defined $user::smph) {
+	    $user::smph->down;
+	} else {
+	    warn "Not given \$limit.  Not using limit.pm.\n";
+	}
+
+
+	my $thrd = threads->new(\&user::start, $_);
+	$thrd->detach();
+    }
 }
 
 sub sync {
