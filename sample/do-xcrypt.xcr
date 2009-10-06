@@ -1,0 +1,18 @@
+# xcryptをジョブ内で投げるジョブスクリプト
+use base qw(dry limit core);
+use Data_Extraction;
+use File::Spec;
+
+my $XCRFILE=File::Spec->rel2abs("rangesearch/rangesearch.xcr");
+
+prepare_submit_sync (
+                     'id' => 'job-xcrypt',
+                     'exe' => "PATH=$ENV{PATH} XCRYPT=$ENV{XCRYPT} XCRJOBSCHED=$ENV{XCRJOBSCHED} xcrypt",
+                     'arg0' => $XCRFILE,
+                     'arg1' => '--limit 50',
+                     # .xcr以外の必要ファイル
+                     'copiedfile0' => 'rangesearch/fib',
+                     'queue' => 'gh10034',
+                     'option' => '# @$-g gh10034',
+                     'memory' => '31gb',
+);
