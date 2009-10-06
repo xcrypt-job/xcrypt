@@ -72,23 +72,20 @@ if ($opts{'all'}) {
 
     my @value = values(%reqid_jobids_hash);
     foreach (@value) {
-	my $tmp = File::Spec->catfile("$_", "request_id");
-	my $temp;
-	open (DEL, "< $tmp");
-	$temp = <DEL>;
-	close (DEL);
-	system ("$qdel_command $temp");
-	system (inventory_write_cmdline("$_", "aborted"));
+	&command($_);
     }
 } else {
-    my $tmp = File::Spec->catfile($ARGV[0], "request_id");
+    &command($ARGV[0]);
+}
+
+sub command {
+    my $tmp = File::Spec->catfile($_[0], "request_id");
     my $temp;
     open (DEL, "< $tmp");
     $temp = <DEL>;
     close (DEL);
-
     system ("$qdel_command $temp");
-    system (inventory_write_cmdline($ARGV[0], "aborted"));
+    system (inventory_write_cmdline($_[0], "aborted"));
 }
 
 sub inventory_write_cmdline {
