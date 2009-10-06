@@ -7,9 +7,6 @@ use base qw(core);
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'arg0S' => [0..9],
-# 'after' => 'if ($self->{stdout} == 2) { system("qdel -u $ENV{USERNAME}"); }'
+&prepare_submit_sync(%xyz, 'arg0S' => [0..9],
+ 'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
 );
-my @thrds = &submit(@jobs);
-my @results  = &sync(@thrds);
-foreach (@results) { print ${$_->{stdout}}[0]; }
