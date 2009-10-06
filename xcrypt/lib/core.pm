@@ -75,7 +75,6 @@ sub start {
         print "Skipping " . $self->{id} . " because already done.\n";
     } else {
         $self->{request_id} = &jobsched::qsub($self);
-
 	&jobsched::wait_job_done($self->{id});
     }
 }
