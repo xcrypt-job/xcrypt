@@ -5,6 +5,7 @@ use File::Copy;
 use threads;
 use threads::shared;
 use Thread::Semaphore;
+use jobsched;
 use xcropt;
 
 use base qw(Exporter);
@@ -191,41 +192,47 @@ sub MIN {
 sub submit {
     my @thrds = ();
     foreach (@_) {
-	# ã“ã“ã§ã‚ˆã„ï¼Ÿ
+        # ¤³¤³¤Ç¤è¤¤¡©
 	if (defined $user::smph) {
 	    $user::smph->down;
 	} else {
-	    warn "Not given \$limit.  Not using limit.pm.\n";
+	    # warn "Not given \$limit.  Not using limit.pm.\n";
 	}
 
 	my $thrd = threads->new(\&user::start, $_);
-	push(@thrds , $thrd);
+	$thrd->detach();
+        $_->{_thread}=$thrd;
     }
-    return @thrds;
+    return @_;
 }
 
 sub submit_nosync {
     foreach (@_) {
-	# ã“ã“ã§ã‚ˆã„ï¼Ÿ
+        # ¤³¤³¤Ç¤è¤¤¡©
 	if (defined $user::smph) {
 	    $user::smph->down;
 	} else {
 	    warn "Not given \$limit.  Not using limit.pm.\n";
 	}
-
-
 	my $thrd = threads->new(\&user::start, $_);
 	$thrd->detach();
     }
 }
 
 sub sync {
-    my @outputs;
-    foreach (@_) {
-	my $output = $_->join;
-	push (@outputs , $output);
-    }
-    return @outputs;
+    my $undone;
+    # thread->sync¤ò»È¤¦¤ÈÆ±´ü¤¬´°Î»¤¹¤ë¤Ş¤Ç¥¹¥ì¥Ã¥É¥ª¥Ö¥¸¥§¥¯¥È¤¬À¸¤­»Ä¤ë
+    do {
+        $undone=0;
+        sleep (3);
+        foreach (@_) {
+            if( $_->{_thread}->is_running() ) {
+                $undone++;
+            }
+        }
+        # print "$undone jobs are undone.\n";
+    } until ($undone==0);
+    return @_;
 }
 
 sub prepare_submit_sync {
