@@ -18,9 +18,14 @@ sub new {
     # 前回実行時にできたインベントリファイルがあれば反映
     &jobsched::load_inventory ($self->{id});
     # doneになってたら処理はとばす
-    unless ( &jobsched::get_job_status ($self->{id}) eq 'done') {
-        # done以外だったらactiveにしてジョブディレクトリを（あれば）削除
-        &jobsched::set_job_status ($self->{id}, 'active');
+    my $last_stat = &jobsched::get_job_status ($self->{id});
+    if ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+        if ( $last_stat eq 'finished' ) {
+            &jobsched::inventory_write ($self->{id}, "done");
+        }
+    } else {
+        # done, finished以外だったらactiveにしてジョブディレクトリを（あれば）削除
+        &jobsched::inventory_write ($self->{id}, "active");
         if ( -e $dir ) {
             print "Delete directory $dir\n";
             File::Path::rmtree ($dir);
@@ -70,9 +75,10 @@ sub start {
     my $self = shift;
     my $dir = $self->{id};
 
-    # 前回doneになったジョブならとばす．
-    if ( &jobsched::get_job_status ($self->{id}) eq 'done') {
-        print "Skipping " . $self->{id} . " because already done.\n";
+    # 前回done, finishedになったジョブならとばす．
+    my $stat = &jobsched::get_job_status($self->{id});
+    if ( $stat eq 'done' ) {
+        print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
         $self->{request_id} = &jobsched::qsub($self);
 	&jobsched::wait_job_done($self->{id});

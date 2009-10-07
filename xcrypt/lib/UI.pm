@@ -198,40 +198,36 @@ sub submit {
 	} else {
 	    # warn "Not given \$limit.  Not using limit.pm.\n";
 	}
-
+        
 	my $thrd = threads->new(\&user::start, $_);
 	$thrd->detach();
-        $_->{_thread}=$thrd;
+        # 書くとメモリを喰う？
+        # $_->{_thread}=$thrd;
     }
     return @_;
 }
 
-sub submit_nosync {
-    foreach (@_) {
-        # ここでよい？
-	if (defined $user::smph) {
-	    $user::smph->down;
-	} else {
-	    warn "Not given \$limit.  Not using limit.pm.\n";
-	}
-	my $thrd = threads->new(\&user::start, $_);
-	$thrd->detach();
-    }
-}
+# sub submit_nosync {
+#     foreach (@_) {
+#         # ここでよい？
+# 	if (defined $user::smph) {
+# 	    $user::smph->down;
+# 	} else {
+# 	    warn "Not given \$limit.  Not using limit.pm.\n";
+# 	}
+# 	my $thrd = threads->new(\&user::start, $_);
+# 	$thrd->detach();
+#     }
+# }
 
 sub sync {
-    my $undone;
     # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-    do {
-        $undone=0;
-        sleep (3);
-        foreach (@_) {
-            if( $_->{_thread}->is_running() ) {
-                $undone++;
-            }
-        }
-        # print "$undone jobs are undone.\n";
-    } until ($undone==0);
+    foreach (@_)
+    {
+        # print "Waiting for $_->{id} finished.\n"; 
+        &jobsched::wait_job_finished ($_->{id});
+        # print "$_->{id} finished.\n"; 
+    }
     return @_;
 }
 

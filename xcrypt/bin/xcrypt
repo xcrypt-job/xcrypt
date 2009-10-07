@@ -46,7 +46,7 @@ print TMP '&jobsched::invoke_abort_check();' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP '$jobsched::abort_check_thread->detach;' . "\n";
-print TMP 'sub start {my $self = shift;$self->before();$self->SUPER::start();$self->after();$self->{_thread_retval}=$self;threads->exit();}' . "\n";
+print TMP 'sub start {my $self = shift;$self->before();$self->SUPER::start();$self->after();jobsched::inventory_write($_->{id},"finished");threads->exit();}' . "\n";
 print TMP 'sub before {my $self = shift;eval($self->{before});$self->SUPER::before();}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after});}' . "\n";
 
