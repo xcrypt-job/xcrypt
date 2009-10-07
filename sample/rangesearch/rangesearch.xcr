@@ -4,7 +4,7 @@ $separator_nocheck = 0;
 $separator = '-';
 
 #$limit::smph=Thread::Semaphore->new(1);
-$smph=Thread::Semaphore->new(1300);
+$smph=Thread::Semaphore->new(1300);      # overwrites --limit option
 
 %xyz = (
     'id' => 'job7',
