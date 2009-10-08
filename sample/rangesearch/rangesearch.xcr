@@ -1,10 +1,10 @@
 use base qw(limit dry core);
 
 $separator_nocheck = 0;
-$separator = '-';
+$separator = '_';
 
 #$limit::smph=Thread::Semaphore->new(1);
-$smph=Thread::Semaphore->new(1300);      # overwrites --limit option
+$smph=Thread::Semaphore->new(1000);      # overwrites --limit option
 
 %xyz = (
     'id' => 'job7',
@@ -15,13 +15,13 @@ $smph=Thread::Semaphore->new(1300);      # overwrites --limit option
     'linkedfile0' => 'fib',
     'dry' => 0,
 #     'queue' => 'all.q',
-   'queue' => 'gh10034',
-   'option' => '# @$-g gh10034'
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 
 my @jobs = &prepare(%xyz,
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
- 'RANGE0' => [1..20], 'arg0S' => sub { 40; }
+ 'RANGE0' => [1..1000], 'arg0S' => sub { 40; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #

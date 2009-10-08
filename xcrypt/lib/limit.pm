@@ -19,13 +19,11 @@ sub start {
 
 sub before {
     my $self = shift;
-=comment
     if (defined $user::smph) {
 	$user::smph->down;
     } else {
 	warn "Not given \$limit.  Not using limit.pm.\n";
     }
-=cut
     $self->NEXT::before();
 }
 
