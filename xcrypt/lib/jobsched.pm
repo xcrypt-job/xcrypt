@@ -64,7 +64,7 @@ our %job_status : shared;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
-my %status_level = ("active"=>0, "submitted"=>1, "queued"=>2, "running"=>3, "done"=>4, "aborted"=>5);
+my %status_level = ("active"=>0, "submitted"=>1, "queued"=>2, "running"=>3, "done"=>4, "finished"=>5, "aborted"=>6);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared;
 our $abort_check_thread=undef;
@@ -185,7 +185,7 @@ sub qsub {
     print SCRIPT "$cmd\n";
     # 正常終了でなければ "aborted" を書き込むべき？
 
-    # Set job's status "exit"
+    # Set job's status "done"
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
     close (SCRIPT);
     ### --> Create job script file -->
@@ -203,7 +203,7 @@ sub qsub {
 
     # Set job's status "submitted"
     inventory_write ($job_name, "submitted");
-
+    
     my $qsub_command = $jobsched_config{$jobsched}{qsub_command};
     unless ( defined $qsub_command ) {
         die "qsub_command is not defined in $jobsched.pm";
@@ -212,6 +212,7 @@ sub qsub {
         print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
+        # Get request ID from qsub's output
         if ( defined ($jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
             unless ( ref $jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
                 die "Error in $jobsched.pm: extract_req_id_from_qsub_output must be a function";
@@ -221,6 +222,7 @@ sub qsub {
             $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
+        # Remember request ID
         my $idfile = File::Spec->catfile($dir, 'request_id');
         open (REQUESTID, ">> $idfile");
         print REQUESTID $req_id;
@@ -230,6 +232,7 @@ sub qsub {
         print REQUESTIDS $req_id . ' ' . $dir . ' ';
         close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
+        # Set job's status "queued"
         inventory_write ($job_name, "queued");
         return $req_id;
     } else {
@@ -322,6 +325,9 @@ sub handle_inventory {
         }
     } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
         set_job_done ($last_jobname, $1);
+        $ret = 1;
+    } elsif ($line =~ /^time_finished\:\s*([0-9]*)/) {   # ジョブスレッドの終了 
+        set_job_finished ($last_jobname, $1);
         $ret = 1;
     } elsif ($line =~ /^time_aborted\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
         set_job_aborted ($last_jobname, $1);
@@ -520,38 +526,45 @@ sub set_job_status {
 }
 sub set_job_active  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "active", "done", "aborted") ) {
+    if (do_set_p ($jobname, $tim, "active", "active", "submitted", "queued", "running", "aborted") ) {
         set_job_status ($jobname, "active", $tim);
     }
 }
 sub set_job_submitted {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "submitted", "active", "done", "aborted") ) {
+    if (do_set_p ($jobname, $tim, "submitted", "active") ) {
         set_job_status ($jobname, "submitted", $tim);
     }
 }
 sub set_job_queued {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "queued", "submitted" ) ) {
-        set_job_status ($_[0], "queued", $tim);
+    if (do_set_p ($jobname, $tim, "queued", "submitted" ) ) {
+        set_job_status ($jobname, "queued", $tim);
     }
 }
 sub set_job_running  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "running", "queued" ) ) {
+    if (do_set_p ($jobname, $tim, "running", "queued" ) ) {
         set_job_status ($jobname, "running", $tim);
     }
 }
 sub set_job_done   {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "done", "running" ) ) {
+    if (do_set_p ($jobname, $tim, "done", "running", "finished" ) ) {
         set_job_status ($jobname, "done", $tim);
+    }
+}
+sub set_job_finished   {
+    my ($jobname, $tim) = @_;
+    if (do_set_p ($jobname, $tim, "finished", "done" ) ) {
+        set_job_status ($jobname, "finished", $tim);
     }
 }
 sub set_job_aborted  {
     my ($jobname, $tim) = @_;
-    if ( do_set_p ($jobname, $tim, "aborted", "submitted", "queued", "running" )
-         && get_job_status ($jobname) ne "done" ) {
+    my $curstat = get_job_status ($jobname);
+    if (do_set_p ($jobname, $tim, "aborted", "active", "submitted", "queued", "running" )
+        && $curstat ne "done" && $curstat ne "finished" ) {
         set_job_status ($jobname, "aborted", $tim);
     }
 }
@@ -601,12 +614,13 @@ sub wait_job_status {
     }
     # print "$jobname: exit wait_job_status\n";
 }
-sub wait_job_active { wait_job_status ($_[0], "active"); }
+sub wait_job_active    { wait_job_status ($_[0], "active"); }
 sub wait_job_submitted { wait_job_status ($_[0], "submitted"); }
-sub wait_job_queued   { wait_job_status ($_[0], "queued"); }
-sub wait_job_running  { wait_job_status ($_[0], "running"); }
-sub wait_job_done   { wait_job_status ($_[0], "done"); }
-sub wait_job_aborted  { wait_job_status ($_[0], "aborted"); }
+sub wait_job_queued    { wait_job_status ($_[0], "queued"); }
+sub wait_job_running   { wait_job_status ($_[0], "running"); }
+sub wait_job_done      { wait_job_status ($_[0], "done"); }
+sub wait_job_finished  { wait_job_status ($_[0], "finished"); }
+sub wait_job_aborted   { wait_job_status ($_[0], "aborted"); }
 
 # すべてのジョブの状態を出力（デバッグ用）
 sub print_all_job_status {
