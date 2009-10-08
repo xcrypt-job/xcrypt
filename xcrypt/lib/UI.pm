@@ -5,7 +5,7 @@ use strict;
 use threads;
 #use threads::shared;
 #use Thread::Semaphore;
-#use jobsched;
+use jobsched;
 #use xcropt;
 
 use base qw(Exporter);
@@ -98,7 +98,6 @@ sub times {
     return @result;
 }
 
-my $user::maxrange = 16;
 sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
@@ -230,6 +229,25 @@ sub sync {
     my %hash = @_;
     my @array = values(%hash);
 
+    my $n = 1;
+    until ($n == 0) {
+	sleep 1;
+	my @key = keys(%hash);
+	foreach my $i (@key) {
+	    my $stat = &jobsched::get_job_status($i);
+	    if ($stat eq 'done') {
+		my $self = $hash{"$i"};
+		if (defined $self->{'after'}) {
+		    $self->after();
+		    print $i . "\'s after-processing finished.\n";
+		}
+		delete($hash{"$i"});
+		$n = keys(%hash);
+		&jobsched::inventory_write($i, "finished");
+	    }
+	}
+    }
+
     # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
     foreach (@array)
     {
@@ -257,3 +275,5 @@ sub prepare_submit {
     return &submit(@objs);
 }
 =cut
+
+1;
