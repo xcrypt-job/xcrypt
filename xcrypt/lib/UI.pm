@@ -1,12 +1,12 @@
 package UI;
 
 use strict;
-use File::Copy;
+#use File::Copy;
 use threads;
-use threads::shared;
-use Thread::Semaphore;
-use jobsched;
-use xcropt;
+#use threads::shared;
+#use Thread::Semaphore;
+#use jobsched;
+#use xcropt;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit submit_nosync sync
@@ -20,7 +20,7 @@ if ( $xcropt::options{limit} > 0 ) {
 
 my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
-my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+my @prememers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
 my $max = 255;
 for ( my $i = 0; $i <= $max; $i++ ) {
@@ -250,5 +250,3 @@ sub prepare_submit {
     my @objs = &prepare(@_);
     return &submit(@objs);
 }
-
-1;
