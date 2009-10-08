@@ -21,7 +21,7 @@ $smph=Thread::Semaphore->new(1300);      # overwrites --limit option
 
 my @jobs = &prepare(%xyz,
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
- 'RANGE0' => [1..100], 'arg0S' => sub { 42; }
+ 'RANGE0' => [1], 'arg0S' => sub { 40; }
 # 'RANGE0' => [0,1], 'arg0S' => [2,4]
 # 'RANGE0' => [0,1], 'arg0S' => \3
 #
