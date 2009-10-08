@@ -39,6 +39,7 @@ print TMP 'use threads::shared;' . "\n";
 print TMP 'use jobsched;' . "\n";
 #print TMP 'use base qw(core);' . "\n";
 print TMP 'our $max = 255;' . "\n";
+print TMP 'our $maxrange = 16;' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
@@ -46,7 +47,6 @@ print TMP '&jobsched::invoke_abort_check();' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP '$jobsched::abort_check_thread->detach;' . "\n";
-print TMP '$jobsched::after_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->before();$self->SUPER::start();}' . "\n";
 print TMP 'sub before {my $self = shift;eval($self->{before});$self->SUPER::before();}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after});}' . "\n";

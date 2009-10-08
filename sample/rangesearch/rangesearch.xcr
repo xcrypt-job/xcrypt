@@ -39,5 +39,6 @@ my %jobs = &prepare(%xyz,
 
 &jobsched::invoke_after_processing(%jobs);
 &submit_noafter(%jobs);
+$jobsched::after_thread->detach;
 
 &sync(%jobs);
