@@ -730,30 +730,6 @@ sub getjobids {
     return @jobids;
 }
 
-sub invoke_after_processing {
-    our $after_thread = threads->new( sub {
-    my %hash = @_;
-        while (1) {
-            sleep 1;
-
-	    my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
-	    my @jobids = &getjobids($reqidfile);
-
-	    foreach my $i (@jobids) {
-		my $stat = get_job_status($i);
-		if ($stat eq 'finished') {
-		    my $self = $hash{"$i"};
-		    if (defined $self->{'after'}) {
-			$self->after();
-			print $i . "\'s after-processing finished.\n";
-		    }
-		    inventory_write($i, "finished");
-		}
-	    }
-        }
-				      });
-}
-
 sub check_and_alert_elapsed {
     my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
     my @jobids = &getjobids($reqidfile);
