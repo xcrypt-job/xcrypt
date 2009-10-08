@@ -153,6 +153,7 @@ sub prepare {
     } else {
 	my $obj = &generate(\%jobs);
 	push(@objs, $obj);
+
     }
     return @objs;
 }
@@ -190,13 +191,6 @@ sub MIN {
 sub submit {
     my @thrds = ();
     foreach (@_) {
-        # ここでよい？
-	if (defined $user::smph) {
-	    $user::smph->down;
-	} else {
-	    # warn "Not given \$limit.  Not using limit.pm.\n";
-	}
-
 	my $thrd = threads->new(\&user::start, $_);
 	$thrd->detach();
         # 書くとメモリを喰う？
@@ -206,15 +200,13 @@ sub submit {
 }
 
 sub submit_noafter {
-    foreach (@_) {
-        # ここでよい？
-	if (defined $user::smph) {
-	    $user::smph->down;
-	} else {
-	    warn "Not given \$limit.  Not using limit.pm.\n";
+    my @jobs = @_;
+    my $thrd = threads->new( sub {
+	foreach (@jobs) {
+	    &user::start($_);
 	}
-	&user::start($_);
-    }
+			     } );
+    $thrd->detach();
     return @_;
 }
 
@@ -232,10 +224,8 @@ sub sync {
 	    my $stat = &jobsched::get_job_status($i);
 	    if ($stat eq 'done') {
 		my $self = $hash{"$i"};
-		if (defined $self->{'after'}) {
-		    $self->after();
-		    print $i . "\'s after-processing finished.\n";
-		}
+		$self->after();
+		print $i . "\'s after-processing finished.\n";
 		delete($hash{"$i"});
 		$n = keys(%hash);
 		&jobsched::inventory_write($i, "finished");

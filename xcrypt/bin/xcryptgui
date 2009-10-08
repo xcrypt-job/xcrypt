@@ -217,6 +217,7 @@ sub monitoring {
     my @jobids = &getjobids($reqidfile);
 
     my %jobcolors = ( 'done'      => $green,
+		      'finished'      => $green,
 		      'aborted'   => $red,
 		      'active'    => $black,
 		      'submitted' => $black,
