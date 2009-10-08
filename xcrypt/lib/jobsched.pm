@@ -731,8 +731,8 @@ sub getjobids {
 }
 
 sub invoke_after_processing {
-    my %hash = @_;
     our $after_thread = threads->new( sub {
+    my %hash = @_;
         while (1) {
             sleep 1;
 
@@ -740,18 +740,8 @@ sub invoke_after_processing {
 	    my @jobids = &getjobids($reqidfile);
 
 	    foreach my $i (@jobids) {
-		my $inventoryfile = File::Spec->catfile ('inv_watch', "$i");
-		open( INVEN, "$inventoryfile" );
-		my $flag;
-		while (my $line = <INVEN>) {
-		    if ($line =~ /^status\:\s*done/) {
-			$flag = 1;
-		    }
-		    if ($line =~ /^status\:\s*finished/) {
-			$flag = 0;
-		    }
-		}
-		if ($flag == 1) {
+		my $stat = get_job_status($i);
+		if ($stat eq 'finished') {
 		    my $self = $hash{"$i"};
 		    if (defined $self->{'after'}) {
 			$self->after();
@@ -759,7 +749,6 @@ sub invoke_after_processing {
 		    }
 		    inventory_write($i, "finished");
 		}
-		close( INVEN );
 	    }
         }
 				      });

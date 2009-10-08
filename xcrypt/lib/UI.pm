@@ -22,8 +22,7 @@ my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
 my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
-my $max = 255;
-for ( my $i = 0; $i <= $max; $i++ ) {
+for ( my $i = 0; $i <= $user::max; $i++ ) {
     foreach (@premembers) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
@@ -99,7 +98,7 @@ sub times {
     return @result;
 }
 
-my $MAXRANGE = 16;
+my $user::maxrange = 16;
 sub prepare {
     my %jobs = @_;
     foreach (@allmembers) {
@@ -112,7 +111,7 @@ sub prepare {
     }
 
     my $existOfRANGE = 0;
-    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	if ( exists($jobs{"RANGE$i"}) ) {
 	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		my $tmp = @{$jobs{"RANGE$i"}};
@@ -122,7 +121,7 @@ sub prepare {
 	    }
 	}
     }
-    for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	unless ( exists($jobs{"RANGE$i"}) ) {
 	    my @tmp = ($nilchar);
 	    $jobs{"RANGE$i"} = \@tmp;
@@ -132,7 +131,7 @@ sub prepare {
     my %objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
-	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
+	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	    if ( exists($jobs{"RANGE$i"}) ) {
 		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		    push(@ranges, $jobs{"RANGE$i"});
@@ -209,7 +208,7 @@ sub submit {
         # 書くとメモリを喰う？
         # $_->{_thread}=$thrd;
     }
-#    return %hash;
+    return %hash;
 }
 
 sub submit_noafter {
@@ -224,6 +223,7 @@ sub submit_noafter {
 	}
 	&user::start($_);
     }
+    return %hash;
 }
 
 sub sync {
@@ -237,7 +237,7 @@ sub sync {
         &jobsched::wait_job_finished ($_->{id});
         # print "$_->{id} finished.\n"; 
     }
-    return @array;
+    return %hash;
 }
 
 =comment
