@@ -127,7 +127,7 @@ sub prepare {
 	}
     }
 
-    my %objs;
+    my @objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
@@ -142,22 +142,19 @@ sub prepare {
 	my @range = &times(@ranges);
 	foreach (@range) {
 	    my $obj = &generate(\%jobs, @{$_});
-	    my $id = $obj->{'id'};
-	    $objs{"$id"} = $obj;
+	    push(@objs, $obj);
 	}
     } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
 	my @params = (0..(&MIN(\%jobs)-1));
 	foreach (@params) {
 	    my $obj = &generate(\%jobs, $_);
-	    my $id = $obj->{'id'};
-	    $objs{"$id"} = $obj;
+	    push(@objs, $obj);
 	}
     } else {
 	my $obj = &generate(\%jobs);
-	my $id = $obj->{'id'};
-	$objs{"$id"} = $obj;
+	push(@objs, $obj);
     }
-    return %objs;
+    return @objs;
 }
 
 sub MAX {
@@ -191,10 +188,8 @@ sub MIN {
 }
 
 sub submit {
-    my %hash = @_;
-    my @array = values(%hash);
     my @thrds = ();
-    foreach (@array) {
+    foreach (@_) {
         # ここでよい？
 	if (defined $user::smph) {
 	    $user::smph->down;
@@ -207,13 +202,11 @@ sub submit {
         # 書くとメモリを喰う？
         # $_->{_thread}=$thrd;
     }
-    return %hash;
+    return @_;
 }
 
 sub submit_noafter {
-    my %hash = @_;
-    my @array = values(%hash);
-    foreach (@array) {
+    foreach (@_) {
         # ここでよい？
 	if (defined $user::smph) {
 	    $user::smph->down;
@@ -222,18 +215,20 @@ sub submit_noafter {
 	}
 	&user::start($_);
     }
-    return %hash;
+    return @_;
 }
 
 sub sync {
-    my %hash = @_;
-    my @array = values(%hash);
+    my @array = @_;
 
+    my %hash;
+    foreach (@array) {
+	$hash{"$_->{'id'}"} = $_;
+    }
     my $n = 1;
     until ($n == 0) {
 	sleep 1;
-	my @key = keys(%hash);
-	foreach my $i (@key) {
+	foreach my $i (keys(%hash)) {
 	    my $stat = &jobsched::get_job_status($i);
 	    if ($stat eq 'done') {
 		my $self = $hash{"$i"};
@@ -249,31 +244,29 @@ sub sync {
     }
 
     # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-    foreach (@array)
-    {
-        # print "Waiting for $_->{id} finished.\n"; 
-        &jobsched::wait_job_finished ($_->{id});
-        # print "$_->{id} finished.\n"; 
-    }
-    return %hash;
+#    foreach (@array)
+#    {
+        # print "Waiting for $_->{id} finished.\n";
+#        &jobsched::wait_job_finished ($_->{id});
+        # print "$_->{id} finished.\n";
+#    }
+    return @_;
 }
 
-=comment
 sub prepare_submit_sync {
-    my @objs = &prepare(@_);
-    my @thrds = &submit(@objs);
-    return &sync(@thrds);
+    my @jobs = &prepare(@_);
+    my @objs = &submit(@jobs);
+    return &sync(@objs);
 }
 
 sub submit_sync {
-    my @thrds = &submit(@_);
-    return &sync(@thrds);
+    my @objs = &submit(@_);
+    return &sync(@objs);
 }
 
 sub prepare_submit {
-    my @objs = &prepare(@_);
-    return &submit(@objs);
+    my @jobs = &prepare(@_);
+    return &submit(@jobs);
 }
-=cut
 
 1;
