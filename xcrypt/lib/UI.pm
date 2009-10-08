@@ -20,7 +20,7 @@ if ( $xcropt::options{limit} > 0 ) {
 
 my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
-my @prememers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
 my $max = 255;
 for ( my $i = 0; $i <= $max; $i++ ) {
