@@ -81,7 +81,7 @@ sub start {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
         $self->{request_id} = &jobsched::qsub($self);
-	&jobsched::wait_job_done($self->{id});
+#	&jobsched::wait_job_done($self->{id});
     }
 }
 
