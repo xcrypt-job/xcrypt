@@ -9,7 +9,7 @@ use threads;
 #use xcropt;
 
 use base qw(Exporter);
-our @EXPORT = qw(prepare submit submit_nosync sync
+our @EXPORT = qw(prepare submit submit_noafter sync
 prepare_submit_sync prepare_submit submit_sync
 );
 
@@ -129,7 +129,7 @@ sub prepare {
 	}
     }
 
-    my @objs;
+    my %objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $MAXRANGE; $i++ ) {
@@ -144,19 +144,22 @@ sub prepare {
 	my @range = &times(@ranges);
 	foreach (@range) {
 	    my $obj = &generate(\%jobs, @{$_});
-	    push(@objs , $obj);
+	    my $id = $obj->{'id'};
+	    $objs{"$id"} = $obj;
 	}
     } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
 	my @params = (0..(&MIN(\%jobs)-1));
 	foreach (@params) {
 	    my $obj = &generate(\%jobs, $_);
-	    push(@objs , $obj);
+	    my $id = $obj->{'id'};
+	    $objs{"$id"} = $obj;
 	}
     } else {
 	my $obj = &generate(\%jobs);
-	push(@objs , $obj);
+	my $id = $obj->{'id'};
+	$objs{"$id"} = $obj;
     }
-    return @objs;
+    return %objs;
 }
 
 sub MAX {
@@ -190,8 +193,10 @@ sub MIN {
 }
 
 sub submit {
+    my %hash = @_;
+    my @array = values(%hash);
     my @thrds = ();
-    foreach (@_) {
+    foreach (@array) {
         # ここでよい？
 	if (defined $user::smph) {
 	    $user::smph->down;
@@ -204,33 +209,38 @@ sub submit {
         # 書くとメモリを喰う？
         # $_->{_thread}=$thrd;
     }
-    return @_;
+#    return %hash;
 }
 
-# sub submit_nosync {
-#     foreach (@_) {
-#         # ここでよい？
-# 	if (defined $user::smph) {
-# 	    $user::smph->down;
-# 	} else {
-# 	    warn "Not given \$limit.  Not using limit.pm.\n";
-# 	}
-# 	my $thrd = threads->new(\&user::start, $_);
-# 	$thrd->detach();
-#     }
-# }
+sub submit_noafter {
+    my %hash = @_;
+    my @array = values(%hash);
+    foreach (@array) {
+        # ここでよい？
+	if (defined $user::smph) {
+	    $user::smph->down;
+	} else {
+	    warn "Not given \$limit.  Not using limit.pm.\n";
+	}
+	&user::start($_);
+    }
+}
 
 sub sync {
+    my %hash = @_;
+    my @array = values(%hash);
+
     # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-    foreach (@_)
+    foreach (@array)
     {
         # print "Waiting for $_->{id} finished.\n"; 
         &jobsched::wait_job_finished ($_->{id});
         # print "$_->{id} finished.\n"; 
     }
-    return @_;
+    return @array;
 }
 
+=comment
 sub prepare_submit_sync {
     my @objs = &prepare(@_);
     my @thrds = &submit(@objs);
@@ -246,3 +256,4 @@ sub prepare_submit {
     my @objs = &prepare(@_);
     return &submit(@objs);
 }
+=cut

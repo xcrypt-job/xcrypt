@@ -730,6 +730,41 @@ sub getjobids {
     return @jobids;
 }
 
+sub invoke_after_processing {
+    my %hash = @_;
+    our $after_thread = threads->new( sub {
+        while (1) {
+            sleep 1;
+
+	    my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
+	    my @jobids = &getjobids($reqidfile);
+
+	    foreach my $i (@jobids) {
+		my $inventoryfile = File::Spec->catfile ('inv_watch', "$i");
+		open( INVEN, "$inventoryfile" );
+		my $flag;
+		while (my $line = <INVEN>) {
+		    if ($line =~ /^status\:\s*done/) {
+			$flag = 1;
+		    }
+		    if ($line =~ /^status\:\s*finished/) {
+			$flag = 0;
+		    }
+		}
+		if ($flag == 1) {
+		    my $self = $hash{"$i"};
+		    if (defined $self->{'after'}) {
+			$self->after();
+			print $i . "\'s after-processing finished.\n";
+		    }
+		    inventory_write($i, "finished");
+		}
+		close( INVEN );
+	    }
+        }
+				      });
+}
+
 sub check_and_alert_elapsed {
     my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
     my @jobids = &getjobids($reqidfile);
@@ -782,6 +817,7 @@ sub invoke_abort_check {
         }
     });
 }
+
 
 # スレッド起動（読み込むだけで起動，は正しい？）
 #invoke_watch ();
