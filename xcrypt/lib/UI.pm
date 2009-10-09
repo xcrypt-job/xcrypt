@@ -9,7 +9,7 @@ use jobsched;
 #use xcropt;
 
 use base qw(Exporter);
-our @EXPORT = qw(prepare submit submit_noafter sync
+our @EXPORT = qw(prepare submit submit_noafter sync after_sync
 prepare_submit_sync prepare_submit submit_sync
 );
 
@@ -73,11 +73,6 @@ sub generate {
 	    }
 	}
     }
-=comment
-    my $dir = $job{'id'};
-    $job{'stdofile'} = File::Spec->catfile($dir, 'stdout');
-    $job{'stdefile'} = File::Spec->catfile($dir, 'stderr');
-=cut
     return user->new(\%job);
 }
 
@@ -211,6 +206,19 @@ sub submit_noafter {
 }
 
 sub sync {
+    my @array = @_;
+
+    # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
+    foreach (@array)
+    {
+        # print "Waiting for $_->{id} finished.\n";
+        &jobsched::wait_job_finished ($_->{id});
+        # print "$_->{id} finished.\n";
+    }
+    return @_;
+}
+
+sub after_sync {
     my @array = @_;
 
     my %hash;
