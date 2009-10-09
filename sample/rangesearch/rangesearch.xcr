@@ -1,9 +1,9 @@
-use base qw(limit dry core);
+use base qw(dry core);
 
 $separator_nocheck = 0;
 $separator = '_';
 
-$smph=Thread::Semaphore->new(3);      # overwrites --limit option
+$smph=Thread::Semaphore->new(1);      # overwrites --limit option
 
 %xyz = (
     'id' => 'job7',
