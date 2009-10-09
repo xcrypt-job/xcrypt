@@ -196,6 +196,9 @@ sub submit {
 
 sub submit_noafter {
     foreach (@_) {
+        if ( defined $user::smph ) {
+            $user::smph->down;
+        }
 	&user::start($_);
     }
     return @_;
