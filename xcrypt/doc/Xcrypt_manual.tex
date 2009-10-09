@@ -302,16 +302,6 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 とオプションつきで実行することでドライモードで動作させることもできる．
 \fi
 
-\section{\texttt{limit}}
-
-一度に投入されるジョブの数の上限を指定する．
-
-\begin{boxnote}
-\begin{verbatim}
-$limit::smph=Thread::Semaphore->new(100);
-\end{verbatim}
-\end{boxnote}
-
 \if0
 \section{\texttt{minimax}}
 
@@ -350,6 +340,16 @@ $limit::smph=Thread::Semaphore->new(100);
 \fi
 
 \chapter{大域変数}\label{globalvar}
+
+\section{\texttt{limit}}
+
+一度に投入されるジョブの数の上限を指定する．
+
+\begin{boxnote}
+\begin{verbatim}
+$smph=Thread::Semaphore->new(100);
+\end{verbatim}
+\end{boxnote}
 
 \section{\texttt{separator}}
 
@@ -598,8 +598,13 @@ push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
 
 \section{\texttt{submit}}
 
+\if0
 ジョブリファレンスの配列を受け取り，各ジョブをジョブスケジューラに渡
 し，ジョブスケジューラからジョブスレッドを受け取り，それらの配列を返す．
+\fi
+
+ジョブリファレンスの配列を受け取り，各ジョブをジョブスケジューラに渡
+し，ジョブリファレンスの配列を返す．
 
 \subsection{\format}
 
@@ -631,7 +636,12 @@ submit({'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'},
 
 \section{\texttt{sync}}
 
+\if0
 ジョブスレッドの配列を受け取り，ジョブ処理後のジョブリファレンスの配列
+を返す．
+\fi
+
+ジョブハッシュの配列を受け取り，そのジョブの後処理を行う．
 を返す．
 
 \subsection{\format}
@@ -649,8 +659,8 @@ sync(ジョブスレッドの配列);
 \begin{boxnote}
 \begin{verbatim}
 @jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
-@thrds = submit(@jobs);
-sync(@thrds);
+@objs = submit(@jobs);
+sync(@objs);
 \end{verbatim}
 \end{boxnote}
 

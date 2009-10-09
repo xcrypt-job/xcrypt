@@ -33,7 +33,7 @@ open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
 open ( TMP , "> $savefile") or die "Can't open $savefile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use xcropt;' . "\n";
-print TMP 'use UI;' . "\n";
+print TMP 'use builtinfunc;' . "\n";
 print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use Thread::Semaphore;' . "\n";
@@ -52,7 +52,6 @@ print TMP '$jobsched::abort_check_thread->detach;' . "\n";
 print TMP 'sub start {my $self = shift;$self->before();$self->SUPER::start();$self->after();jobsched::inventory_write($_->{id},"finished");threads->exit();}' . "\n";
 print TMP 'sub before {my $self = shift;eval($self->{before});$self->SUPER::before();}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after});}' . "\n";
-
 #print TMP 'return 0;' . "\n";
 close ( TMP );
 close ( USER );
