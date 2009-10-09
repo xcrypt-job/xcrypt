@@ -33,10 +33,11 @@ my @jobs = &prepare(%xyz,
 # 'arg0S' => 1
 );
 
-
+# $ xcrypt rangesearch.xcr
 #&submit(@jobs);
 #&sync(@jobs);
 
+# $ xcryptsub rangesearch.xcr
 &submit_noafter(@jobs);
 &after_sync(@jobs);
 
