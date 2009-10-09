@@ -195,13 +195,9 @@ sub submit {
 }
 
 sub submit_noafter {
-    my @jobs = @_;
-    my $thrd = threads->new( sub {
-	foreach (@jobs) {
-	    &user::start($_);
-	}
-			     } );
-    $thrd->detach();
+    foreach (@_) {
+	&user::start($_);
+    }
     return @_;
 }
 
