@@ -1,5 +1,7 @@
 package limit;
 
+warn "Now limit.pm is obsoleted!";
+
 use strict;
 use NEXT;
 use Thread::Semaphore;
