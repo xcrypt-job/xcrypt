@@ -9,7 +9,7 @@ use jobsched;
 #use xcropt;
 
 use base qw(Exporter);
-our @EXPORT = qw(prepare submit submit_noafter sync after_sync
+our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
 );
 
@@ -184,17 +184,6 @@ sub MIN {
 }
 
 sub submit {
-    my @thrds = ();
-    foreach (@_) {
-	my $thrd = threads->new(\&user::start, $_);
-	$thrd->detach();
-        # 書くとメモリを喰う？
-        # $_->{_thread}=$thrd;
-    }
-    return @_;
-}
-
-sub submit_noafter {
     foreach (@_) {
         if ( defined $user::smph ) {
             $user::smph->down;
@@ -205,19 +194,6 @@ sub submit_noafter {
 }
 
 sub sync {
-    my @array = @_;
-
-    # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-    foreach (@array)
-    {
-        # print "Waiting for $_->{id} finished.\n";
-        &jobsched::wait_job_finished ($_->{id});
-        # print "$_->{id} finished.\n";
-    }
-    return @_;
-}
-
-sub after_sync {
     my @array = @_;
 
     my %hash;
