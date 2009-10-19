@@ -6,6 +6,8 @@ use threads;
 #use threads::shared;
 #use Thread::Semaphore;
 use jobsched;
+use default;
+
 #use xcropt;
 
 use base qw(Exporter);
@@ -22,7 +24,7 @@ my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
 my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
 
-for ( my $i = 0; $i <= $user::max; $i++ ) {
+for ( my $i = 0; $i <= $default::maxargetc; $i++ ) {
     foreach (@premembers) {
 	my $name = $_ . $i;
 	push(@allmembers, "$name");
@@ -105,7 +107,7 @@ sub prepare {
     }
 
     my $existOfRANGE = 0;
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $default::maxrange; $i++ ) {
 	if ( exists($jobs{"RANGE$i"}) ) {
 	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		my $tmp = @{$jobs{"RANGE$i"}};
@@ -115,7 +117,7 @@ sub prepare {
 	    }
 	}
     }
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $default::maxrange; $i++ ) {
 	unless ( exists($jobs{"RANGE$i"}) ) {
 	    my @tmp = ($nilchar);
 	    $jobs{"RANGE$i"} = \@tmp;
@@ -125,7 +127,7 @@ sub prepare {
     my @objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
-	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+	for ( my $i = 0; $i < $default::maxrange; $i++ ) {
 	    if ( exists($jobs{"RANGE$i"}) ) {
 		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		    push(@ranges, $jobs{"RANGE$i"});

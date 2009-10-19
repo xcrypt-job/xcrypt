@@ -1,5 +1,6 @@
 use base qw(GA core);
 use Data_Extraction;
+use Data_Generation;
 
 %xyz = (
     'id' => 'job9',
@@ -14,8 +15,14 @@ use Data_Extraction;
 				'arg4S' => ['12345 54321 abcde edcba',
 					    '00000 11111 22222 33333 44444']);
 foreach (@results) {
+    # use Data_Extraction
     my $datum = EF("file:$ENV{PWD}/$_->{id}/$_->{stdofile}");
-    $datum->ED("L/1");
-    @hoge = $datum->ER();
-    print join(' ', @hoge);
+    $datum->ED('C/1');
+    my @hoge = $datum->ER();
+
+    # use Data_Generation
+    my $gen = CF("$ENV{PWD}/refinement/plasma.inp", "$ENV{PWD}/$_->{id}");
+    $gen->KR('param', "$hoge[0]");
+    $gen->do();
 }
+
