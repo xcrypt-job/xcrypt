@@ -104,6 +104,7 @@ sub before {
 sub after {
     my $self = shift;
 
+=comment
     my @thrds = ();
     foreach (@{$self->{successor}}) {
 	no strict 'refs';
@@ -114,6 +115,7 @@ sub after {
 	push(@thrds , $thrd);
     }
     foreach (@thrds) { $_->join; }
+=cut
 }
 
 1;
