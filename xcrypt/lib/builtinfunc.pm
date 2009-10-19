@@ -20,6 +20,9 @@ if ( $xcropt::options{limit} > 0 ) {
     $user::smph = Thread::Semaphore->new($xcropt::options{limit});
 }
 
+our $after_thread;
+our %jobhashes = ();
+
 my $nilchar = 'nil';
 my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
 my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
@@ -185,7 +188,34 @@ sub MIN {
     return $num;
 }
 
+sub invoke_after() {
+    $after_thread = threads->new( sub {
+	while (1) {
+	    sleep(1);
+
+	    foreach my $i (keys(%jobhashes)) {
+		my $stat = &jobsched::get_job_status($i);
+		if ($stat eq 'done') {
+		    my $self = $jobhashes{"$i"};
+		    $self->after();
+		    print $i . "\'s after-processing finished.\n";
+		    delete($jobhashes{"$i"});
+		    &jobsched::inventory_write($i, "finished");
+		}
+	    }
+	}
+				  });
+}
+
+
 sub submit {
+    my @array = @_;
+    $after_thread->detach();
+    $after_thread = 0;
+    foreach my $i (@array) {
+	$jobhashes{"$i->{id}"} = $i;
+    }
+    &invoke_after();
     foreach (@_) {
         if ( defined $user::smph ) {
             $user::smph->down;
@@ -197,34 +227,16 @@ sub submit {
 
 sub sync {
     my @array = @_;
-
-    my %hash;
-    foreach (@array) {
-	$hash{"$_->{'id'}"} = $_;
-    }
-    my $n = 1;
-    until ($n == 0) {
-	sleep 1;
-	foreach my $i (keys(%hash)) {
-	    my $stat = &jobsched::get_job_status($i);
-	    if ($stat eq 'done') {
-		my $self = $hash{"$i"};
-		$self->after();
-		print $i . "\'s after-processing finished.\n";
-		delete($hash{"$i"});
-		$n = keys(%hash);
-		&jobsched::inventory_write($i, "finished");
-	    }
-	}
-    }
-
     # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-#    foreach (@array)
-#    {
+    my %hash;
+    foreach my $i (@array) {
+	$hash{"$i->{id}"} = $i;
+    }
+    foreach (keys(%hash)) {
         # print "Waiting for $_->{id} finished.\n";
-#        &jobsched::wait_job_finished ($_->{id});
+        &jobsched::wait_job_finished ($_);
         # print "$_->{id} finished.\n";
-#    }
+    }
     return @_;
 }
 
