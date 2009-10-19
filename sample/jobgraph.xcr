@@ -1,5 +1,6 @@
 use base qw(core);
 
+=comment
 %abc = (
     'id' => 'job2',
     'exe' => 'echo',
@@ -7,6 +8,7 @@ use base qw(core);
     'option' => '# @$-g gh10034',
     'successor' => ['def','ghi','jkl']
 );
+=cut
 %def = (
     'id' => 'job5',
     'predecessor' => ['job3','job4'],
@@ -27,4 +29,7 @@ use base qw(core);
     'option' => '# @$-g gh10034'
 );
 
-&prepare_submit_sync(%abc);
+my @pqr = &prepare_submit(%ghi);
+my @stu = &prepare_submit(%jkl);
+my @mno = &prepare_submit(%def);
+&sync(@pqr, @stu, @mno);
