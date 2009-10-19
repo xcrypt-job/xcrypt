@@ -5,11 +5,20 @@ use Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
 use File::Basename;
+use default;
 use jobsched;
 
 sub new {
     my $class = shift;
     my $self = shift;
+
+    # stderr & stdout
+    unless ($self->{stdofile}) {
+	$self->{stdofile} = 'stdout';
+    }
+    unless (defined $self->{stdefile}) {
+	$self->{stdefile} = 'stderr';
+    }
 
     # ジョブをジョブごとに作成されるディレクトリで処理
     my $dir = $self->{id};
@@ -32,7 +41,7 @@ sub new {
         }
         mkdir $dir , 0755;
 
-        for ( my $i = 0; $i <= $user::max; $i++ ) {
+        for ( my $i = 0; $i <= $default::maxargetc; $i++ ) {
             if ($self->{"copieddir$i"}) {
                 my $copied = $self->{"copieddir$i"};
                 opendir(DIR, $copied);

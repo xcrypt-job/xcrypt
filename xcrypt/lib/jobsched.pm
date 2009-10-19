@@ -9,6 +9,7 @@ use File::Basename;
 use File::Spec;
 use IO::Socket;
 use xcropt;
+use default;
 # use Thread::Semaphore;
 
 ##################################################
@@ -180,7 +181,7 @@ sub qsub {
 
     # Execute a program
     my @args = ();
-    for ( my $i = 0; $i <= $user::max; $i++ ) { push(@args, $self->{"arg$i"}); }
+    for ( my $i = 0; $i <= $default::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
     # 正常終了でなければ "aborted" を書き込むべき？
