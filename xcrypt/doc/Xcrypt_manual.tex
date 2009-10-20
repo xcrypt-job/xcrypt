@@ -132,9 +132,9 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 
 \begin{boxnote}
 \begin{verbatim}
-use base qw(limit core);
+use base qw(core);
 
-$limit::smph=Thread::Semaphore->new(10);
+$smph=Thread::Semaphore->new(10);
 $separator = '-';
 
 %xyz = (
@@ -151,9 +151,7 @@ $separator = '-';
     'option' => '# @$-g gh10034'
 );
 
-my @jobs = &prepare(%xyz, 'arg1S' => [2,4]);
-my @thrds = &submit(@jobs);
-my @results  = &sync(@thrds);
+&prepare_submit_sync(%xyz, 'arg1S' => [2,4]);
 \end{verbatim}
 \end{boxnote}
 
@@ -163,22 +161,21 @@ my @results  = &sync(@thrds);
 
 \section{概念図}
 
-{\large
 \[
 \entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=100pt{
   *{}
   \ar[r]|(.4){\txt{\small オブジェクト生成}} &
-  \txt{active} \ar[rrd]|(.3){\txt{\small \texttt{xcryptdel}入力}}|\hole \ar[r]|{\txt{\small \texttt{qsub}実行}} &
-  \txt{submitted} \ar[rd]|!{[r];[dl]}\hole|{\txt{\small \texttt{qsub}失敗}} \ar[r]|{\txt{\small \texttt{qsub}成功}} &
-  \txt{queued} \ar[lld]|(.7){\txt{\small スクリプト開始}} \ar[d]|{\txt{\small 当該ジョブ消滅}}\\
-  *{} &
-  \txt{running} \ar[r]|{\txt{\small スクリプト終了}} \ar@/_5pc/[rr]|{\txt{\small 当該ジョブ消滅}}&
-  \txt{done} &
+  \txt{active} \ar[rrd]|!{[rr];[dl]}\hole|(.6){\txt{\small \texttt{xcryptdel}入力}}
+  \ar[r]|{\txt{\small \texttt{前処理・qsub}実行}} &
+  \txt{submitted} \ar[rd]|!{[r];[dll]}\hole|(.6){\txt{\small \texttt{qsub}失敗}} \ar[r]|{\txt{\small \texttt{qsub}成功}} &
+  \txt{queued} \ar[llld]|(.6){\txt{\small スクリプト開始}} \ar[d]|{\txt{\small 当該ジョブ消滅}}\\
+  \txt{running} \ar[r]|{\txt{\small スクリプト終了}}
+  \ar@/_5pc/[rrr]|{\txt{\small 当該ジョブ消滅}} & \txt{done}
+  \ar[r]|{\txt{\small 後処理}} & \txt{finished} &
   \txt{aborted}
 }
 \]
-}
 
 \section{実行方法}
 
@@ -237,11 +234,11 @@ Xcrypt が Xcrypt スクリプトから作成する Perl スクリプトである．Xcryptが
 の値で指定されている作業ディレクトリ中のファイルのコピーをジョブ作業ディ
 レクトリに作成する．
 
-\subsection*{\texttt{nqs.sh}}
+\subsection*{\texttt{NQS.sh}}
 
 ジョブスケジューラが NQS である際，NQS に渡されるスクリプトである．
 
-\subsection*{\texttt{sge.sh}}
+\subsection*{\texttt{SGE.sh}}
 
 ジョブスケジューラが Sun Grid Engine である際，Sun Grid Engine に渡され
 るスクリプトである．
@@ -341,7 +338,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 \chapter{大域変数}\label{globalvar}
 
-\section{\texttt{limit}}
+\section{\texttt{smph}}
 
 一度に投入されるジョブの数の上限を指定する．
 
