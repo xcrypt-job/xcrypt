@@ -1,18 +1,16 @@
 use base qw(core);
+use Data_Extraction;
 
 %xyz = (
     'id' => 'job8',
-    'exe' => './kempo',
-    'arg0' => '20',
-    'arg1' => 'plasma.inp',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
+    'exe' => 'echo',
+    'arg0' => '10',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
 my $today = 10;
-my $yesterday = 10;
+my $yesterday;
 my $arg0 = 10;
 my %job = %xyz;
 
@@ -21,7 +19,12 @@ until (abs($today - $yesterday) > 45) {
     $job{'id'} = $job{'id'} . '_';
     $job{'arg0'} = $job{'arg0'} * 2;
     @results = &prepare_submit_sync(%job) , "\n";
-    $today = ${$results[0]->{stdout}}[0];
+    foreach (@results) {
+	my $datum = EF("file:$ENV{PWD}/$_->{id}/$_->{stdofile}");
+	$datum->ED('C/1');
+	my @tmp = $datum->ER();
+	$today = $tmp[0];
+    }
 }
 print $today, "\n";
 print $yesterday, "\n";

@@ -2,8 +2,6 @@ use base qw(GA core);
 use Data_Extraction;
 use Data_Generation;
 
-@hoge = (1,4,5);
-
 %xyz = (
     'id' => 'job9',
     'arg1' => '5',                 # length of string
