@@ -2,7 +2,6 @@ package dry;
 
 use strict;
 use NEXT;
-use default;
 
 our $dry;
 
@@ -21,7 +20,7 @@ sub before {
     my $self = shift;
     if ($self->{dry} == 1) {
 	$self->{exe} = '';
-	for ( my $i = 0; $i <= $default::maxargetc; $i++ ) {
+	for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
