@@ -368,9 +368,19 @@ $separator = '-';
 この値を $1$ にすると \texttt{\$separator} が使用できるシンボルである
 かのチェックを飛ばす．デフォルト値は $0$ である．
 
+\section{\texttt{allkeys}}
+
+ジョブ定義ハッシュにおいて利用可能なキーを格納している．
+\begin{boxnote}
+\begin{verbatim}
+push(@allkeys, 'userdefinedkey');
+\end{verbatim}
+\end{boxnote}
+とすることで \texttt{userdefinedkey} がキーとして利用可能になる．
+
 \chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 
-ジョブ定義ハッシュにおいて利用可能なキーについて紹介する．
+ジョブ定義ハッシュにおいてデフォルトで利用可能なキーについて紹介する．
 
 \section{\texttt{id}}
 

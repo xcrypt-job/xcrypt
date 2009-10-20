@@ -24,15 +24,6 @@ our $after_thread;
 our %jobhashes = ();
 
 my $nilchar = 'nil';
-my @allmembers = ('exe', 'stdofile', 'stdefile', 'queue', 'proc', 'cpu');
-my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-
-for ( my $i = 0; $i <= $default::maxargetc; $i++ ) {
-    foreach (@premembers) {
-	my $name = $_ . $i;
-	push(@allmembers, "$name");
-    }
-}
 
 sub rm_tailnis {
     my @str = @_;
@@ -55,7 +46,7 @@ sub generate {
 	}
     }
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
-    foreach (@allmembers) {
+    foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
@@ -100,7 +91,7 @@ sub times {
 
 sub prepare {
     my %jobs = @_;
-    foreach (@allmembers) {
+    foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	unless ( exists($jobs{"$members"}) ) {
 	    if ( exists($jobs{"$_"}) ) {
@@ -160,7 +151,7 @@ sub prepare {
 
 sub MAX {
     my $num = 0;
-    foreach (@allmembers) {
+    foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($_[0]{"$members"}) ) {
 	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
@@ -174,7 +165,7 @@ sub MAX {
 
 sub MIN {
     my $num = 0;
-    foreach (@allmembers) {
+    foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($_[0]{"$members"}) ) {
 	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {

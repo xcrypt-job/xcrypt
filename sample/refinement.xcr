@@ -1,6 +1,5 @@
 use base qw(core);
 
-=comment
 %xyz = (
     'id' => 'job8',
     'exe' => './kempo',
@@ -26,4 +25,3 @@ until (abs($today - $yesterday) > 45) {
 }
 print $today, "\n";
 print $yesterday, "\n";
-=cut
