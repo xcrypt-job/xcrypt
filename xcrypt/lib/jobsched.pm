@@ -9,7 +9,6 @@ use File::Basename;
 use File::Spec;
 use IO::Socket;
 use xcropt;
-use default;
 # use Thread::Semaphore;
 
 ##################################################
@@ -181,7 +180,7 @@ sub qsub {
 
     # Execute a program
     my @args = ();
-    for ( my $i = 0; $i <= $default::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
     # 正常終了でなければ "aborted" を書き込むべき？
@@ -219,7 +218,7 @@ sub qsub {
                 die "Error in $jobsched.pm: extract_req_id_from_qsub_output must be a function";
             }
             $req_id = &{$jobsched_config{$jobsched}{extract_req_id_from_qsub_output}} (@qsub_output);
-        } else { # defaulat extractor
+        } else { # default extractor
             $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }

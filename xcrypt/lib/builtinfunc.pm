@@ -6,7 +6,6 @@ use threads;
 #use threads::shared;
 #use Thread::Semaphore;
 use jobsched;
-use default;
 
 #use xcropt;
 
@@ -46,6 +45,15 @@ sub generate {
 	}
     }
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
+
+
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
     foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($job{"$members"}) ) {
@@ -91,6 +99,13 @@ sub times {
 
 sub prepare {
     my %jobs = @_;
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
     foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	unless ( exists($jobs{"$members"}) ) {
@@ -101,7 +116,7 @@ sub prepare {
     }
 
     my $existOfRANGE = 0;
-    for ( my $i = 0; $i < $default::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	if ( exists($jobs{"RANGE$i"}) ) {
 	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		my $tmp = @{$jobs{"RANGE$i"}};
@@ -111,7 +126,7 @@ sub prepare {
 	    }
 	}
     }
-    for ( my $i = 0; $i < $default::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	unless ( exists($jobs{"RANGE$i"}) ) {
 	    my @tmp = ($nilchar);
 	    $jobs{"RANGE$i"} = \@tmp;
@@ -121,7 +136,7 @@ sub prepare {
     my @objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
-	for ( my $i = 0; $i < $default::maxrange; $i++ ) {
+	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 	    if ( exists($jobs{"RANGE$i"}) ) {
 		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
 		    push(@ranges, $jobs{"RANGE$i"});
@@ -151,6 +166,13 @@ sub prepare {
 
 sub MAX {
     my $num = 0;
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
     foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($_[0]{"$members"}) ) {
@@ -165,6 +187,13 @@ sub MAX {
 
 sub MIN {
     my $num = 0;
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
     foreach (@user::allkeys) {
 	my $members = "$_" . 'S';
 	if ( exists($_[0]{"$members"}) ) {
