@@ -2,8 +2,7 @@ package DC;
 
 use strict;
 use NEXT;
-use builtinfunc;
-
+use builtin;
 
 sub new
 {
@@ -32,9 +31,9 @@ sub before
 		my @jobs = ();
 		foreach my $child (@children)
 		{
-			push(@jobs, &builtinfunc::prepare(%{$child}));
+			push(@jobs, &builtin::prepare(%{$child}));
 		}
-		my @results = &builtinfunc::submit_sync(@jobs);
+		my @results = &builtin::submit_sync(@jobs);
 		&{$self->{mergeFunc}}($self->{id}."/".$self->{ofname}, @results);
 		$self->{exe} = "echo hoge";
 	}
