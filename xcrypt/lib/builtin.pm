@@ -1,4 +1,4 @@
-package builtinfunc;
+package builtin;
 
 use strict;
 #use File::Copy;
