@@ -1,10 +1,10 @@
-use base qw(dry core);
+use base qw(limit dry core);
 
 push(@allkeys, 'userdefinedkey');
 $separator_nocheck = 0;
 $separator = '-';
 
-$smph=Thread::Semaphore->new(1200);      # overwrites --limit option
+$smph=Thread::Semaphore->new(1);      # overwrites --limit option
 
 %xyz = (
     'id' => 'job7',

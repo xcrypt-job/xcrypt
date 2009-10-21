@@ -237,9 +237,10 @@ sub submit {
     }
     &invoke_after();
     foreach (@_) {
-        if ( defined $user::smph ) {
-            $user::smph->down;
-        }
+# after 処理をメインスレッド以外ですることになり limit.pm が復活したので
+#        if ( defined $user::smph ) {
+#            $user::smph->down;
+#        }
 	&user::start($_);
     }
     return @_;
