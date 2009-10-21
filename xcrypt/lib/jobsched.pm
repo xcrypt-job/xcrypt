@@ -553,9 +553,10 @@ sub set_job_done   {
     if (do_set_p ($jobname, $tim, "done", "running", "finished" ) ) {
         set_job_status ($jobname, "done", $tim);
         # リトライのときに実行されると，downされてないセマフォをupしてしまう
-        if (defined $user::smph) {
-            $user::smph->up;
-        }
+# after 処理をメインスレッド以外ですることになり limit.pm が復活したので
+#        if (defined $user::smph) {
+#            $user::smph->up;
+#        }
     }
 }
 sub set_job_finished   {

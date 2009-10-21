@@ -1,5 +1,5 @@
 use base qw(limit DC core);
-$limit::smph=Thread::Semaphore->new(100);
+$smph=Thread::Semaphore->new(100);
 
 sub func0
 {
