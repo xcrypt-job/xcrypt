@@ -95,9 +95,9 @@ sub start {
 
 sub before {
     my $self = shift;
-    foreach (@{$self->{predecessor}}) {
-	&jobsched::wait_job_done($_);
-    }
+#    foreach (@{$self->{predecessor}}) {
+#	&jobsched::wait_job_done($_);
+#    }
 }
 
 sub after {
