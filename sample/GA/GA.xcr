@@ -24,7 +24,7 @@ foreach (@results) {
     my @hoge = $datum->ER();
 
     # use Data_Generation
-    my $gen = CF("$ENV{PWD}/plasma.inp", "$ENV{PWD}/$_->{id}");
+    my $gen = CF("$ENV{PWD}/template.dat", "$ENV{PWD}/$_->{id}");
     $gen->KR('param', "$hoge[0]");
     $gen->do();
 }
