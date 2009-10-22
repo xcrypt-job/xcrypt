@@ -217,7 +217,7 @@ sub monitoring {
     my @jobids = &getjobids($reqidfile);
 
     my %jobcolors = ( 'done'      => $green,
-		      'finished'      => $green,
+		      'finished'  => $green,
 		      'aborted'   => $red,
 		      'active'    => $black,
 		      'submitted' => $black,
@@ -242,6 +242,8 @@ sub monitoring {
 	$tiler0->insert( 'end', -itemtype => 'text', -state => 'normal',
 			 -text => $_, -style => $jobcolors{$status} );
     }
+
+    $toplevel3->after(2, \&monitoring);
 }
 
 sub monitor {
@@ -293,5 +295,7 @@ $help->add( 'command', -label => 'Manual...',
 	    -command => sub {
 		system( "acroread $ENV{XCRYPT}/doc/Xcrypt_manual.pdf" );
 	    } );
+
+if ( Exists( $toplevel3 ) ) { &monitoring(); }
 
 MainLoop();
