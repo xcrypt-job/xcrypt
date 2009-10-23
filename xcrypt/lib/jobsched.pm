@@ -115,8 +115,8 @@ sub qsub {
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！
-    if ( defined $jobsched_config{$jobsched}{josbscript_preamble} ) {
-        foreach (@{$jobsched_config{$jobsched}{josbscript_preamble}}) {
+    if ( defined $jobsched_config{$jobsched}{jobscript_preamble} ) {
+        foreach (@{$jobsched_config{$jobsched}{jobscript_preamble}}) {
             print SCRIPT $_ . "\n";
         }
     }
