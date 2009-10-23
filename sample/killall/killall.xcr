@@ -2,11 +2,13 @@ use base qw(core);
 
 %xyz = (
     'id' => 'job6',
-    'exe' => 'echo',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
-&prepare_submit_sync(%xyz, 'arg0S' => [0..9],
+&prepare_submit_sync(%xyz,
+		     'RANGE0' => [0..9],
+		     'exeS' => sub { "sleep $_[0]; echo $_[0]"; },
+		     'arg0S' => '$_[0]',
  'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
 );
