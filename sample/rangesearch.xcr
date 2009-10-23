@@ -1,6 +1,7 @@
 use base qw(limit dry core);
 
-push(@allkeys, 'userdefinedkey');
+addkeys('userdefinedkey'); # TODO: ユーザ定義キー追加の落ち着きどころ
+#push(@allkeys, 'userdefinedkey'); # TODO: ユーザ定義キー追加の落ち着きどころ
 $separator_nocheck = 0;
 $separator = '-';
 
@@ -11,7 +12,7 @@ $smph=Thread::Semaphore->new(3);      # overwrites --limit option
     'exe' => './fib',
     'arg0' => '50',
     'arg1' => '> out',
-    'linkedfile0' => 'fib',
+    'linkedfile0' => 'common/fib',
     'dry' => 0,
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
