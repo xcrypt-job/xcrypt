@@ -209,7 +209,8 @@ sub qsub {
         die "qsub_command is not defined in $jobsched.pm";
     }
     if (cmd_executable ($qsub_command)) {
-        print STDERR "$qsub_command $qsub_options $scriptfile\n";
+# デモの見栄えのためコメントアウト
+#        print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
         # Get request ID from qsub's output

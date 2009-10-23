@@ -49,6 +49,7 @@ print TMP '&builtin::invoke_after();' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
 foreach (<USER>) { print TMP "$_"; }
+print TMP 'sleep(2);' . "\n";
 print TMP '$builtin::after_thread->detach;' . "\n";
 print TMP '$jobsched::watch_thread->detach;' . "\n";
 print TMP '$jobsched::abort_check_thread->detach;' . "\n";
