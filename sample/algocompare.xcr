@@ -3,8 +3,8 @@ use base qw(core);
 %xyz = (
     'id'           => 'job13',
     'exe'          => 'time',
-    'linkedfile0'  => 'compare/minimax',
-    'linkedfile1'  => 'compare/alphabeta',
+    'linkedfile0'  => 'algocompare/minimax',
+    'linkedfile1'  => 'algocompare/alphabeta',
 #    'linkedfile2'  => 'tree1',
 #    'arg0'         => './minimax',      # algorithm
 #    'arg1'         => '3',              # depth of lookahead

@@ -122,73 +122,6 @@ sub times {
     return @result;
 }
 
-sub prepare {
-    my %jobs = @_;
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	foreach (@premembers) {
-	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
-	}
-    }
-    foreach (@user::allkeys) {
-	my $members = "$_" . 'S';
-	unless ( exists($jobs{"$members"}) ) {
-	    if ( exists($jobs{"$_"}) ) {
-		$jobs{"$members"} = sub {$jobs{"$_"};};
-	    }
-	}
-    }
-
-    my $existOfRANGE = 0;
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	if ( exists($jobs{"RANGE$i"}) ) {
-	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
-		my $tmp = @{$jobs{"RANGE$i"}};
-		$existOfRANGE = $existOfRANGE + $tmp;
-	    } else {
-		warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
-	    }
-	}
-    }
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	unless ( exists($jobs{"RANGE$i"}) ) {
-	    my @tmp = ($nilchar);
-	    $jobs{"RANGE$i"} = \@tmp;
-	}
-    }
-
-    my @objs;
-    if ( $existOfRANGE ) {
-	my @ranges = ();
-	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	    if ( exists($jobs{"RANGE$i"}) ) {
-		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
-		    push(@ranges, $jobs{"RANGE$i"});
-		} else {
-		    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
-		}
-	    }
-	}
-	my @range = &times(@ranges);
-	foreach (@range) {
-	    my $obj = &generate(\%jobs, @{$_});
-	    push(@objs, $obj);
-	}
-    } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
-	my @params = (0..(&MIN(\%jobs)-1));
-	foreach (@params) {
-	    my $obj = &generate(\%jobs, $_);
-	    push(@objs, $obj);
-	}
-    } else {
-	my $obj = &generate(\%jobs);
-	push(@objs, $obj);
-
-    }
-    return @objs;
-}
-
 sub MAX {
     my $num = 0;
     my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
@@ -243,7 +176,7 @@ sub invoke_after() {
 		if ($stat eq 'done') {
 		    my $self = $jobhashes{"$i"};
 		    $self->after();
-		    print $i . "\'s after-processing finished.\n";
+		    print $i . "\'s post-processing finished.\n";
 		    delete($jobhashes{"$i"});
 		    &jobsched::inventory_write($i, "finished");
 		}
@@ -266,7 +199,11 @@ sub submit {
 #        if ( defined $user::smph ) {
 #            $user::smph->down;
 #        }
-	&user::start($_);
+#
+#	my $thread = threads->new( sub {
+	    &user::start($_);
+#				   } );
+#	$thread->detach();
     }
     return @_;
 }
@@ -286,20 +223,105 @@ sub sync {
     return @_;
 }
 
-sub prepare_submit_sync {
-    my @jobs = &prepare(@_);
-    my @objs = &submit(@jobs);
-    return &sync(@objs);
-}
-
 sub submit_sync {
     my @objs = &submit(@_);
     return &sync(@objs);
 }
 
+sub prepare {
+    &prepare_or_prepare_submit(0, @_);
+}
+
+sub prepare_submit {
+    &prepare_or_prepare_submit(1, @_);
+}
+
+sub prepare_or_prepare_submit {
+    my $immediate_submit = shift(@_);
+    my @objs;
+    my %jobs = @_;
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
+    foreach (@user::allkeys) {
+	my $members = "$_" . 'S';
+	unless ( exists($jobs{"$members"}) ) {
+	    if ( exists($jobs{"$_"}) ) {
+		$jobs{"$members"} = sub {$jobs{"$_"};};
+	    }
+	}
+    }
+
+    my $existOfRANGE = 0;
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+	if ( exists($jobs{"RANGE$i"}) ) {
+	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
+		my $tmp = @{$jobs{"RANGE$i"}};
+		$existOfRANGE = $existOfRANGE + $tmp;
+	    } else {
+		warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+	    }
+	}
+    }
+    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+	unless ( exists($jobs{"RANGE$i"}) ) {
+	    my @tmp = ($nilchar);
+	    $jobs{"RANGE$i"} = \@tmp;
+	}
+    }
+
+    if ( $existOfRANGE ) {
+	my @ranges = ();
+	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+	    if ( exists($jobs{"RANGE$i"}) ) {
+		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
+		    push(@ranges, $jobs{"RANGE$i"});
+		} else {
+		    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+		}
+	    }
+	}
+	my @range = &times(@ranges);
+	foreach (@range) {
+	    my $obj = &generate(\%jobs, @{$_});
+	    if ($immediate_submit == 1) {
+		&submit($obj);
+	    }
+	    push(@objs, $obj);
+	}
+    } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
+	my @params = (0..(&MIN(\%jobs)-1));
+	foreach (@params) {
+	    my $obj = &generate(\%jobs, $_);
+	    if ($immediate_submit == 1) {
+		&submit($obj);
+	    }
+	    push(@objs, $obj);
+	}
+    } else {
+	my $obj = &generate(\%jobs);
+	if ($immediate_submit == 1) {
+	    &submit($obj);
+	}
+	push(@objs, $obj);
+    }
+    return @objs;
+}
+
+=comment
+
 sub prepare_submit {
     my @jobs = &prepare(@_);
     return &submit(@jobs);
+}
+=cut
+sub prepare_submit_sync {
+    my @objs = &prepare_submit(@_);
+    return &sync(@objs);
 }
 
 1;

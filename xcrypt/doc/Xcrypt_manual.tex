@@ -694,19 +694,20 @@ addkeys(文字列の配列);
 \end{verbatim}
 \end{boxnote}
 
-\section{\texttt{prepare\_submit\_sync}}
-
-\texttt{prepare}，\texttt{submit}，\texttt{sync}を順に行う．\format は
-\texttt{prepare}に準ずる．
-
 \section{\texttt{prepare\_submit}}
 
-\texttt{prepare}，\texttt{submit}を順に行う．\format は
-\texttt{prepare}に準ずる．
+\texttt{prepare}，\texttt{submit}を順に行う．ただし，\texttt{prepare}で
+生成したジョブリファレンスを即座に\texttt{submit}する（全てのジョブリファ
+レンスが生成されるのを待たない）．\format は\texttt{prepare}に準ずる．
 
 \section{\texttt{submit\_sync}}
 
 \texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
 ずる．
+
+\section{\texttt{prepare\_submit\_sync}}
+
+\texttt{prepare\_submit}，\texttt{sync}を順に行う．\format は
+\texttt{prepare}に準ずる．
 
 \end{document}
