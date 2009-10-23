@@ -145,7 +145,6 @@ sub fun {
 	    open( PIPE0, "xcrypt $filename|" ) or warn "Can't execute $filename";
 	    $mainwindow->fileevent( \*PIPE0, 'readable',
 				    [\&connect, 'text0', 'PIPE0', 'eof0'] );
-
 	    $mainwindow->waitVariable(\$eof0);
 	    $mainwindow->fileevent( \*PIPE0, 'readable' => '' );
 	    close PIPE0;
@@ -196,7 +195,7 @@ foreach (8..24) {
 sub sizechange {
     $fontsize = $_[0];
     my @bold = ('label0', 'label1', 'label2',
-		'button0', 'button1', 'button2',
+#		'button0', 'button1', 'button2',
 		'sublabel0', 'sublabel1', 'sublabel2');
     foreach (@bold) {
 	${$_}->configure( -font => [$fontlist[0], $fontsize, 'bold']);
