@@ -14,10 +14,12 @@ our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
 );
 
+=comment
 threads->set_stack_size($xcropt::options{stack_size});
 if ( $xcropt::options{limit} > 0 ) {
     $user::smph = Thread::Semaphore->new($xcropt::options{limit});
 }
+=cut
 
 our $after_thread;
 our %jobhashes = ();

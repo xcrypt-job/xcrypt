@@ -9,13 +9,13 @@ use Getopt::Long;
 
 #my $opt_dry = 0;
 #my $opt_sge = 0;
-#GetOptions('sge' => \$opt_sge, 'dry' => \$opt_dry);
+#GetOptions('dry' => \$opt_dry);
 
-if (File::Spec->catfile(basename($ARGV[0])) !~ /xcr/) {
+my $xcrfile = shift @ARGV;
+if (File::Spec->catfile(basename($xcrfile)) !~ /xcr/) {
     die "A first argument should be an Xcrypt script.\n";
 }
-
-my $savefile = "$ARGV[0]" . '.pl';
+my $xcrplfile = "$xcrfile" . '.pl';
 
 if ( $ENV{XCRYPT} ) {
 #    if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
@@ -27,10 +27,10 @@ if ( $ENV{XCRYPT} ) {
     die "Set the environment varialble XCRYPT\n";
 }
 
-if ( -e $savefile ) { unlink $savefile; }
+if ( -e $xcrplfile ) { unlink $xcrplfile; }
 
-open ( USER , "< $ARGV[0]") or die "Can't open $ARGV[0]\n";
-open ( TMP , "> $savefile") or die "Can't open $savefile\n";
+open ( USER , "< $xcrfile") or die "Can't open $xcrfile\n";
+open ( TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
@@ -59,10 +59,9 @@ print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after}
 close ( TMP );
 close ( USER );
 
-chmod 0755, $savefile or die "Can't chmod $savefile\n";
-#my $dir = File::Spec->catfile(dirname($savefile));
-#my $file = File::Spec->catfile(basename($savefile));
+chmod 0755, $xcrplfile or die "Can't chmod $xcrplfile\n";
+#my $dir = File::Spec->catfile(dirname($xcrplfile));
+#my $file = File::Spec->catfile(basename($xcrplfile));
 #my $exitcode = system("cd $dir; perl $file");
-shift @ARGV;
-my $exitcode = system("perl $savefile " . join(' ', @ARGV));
-unless ($exitcode == 0) { die "Can't perl $savefile\n"; }
+my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
+unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }

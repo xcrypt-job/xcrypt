@@ -14,7 +14,7 @@ use base qw(minimax core);
 );
 
 &prepare_submit_sync(%xyz, 'arg3S' => [
-#			 'komadoku',
+			 'komadoku',
 			 'kuraidori',
-#			 'ikiataribattari'
+			 'ikiataribattari'
 		     ]);

@@ -19,12 +19,12 @@ use Data_Generation;
 
 foreach (@results) {
     # use Data_Extraction
-    my $datum = EF("file:$ENV{PWD}/$_->{id}/$_->{stdofile}");
+    my $datum = EF("file:$ENV{HOME}/e-science/sample/GA/$_->{id}/$_->{stdofile}");
     $datum->ED('C/1');
     my @hoge = $datum->ER();
 
     # use Data_Generation
-    my $gen = CF("$ENV{PWD}/template.dat", "$ENV{PWD}/$_->{id}");
+    my $gen = CF("$ENV{XCRSPL}/GA/template.dat", "$ENV{XCRSPL}/GA/$_->{id}");
     $gen->KR('param', "$hoge[0]");
     $gen->do();
 }
