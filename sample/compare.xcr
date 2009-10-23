@@ -3,8 +3,8 @@ use base qw(core);
 %xyz = (
     'id'           => 'job13',
     'exe'          => 'time',
-    'linkedfile0'  => 'minimax',
-    'linkedfile1'  => 'alphabeta',
+    'linkedfile0'  => 'compare/minimax',
+    'linkedfile1'  => 'compare/alphabeta',
 #    'linkedfile2'  => 'tree1',
 #    'arg0'         => './minimax',      # algorithm
 #    'arg1'         => '3',              # depth of lookahead
@@ -20,7 +20,6 @@ use base qw(core);
 #		     'RANGE1' => ['inversetree'],
 		     'RANGE2' => ['minimax', 'alphabeta'],
 		     'arg0S'  => sub { "./$_[2]";},
-		     'arg1S'  => sub { $_[0]; },
+		     'arg1S'  => sub { $_[0]; }
 #		     'arg3S'  => sub { $_[1]; },
-		     'linkedfile2S' => sub { "$_[2]"; }
     );

@@ -12,6 +12,7 @@ use jobsched;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
+addkeys
 );
 
 =comment
@@ -25,6 +26,28 @@ our $after_thread;
 our %jobhashes = ();
 
 my $nilchar = 'nil';
+
+sub addkeys {
+    my $exist = 0;
+    foreach my $i (@_) {
+	foreach my $j ((@user::allkeys, 'id', 'option')) {
+	    if (($i eq $j)
+		|| ($i =~ /^arg[0-9]*/)
+		|| ($i =~ /^linkedfile[0-9]*/)
+		|| ($i =~ /^copiedfile[0-9]*/)
+		|| ($i =~ /^copieddir[0-9]*/)
+		) {
+		$exist = 1;
+	    }
+	}
+	if ($exist == 1) {
+	    die "$i is a reserved word in Xcrypt.\n";
+	} else {
+	    push(@user::allkeys, $i);
+	}
+	$exist = 0;
+    }
+}
 
 sub rm_tailnis {
     my @str = @_;
