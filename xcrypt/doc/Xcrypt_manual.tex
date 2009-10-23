@@ -118,8 +118,16 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 \end{verbatim}
 \end{boxnote}
 \noindent
-と記述する．定義可能なジョブ定義ハッシュのキーに関しては
-\ref{chapjobdefhash}章で述べる．
+と記述する．デフォルトで定義可能なジョブ定義ハッシュのキーに関
+しては\ref{chapjobdefhash}章で述べる．ジョブ定義ハッシュキー（例えば
+\texttt{userdefinedkey0}と\texttt{userdefinedkey1}）をユーザ定義するに
+はあらかじめ
+\begin{boxnote}
+\begin{verbatim}
+addkeys('userdefinedkey0', 'userdefinedkey1');
+\end{verbatim}
+\end{boxnote}
+と書いておく（\ref{chapfun}章を参照のこと）．
 
 \section{\operation}
 
@@ -670,6 +678,19 @@ sync(ジョブスレッドの配列);
 @jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
 @objs = submit(@jobs);
 sync(@objs);
+\end{verbatim}
+\end{boxnote}
+
+\section{\texttt{addkeys}}
+
+文字列の配列を受け取り，それらをジョブ定義ハッシュキーとして利用可能に
+する．
+
+\subsection{\format}
+
+\begin{boxnote}
+\begin{verbatim}
+addkeys(文字列の配列);
 \end{verbatim}
 \end{boxnote}
 
