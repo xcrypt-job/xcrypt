@@ -7,6 +7,7 @@ use Data_Generation;
     'arg1' => '5',                 # length of string
     'arg2' => 'onePointCrossover', # how to crossover
     'arg3' => 'equivalence',       # probability of choice
+#    'queue' => 'gh10034',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
@@ -25,7 +26,7 @@ foreach (@jobs) {
     my @hoge = $datum->ER();
 
     # use Data_Generation
-    my $gen = CF("$ENV{'PWD'}/template.dat", "$ENV{'PWD'}/$_->{id}");
+    my $gen = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$_->{id}");
     $gen->KR('param', "$hoge[0]");
     $gen->do();
 }
