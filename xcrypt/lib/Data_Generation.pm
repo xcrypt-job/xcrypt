@@ -142,8 +142,7 @@ sub do{
     
     # 生成ファイルOPEN
     my $outfile = $_[0]->{outfile};
-#    $outfile .= '\\'.basename($_[0]->{infile});
-    $outfile .= '/'.basename($_[0]->{infile});
+    $outfile .= '\\'.basename($_[0]->{infile});
     if (!-d "$_[0]->{outfile}") {
         # 出力ディレクトリ無し
         print STDERR "Output file directory($_[0]->{outfile}) not found\n";
@@ -169,9 +168,12 @@ sub do{
     my $replace_data  = undef;
     my $outfile_data  = '';
     my $outfile_quote = undef;
-    while (<BASE_FILE>){
+    while (my $line = <BASE_FILE>){
         $line_cnt++;
-        $replace_data = "$_";
+        $replace_data = "$line";
+        if ((substr $line, -1) eq "\n") {
+            chomp $replace_data;
+        }
         # 行データに対して置換えを行う
         for (my $index1=0 ; $index1 <= $_[0]->{replace}; $index1++) {
             my @outfile_datas1 = ();
@@ -227,36 +229,37 @@ sub do{
                 } else {
                     $set_name = $key_names[$index1];
                 }
-                $set_name .= "\\=";
-                @outfile_datas1 = split /$set_name/, "$replace_data", 2;
+                @outfile_datas1 = split /(${set_name}\s+=\s*|${set_name}=\s*)/, "$replace_data", 2;
                 
                 # 文字列置換え
-                if ($outfile_datas1[0] ne $replace_data and ($outfile_datas1[0] eq '' or (substr $outfile_datas1[0], -1) eq ' ')) {
+                if ($outfile_datas1[0] ne $replace_data and ($outfile_datas1[0] eq '' or (substr $outfile_datas1[0], -1) eq ' ' or (substr $outfile_datas1[0], -1) eq ',')) {
                     # （該当変数名あり）
                     # 文字定数かチェック
-                    if ($outfile_datas1[1] =~ /^[\"\']/) {
+                    if ($outfile_datas1[2] =~ /^[\"\']/) {
                         # （クォートあり）
-                        $outfile_quote = substr $outfile_datas1[1], 0, 1;
-                        $outfile_data = substr $outfile_datas1[1], 1;
+                        $outfile_quote = substr $outfile_datas1[2], 0, 1;
+                        $outfile_data = substr $outfile_datas1[2], 1;
                         chomp $outfile_data;
                         @outfile_datas2 = split /($outfile_quote\s|$outfile_quote\,)/, "$outfile_data", 2;
-                        $outfile_data = $outfile_datas1[0].$key_names[$index1].'='.$outfile_quote.$value_datas[$index1].$outfile_quote;
+                        $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$outfile_quote.$value_datas[$index1].$outfile_quote;
                     } else {
                         # （クォートなし）
-                        @outfile_datas2 = split /(\s)/, "$outfile_datas1[1]", 2;
+                        @outfile_datas2 = split /(\s)/, "$outfile_datas1[2]", 2;
                         if ($value_datas[$index1] =~ /\D/) {
-                            $outfile_data = $outfile_datas1[0].$key_names[$index1].'="'.$value_datas[$index1].'"';
+                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
                         } else {
-                            $outfile_data = $outfile_datas1[0].$key_names[$index1].'='.$value_datas[$index1];
+                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
                         }
                     }
                     if ($outfile_datas2[2] ne '') {
                         $outfile_data .= (substr $outfile_datas2[1], -1).$outfile_datas2[2];
                     }
-                    $outfile_data .= "\n";
                     $replace_data = $outfile_data;
                 }
             }
+        }
+        if ((substr $line, -1) eq "\n") {
+            $replace_data .= "\n";
         }
         
         # 雛形データに書かれた変数の評価
