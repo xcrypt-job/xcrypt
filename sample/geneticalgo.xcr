@@ -20,14 +20,13 @@ use Data_Generation;
 foreach (@jobs) {
     # use Data_Extraction
     my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/$_->{stdofile}");
+    $datum->ED('L/1');
     $datum->ED('C/1');
-#    $datum->ED('L/0');
-#    $datum->ED('L/1');
     my @hoge = $datum->ER();
 
     # use Data_Generation
     my $gen = CF("$ENV{'XCRYPT'}/sample/common/template.dat",
-		 "$ENV{'XCRYPT'}/sample/$_->{id}");
+		 "$ENV{'XCRYPT'}/sample/$_->{id}/");
     $gen->KR('param', "$hoge[0]");
     $gen->do();
 }

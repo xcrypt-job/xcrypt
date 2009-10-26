@@ -3,6 +3,7 @@ use Exporter;
 @ISA = (Exporter);
 @EXPORT = qw(CF $Before);
 use strict;
+use File::Spec;
 use File::Basename;
 use Cwd;
 
@@ -141,8 +142,7 @@ sub do{
     flock(BASE_FILE, 1);
     
     # 生成ファイルOPEN
-    my $outfile = $_[0]->{outfile};
-    $outfile .= '\\'.basename($_[0]->{infile});
+    my $outfile = File::Spec->catfile("$_[0]->{outfile}", (basename($_[0]->{infile})));
     if (!-d "$_[0]->{outfile}") {
         # 出力ディレクトリ無し
         print STDERR "Output file directory($_[0]->{outfile}) not found\n";
