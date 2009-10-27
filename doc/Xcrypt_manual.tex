@@ -376,22 +376,12 @@ $separator = '-';
 \end{boxnote}
 とする．
 
-使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \section{\texttt{separator\_nocheck}}
 
 この値を $1$ にすると \texttt{\$separator} が使用できるシンボルである
 かのチェックを飛ばす．デフォルト値は $0$ である．
-
-\section{\texttt{allkeys}}
-
-ジョブ定義ハッシュにおいて利用可能なキーを格納している．
-\begin{boxnote}
-\begin{verbatim}
-push(@allkeys, 'userdefinedkey');
-\end{verbatim}
-\end{boxnote}
-とすることで \texttt{userdefinedkey} がキーとして利用可能になる．
 
 \chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 
@@ -401,7 +391,7 @@ push(@allkeys, 'userdefinedkey');
 
 実行されるジョブを識別する語を記述する．
 
-使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \section{\texttt{exe}}
 
@@ -504,7 +494,7 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 （\texttt{arg0}等）の語尾に\texttt{@}をつけ加えたもの
 （\texttt{arg0@}等）を意味するものとする．
 
-\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \subsection{\example}
 
@@ -665,14 +655,14 @@ submit({'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'},
 を返す．
 \fi
 
-ジョブハッシュの配列を受け取り，そのジョブの後処理を行う．
-を返す．
+ジョブリファレンスの配列を受け取り，それらの同期をとり，ジョブリファレ
+ンスの配列を返す．
 
 \subsection{\format}
 
 \begin{boxnote}
 \begin{verbatim}
-sync(ジョブスレッドの配列);
+sync(ジョブリファレンスの配列);
 \end{verbatim}
 \end{boxnote}
 
