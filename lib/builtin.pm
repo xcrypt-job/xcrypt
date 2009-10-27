@@ -185,8 +185,8 @@ sub invoke_after {
 		    lock($lockvar_for_after);
 		    my $stat = &jobsched::get_job_status($self->{'id'});
 		    if ($stat eq 'done') {
-			eval($self->{'after'});
-			print $self->{'id'} . "\'s post-processing finished.\n";
+#			print $self->{'id'} . "\'s post-processing finished.\n";
+			&user::after($self);
 			&jobsched::inventory_write($self->{'id'}, "finished");
 		    }
 		    # ここまで
@@ -212,7 +212,6 @@ sub submit {
     }
     &invoke_after(@id_for_after);
 
-
     foreach (@array) {
 # after 処理をメインスレッド以外ですることになり limit.pm が復活したので
 #        if ( defined $user::smph ) {
@@ -220,7 +219,9 @@ sub submit {
 #        }
 #
 #	my $thread = threads->new( sub {
-	    &user::start($_);
+#	print "$self->{id}\'s pre-processing finished.\n";
+	&user::before($_);
+	&user::start($_);
 #				   } );
 #	$thread->detach();
     }
