@@ -3,7 +3,7 @@ package builtin;
 use strict;
 #use File::Copy;
 use threads;
-#use threads::shared;
+use threads::shared;
 #use Thread::Semaphore;
 use jobsched;
 
@@ -23,7 +23,8 @@ if ( $xcropt::options{limit} > 0 ) {
 =cut
 
 our $after_thread;
-our %jobhashes = ();
+my $lockvar_for_after : shared;
+my @id_for_after = ();
 
 my $nilchar = 'nil';
 
@@ -166,19 +167,22 @@ sub MIN {
     return $num;
 }
 
-sub invoke_after() {
+sub invoke_after {
+    my @jobs = @_;
     $after_thread = threads->new( sub {
 	while (1) {
 	    sleep(1);
-
-	    foreach my $i (keys(%jobhashes)) {
-		my $stat = &jobsched::get_job_status($i);
-		if ($stat eq 'done') {
-		    my $self = $jobhashes{"$i"};
-		    $self->after();
-		    print $i . "\'s post-processing finished.\n";
-		    delete($jobhashes{"$i"});
-		    &jobsched::inventory_write($i, "finished");
+	    foreach my $i (@jobs) {
+		{
+		    # submitのスレッド分離部と排他的に
+		    lock($lockvar_for_after);
+		    my $stat = &jobsched::get_job_status($i->{'id'});
+		    if ($stat eq 'done') {
+			eval($i->{'after'});
+			print $i->{'id'} . "\'s post-processing finished.\n";
+			&jobsched::inventory_write($i->{'id'}, "finished");
+		    }
+		    # ここまで
 		}
 	    }
 	}
@@ -188,13 +192,21 @@ sub invoke_after() {
 
 sub submit {
     my @array = @_;
-    $after_thread->detach();
+
+    # invoke_afterの処理部と排他的に
+    {
+	lock($lockvar_for_after);
+	$after_thread->detach();
+    }
+    # ここまで
     $after_thread = 0;
     foreach my $i (@array) {
-	$jobhashes{"$i->{id}"} = $i;
+	push(@id_for_after, $i);
     }
-    &invoke_after();
-    foreach (@_) {
+    &invoke_after(@id_for_after);
+
+
+    foreach (@array) {
 # after 処理をメインスレッド以外ですることになり limit.pm が復活したので
 #        if ( defined $user::smph ) {
 #            $user::smph->down;
@@ -205,7 +217,7 @@ sub submit {
 #				   } );
 #	$thread->detach();
     }
-    return @_;
+    return @array;
 }
 
 sub sync {
