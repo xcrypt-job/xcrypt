@@ -1,6 +1,6 @@
 use base qw(limit dry core);
 
-addkeys('userdefinedkey'); # TODO: ユーザ定義キー追加の落ち着きどころ
+addkeys('userdefinedkey');
 $separator_nocheck = 0;
 $separator = '-';
 
