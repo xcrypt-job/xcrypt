@@ -33,16 +33,18 @@ sub addkeys {
     foreach my $i (@_) {
 	foreach my $j ((@user::allkeys, 'id', 'option')) {
 	    if (($i eq $j)
-		|| ($i =~ /^arg[0-9]*/)
-		|| ($i =~ /^linkedfile[0-9]*/)
-		|| ($i =~ /^copiedfile[0-9]*/)
-		|| ($i =~ /^copieddir[0-9]*/)
+		|| ($i =~ /\Aarg[0-9]*/)
+		|| ($i =~ /\Alinkedfile[0-9]*/)
+		|| ($i =~ /\Acopiedfile[0-9]*/)
+		|| ($i =~ /\Acopieddir[0-9]*/)
 		) {
 		$exist = 1;
 	    }
 	}
 	if ($exist == 1) {
 	    die "$i is a reserved word in Xcrypt.\n";
+	} elsif ($i =~ /@\Z/) {
+	    die "Can't use $i as key since $i has @ at its tail.\n";
 	} else {
 	    push(@user::allkeys, $i);
 	}
@@ -70,8 +72,8 @@ sub addmembers {
 	}
     }
     foreach my $key (keys(%job)) {
-	if ($key =~ /^:/) {
-	    if ($key =~ /@$/) {
+	if ($key =~ /\A:/) {
+	    if ($key =~ /@\Z/) {
 		$/ = '@';
 		chomp $key;
 		push(@user::allkeys, $key);
@@ -88,7 +90,7 @@ sub generate {
 
     my @ranges = &rm_tailnis(@_);
     unless ( $user::separator_nocheck) {
-	unless ( $user::separator =~ /^[!#+,-.@\^_~a-zA-Z0-9]$/ ) {
+	unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
 	    die "Can't support $user::separator as \$separator.\n";
 	}
     }
@@ -116,6 +118,21 @@ sub generate {
 		    die "Can't take your format at prepare.\n";
 		}
 	    }
+	}
+    }
+
+    my $exist = 0;
+    foreach my $i (keys(%job)) {
+	unless (($i =~ /\ARANGE[0-9]+/) || ($i =~ /@\Z/)) {
+	    foreach my $j ((@user::allkeys, 'id', 'option')) {
+		if ($i eq $j) {
+		    $exist = 1;
+		}
+	    }
+	    if ($exist == 0) {
+		warn "Warning: $i is given, but not defined by addkeys.\n";
+	    }
+	    $exist = 0;
 	}
     }
     return user->new(\%job);
