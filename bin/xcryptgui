@@ -210,7 +210,8 @@ my $tool = $menu->Menu();
 $menu->entryconfigure( 'Tool', -menu => $tool );
 $tool->add( 'command', -label => 'Clean',
 	    -command => sub { system( "./cleanup.sh" ); } );
-$tool->add( 'command', -label => 'Monitor', -command => \&monitor );
+$tool->add( 'command', -label => 'Monitor', -command => [\&monitor, 0] );
+$tool->add( 'command', -label => 'Monitor & Delete', -command => [\&monitor, 1] );
 
 sub monitoring {
     my @jobids = &getjobids($reqidfile);
@@ -241,8 +242,9 @@ sub monitoring {
 	$tiler0->insert( 'end', -itemtype => 'text', -state => 'normal',
 			 -text => $_, -style => $jobcolors{$status} );
     }
-
-    $toplevel3->after(2, \&monitoring);
+    if ($_[0]) {
+	$toplevel3->after(2, [\&monitoring, 1]);
+    }
 }
 
 sub monitor {
@@ -256,14 +258,15 @@ sub monitor {
 					-scrollbars => 'e',
 					-orient => 'horizontal' )
 	    ->pack( -expand => 'yes', -fill => 'both', -side => 'left' );
-	my $bn0_m = $toplevel3
-	    ->Button( -text => 'Reload', -command => [\&monitoring] )
-	    ->pack( -fill => 'x' );
 
-	my $bn2_m = $toplevel3
-	    ->Button( -text => 'Delete', -command => [\&del3, $tiler0] )
-	    ->pack( -fill => 'x' );
-
+	if ($_[0]) {
+	    my $bn0_m = $toplevel3
+		->Button( -text => 'Reload', -command => [\&monitoring, 0] )
+		->pack( -fill => 'x' );
+	    my $bn2_m = $toplevel3
+		->Button( -text => 'Delete', -command => [\&del3, $tiler0] )
+		->pack( -fill => 'x' );
+	}
 	my $bn1_m = $toplevel3
 	    ->Button( -text => 'Close',	-command => ['destroy', $toplevel3] )
 	    ->pack( -fill => 'x' );
