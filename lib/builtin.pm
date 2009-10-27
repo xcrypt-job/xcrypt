@@ -60,6 +60,28 @@ sub rm_tailnis {
     }
 }
 
+sub addmembers {
+    my %job = @_;
+    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	foreach (@premembers) {
+	    my $name = $_ . $i;
+	    push(@user::allkeys, "$name");
+	}
+    }
+    foreach my $key (keys(%job)) {
+	if ($key =~ /^:/) {
+	    if ($key =~ /@$/) {
+		$/ = '@';
+		chomp $key;
+		push(@user::allkeys, $key);
+	    } else {
+		push(@user::allkeys, $key);
+	    }
+	}
+    }
+}
+
 sub generate {
     my %job = %{$_[0]};
     shift;
@@ -72,16 +94,9 @@ sub generate {
     }
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
 
-
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	foreach (@premembers) {
-	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
-	}
-    }
+    &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . 'S';
+	my $members = "$_" . '@';
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
 		my $tmp = eval($job{"$members"});
@@ -124,16 +139,12 @@ sub times {
 }
 
 sub MAX {
+    my %job = @_;
     my $num = 0;
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	foreach (@premembers) {
-	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
-	}
-    }
+
+    &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . 'S';
+	my $members = "$_" . '@';
 	if ( exists($_[0]{"$members"}) ) {
 	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -145,16 +156,12 @@ sub MAX {
 }
 
 sub MIN {
+    my %job = @_;
     my $num = 0;
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	foreach (@premembers) {
-	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
-	}
-    }
+
+    &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . 'S';
+	my $members = "$_" . '@';
 	if ( exists($_[0]{"$members"}) ) {
 	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -251,28 +258,23 @@ sub prepare_submit {
 sub prepare_or_prepare_submit {
     my $immediate_submit = shift(@_);
     my @objs;
-    my %jobs = @_;
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	foreach (@premembers) {
-	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
-	}
-    }
+    my %job = @_;
+
+    &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . 'S';
-	unless ( exists($jobs{"$members"}) ) {
-	    if ( exists($jobs{"$_"}) ) {
-		$jobs{"$members"} = sub {$jobs{"$_"};};
+	my $members = "$_" . '@';
+	unless ( exists($job{"$members"}) ) {
+	    if ( exists($job{"$_"}) ) {
+		$job{"$members"} = sub {$job{"$_"};};
 	    }
 	}
     }
 
     my $existOfRANGE = 0;
     for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	if ( exists($jobs{"RANGE$i"}) ) {
-	    if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
-		my $tmp = @{$jobs{"RANGE$i"}};
+	if ( exists($job{"RANGE$i"}) ) {
+	    if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
+		my $tmp = @{$job{"RANGE$i"}};
 		$existOfRANGE = $existOfRANGE + $tmp;
 	    } else {
 		warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
@@ -280,18 +282,18 @@ sub prepare_or_prepare_submit {
 	}
     }
     for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	unless ( exists($jobs{"RANGE$i"}) ) {
+	unless ( exists($job{"RANGE$i"}) ) {
 	    my @tmp = ($nilchar);
-	    $jobs{"RANGE$i"} = \@tmp;
+	    $job{"RANGE$i"} = \@tmp;
 	}
     }
 
     if ( $existOfRANGE ) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-	    if ( exists($jobs{"RANGE$i"}) ) {
-		if ( ref($jobs{"RANGE$i"}) eq 'ARRAY' ) {
-		    push(@ranges, $jobs{"RANGE$i"});
+	    if ( exists($job{"RANGE$i"}) ) {
+		if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
+		    push(@ranges, $job{"RANGE$i"});
 		} else {
 		    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
 		}
@@ -299,23 +301,23 @@ sub prepare_or_prepare_submit {
 	}
 	my @range = &times(@ranges);
 	foreach (@range) {
-	    my $obj = &generate(\%jobs, @{$_});
+	    my $obj = &generate(\%job, @{$_});
 	    if ($immediate_submit == 1) {
 		&submit($obj);
 	    }
 	    push(@objs, $obj);
 	}
-    } elsif (&MAX(\%jobs)) { # when parameters except RANGE* exist
-	my @params = (0..(&MIN(\%jobs)-1));
+    } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
+	my @params = (0..(&MIN(\%job)-1));
 	foreach (@params) {
-	    my $obj = &generate(\%jobs, $_);
+	    my $obj = &generate(\%job, $_);
 	    if ($immediate_submit == 1) {
 		&submit($obj);
 	    }
 	    push(@objs, $obj);
 	}
     } else {
-	my $obj = &generate(\%jobs);
+	my $obj = &generate(\%job);
 	if ($immediate_submit == 1) {
 	    &submit($obj);
 	}

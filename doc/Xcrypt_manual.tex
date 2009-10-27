@@ -127,7 +127,14 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 addkeys('userdefinedkey0', 'userdefinedkey1');
 \end{verbatim}
 \end{boxnote}
-と書いておく（\ref{chapfun}章を参照のこと）．
+と書いておく（\ref{chapfun}章を参照のこと）か，または，ジョブ定義ハッ
+シュのキーを与える際，
+\begin{boxnote}
+\begin{verbatim}
+':userdefinedkey0' => 0
+\end{verbatim}
+\end{boxnote}
+とキー名を\texttt{:}で始める．
 
 \section{\operation}
 
@@ -159,7 +166,7 @@ $separator = '-';
     'option' => '# @$-g gh10034'
 );
 
-&prepare_submit_sync(%xyz, 'arg1S' => [2,4]);
+&prepare_submit_sync(%xyz, 'arg1@' => [2,4]);
 \end{verbatim}
 \end{boxnote}
 
@@ -331,7 +338,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
     'arg2'        => 'getchildren'      # get next positions
 );
 
-@results = &prepare_submit_sync(%xyz, 'arg3S' => ['komadoku',
+@results = &prepare_submit_sync(%xyz, 'arg3@' => ['komadoku',
 				                  'kuraidori',
 				                  'ikiataribattari']);
 \end{verbatim}
@@ -488,14 +495,14 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \begin{verbatim}
 prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
                       ...[,'RANGE255' => (配列リファレンス)]
-                         [,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]
-                      ...[,'ジョブ定義ハッシュキーS' => (リファレンス||スカラ)]);
+                         [,'ジョブ定義ハッシュキー@' => (リファレンス||スカラ)]
+                      ...[,'ジョブ定義ハッシュキー@' => (リファレンス||スカラ)]);
 \end{verbatim}
 \end{boxnote}
 
-ただし，「ジョブ定義ハッシュキー\texttt{S}」はジョブ定義ハッシュキー
-（\texttt{arg0}等）の語尾に\texttt{S}をつけ加えたもの
-（\texttt{arg0S}等）を意味するものとする．
+ただし，「ジョブ定義ハッシュキー\texttt{@}」はジョブ定義ハッシュキー
+（\texttt{arg0}等）の語尾に\texttt{@}をつけ加えたもの
+（\texttt{arg0@}等）を意味するものとする．
 
 \texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
@@ -503,7 +510,7 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -524,7 +531,7 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
 %abc = (
     'id' => 'xyz',
     'exe' => './kempo',
-    'arg0S' => [10,20]
+    'arg0@' => [10,20]
 );
 prepare(%abc);
 \end{verbatim}
@@ -538,7 +545,7 @@ prepare(%abc);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-prepare(%abc, 'arg0S' => [10,20]);
+prepare(%abc, 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -546,7 +553,7 @@ prepare(%abc, 'arg0S' => [10,20]);
 を生成することができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0S' => sub { 2 * $_[0] });
+@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => sub { 2 * $_[0] });
 \end{verbatim}
 \end{boxnote}
 は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
@@ -564,7 +571,7 @@ prepare(%abc, 'arg0S' => [10,20]);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'arg0S' => [0,1], 'arg1S' => [2,3]);
+@jobs = prepare(%abc, 'arg0@' => [0,1], 'arg1@' => [2,3]);
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
@@ -585,7 +592,7 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'})
     'exe' => './kempo'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
-                'arg0S' => sub { $_[0] + $_[1] });
+                'arg0@' => sub { $_[0] + $_[1] });
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
@@ -608,7 +615,7 @@ push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
     'exe' => './kempo'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
-                'arg0S' => '$_[0] + $_[1]');
+                'arg0@' => '$_[0] + $_[1]');
 \end{verbatim}
 \end{boxnote}
 とも書くこともできる．
@@ -637,7 +644,7 @@ submit(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 submit(@jobs);
 \end{verbatim}
 \end{boxnote}
@@ -675,7 +682,7 @@ sync(ジョブスレッドの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0S' => [10,20]);
+@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 @objs = submit(@jobs);
 sync(@objs);
 \end{verbatim}

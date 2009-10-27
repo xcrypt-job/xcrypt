@@ -14,22 +14,24 @@ $smph=Thread::Semaphore->new(1000);      # overwrites --limit option
     'linkedfile0' => 'common/fib',
     'dry' => 0,
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'option' => '# @$-g gh10034',
 );
 
-my @jobs = &prepare(%xyz, 'userdefinedkeyS' => '$_[0] + 1',
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0S' => sub { 26 + $_[0] + $_[2]; }
- 'RANGE0' => [0..99], 'arg0S' => sub { 38; }
-# 'RANGE0' => [0,1], 'arg0S' => [2,4]
-# 'RANGE0' => [0,1], 'arg0S' => \3
+my @jobs = &prepare(%xyz,
+		    'userdefinedkey@' => '$_[0] + 1',
+		    ':userdefined@' => '$_[0] + 10',
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => sub { 26 + $_[0] + $_[2]; }
+ 'RANGE0' => [0..3], 'arg0@' => sub { 38; }
+# 'RANGE0' => [0,1], 'arg0@' => [2,4]
+# 'RANGE0' => [0,1], 'arg0@' => \3
 #
-# 'RANGE0' => [0,1], 'arg0S' => '$_[0] + 20'
-# 'RANGE0' => [0,1], 'arg0S' => '3'
+# 'RANGE0' => [0,1], 'arg0@' => '$_[0] + 20'
+# 'RANGE0' => [0,1], 'arg0@' => '3'
 #
-# 'arg0S' => [0..8,38]
-# 'arg0S' => \1
+# 'arg0@' => [0..8,38]
+# 'arg0@' => \1
 #
-# 'arg0S' => 1
+# 'arg0@' => 1
 );
 
 &submit(@jobs);
@@ -37,4 +39,5 @@ my @jobs = &prepare(%xyz, 'userdefinedkeyS' => '$_[0] + 1',
 
 foreach (0..2) {
     print $jobs[$_]{'userdefinedkey'} . "\n";
+    print $jobs[$_]{':userdefined'} . "\n";
 }
