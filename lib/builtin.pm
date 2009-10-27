@@ -172,15 +172,15 @@ sub invoke_after {
     $after_thread = threads->new( sub {
 	while (1) {
 	    sleep(1);
-	    foreach my $i (@jobs) {
+	    foreach my $self (@jobs) {
 		{
 		    # submitのスレッド分離部と排他的に
 		    lock($lockvar_for_after);
-		    my $stat = &jobsched::get_job_status($i->{'id'});
+		    my $stat = &jobsched::get_job_status($self->{'id'});
 		    if ($stat eq 'done') {
-			eval($i->{'after'});
-			print $i->{'id'} . "\'s post-processing finished.\n";
-			&jobsched::inventory_write($i->{'id'}, "finished");
+			eval($self->{'after'});
+			print $self->{'id'} . "\'s post-processing finished.\n";
+			&jobsched::inventory_write($self->{'id'}, "finished");
 		    }
 		    # ここまで
 		}

@@ -7,10 +7,7 @@ use base qw(core);
 );
 
 &prepare_submit_sync(%xyz,
-#my @jobs = &prepare(%xyz,
-		     'RANGE0' => [0..3],
+		     'RANGE0' => [0..9],
 		     'exeS' => sub { "sleep $_[0]; echo $_[0]"; },
-# 'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
-		     'after' => 'print STDOUT "hoge.\n";'
+ 'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
 );
-#&submit_sync(@jobs);
