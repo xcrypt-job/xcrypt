@@ -14,12 +14,6 @@ use jsconfig;
 
 ##################################################
 
-foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
-    unless (defined $ENV{"$_"}) {
-	die "Set the environment varialble $_\n";
-    }
-}
-
 my $current_directory=Cwd::getcwd();
 my $jobsched = $ENV{'XCRJOBSCHED'};
 
