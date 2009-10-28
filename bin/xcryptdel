@@ -8,8 +8,10 @@ use File::Spec;
 use Getopt::Long;
 use common;
 
-unless (defined $ENV{'XCRYPT'}) {
-    die "Set the environment varialble XCRYPT\n";
+foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
+    unless (defined $ENV{"$_"}) {
+	die "Set the environment varialble $_\n";
+    }
 }
 
 my %opts = ();
