@@ -7,30 +7,20 @@ use File::Spec;
 use File::Basename;
 use Getopt::Long;
 
-#my $opt_dry = 0;
-#my $opt_sge = 0;
-#GetOptions('dry' => \$opt_dry);
-
-my $xcrfile = shift @ARGV;
-if (File::Spec->catfile(basename($xcrfile)) !~ /xcr/) {
-    die "A first argument should be an Xcrypt script.\n";
-}
-my $xcrplfile = "$xcrfile" . '.pl';
-
-if ( $ENV{XCRYPT} ) {
-#    if ($ENV{PATH} eq '') { $ENV{PATH} = $ENV{XCRYPT}; }
-#    else { $ENV{PATH} = $ENV{XCRYPT} . ':' . $ENV{PATH}; }
-
-    if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ":" . File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
-    else { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ":" . File::Spec->catfile($ENV{XCRYPT}, 'lib') . ":" . $ENV{PERL5LIB}; }
-} else {
+unless (defined $ENV{'XCRYPT'}) {
     die "Set the environment varialble XCRYPT\n";
 }
 
+my $xcrfile = shift @ARGV;
+if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
+    die "A first argument should be an Xcrypt script.\n";
+}
+
+my $xcrplfile = "$xcrfile" . '.pl';
 if ( -e $xcrplfile ) { unlink $xcrplfile; }
 
-open ( USER , "< $xcrfile") or die "Can't open $xcrfile\n";
-open ( TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
+open(USER , "< $xcrfile") or die "Can't open $xcrfile\n";
+open(TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
@@ -38,9 +28,9 @@ print TMP 'use threads;' . "\n";
 print TMP 'use threads::shared;' . "\n";
 print TMP 'use Thread::Semaphore;' . "\n";
 print TMP 'use jobsched;' . "\n";
-#print TMP 'use base qw(core);' . "\n";
 print TMP 'our $maxargetc = \'255\';' . "\n";
 print TMP 'our $maxrange = \'16\';' . "\n";
+print TMP 'our $lastchar = \'@\';' . "\n";
 print TMP 'our @allkeys = (\'exe\', \'stdofile\', \'stdefile\', \'queue\', \'proc\', \'cpu\');' . "\n";
 print TMP 'our $smph : shared;' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
@@ -56,13 +46,9 @@ print TMP '$jobsched::abort_check_thread->detach;' . "\n";
 print TMP 'sub before {my $self = shift;eval($self->{before});$self->SUPER::before();}' . "\n";
 print TMP 'sub start {my $self = shift;$self->SUPER::start();}' . "\n";
 print TMP 'sub after {my $self = shift;$self->SUPER::after();eval($self->{after});}' . "\n";
-#print TMP 'return 0;' . "\n";
-close ( TMP );
-close ( USER );
+close(TMP);
+close(USER);
 
 chmod 0755, $xcrplfile or die "Can't chmod $xcrplfile\n";
-#my $dir = File::Spec->catfile(dirname($xcrplfile));
-#my $file = File::Spec->catfile(basename($xcrplfile));
-#my $exitcode = system("cd $dir; perl $file");
 my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
 unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }

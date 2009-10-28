@@ -1,13 +1,9 @@
 package builtin;
 
 use strict;
-#use File::Copy;
 use threads;
 use threads::shared;
-#use Thread::Semaphore;
 use jobsched;
-
-#use xcropt;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
@@ -22,10 +18,9 @@ if ( $xcropt::options{limit} > 0 ) {
 }
 =cut
 
-our $after_thread;
-my $lockvar_for_after : shared;
+our $after_thread; # used in bin/xcrypt
+my $lock_for_after : shared;
 my @id_for_after = ();
-
 my $nilchar = 'nil';
 
 sub addkeys {
@@ -74,7 +69,7 @@ sub addmembers {
     foreach my $key (keys(%job)) {
 	if ($key =~ /\A:/) {
 	    if ($key =~ /@\Z/) {
-		$/ = '@';
+		$/ = $user::lastchar;
 		chomp $key;
 		push(@user::allkeys, $key);
 	    } else {
@@ -98,7 +93,7 @@ sub generate {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . '@';
+	my $members = "$_" . $user::lastchar;
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
 		my $tmp = eval($job{"$members"});
@@ -161,7 +156,7 @@ sub MAX {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . '@';
+	my $members = "$_" . $user::lastchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -178,7 +173,7 @@ sub MIN {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . '@';
+	my $members = "$_" . $user::lastchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -199,10 +194,10 @@ sub invoke_after {
 	    foreach my $self (@jobs) {
 		{
 		    # submitのスレッド分離部と排他的に
-		    lock($lockvar_for_after);
+		    lock($lock_for_after);
 		    my $stat = &jobsched::get_job_status($self->{'id'});
 		    if ($stat eq 'done') {
-#			print $self->{'id'} . "\'s post-processing finished.\n";
+			print $self->{'id'} . "\'s post-processing finished.\n";
 			&user::after($self);
 			&jobsched::inventory_write($self->{'id'}, "finished");
 		    }
@@ -219,7 +214,7 @@ sub submit {
 
     # invoke_afterの処理部と排他的に
     {
-	lock($lockvar_for_after);
+	lock($lock_for_after);
 	$after_thread->detach();
     }
     # ここまで
@@ -280,7 +275,7 @@ sub prepare_or_prepare_submit {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . '@';
+	my $members = "$_" . $user::lastchar;
 	unless ( exists($job{"$members"}) ) {
 	    if ( exists($job{"$_"}) ) {
 		$job{"$members"} = sub {$job{"$_"};};
@@ -344,13 +339,6 @@ sub prepare_or_prepare_submit {
     return @objs;
 }
 
-=comment
-
-sub prepare_submit {
-    my @jobs = &prepare(@_);
-    return &submit(@jobs);
-}
-=cut
 sub prepare_submit_sync {
     my @objs = &prepare_submit(@_);
     return &sync(@objs);
