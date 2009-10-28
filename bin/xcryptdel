@@ -6,20 +6,14 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use Getopt::Long;
+use common;
+
+unless (defined $ENV{'XCRYPT'}) {
+    die "Set the environment varialble XCRYPT\n";
+}
 
 my %opts = ();
 GetOptions(\%opts, 'all');
-
-##############################
-sub cmd_executable {
-    my ($cmd) = @_;
-    my @cmd0 = split(/\s+/,$cmd);
-    qx/which $cmd0[0]/;
-    my $ex_code = $? >> 8;
-    # print "$? $ex_code ";
-    return ($ex_code==0)? 1 : 0;
-}
-##############################
 
 my $write_command = undef;
 my $inventory_port = 9999;
@@ -55,7 +49,7 @@ my $qdel_command = $jobsched_config{$jobsched}{qdel_command};
 unless ( defined $qdel_command ) {
     die "qdel_command is not defined in $jobsched.pm";
 }
-unless (cmd_executable ($qdel_command)) {
+unless (&common::cmd_executable ($qdel_command)) {
     die "$qdel_command not executable";
 }
 

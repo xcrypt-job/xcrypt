@@ -5,17 +5,11 @@ use strict;
 use Cwd;
 use File::Basename;
 use File::Spec;
+use common;
 
-##############################
-sub cmd_executable {
-    my ($cmd) = @_;
-    my @cmd0 = split(/\s+/,$cmd);
-    qx/which $cmd0[0]/;
-    my $ex_code = $? >> 8;
-    # print "$? $ex_code ";
-    return ($ex_code==0)? 1 : 0;
+unless (defined $ENV{'XCRYPT'}) {
+    die "Set the environment varialble XCRYPT\n";
 }
-##############################
 
 if ( $ENV{XCRYPT} ) {
     if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
@@ -49,7 +43,7 @@ my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
 unless ( defined $qstat_command ) {
     die "qstat_command is not defined in $jobsched.pm";
 }
-unless (cmd_executable ($qstat_command)) {
+unless (&common::cmd_executable ($qstat_command)) {
     die "$qstat_command not executable";
 }
 

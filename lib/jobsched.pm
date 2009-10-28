@@ -55,7 +55,7 @@ if ($inventory_port > 0) {
 # にしておくこと（fujitsuオリジナルはそうなってない）
 my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_watch.pl');
 my $watch_opt="-i summary -e all -t 86400 -s"; # -s: signal end mode
-our $watch_thread=undef;
+our $watch_thread=undef; # used in bin/xcrypt
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -67,7 +67,7 @@ my %job_last_update : shared;
 my %status_level = ("active"=>0, "submitted"=>1, "queued"=>2, "running"=>3, "done"=>4, "finished"=>5, "aborted"=>6);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared;
-our $abort_check_thread=undef;
+our $abort_check_thread=undef; # used in bin/xcrypt
 
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
