@@ -6,6 +6,7 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use common;
+use jsconfig;
 
 foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
     unless (defined $ENV{"$_"}) {
@@ -13,28 +14,9 @@ foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
     }
 }
 
-# Load jobscheduler config files.
-my $jobsched = undef;
-my $jobsched_config_dir = undef;
-our %jobsched_config = undef;
-if ( $ENV{XCRYPT} ) {
-    $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
-} else {
-    die "Set the environment varialble XCRYPT.\n";
-}
-unless ( $ENV{XCRJOBSCHED} ) {
-    die "Set the environment varialble XCRJOBSCHED.\n";
-} else {
-    $jobsched = $ENV{XCRJOBSCHED};
-    unless ( -f File::Spec->catfile ($jobsched_config_dir, $jobsched . ".pm") ) {
-        die "No config file for $jobsched ($jobsched.pm) in $jobsched_config_dir";
-    }
-}
-foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
-    do $_;
-}
+my $jobsched = $ENV{'XCRJOBSCHED'};
 
-my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
+my $qstat_command = $jsconfig::jobsched_config{$jobsched}{qstat_command};
 unless ( defined $qstat_command ) {
     die "qstat_command is not defined in $jobsched.pm";
 }
@@ -42,7 +24,7 @@ unless (&common::cmd_executable ($qstat_command)) {
     die "$qstat_command not executable";
 }
 
-my $qstat_extractor = $jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+my $qstat_extractor = $jsconfig::jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
 unless ( defined $qstat_extractor ) {
     die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
 } elsif ( ref ($qstat_extractor) ne 'CODE' ) {

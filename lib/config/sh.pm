@@ -1,5 +1,5 @@
 # Config file for sh
-$jobsched::jobsched_config{"sh"} = {
+$jsconfig::jobsched_config{"sh"} = {
     qsub_command => "$ENV{XCRYPT}/lib/config/run-output-pid.sh",
     qdel_command => "kill -9",
     qstat_command => "ps",

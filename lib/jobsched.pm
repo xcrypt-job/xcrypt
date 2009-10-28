@@ -9,32 +9,19 @@ use File::Basename;
 use File::Spec;
 use IO::Socket;
 use xcropt;
+use jsconfig;
 # use Thread::Semaphore;
 
 ##################################################
 
-my $current_directory=Cwd::getcwd();
-
-# Load jobscheduler config files.
-my $jobsched = undef;
-my $jobsched_config_dir = undef;
-our %jobsched_config = undef;
-if ( $ENV{XCRYPT} ) {
-    $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
-} else {
-    die "Set the environment varialble XCRYPT\n";
-}
-unless ( $ENV{XCRJOBSCHED} ) {
-    die "Set the environment varialble XCRJOBSCHED.\n";
-} else {
-    $jobsched = $ENV{XCRJOBSCHED};
-    unless ( -f File::Spec->catfile ($jobsched_config_dir, $jobsched . ".pm") ) {
-        die "No config file for $jobsched ($jobsched.pm) in $jobsched_config_dir";
+foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
+    unless (defined $ENV{"$_"}) {
+	die "Set the environment varialble $_\n";
     }
 }
-foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
-    do $_;
-}
+
+my $current_directory=Cwd::getcwd();
+my $jobsched = $ENV{'XCRJOBSCHED'};
 
 ### Inventory
 my $inventory_host = qx/hostname/;
@@ -115,8 +102,8 @@ sub qsub {
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
     # NQS も SGE も，オプション中の環境変数を展開しないので注意！
-    if ( defined $jobsched_config{$jobsched}{jobscript_preamble} ) {
-        foreach (@{$jobsched_config{$jobsched}{jobscript_preamble}}) {
+    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_preamble} ) {
+        foreach (@{$jsconfig::jobsched_config{$jobsched}{jobscript_preamble}}) {
             print SCRIPT $_ . "\n";
         }
     }
@@ -124,43 +111,43 @@ sub qsub {
     ## Options
     # queue
     my $queue = $self->{queue};
-    if ( defined $jobsched_config{$jobsched}{jobscript_queue} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_queue}, $queue) . "\n";
+    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_queue} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_queue}, $queue) . "\n";
     }
     # stderr & stdout
     my $stdofile;
     $stdofile = File::Spec->catfile($dir, $self->{stdofile} ? $self->{stdofile} : 'stdout');
     if ( -e $stdofile) { unlink $stdofile; }
-    if ( defined $jobsched_config{$jobsched}{jobscript_stdout} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
+    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_stdout} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
     }
     my $stdefile;
     $stdefile = File::Spec->catfile($dir, $self->{stdefile} ? $self->{stdefile} : 'stderr');
     if ( -e $stdefile) { unlink $stdefile; }
-    if ( defined $jobsched_config{$jobsched}{jobscript_stderr} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
+    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_stderr} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
     }
     # computing resources
     my $proc = $self->{proc};
-    if ( $proc ne '' && defined $jobsched_config{$jobsched}{jobscript_proc} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_proc}, $proc) . "\n";
+    if ( $proc ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_proc} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_proc}, $proc) . "\n";
     }
     my $cpu = $self->{cpu};
-    if ( $cpu ne '' && defined $jobsched_config{$jobsched}{jobscript_cpu} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_cpu}, $cpu) . "\n";
+    if ( $cpu ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_cpu} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_cpu}, $cpu) . "\n";
     }
     my $memory = $self->{memory};
-    if ( $memory ne '' && defined $jobsched_config{$jobsched}{jobscript_memory} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_memory}, $memory) . "\n";
+    if ( $memory ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_memory} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_memory}, $memory) . "\n";
     }
     # verbosity
     my $verbose = $self->{verbose};
-    if ( $verbose ne '' && defined $jobsched_config{$jobsched}{jobscript_verbose} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_verbose}) . "\n";
+    if ( $verbose ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_verbose} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_verbose}) . "\n";
     }
     my $verbose_node = $self->{verbose_node};
-    if ( $verbose_node ne '' && defined $jobsched_config{$jobsched}{jobscript_verbose_node} ) {
-        print SCRIPT any_to_string_nl ($jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
+    if ( $verbose_node ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_verbose_node} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
     }
     # other options
     my $option = $self->{option};
@@ -170,8 +157,8 @@ sub qsub {
     # print SCRIPT "PATH=$ENV{'PATH'}\n";
     # print SCRIPT "set -x\n";
     # Move to the job directory
-    my $wkdir_str = defined ($jobsched_config{$jobsched}{jobscript_workdir})
-        ? any_to_string_nl ($jobsched_config{$jobsched}{jobscript_workdir})
+    my $wkdir_str = defined ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
+        ? any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
         : $ENV{'PWD'};
     print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
 
@@ -193,18 +180,19 @@ sub qsub {
     ### <-- Create qsub options <--
     my $qsub_options = '';
     # stderr & stdout
-    if ( defined $jobsched_config{$jobsched}{qsub_stdout_option} ) {
-        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stdout_option}, $stdofile);
+    if ( defined $jsconfig::jobsched_config{$jobsched}{qsub_stdout_option} ) {
+        $qsub_options .= " ". any_to_string_spc ($jsconfig::jobsched_config{$jobsched}{qsub_stdout_option}, $stdofile);
     }
-    if ( defined $jobsched_config{$jobsched}{qsub_stderr_option} ) {
-        $qsub_options .= " ". any_to_string_spc ($jobsched_config{$jobsched}{qsub_stderr_option}, $stdefile);
+    if ( defined $jsconfig::jobsched_config{$jobsched}{qsub_stderr_option} ) {
+        $qsub_options .= " ". any_to_string_spc ($jsconfig::jobsched_config{$jobsched}{qsub_stderr_option}, $stdefile);
     }
     ### --> Create qsub options -->
 
     # Set job's status "submitted"
     inventory_write ($job_name, "submitted");
     
-    my $qsub_command = $jobsched_config{$jobsched}{qsub_command};
+    print $jsconfig::jobsched_config{$jobsched}{qsub_command}, "\n";
+    my $qsub_command = $jsconfig::jobsched_config{$jobsched}{qsub_command};
     unless ( defined $qsub_command ) {
         die "qsub_command is not defined in $jobsched.pm";
     }
@@ -214,11 +202,11 @@ sub qsub {
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
         # Get request ID from qsub's output
-        if ( defined ($jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
-            unless ( ref $jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
+        if ( defined ($jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
+            unless ( ref $jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
                 die "Error in $jobsched.pm: extract_req_id_from_qsub_output must be a function";
             }
-            $req_id = &{$jobsched_config{$jobsched}{extract_req_id_from_qsub_output}} (@qsub_output);
+            $req_id = &{$jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output}} (@qsub_output);
         } else { # default extractor
             $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
         }
@@ -670,14 +658,14 @@ sub delete_running_job {
 sub check_and_write_aborted {
     my %unchecked;
     {
-        my $qstat_command = $jobsched_config{$jobsched}{qstat_command};
+        my $qstat_command = $jsconfig::jobsched_config{$jobsched}{qstat_command};
         unless ( defined $qstat_command ) {
             die "qstat_command is not defined in $jobsched.pm";
         }
         unless (cmd_executable ($qstat_command)) {
             die "$qstat_command not executable";
         }
-        my $qstat_extractor = $jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+        my $qstat_extractor = $jsconfig::jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
         unless ( defined $qstat_extractor ) {
             die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
         } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
@@ -793,7 +781,7 @@ sub invoke_abort_check {
 # スレッド起動（読み込むだけで起動，は正しい？）
 #invoke_watch ();
 #invoke_abort_check ();
-## スレッド終了待ち：デバッグ（jobsched.pm単体実行）用
+## スレッド終了待ち：デバッグ（jsconfig::jobsched.pm単体実行）用
 # $watch_thread->join();
 
 1;
