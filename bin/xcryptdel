@@ -7,6 +7,7 @@ use File::Basename;
 use File::Spec;
 use Getopt::Long;
 use common;
+use jsconfig;
 
 foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
     unless (defined $ENV{"$_"}) {
@@ -25,29 +26,10 @@ if ($inventory_port > 0) {
     $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
 }
 
-# Load jobscheduler config files.
-my $jobsched = undef;
-my $jobsched_config_dir = undef;
-our %jobsched_config = undef;
-if ( $ENV{XCRYPT} ) {
-    $jobsched_config_dir = File::Spec->catfile ($ENV{XCRYPT}, 'lib', 'config');
-} else {
-    die "Set the environment varialble XCRYPT\n";
-}
-unless ( $ENV{XCRJOBSCHED} ) {
-    die "Set the environment varialble XCRJOBSCHED.\n";
-} else {
-    $jobsched = $ENV{XCRJOBSCHED};
-    unless ( -f File::Spec->catfile ($jobsched_config_dir, $jobsched . ".pm") ) {
-        die "No config file for $jobsched ($jobsched.pm) in $jobsched_config_dir";
-    }
-}
-foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
-    do $_;
-}
+my $jobsched = $ENV{'XCRJOBSCHED'};
 
 # Get qdel command
-my $qdel_command = $jobsched_config{$jobsched}{qdel_command};
+my $qdel_command = $jsconfig::jobsched_config{$jobsched}{qdel_command};
 unless ( defined $qdel_command ) {
     die "qdel_command is not defined in $jobsched.pm";
 }
