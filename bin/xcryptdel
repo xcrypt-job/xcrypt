@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package jobsched;
+package xcryptdel;
 
 use strict;
 use Cwd;
@@ -26,12 +26,10 @@ if ($inventory_port > 0) {
     $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
 }
 
-my $jobsched = $ENV{'XCRJOBSCHED'};
-
 # Get qdel command
-my $qdel_command = $jsconfig::jobsched_config{$jobsched}{qdel_command};
+my $qdel_command = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
 unless ( defined $qdel_command ) {
-    die "qdel_command is not defined in $jobsched.pm";
+    die "qdel_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
 }
 unless (&common::cmd_executable ($qdel_command)) {
     die "$qdel_command not executable";
