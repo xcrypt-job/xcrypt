@@ -7,8 +7,10 @@ use File::Spec;
 use File::Basename;
 use Getopt::Long;
 
-unless (defined $ENV{'XCRYPT'}) {
-    die "Set the environment varialble XCRYPT\n";
+foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
+    unless (defined $ENV{"$_"}) {
+	die "Set the environment varialble $_\n";
+    }
 }
 
 my $xcrfile = shift @ARGV;

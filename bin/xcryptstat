@@ -7,15 +7,10 @@ use File::Basename;
 use File::Spec;
 use common;
 
-unless (defined $ENV{'XCRYPT'}) {
-    die "Set the environment varialble XCRYPT\n";
-}
-
-if ( $ENV{XCRYPT} ) {
-    if ($ENV{PERL5LIB} eq '') { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib'); }
-    else { $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ":" . $ENV{PERL5LIB}; }
-} else {
-    die "Set the environment varialble XCRYPT.\n";
+foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
+    unless (defined $ENV{"$_"}) {
+	die "Set the environment varialble $_\n";
+    }
 }
 
 # Load jobscheduler config files.
