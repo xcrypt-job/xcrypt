@@ -69,7 +69,7 @@ sub addmembers {
     foreach my $key (keys(%job)) {
 	if ($key =~ /\A:/) {
 	    if ($key =~ /@\Z/) {
-		$/ = $user::lastchar;
+		$/ = $user::expandingchar;
 		chomp $key;
 		push(@user::allkeys, $key);
 	    } else {
@@ -93,7 +93,7 @@ sub generate {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . $user::lastchar;
+	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
 		my $tmp = eval($job{"$members"});
@@ -156,7 +156,7 @@ sub MAX {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . $user::lastchar;
+	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -173,7 +173,7 @@ sub MIN {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . $user::lastchar;
+	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
 		my $tmp = @{$_[0]{"$members"}};
@@ -275,7 +275,7 @@ sub prepare_or_prepare_submit {
 
     &addmembers(%job);
     foreach (@user::allkeys) {
-	my $members = "$_" . $user::lastchar;
+	my $members = "$_" . $user::expandingchar;
 	unless ( exists($job{"$members"}) ) {
 	    if ( exists($job{"$_"}) ) {
 		$job{"$members"} = sub {$job{"$_"};};

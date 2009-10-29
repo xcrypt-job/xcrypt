@@ -53,13 +53,11 @@ Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 えられ，Xcrypt スクリプトは典型的には以下の順に記述される．
 
 \def\usemodule{モジュールに関する記述}
-\def\setglobalvar{大域変数に関する記述}
 \def\defjobdefhash{ジョブ定義ハッシュに関する記述}
 \def\operation{ジョブ処理に関する記述}
 
 \begin{enumerate}
  \item \usemodule
- \item \setglobalvar
  \item \defjobdefhash
  \item \operation
 \end{enumerate}
@@ -83,9 +81,7 @@ use base qw(dry core);
 と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
 述べる．
 
-\section{\setglobalvar}
-
-Xcrypt スクリプトの動作全体に関わる大域変数（例えば
+モジュールを読み込むことにより，利用可能になる変数（例えば
 \texttt{\$separator} ）は
 \begin{boxnote}
 \begin{verbatim}
@@ -217,7 +213,7 @@ $separator = '-';
 
 作業ディレクトリに移動する（ここでは \texttt{\$HOME/wd} とする）．
 \begin{screen}
-\texttt{\$ cd \$HOME/e-science/wd}
+\texttt{\$ cd \$HOME/wd}
 \end{screen}
 
 Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
@@ -286,10 +282,47 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 \part{各論}
 \chapter{モジュール}\label{chapmodule}
 
+Xcrypt スクリプトで利用可能なモジュールについて紹介する．
+
 \section{\texttt{core}}
 
-コアモジュールを全て読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）
-を使用する場合には必ず読み込まないといけない．
+Xcrypt コアを読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）を使用
+する場合には必ず読み込まないといけない．
+
+Xcrypt スクリプトで $\texttt{\$separator}$という変数が使えるようになる．
+
+ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
+\texttt{id,arg0,\ldots,arg255}を\texttt{\$separator}で区切った
+名前のディレクトリを作成する．\texttt{\$separator}のデフォルト
+値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
+\begin{boxnote}
+\begin{verbatim}
+$separator = '-';
+\end{verbatim}
+\end{boxnote}
+とする．
+
+使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
+能文字とする．
+
+また，Xcrypt スクリプトで$\texttt{\$separator\_nocheck}$という変数が使
+えるようになる．
+
+
+この値を $1$ にすると \texttt{\$separator} が使用できるシンボルである
+かのチェックを飛ばす．デフォルト値は $0$ である．
+
+\section{\texttt{limit}}
+
+投入するジョブの数を制限する．Xcrypt スクリプトで $\texttt{\$smph}$ と
+いう変数が使えるようになるので，例えば，
+\begin{boxnote}
+\begin{verbatim}
+$smph = Thread::Semaphore->new(10);
+\end{verbatim}
+\end{boxnote}
+\noindent
+と記述して使う．
 
 \section{\texttt{dry}}
 
@@ -353,38 +386,6 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 三つの評価関数下における \texttt{0} の位置のノードから \texttt{9} の深
 さで先読みした際の値をそれぞれ返す．
 \fi
-
-\chapter{大域変数}\label{globalvar}
-
-\section{\texttt{smph}}
-
-一度に投入されるジョブの数の上限を指定する．
-
-\begin{boxnote}
-\begin{verbatim}
-$smph=Thread::Semaphore->new(100);
-\end{verbatim}
-\end{boxnote}
-
-\section{\texttt{separator}}
-
-ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separator}で区切った
-名前のディレクトリを作成する．\texttt{\$separator}のデフォルト
-値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
-\begin{boxnote}
-\begin{verbatim}
-$separator = '-';
-\end{verbatim}
-\end{boxnote}
-とする．
-
-使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
-
-\section{\texttt{separator\_nocheck}}
-
-この値を $1$ にすると \texttt{\$separator} が使用できるシンボルである
-かのチェックを飛ばす．デフォルト値は $0$ である．
 
 \chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
 
