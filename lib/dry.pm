@@ -3,8 +3,6 @@ package dry;
 use strict;
 use NEXT;
 
-our $dry;
-
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
