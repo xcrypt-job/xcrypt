@@ -26,7 +26,7 @@ my $nilchar = 'nil';
 sub addkeys {
     my $exist = 0;
     foreach my $i (@_) {
-	foreach my $j ((@user::allkeys, 'id', 'option')) {
+	foreach my $j ((@user::allkeys, 'id')) {
 	    if (($i eq $j)
 		|| ($i =~ /\Aarg[0-9]*/)
 		|| ($i =~ /\Alinkedfile[0-9]*/)
@@ -37,7 +37,7 @@ sub addkeys {
 	    }
 	}
 	if ($exist == 1) {
-	    die "$i is a reserved word in Xcrypt.\n";
+	    die "$i has already been added or reserved.\n";
 	} elsif ($i =~ /@\Z/) {
 	    die "Can't use $i as key since $i has @ at its tail.\n";
 	} else {
@@ -119,7 +119,7 @@ sub generate {
     my $exist = 0;
     foreach my $i (keys(%job)) {
 	unless (($i =~ /\ARANGE[0-9]+/) || ($i =~ /@\Z/)) {
-	    foreach my $j ((@user::allkeys, 'id', 'option')) {
+	    foreach my $j ((@user::allkeys, 'id')) {
 		if ($i eq $j) {
 		    $exist = 1;
 		}
@@ -197,7 +197,7 @@ sub invoke_after {
 		    lock($lock_for_after);
 		    my $stat = &jobsched::get_job_status($self->{'id'});
 		    if ($stat eq 'done') {
-			print $self->{'id'} . "\'s post-processing finished.\n";
+#			print $self->{'id'} . "\'s post-processing finished.\n";
 			&user::after($self);
 			&jobsched::inventory_write($self->{'id'}, "finished");
 		    }

@@ -1,25 +1,24 @@
 use base qw(core);
 
 %xyz = (
-    'id'           => 'job13',
-    'exe'          => 'time',
-    'linkedfile0'  => 'common/minimax',
-    'linkedfile1'  => 'common/alphabeta',
-#    'linkedfile2'  => 'tree1',
-#    'arg0'         => './minimax',      # algorithm
-#    'arg1'         => '3',              # depth of lookahead
-    'arg2'         => '0',               # position
-#    'arg3'         => 'tree1',           # static evaluation
-    'queue'        => 'gh10034',
-    'option'      => '# @$-g gh10034'
+    'id' => 'job1',
+    'exe' => 'time',
+    'linkedfile0' => 'common/minimax',
+    'linkedfile1' => 'common/alphabeta',
+#    'linkedfile2' => 'common/inversetree',
+#    'arg0' => './minimax',      # algorithm
+#    'arg1' => '3',              # depth of lookahead
+    'arg2' => '0',               # position
+#    'arg3' => 'tree1',           # static evaluation
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
 );
 
 &prepare_submit_sync(%xyz,
-#		     'RANGE0' => [15,16,17],
-		     'RANGE0' => [5,6,7],
-#		     'RANGE1' => ['inversetree'],
-		     'RANGE2' => ['minimax', 'alphabeta'],
-		     'arg0@'  => sub { "./$_[2]";},
-		     'arg1@'  => sub { $_[0]; }
-#		     'arg3@'  => sub { $_[1]; },
+		     'RANGE0' => ['minimax', 'alphabeta'],
+		     'RANGE1' => [5,6,7],
+#		     'RANGE2' => ['inversetree'],
+		     'arg0@'  => sub { "./$_[0]";},
+		     'arg1@'  => sub { $_[1]; }
+#		     'arg3@'  => sub { $_[2]; },
     );

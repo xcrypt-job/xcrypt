@@ -1,8 +1,8 @@
 use base qw(core);
 use Data_Extraction;
 
-%xyz = (
-    'id' => 'job8',
+%job = (
+    'id' => 'job4',
     'exe' => 'echo',
     'arg0' => '10',
     'queue' => 'gh10034',
@@ -10,9 +10,7 @@ use Data_Extraction;
 );
 
 my $today = 10;
-my $yesterday;
-my $arg0 = 10;
-my %job = %xyz;
+my $yesterday = 0;
 
 until (abs($today - $yesterday) > 45) {
     $yesterday = $today;

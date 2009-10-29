@@ -1,25 +1,26 @@
 use base qw(limit dry core);
 
-addkeys('userdefinedkey');
+addkeys('added');
 $separator_nocheck = 0;
 $separator = '-';
 
 $smph=Thread::Semaphore->new(10);      # overwrites --limit option
 
 %xyz = (
-    'id' => 'job7',
+    'id' => 'job3',
     'exe' => './fib',
     'arg0' => '50',
     'arg1' => '> out',
     'linkedfile0' => 'common/fib',
-    'dry' => 0,
+    'unadded' => 0,
+    ':dry' => 0,
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034',
 );
 
 my @jobs = &prepare(%xyz,
-		    'userdefinedkey@' => '$_[0] + 1',
-		    ':userdefined@' => '$_[0] + 11',
+		    'added@' => '$_[0] + 1',
+		    ':defined@' => '$_[0] + 11',
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => sub { 26 + $_[0] + $_[2]; }
  'RANGE0' => [0..3], 'arg0@' => sub { 38; }
 # 'RANGE0' => [0,1], 'arg0@' => [2,4]
@@ -37,7 +38,8 @@ my @jobs = &prepare(%xyz,
 &submit(@jobs);
 &sync(@jobs);
 
-foreach (0..2) {
-    print $jobs[$_]{'userdefinedkey'} . "\n";
-    print $jobs[$_]{':userdefined'} . "\n";
+foreach (0..3) {
+    print $jobs[$_]{'added'} . "\n";
+    print $jobs[$_]{'unadded'} . "\n";
+    print $jobs[$_]{':defined'} . "\n";
 }
