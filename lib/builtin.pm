@@ -199,6 +199,9 @@ sub invoke_after {
 		    if ($stat eq 'done') {
 #			print $self->{'id'} . "\'s post-processing finished.\n";
 			&user::after($self);
+			until (-e "$self->{'id'}/$self->{'stdofile'}") {
+			    sleep(1);
+			}
 			&jobsched::inventory_write($self->{'id'}, "finished");
 		    }
 		    # ここまで
