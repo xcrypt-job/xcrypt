@@ -3,7 +3,7 @@ use Data_Extraction;
 
 %job = (
     'id' => 'job4',
-    'exe' => 'echo',
+    'exe' => 'echo ',
     'arg0' => '10',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
@@ -23,6 +23,7 @@ until (abs($today - $yesterday) > 45) {
 	$datum->ED('C/1');
 	my @tmp = $datum->ER();
 	$today = $tmp[0];
+print $today, "\n";
     }
 }
 print $today, "\n";

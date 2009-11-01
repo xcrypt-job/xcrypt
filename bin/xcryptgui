@@ -243,7 +243,7 @@ sub monitoring {
 			 -text => $_, -style => $jobcolors{$status} );
     }
     if ($_[0]) {
-	$toplevel3->after(2, [\&monitoring, 1]);
+	$toplevel3->after(2, [\&monitoring, 0]);
     }
 }
 
