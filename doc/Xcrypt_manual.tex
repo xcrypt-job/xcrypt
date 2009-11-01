@@ -314,11 +314,11 @@ $separator = '-';
 
 \section{\texttt{limit}}
 
-投入するジョブの数を制限する．Xcrypt スクリプトで $\texttt{\$smph}$ と
-いう変数が使えるようになるので，例えば，
+投入するジョブの数を制限する．Xcrypt スクリプトで $\texttt{\$initialize}$ と
+いう関数が使えるようになるので，例えば，ジョブ数を$10$に制限したければ，
 \begin{boxnote}
 \begin{verbatim}
-$smph = Thread::Semaphore->new(10);
+&limit::initialize(10);
 \end{verbatim}
 \end{boxnote}
 \noindent

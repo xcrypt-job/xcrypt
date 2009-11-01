@@ -6,7 +6,11 @@ use strict;
 use NEXT;
 use Thread::Semaphore;
 
-#our $smph;
+my $smph;
+
+sub initialize {
+    $smph=Thread::Semaphore->new(@_);
+}
 
 sub new {
     my $class = shift;
@@ -21,8 +25,8 @@ sub start {
 
 sub before {
     my $self = shift;
-    if (defined $user::smph) {
-	$user::smph->down;
+    if (defined $smph) {
+	$smph->down;
     } else {
 	warn "Not given \$limit.  Not using limit.pm.\n";
     }
@@ -32,8 +36,8 @@ sub before {
 sub after {
     my $self = shift;
     $self->NEXT::after();
-    if (defined $user::smph) {
-	$user::smph->up;
+    if (defined $smph) {
+	$smph->up;
     } else {
 	warn "Not given \$limit.  Not using limit.pm.\n";
     }

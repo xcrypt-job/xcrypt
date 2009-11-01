@@ -4,7 +4,7 @@ addkeys('added');
 $separator_nocheck = 0;
 $separator = '-';
 
-$smph=Thread::Semaphore->new(10);      # overwrites --limit option
+&limit::initialize(1);
 
 %xyz = (
     'id' => 'job3',
