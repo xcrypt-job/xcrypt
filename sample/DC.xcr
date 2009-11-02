@@ -80,6 +80,6 @@ sub func2
 	'ofname' => 'out'
 );
 
-@results = &prepare_submit_sync(%xyz);
+@results = &create_submit_sync(%xyz);
 #foreach (@results) { print $_->{stdout} , "\n"; }
 #print "---------------\n";

@@ -2,7 +2,7 @@ use base qw(core);
 $separator = '-';
 
 # 並列LU分解を，N=2000,4000，コア数1,2,4,8,16でそれそれ3回実行して性能評価
-prepare_submit_sync (
+create_submit_sync (
      'id' => 'job_lu',            # ジョブの名前
      'RANGE0' => [1,2,4,8,16],    # コア数
      'RANGE1' => [2000,4000],     # 行列のサイズ
@@ -18,7 +18,7 @@ prepare_submit_sync (
      );
 
 # 並列fibを，N=40,44，コア数1,2,4,8,16でそれそれ3回実行して性能評価
-# prepare_submit_sync (
+# create_submit_sync (
 #      'id' => 'job_fib',           # ジョブの名前
 #      'RANGE0' => [1,2,4,8,16],    # コア数
 #      'RANGE1' => [40,44],         # 行列のサイズ

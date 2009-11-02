@@ -4,10 +4,10 @@ use base qw(core);
     'id' => 'job6',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
-);
+    );
 
-&prepare_submit_sync(%xyz,
+&create_submit_sync(%xyz,
 		     'RANGE0' => [0..9],
 		     'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
  'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
-);
+    );

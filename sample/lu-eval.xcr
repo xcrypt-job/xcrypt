@@ -19,4 +19,4 @@ my %job_lu =
      'option' => '# @$-g gh10034' . "\n" . '# @$-cp 00:03:00'
      );
 
-&prepare_submit_sync(%job_lu);
+&create_submit_sync(%job_lu);
