@@ -16,7 +16,7 @@ until (abs($today - $yesterday) > 45) {
     $yesterday = $today;
     $job{'id'} = $job{'id'} . '_';
     $job{'arg0'} = $job{'arg0'} * 2;
-    @results = &prepare_submit_sync(%job) , "\n";
+    @results = &create_submit_sync(%job) , "\n";
     foreach (@results) {
 	my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/$_->{stdofile}");
 	$datum->ED('L/E');
@@ -24,6 +24,7 @@ until (abs($today - $yesterday) > 45) {
 	my @tmp = $datum->ER();
 	$today = $tmp[0];
 print $today, "\n";
+print $yesterday, "\n";
     }
 }
 print $today, "\n";

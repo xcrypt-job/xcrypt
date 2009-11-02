@@ -1,0 +1,33 @@
+use base qw(limit dry core);
+
+addkeys('added');
+$separator_nocheck = 0;
+$separator = '-';
+&limit::initialize(10);
+
+%xyz = (
+    'id' => 'job3',
+    'exe' => './fib',
+    'arg0' => '38',
+    'arg1' => '> out',
+    'linkedfile0' => 'common/fib',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034',
+);
+
+my @jobs = &create(%xyz,
+		    ':dry' => 0,
+		    ':defined@' => '$_[0] + 11',
+		    'added@' => '$_[0] + 1',
+		    'unadded' => 0
+    );
+
+foreach (0..3) {
+    print $jobs[$_]{':defined'} . "\n";
+    print $jobs[$_]{'added'} . "\n";
+    print $jobs[$_]{'unadded'} . "\n";
+}
+
+&submit(@jobs);
+&sync(@jobs);
+

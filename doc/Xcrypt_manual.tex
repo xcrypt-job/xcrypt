@@ -3,6 +3,8 @@
 \usepackage{tascmac}
 \usepackage[all]{xy}
 
+% 
+
 \title{Xcrypt マニュアル}
 \author{京大中島研e-scienceグループ}
 
@@ -162,7 +164,7 @@ $separator = '-';
     'option' => '# @$-g gh10034'
 );
 
-&prepare_submit_sync(%xyz, 'arg1@' => [2,4]);
+&create_submit_sync(%xyz, 'arg1@' => [2,4]);
 \end{verbatim}
 \end{boxnote}
 
@@ -302,7 +304,7 @@ $separator = '-';
 \end{boxnote}
 とする．
 
-使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
+使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
 能文字とする．
 
 また，Xcrypt スクリプトで$\texttt{\$separator\_nocheck}$という変数が使
@@ -373,7 +375,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
     'arg2'        => 'getchildren'      # get next positions
 );
 
-@results = &prepare_submit_sync(%xyz, 'arg3@' => ['komadoku',
+@results = &create_submit_sync(%xyz, 'arg3@' => ['komadoku',
 				                  'kuraidori',
 				                  'ikiataribattari']);
 \end{verbatim}
@@ -394,7 +396,8 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 実行されるジョブを識別する語を記述する．
 
-使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
+能文字とする．
 
 \section{\texttt{exe}}
 
@@ -475,7 +478,7 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \def\advanced{発展}
 
 
-\section{\texttt{prepare}}
+\section{\texttt{create}}
 
 ジョブ定義ハッシュと（リファレンス\footnote{本稿ではリファレンスは型グ
 ロブを含まないものとする．}またはスカラで与えられる）パラメタを受け取
@@ -486,7 +489,7 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 
 \begin{boxnote}
 \begin{verbatim}
-prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
+create(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
                       ...[,'RANGE255' => (配列リファレンス)]
                          [,'ジョブ定義ハッシュキー@' => (リファレンス||スカラ)]
                       ...[,'ジョブ定義ハッシュキー@' => (リファレンス||スカラ)]);
@@ -497,13 +500,13 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 （\texttt{arg0}等）の語尾に\texttt{@}をつけ加えたもの
 （\texttt{arg0@}等）を意味するものとする．
 
-\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは @\verb*+ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \subsection{\example}
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = create('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -526,7 +529,7 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
     'exe' => './kempo',
     'arg0@' => [10,20]
 );
-prepare(%abc);
+create(%abc);
 \end{verbatim}
 \end{boxnote}
 
@@ -538,7 +541,7 @@ prepare(%abc);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-prepare(%abc, 'arg0@' => [10,20]);
+create(%abc, 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -546,10 +549,10 @@ prepare(%abc, 'arg0@' => [10,20]);
 を生成することができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => sub { 2 * $_[0] });
+@jobs = create(%abc, 'RANGE0' => [0..99], 'arg0@' => sub { 2 * $_[0] });
 \end{verbatim}
 \end{boxnote}
-は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
+は\texttt{create(\%abc, 0), create(\%abc, 2),..., create(\%abc,
 198)}を順番に行ったものと同義である．
 
 
@@ -564,7 +567,7 @@ prepare(%abc, 'arg0@' => [10,20]);
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'arg0@' => [0,1], 'arg1@' => [2,3]);
+@jobs = create(%abc, 'arg0@' => [0,1], 'arg1@' => [2,3]);
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
@@ -584,7 +587,7 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'})
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
+@jobs = create(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0@' => sub { $_[0] + $_[1] });
 \end{verbatim}
 \end{boxnote}
@@ -607,7 +610,7 @@ push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
     'id' => 'xyz',
     'exe' => './kempo'
 );
-@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
+@jobs = create(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0@' => '$_[0] + $_[1]');
 \end{verbatim}
 \end{boxnote}
@@ -633,11 +636,11 @@ submit(ジョブリファレンスの配列);
 
 \subsection{\example}
 
-典型的には\texttt{prepare}の返り値を引数にとる．
+典型的には\texttt{create}の返り値を引数にとる．
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = create('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 submit(@jobs);
 \end{verbatim}
 \end{boxnote}
@@ -675,7 +678,7 @@ sync(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = create('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
 @objs = submit(@jobs);
 sync(@objs);
 \end{verbatim}
@@ -694,20 +697,20 @@ addkeys(文字列の配列);
 \end{verbatim}
 \end{boxnote}
 
-\section{\texttt{prepare\_submit}}
+\section{\texttt{create\_submit}}
 
-\texttt{prepare}，\texttt{submit}を順に行う．ただし，\texttt{prepare}で
+\texttt{create}，\texttt{submit}を順に行う．ただし，\texttt{create}で
 生成したジョブリファレンスを即座に\texttt{submit}する（全てのジョブリファ
-レンスが生成されるのを待たない）．\format は\texttt{prepare}に準ずる．
+レンスが生成されるのを待たない）．\format は\texttt{create}に準ずる．
 
 \section{\texttt{submit\_sync}}
 
 \texttt{submit}，\texttt{sync}を順に行う．\format は\texttt{submit}に準
 ずる．
 
-\section{\texttt{prepare\_submit\_sync}}
+\section{\texttt{create\_submit\_sync}}
 
-\texttt{prepare\_submit}，\texttt{sync}を順に行う．\format は
-\texttt{prepare}に準ずる．
+\texttt{create\_submit}，\texttt{sync}を順に行う．\format は
+\texttt{create}に準ずる．
 
 \end{document}
