@@ -230,7 +230,7 @@ sub check_extraction_cond {
                 push(@cond_data, ["$in_kbn[1]", "$in_kbn[0]", "$in_cond[1]", "$in_cond[2]", "$in_kbn[3]", "$in_kbn[2]", "$in_cond[4]", "$in_cond[5]", "$in_kbn[4]"]);
             } else {
                 # 抽出区分誤り
-                print STDERR "1 Extraction Division is an Error \($cond\)\n";
+                print STDERR "Extraction Division is an Error \($cond\)\n";
                 exit 99;
             }
         } elsif ($cond =~ /^ARRAY\(.*\)/) {
@@ -240,12 +240,12 @@ sub check_extraction_cond {
                 push(@cond_data, ['USER', @in_cond_user]);
             } else {
                 # 抽出区分誤り
-                print STDERR "2 Extraction Division is an Error \(@{$cond}\)\n";
+                print STDERR "Extraction Division is an Error \(@{$cond}\)\n";
                 exit 99;
             }
         } else {
             # 抽出区分誤り
-            print STDERR "3 Extraction Division is an Error \($cond\)\n";
+            print STDERR "Extraction Division is an Error \($cond\)\n";
             exit 99;
         }
     }
@@ -326,6 +326,10 @@ sub ER {
     my $obj         = shift;
     my $seek_byte   = 0;
     my $read_index  = 0;
+    
+    if ($#{$obj->{cond_data}} < 0) {
+        return ();
+    }
     push(@{$obj->{pipe_data}}, []);
     my $return_data = \@{${$obj->{pipe_data}}[$#{$obj->{pipe_data}}]};
     
@@ -432,6 +436,8 @@ sub check_existence {
     my ($index_org, $seek_byte, $index_now, $out_kbn, $in_line) = @{$input_data};
     my $cond_index = $obj->{cond_index};
     my $cond_data  = \@{${$obj->{cond_data}}[$cond_index]};
+    my $pipe_data  = \@{${$obj->{pipe_data}}[$cond_index]};
+    my $cond_max   = ${$obj->{cond_max}}[$cond_index];
     my $seek_data  = \@{${$obj->{seek_data}}[$cond_index]};
     my $out_index  = \${$obj->{out_index}}[$cond_index];
     my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};
@@ -440,10 +446,24 @@ sub check_existence {
     if ($out_kbn eq 'DEL') {return ()}
     
     # 最終行指定を実行番号指定に変換
-    if (${${$obj->{pipe_data}}[$cond_index]}[${$obj->{cond_max}}[$cond_index]] eq 'Data_Extraction_END') {
-        &get_cond_l_s($index_now, grep{${$_}[0] eq 'L' and ${$_}[2] eq 'E'}@{$cond_data});
-        &get_cond_l_e($index_now, grep{${$_}[0] eq 'L' and ${$_}[3] eq 'E'}@{$cond_data});
+    my $check_end = grep {${$_}[2] eq 'E' or ${$_}[3] eq 'E'}@{$cond_data};
+    if ($check_end > 0) {
+        my $line_end = 0;
+        if ($#{$pipe_data} >= $cond_max and ${$pipe_data}[$cond_max] eq 'Data_Extraction_END') {
+            $line_end = ${${$pipe_data}[($cond_max - 1)]}[2];
+        } elsif ($#{$pipe_data} >= 0 and $#{$pipe_data} < $cond_max and ${$pipe_data}[$#{$pipe_data}] eq 'Data_Extraction_END') {
+            if ($#{$pipe_data} > 0) {
+                $line_end = ${${$pipe_data}[($#{$pipe_data} - 1)]}[2];
+            } else {
+                $line_end = $index_now;
+            }
+        }
+        if ($line_end > 0) {
+            &get_cond_l_s($line_end, grep{${$_}[0] eq 'L' and ${$_}[2] eq 'E'}@{$cond_data});
+            &get_cond_l_e($line_end, grep{${$_}[0] eq 'L' and ${$_}[3] eq 'E'}@{$cond_data});
+        }
     }
+    
     # 正規表現指定を実行番号指定に変換
     push(@{$cond_data}, &get_cond_lr_s($obj, $index_now, $in_line, grep{${$_}[0] eq 'LR'}@{$cond_data}));
     &get_cond_lr_e($index_now, grep{${$_}[0] eq 'r' and $in_line =~ /${$_}[3]/}@{$cond_data});
@@ -474,6 +494,10 @@ sub check_existence {
         }
     }
     
+    #print "$index_org=$in_line\n";
+    #foreach my $cond_1(@{$cond_data}) {
+    #    print "cond ${$cond_1}[0],${$cond_1}[1],${$cond_1}[2],${$cond_1}[3],${$cond_1}[4],${$cond_1}[5],${$cond_1}[6],${$cond_1}[7],${$cond_1}[8]\n";
+    #}
     # 定型抽出
     if (&change_Bto2($extraction_data) !~ /^1/) {
         # 行抽出、ブロック抽出
@@ -591,9 +615,16 @@ sub get_line_num {
     # 引数 ： $_[0] = オブジェクト                                                            #
     # 処理 ： 処理中の行番号を取得                                                            #
     #-----------------------------------------------------------------------------------------#
+    my $in_data   = \@{${$_[0]->{pipe_data}}[$_[0]->{cond_index}]};
     my $seek_data = \@{${$_[0]->{seek_data}}[$_[0]->{cond_index}]};
     
-    return ${${$seek_data}[$#{$seek_data}]}[2];
+    if ($_[0]->{seek_kbn} eq 'seek') {
+        return ${${$seek_data}[$_[0]->{seek_index}]}[2];
+    } elsif ($_[0]->{seek_kbn} eq 'input') {
+        return ${${$in_data}[$_[0]->{seek_index}]}[2];
+    } else {
+        return ${$_[0]->{seek_num}}[2];
+    }
 }
 ###################################################################################################
 #   ＜＜ seek行番号チェック ＞＞                                                                  #
@@ -607,12 +638,12 @@ sub check_seek_num {
     my $seek_data = \@{${$_[0]->{seek_data}}[$_[0]->{cond_index}]};
     
     if ($_[1] !~ /^\d+$/ or $_[1] <= 0) {
-        print STDERR "Line Number Error($_[1]), \n";
+        print STDERR "Seek Line Number Error ($_[1])\n";
         exit 99;
     }
     if ((${${$seek_data}[$#{$seek_data}]}[2] < $_[1] and (${${$seek_data}[$#{$seek_data}]}[2] + $_[0]->{seek_max}) < $_[1]) or
         (${${$seek_data}[$#{$seek_data}]}[2] > $_[1] and (${${$seek_data}[$#{$seek_data}]}[2] - $_[0]->{seek_max}) > $_[1])) {
-        print STDERR "Seek Buffer Range Error($_[1]), \n";
+        print STDERR "Seek Buffer Range Error ($_[1])\n";
         exit 99;
     }
 }
@@ -625,7 +656,7 @@ sub check_data_acquisition_flag {
     # 処理 ： データ取得区分の記述チェック                                                    #
     #-----------------------------------------------------------------------------------------#
     if ($_[0] ne 'org' and $_[0] ne 'now') {
-        print STDERR "Data Acquisition division Error($_[0]), \n";
+        print STDERR "Data Acquisition division Error ($_[0])\n";
         exit 99;
     }
 }
@@ -692,7 +723,7 @@ sub change_Bto2{
 ###################################################################################################
 sub error_buffers {
     # バッファに該当データ無し
-    print STDERR "Buffers does not have Line Number Pertinence Data(line($_[0])-\>seek($_[1]))\n";
+    print STDERR "Buffers does not have Line Number Pertinence Data (line($_[0])-\>seek($_[1]))\n";
     exit 99;
 }
 ###################################################################################################
@@ -792,29 +823,29 @@ sub get_line {
     
     if ($flg eq 'org' or $obj->{seek_kbn} eq 'org') {
         # オリジナル
-        if ($obj->{get_kbn} ne 'org' and $obj->{seek_kbn} ne 'org' and
+        ${$obj->{seek_num}}[3] = $obj->{seek_kbn};
+        if (${$obj->{get_num}}[3] ne 'org' and
            ($obj->{seek_kbn} eq 'seek' or $obj->{seek_kbn} eq 'input') and
-           ${$obj->{get_num}}[2] ne ${$obj->{seek_num}}[2]) {
+            ${$obj->{get_num}}[2] ne ${$obj->{seek_num}}[2]) {
             if ($obj->{in_kbn} ne '') {
                 seek EXTRACTION_FILE, (${$obj->{seek_num}}[1]), 0 or "$!($obj->{in_name})";
+                my $line2 = &get_line_data($obj, ${$obj->{seek_num}}[0]);
+                ${$_[0]->{seek_num}}[2]--;
             }
-            $line = &get_line_data($obj, ${$obj->{seek_num}}[0]);
         }
-        @{$obj->{get_num}} = @{$obj->{seek_num}};
-        if ($obj->{seek_kbn} ne 'org') {
-            $obj->{get_kbn}       = 'org';
-        } else {
-            $obj->{get_kbn}       = $obj->{seek_kbn};
-        }
-        $obj->{get_index}     = $obj->{seek_index};
         if ($_[0]->{in_kbn} eq '') {
-            $line = &get_line_data($obj, (${$obj->{seek_num}}[2] - 1));
+            $line = &get_line_data($obj, (${$obj->{seek_num}}[0] - 1));
         } else {
             $line = &get_line_data($obj);
         }
+        @{$obj->{get_num}} = @{$obj->{seek_num}};
+        $obj->{get_kbn}    = $obj->{seek_kbn};
+        $obj->{get_index}  = $obj->{seek_index};
+        ${$obj->{seek_num}}[0]++;
         if ($obj->{seek_kbn} eq 'seek' or $obj->{seek_kbn} eq 'input') {
-            if (($obj->{seek_kbn} eq 'seek'  and ${${$seek_data}[$obj->{seek_index}]}[2] >= ${$obj->{get_num}}[2]) or
-                ($obj->{seek_kbn} eq 'input' and ${${$in_data}[$obj->{seek_index}]}[2] >= ${$obj->{get_num}}[2])) {
+            if ((${$obj->{get_num}}[3] eq 'org'  and ${$obj->{seek_num}}[3] eq 'org') or
+                ($obj->{seek_kbn} eq 'seek'  and ${${$seek_data}[$obj->{seek_index}]}[0] < ${$obj->{seek_num}}[0]) or
+                ($obj->{seek_kbn} eq 'input' and ${${$in_data}[$obj->{seek_index}]}[0] < ${$obj->{seek_num}}[0])) {
                 $obj->{seek_index}++;
             }
             if ($obj->{seek_kbn} eq 'seek' and $#{$seek_data} < $obj->{seek_index}) {
@@ -827,7 +858,7 @@ sub get_line {
                 }
             }
         }
-        ${$obj->{seek_num}}[0]++;
+        ${$obj->{get_num}}[3] = 'org';
     } else {
         # 抽出結果
         if ($obj->{seek_kbn} eq 'seek') {
@@ -851,13 +882,14 @@ sub get_line {
             } else {
                 if ($obj->{in_kbn} ne '') {
                     seek EXTRACTION_FILE, (${$obj->{seek_num}}[1]), 0 or "$!($obj->{in_name})";
+                    my $line2 = &get_line_data($obj, ${$obj->{seek_num}}[0]);
                 }
-                $line = &get_line_data($obj, ${$obj->{seek_num}}[0]);
                 $obj->{seek_kbn}   = 'org';
                 $obj->{seek_index} = 0;
                 ${$obj->{seek_num}}[0]++;
             }
         }
+        ${$obj->{seek_num}}[0]++;
         ${$obj->{seek_num}}[2]++;
     }
     return $line;
@@ -958,6 +990,8 @@ sub add_data {
                 } elsif (${${$out_data}[$index]}[0] < ${$obj->{get_num}}[0]) {
                     ${$out_index}++;
                     splice(@{$out_data}, $index, 0, ["${$obj->{get_num}}[0]", "${$obj->{get_num}}[1]", "${$out_index}", 'USER', "$out_line"]);
+                    $obj->{out_kbn} = 'output';
+                    last;
                 }
             }
             if ($obj->{out_kbn} ne 'output') {
@@ -1050,6 +1084,7 @@ sub get_cond_lr_s {
     
     # 正規表現指定を行番号指定に変換（起点行）
     foreach my $cond(@_) {
+        my $cond_flg = '';
         if ($line_data =~ /${$cond}[2]/) {
             if (${$cond}[1] eq '') {
                 if (${$cond}[3] eq '') {
@@ -1079,7 +1114,9 @@ sub get_cond_lr_s {
                 }
                 ${$cond}[8] = '';
             }
-        } elsif (${$cond}[3] =~ /^-\d+$/ and ${$in_data}[(${$cond}[3] * -1)] ne 'Data_Extraction_END' and ${${$in_data}[(${$cond}[3] * -1)]}[4] =~ /${$cond}[2]/) {
+            $cond_flg = '1';
+        }
+        if (${$cond}[3] =~ /^-\d+$/ and ${$in_data}[(${$cond}[3] * -1)] ne 'Data_Extraction_END' and ${${$in_data}[(${$cond}[3] * -1)]}[4] =~ /${$cond}[2]/) {
             if (${$cond}[1] eq '') {
                     push(@add_cond, ['L', "", (${${$in_data}[(${$cond}[3] * -1)]}[2] + ${$cond}[3]), ${${$in_data}[(${$cond}[3] * -1)]}[2], "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
             } else {
@@ -1089,7 +1126,9 @@ sub get_cond_lr_s {
                 ${$cond}[9] = ($line_now + (${$cond}[3] * -1) + 2);
                 ${$cond}[8] = '';
             }
-        } else {
+            $cond_flg = '1';
+        }
+        if ($cond_flg eq '') {
             if (${$cond}[8] eq '') {
                 if (${$cond}[3] eq '' or ${$cond}[3] =~ /^[\+-]\d+$/ ) {
                     if (${$cond}[9] <= $line_now) {
@@ -1136,12 +1175,11 @@ sub get_cond_l_s {
     #      ： $_[1～]= 抽出条件（最終行指定"E"による行抽出）                                  #
     # 処理 ： 最終行指定を行番号指定に変換                                                    #
     #-----------------------------------------------------------------------------------------#
-    my $line_now  = shift;
+    my $line_now   = shift;
     
     foreach my $cond(@_) {
         ${$cond}[2] = $line_now;
-        if (${$cond}[3] eq '') {
-            ${$cond}[2]++;
+        if (${$cond}[3] eq '' or ${$cond}[3] eq 'E') {
             ${$cond}[3] = ${$cond}[2];
         } elsif (${$cond}[3] =~ /^\d+$/) {
             if (${$cond}[2] > ${$cond}[3]) {
@@ -1150,9 +1188,10 @@ sub get_cond_l_s {
                 ${$cond}[3] = $temp_su;
             }
         } elsif (${$cond}[3] =~ /^-\d+$/ and ${$cond}[3] != 0) {
-            ${$cond}[3] = ${$cond}[2] + (${$cond}[3] * -1);
+            my $temp_su = ${$cond}[2];
+            ${$cond}[2] = ${$cond}[2] + ${$cond}[3];
+            ${$cond}[3] = $temp_su;
         } elsif (${$cond}[3] =~ /^\+\d+$/ and ${$cond}[3] != 0) {
-            ${$cond}[2]++;
             ${$cond}[3] = ${$cond}[2] + ${$cond}[3];
         }
     }
@@ -1166,10 +1205,10 @@ sub get_cond_l_e {
     #      ： $_[1～]= 抽出条件（最終行指定"E"による行抽出）                                  #
     # 処理 ： 最終行指定を行番号指定に変換                                                    #
     #-----------------------------------------------------------------------------------------#
-    my $line_now  = shift;
+    my $line_now = shift;
     
     foreach my $cond(@_) {
-        ${$cond}[3] = $line_now + 1;
+        ${$cond}[3] = $line_now;
     }
 }
 ###################################################################################################
@@ -1317,7 +1356,6 @@ sub get_cond_cr {
     my $in_start        = undef;
     my $in_end          = undef;
     my $extraction_data = '0' x $col_su;
-    $in_line           .= ",";
     my $check_key1      = undef;
     my $check_key2      = undef;
     
@@ -1354,12 +1392,13 @@ sub get_cond_cr {
                 $check_key1 .= '[^\s\,]*';
             }
             $check_key1 .= ${$cond}[(2 + $col_add)];
-            if ($key !~ /\s$|\,$/) {
+            if ($key !~ /\s$|\,$|\n$|\$$/) {
                 $check_key1 .= '[^\s\,\n]*';
             }
             if ($line_data !~ /($check_key1)(.*)/) {
                 last;
             }
+            my $next_data = $2;
             # 正規表現(範囲)を補正
             $check_key2 = '';
             if (${$cond}[(3 + $col_add)] ne '' and ${$cond}[(3 + $col_add)] !~ /^[\+-]\d+$/) {
@@ -1370,11 +1409,10 @@ sub get_cond_cr {
                     $check_key2 .= '[^\s\,]*';
                 }
                 $check_key2 .= ${$cond}[(3 + $col_add)];
-                if ($key !~ /\s$|\,$|\n$/) {
+                if ($key !~ /\s$|\,$|\n$|\$$/) {
                     $check_key2 .= '[^\s\,]*';
                 }
             }
-            my $next_data = $2;
             # 抽出範囲を算出
             my @split_out1 = split /($check_key1)/, $line_data, 3;
             my $split_out1_add = 0;
@@ -1393,7 +1431,7 @@ sub get_cond_cr {
             } elsif (${$cond}[(3 + $col_add)] =~ /^\+(\d+)$/) {
                 # ＋ｎ列まで
                 $col_end = $col_end2 + ${$cond}[(3 + $col_add)];
-          } elsif (${$cond}[(3 + $col_add)] =~ /^-(\d+)$/) {
+            } elsif (${$cond}[(3 + $col_add)] =~ /^-(\d+)$/) {
                 # －ｎ列まで
                 $col_start = $col_start + ${$cond}[(3 + $col_add)];
                 $col_end   = $col_end2;
