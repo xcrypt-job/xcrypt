@@ -1,33 +1,23 @@
 use base qw(limit dry core);
 
-addkeys('added');
+addexpandedkeys('added0', 'added1');
 $separator_nocheck = 0;
 $separator = '-';
 &limit::initialize(10);
 
-%xyz = (
-    'id' => 'job3',
-    'exe' => './fib',
-    'arg0' => '38',
-    'arg1' => '> out',
-    'linkedfile0' => 'common/fib',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
-);
-
-my @jobs = &create(%xyz,
-		    ':dry' => 0,
-		    ':defined@' => '$_[0] + 11',
-		    'added@' => '$_[0] + 1',
-		    'unadded' => 0
+my @jobs = &create('id' => 'job2',
+		   'dry' => 0,
+		   'RANGE0' => [0..3],
+		   ':colon@' => '$_[0]',
+		   'added0' => '100',
+		   'added1@' => '$_[0] + 10',
+		   'unadd0' => '200',
+		   'unadd1@' => '$_[0] + 20'
     );
 
-foreach (0..3) {
-    print $jobs[$_]{':defined'} . "\n";
-    print $jobs[$_]{'added'} . "\n";
-    print $jobs[$_]{'unadded'} . "\n";
+foreach my $i (0..3) {
+    foreach my $j (':colon', 'added0', 'added1', 'unadd0', 'unadd1') {
+	print "$j:\t" . $jobs[$i]{"$j"} . "\n";
+    }
 }
-
-&submit(@jobs);
-&sync(@jobs);
 
