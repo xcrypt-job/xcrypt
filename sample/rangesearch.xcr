@@ -1,7 +1,7 @@
 use base qw(core);
 
 %xyz = (
-    'id' => 'job3',
+    'id' => 'job6',
     'exe' => './fib',
     'arg0' => '50',
     'arg1' => '> out',
@@ -24,6 +24,5 @@ my @jobs = &create(%xyz,
 #
 #		   'arg0@' => 1
     );
-
 &submit(@jobs);
 &sync(@jobs);

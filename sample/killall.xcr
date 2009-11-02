@@ -1,13 +1,22 @@
 use base qw(core);
+use Data_Extraction;
 
 %xyz = (
-    'id' => 'job6',
+    'id' => 'job4',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
     );
 
 &create_submit_sync(%xyz,
-		     'RANGE0' => [0..9],
-		     'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
- 'after' => 'if ($self->{id} eq "job6_2") { system("xcryptdel --all"); }'
+		    'RANGE0' => [0..9],
+		    'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
+ 'after' => 'if (&good($self)) { system("xcryptdel --all"); }'
     );
+
+sub good {
+    my $self = shift;
+    my $datum = EF("file:$ENV{'XCRYPT'}/sample/$self->{id}/$self->{stdofile}");
+    $datum->ED('C/1');
+    my @tmp = $datum->ER();
+    return ($tmp[0] == 2);
+}

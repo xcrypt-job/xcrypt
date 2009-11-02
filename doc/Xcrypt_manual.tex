@@ -117,12 +117,15 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 \end{boxnote}
 \noindent
 と記述する．デフォルトで定義可能なジョブ定義ハッシュのキーに関
-しては\ref{chapjobdefhash}章で述べる．ジョブ定義ハッシュキー（例えば
+しては\ref{chapjobdefhash}章で述べる．
+
+\if0
+ジョブ定義ハッシュキー（例えば
 \texttt{userdefinedkey0}と\texttt{userdefinedkey1}）をユーザ定義するに
 はあらかじめ
 \begin{boxnote}
 \begin{verbatim}
-addkeys('userdefinedkey0', 'userdefinedkey1');
+addexpandedkeys('userdefinedkey0', 'userdefinedkey1');
 \end{verbatim}
 \end{boxnote}
 と書いておく（\ref{chapfun}章を参照のこと）か，または，ジョブ定義ハッ
@@ -133,6 +136,7 @@ addkeys('userdefinedkey0', 'userdefinedkey1');
 \end{verbatim}
 \end{boxnote}
 とキー名を\texttt{:}で始める．
+\fi
 
 \section{\operation}
 
@@ -335,7 +339,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \begin{boxnote}
 \begin{verbatim}
 ...
-':dry' => 1,
+'dry' => 1,
 ...
 \end{verbatim}
 \end{boxnote}
@@ -684,16 +688,16 @@ sync(@objs);
 \end{verbatim}
 \end{boxnote}
 
-\section{\texttt{addkeys}}
+\section{\texttt{addexpandedkeys}}
 
-文字列の配列を受け取り，それらをジョブ定義ハッシュキーとして利用可能に
-する．
+文字列の配列を受け取り，それらを\texttt{create}で展開されるジョブ定義ハッ
+シュキーとして利用可能にする．
 
 \subsection{\format}
 
 \begin{boxnote}
 \begin{verbatim}
-addkeys(文字列の配列);
+addexpandedkeys(文字列の配列);
 \end{verbatim}
 \end{boxnote}
 
