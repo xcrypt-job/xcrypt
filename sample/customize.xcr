@@ -7,9 +7,9 @@ $separator = '-';
 
 my @jobs = &prepare('id' => 'job2',
 		   ':dry' => 0,
-#		   'RANGE0' => [0..3],
-		   'RANGE0' => [0],
-		   ':colon@' => '$_[0]',
+		   'RANGE0' => [0..3],
+		   ':auto0' => '0',
+		   ':auto1@' => '$_[0]',
 		   'added0' => '100',
 		   'added1@' => '$_[0] + 10',
 		   'unadd0' => '200',
@@ -17,7 +17,9 @@ my @jobs = &prepare('id' => 'job2',
     );
 
 foreach my $i (0..3) {
-    foreach my $j (':colon', 'added0', 'added1', 'unadd0', 'unadd1') {
+    foreach my $j (':auto0', ':auto1',
+		   'added0', 'added1',
+		   'unadd0', 'unadd1') {
 	print "$j:\t" . $jobs[$i]{"$j"} . "\n";
     }
 }

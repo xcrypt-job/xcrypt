@@ -144,9 +144,6 @@ sub generate {
 	}
 	$exist = 0;
     }
-    foreach (keys(%job)) {
-	print $_, "\n";
-    }
     return user->new(\%job);
 }
 
