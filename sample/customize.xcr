@@ -5,7 +5,7 @@ $separator_nocheck = 0;
 $separator = '-';
 &limit::initialize(10);
 
-my @jobs = &create('id' => 'job2',
+my @jobs = &prepare('id' => 'job2',
 		   'dry' => 0,
 		   'RANGE0' => [0..3],
 		   ':colon@' => '$_[0]',

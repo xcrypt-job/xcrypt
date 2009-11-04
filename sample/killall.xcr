@@ -7,7 +7,7 @@ use Data_Extraction;
     'option' => '# @$-g gh10034'
     );
 
-&create_submit_sync(%xyz,
+&prepare_submit_sync(%xyz,
 		    'RANGE0' => [0..9],
 		    'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
  'after' => 'if (&good($self)) { system("xcryptdel --all"); }'

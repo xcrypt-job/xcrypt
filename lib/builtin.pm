@@ -6,8 +6,8 @@ use threads::shared;
 use jobsched;
 
 use base qw(Exporter);
-our @EXPORT = qw(create submit sync
-create_submit_sync create_submit submit_sync
+our @EXPORT = qw(prepare submit sync
+prepare_submit_sync prepare_submit submit_sync
 addexpandedkeys
 );
 
@@ -108,9 +108,9 @@ sub generate {
 		    my $tmp = ${$job{"$members"}};
 		    $job{"$_"} = $tmp;
 		} elsif ( ref($job{"$members"}) eq 'GLOB' ) {
-		    die "Can't take GLOB at create.\n";
+		    die "Can't take GLOB at prepare.\n";
 		} else {
-		    die "Can't take your format at create.\n";
+		    die "Can't take your format at prepare.\n";
 		}
 	    }
 	}
@@ -267,15 +267,15 @@ sub submit_sync {
     return &sync(@objs);
 }
 
-sub create {
-    &create_or_create_submit(0, @_);
+sub prepare {
+    &prepare_or_prepare_submit(0, @_);
 }
 
-sub create_submit {
-    &create_or_create_submit(1, @_);
+sub prepare_submit {
+    &prepare_or_prepare_submit(1, @_);
 }
 
-sub create_or_create_submit {
+sub prepare_or_prepare_submit {
     my $immediate_submit = shift(@_);
     my @objs;
     my %job = @_;
@@ -297,7 +297,7 @@ sub create_or_create_submit {
 		my $tmp = @{$job{"RANGE$i"}};
 		$existOfRANGE = $existOfRANGE + $tmp;
 	    } else {
-		warn "X must be an ARRAY reference at \&create(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+		warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
 	    }
 	}
     }
@@ -315,7 +315,7 @@ sub create_or_create_submit {
 		if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
 		    push(@ranges, $job{"RANGE$i"});
 		} else {
-		    warn "X must be an ARRAY reference at \&create(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+		    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
 		}
 	    }
 	}
@@ -346,8 +346,8 @@ sub create_or_create_submit {
     return @objs;
 }
 
-sub create_submit_sync {
-    my @objs = &create_submit(@_);
+sub prepare_submit_sync {
+    my @objs = &prepare_submit(@_);
     return &sync(@objs);
 }
 

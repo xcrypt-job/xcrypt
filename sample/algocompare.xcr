@@ -14,7 +14,7 @@ use base qw(core);
     'option' => '# @$-g gh10034'
 );
 
-&create_submit_sync(%xyz,
+&prepare_submit_sync(%xyz,
 		    'RANGE0' => ['minimax', 'alphabeta'],
 		    'RANGE1' => [5,6,7],
 #		    'RANGE2' => ['inversetree'],

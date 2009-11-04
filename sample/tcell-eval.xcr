@@ -69,12 +69,12 @@ $job_grav{arg3s} = sub {"\"1 -$_[2] -$_[2] -$_[2] $_[2] $_[2] $_[2] 25 25 25\""}
 
 my @jobs = ();
 
-push (@jobs, create_submit(%job_fib));
-push (@jobs, create_submit(%job_nq));
-push (@jobs, create_submit(%job_pen));
-push (@jobs, create_submit(%job_lu));
-push (@jobs, create_submit(%job_cmp));
-push (@jobs, create_submit(%job_grav));
+push (@jobs, prepare_submit(%job_fib));
+push (@jobs, prepare_submit(%job_nq));
+push (@jobs, prepare_submit(%job_pen));
+push (@jobs, prepare_submit(%job_lu));
+push (@jobs, prepare_submit(%job_cmp));
+push (@jobs, prepare_submit(%job_grav));
 
 my @all_jobs = sync (@jobs);
 

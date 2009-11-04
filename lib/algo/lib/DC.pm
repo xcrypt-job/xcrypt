@@ -31,7 +31,7 @@ sub before
 		my @jobs = ();
 		foreach my $child (@children)
 		{
-			push(@jobs, &builtin::create(%{$child}));
+			push(@jobs, &builtin::prepare(%{$child}));
 		}
 		my @results = &builtin::submit_sync(@jobs);
 		&{$self->{mergeFunc}}($self->{id}."/".$self->{ofname}, @results);
