@@ -8,7 +8,7 @@ use jobsched;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
-addexpandedkeys
+addkeys
 );
 
 =comment
@@ -23,7 +23,7 @@ my $lock_for_after : shared;
 my @id_for_after = ();
 my $nilchar = 'nil';
 
-sub addexpandedkeys {
+sub addkeys {
     my $exist = 0;
     foreach my $i (@_) {
 	foreach my $j ((@user::allkeys, 'id')) {
@@ -126,15 +126,31 @@ sub generate {
 		}
 	    }
 	    if ($exist == 0) {
-		warn "Warning: $i is given, but not defined by addexpandedkeys.\n";
+		warn "Warning: $i is given, but not defined by addkeys.\n";
 	    }
 	    $exist = 0;
 	}
     }
 =cut
-
+    foreach my $key (keys(%job)) {
+	my $exist = 0;
+	foreach my $ukey (@user::allkeys, 'id') {
+	    if ($key eq $ukey) {
+		$exist = 1;
+	    }
+	}
+	if ($exist == 0) {
+	    delete $job{"$key"};
+	}
+	$exist = 0;
+    }
+    foreach (keys(%job)) {
+	print $_, "\n";
+    }
     return user->new(\%job);
 }
+
+
 
 sub times {
     if (@_ == ()) { return (); }

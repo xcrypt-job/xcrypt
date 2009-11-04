@@ -12,7 +12,7 @@ use base qw(core);
 
 my @jobs = &prepare(%xyz,
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => sub { 26 + $_[0] + $_[2]; }
-#		   'RANGE0' => [0..3], 'arg0@' => sub { 38; }
+		   'RANGE0' => [0..3], 'arg0@' => sub { 38; }
 #		   'RANGE0' => [0,1], 'arg0@' => [2,4]
 #		   'RANGE0' => [0,1], 'arg0@' => \3
 #
