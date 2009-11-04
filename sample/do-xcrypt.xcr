@@ -5,7 +5,7 @@ use File::Spec;
 
 my $XCRFILE=File::Spec->rel2abs("rangesearch/rangesearch.xcr");
 
-create_submit_sync (
+prepare_submit_sync (
                      'id' => 'job-xcrypt',
                      'exe' => "PATH=$ENV{PATH} XCRYPT=$ENV{XCRYPT} XCRJOBSCHED=$ENV{XCRJOBSCHED} xcrypt",
                      'arg0' => $XCRFILE,
