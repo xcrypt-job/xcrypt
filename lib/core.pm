@@ -67,8 +67,6 @@ sub new {
                 my $file1 = $self->{"linkedfile$i"};
                 my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
 		if ( -e $file1 ) {
-		    print $link, "\n";
-		    print $file2, "\n";
 		    symlink($file2, $link);
 		} else {
 		    warn "Can't link to $file1";

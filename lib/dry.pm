@@ -2,6 +2,7 @@ package dry;
 
 use strict;
 use NEXT;
+use builtin;
 
 sub new {
     my $class = shift;

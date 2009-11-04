@@ -125,7 +125,7 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 はあらかじめ
 \begin{boxnote}
 \begin{verbatim}
-addexpandedkeys('userdefinedkey0', 'userdefinedkey1');
+addkeys('userdefinedkey0', 'userdefinedkey1');
 \end{verbatim}
 \end{boxnote}
 と書いておく（\ref{chapfun}章を参照のこと）か，または，ジョブ定義ハッ
@@ -339,7 +339,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \begin{boxnote}
 \begin{verbatim}
 ...
-'dry' => 1,
+':dry' => 1,
 ...
 \end{verbatim}
 \end{boxnote}
@@ -688,7 +688,7 @@ sync(@objs);
 \end{verbatim}
 \end{boxnote}
 
-\section{\texttt{addexpandedkeys}}
+\section{\texttt{addkeys}}
 
 文字列の配列を受け取り，それらを\texttt{prepare}で展開されるジョブ定義ハッ
 シュキーとして利用可能にする．
@@ -697,7 +697,7 @@ sync(@objs);
 
 \begin{boxnote}
 \begin{verbatim}
-addexpandedkeys(文字列の配列);
+addkeys(文字列の配列);
 \end{verbatim}
 \end{boxnote}
 

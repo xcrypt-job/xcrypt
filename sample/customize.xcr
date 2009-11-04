@@ -1,13 +1,14 @@
 use base qw(limit dry core);
 
-addexpandedkeys('added0', 'added1');
+&addkeys('added0', 'added1');
 $separator_nocheck = 0;
 $separator = '-';
 &limit::initialize(10);
 
 my @jobs = &prepare('id' => 'job2',
-		   'dry' => 0,
-		   'RANGE0' => [0..3],
+		   ':dry' => 0,
+#		   'RANGE0' => [0..3],
+		   'RANGE0' => [0],
 		   ':colon@' => '$_[0]',
 		   'added0' => '100',
 		   'added1@' => '$_[0] + 10',

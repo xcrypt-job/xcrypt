@@ -185,7 +185,7 @@ sub qsub {
     # Set job's status "submitted"
     inventory_write ($job_name, "submitted");
     
-    print $jsconfig::jobsched_config{$jobsched}{qsub_command}, "\n";
+#    print $jsconfig::jobsched_config{$jobsched}{qsub_command}, "\n";
     my $qsub_command = $jsconfig::jobsched_config{$jobsched}{qsub_command};
     unless ( defined $qsub_command ) {
         die "qsub_command is not defined in $jobsched.pm";
