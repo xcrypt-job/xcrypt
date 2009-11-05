@@ -1,10 +1,12 @@
 use base qw(core);
 use Data_Extraction;
+use Data_Generation;
 
 %job = (
     'id' => 'job7',
-    'exe' => 'echo ',
-    'arg0' => '10',
+    'exe' => './times.pl',
+    'linkedfile0' => 'common/times.pl',
+    'copiedfile0' => 'common/template.dat',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
@@ -14,13 +16,19 @@ my $yesterday = 0;
 
 until (abs($today - $yesterday) > 45) {
     $yesterday = $today;
+
     $job{'id'} = $job{'id'} . '_';
-    $job{'arg0'} = $job{'arg0'} * 2;
-    @results = &prepare_submit_sync(%job) , "\n";
+    @jobs = &prepare(%job) , "\n";
+    # use Data_Generation
+    my $gen = CF("$ENV{'XCRYPT'}/sample/common/template.dat",
+		 "$ENV{'XCRYPT'}/sample/$job{'id'}");
+    $gen->KR('param', "$today");
+    $gen->do();
+    @results = &submit_sync(@jobs) , "\n";
     foreach (@results) {
-	my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/$_->{stdofile}");
+	# use Data_Extraction
+	my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/out");
 	$datum->ED('L/E');
-	$datum->ED('C/1');
 	my @tmp = $datum->ER();
 	$today = $tmp[0];
 print $today, "\n";
