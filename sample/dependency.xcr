@@ -5,7 +5,7 @@ use base qw(successor core);
     'exe' => 'echo 10',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034',
-    ':successors' => ['abc', 'def']
+    'successors' => ['abc', 'def']
     );
 %abc = (
     'id' => 'job11',

@@ -4,6 +4,8 @@ use strict;
 use NEXT;
 use builtin;
 
+&addkeys('successors');
+
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
@@ -23,7 +25,8 @@ sub before {
 sub after {
     my $self = shift;
     my @objs;
-    foreach (@{$self->{':successors'}}) {
+    $self->NEXT::after();
+    foreach (@{$self->{'successors'}}) {
 	no strict 'refs';
 	my $foo = 'user::' . $_;
 	my %bar = %$foo;
@@ -53,7 +56,6 @@ sub after {
     }
 
     &sync(@objs);
-    $self->NEXT::after();
 }
 
 1;

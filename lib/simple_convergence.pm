@@ -57,7 +57,7 @@ sub backward_difference_loop {
     my $count = 0;
 
     until ((defined $yesterday) &&
-	   (abs($job{'initialvalue'} - $yesterday) < $job{'isConvergent'})) {
+	   (abs($job{'initialvalue'} - $yesterday) <= $job{'isConvergent'})) {
 	$yesterday = $job{'initialvalue'};
 	$job{'id'} = $orignail_id . '_iter'. $count;
 	my @results = &prepare_submit_sync(%job);

@@ -149,9 +149,9 @@ addkeys('userdefinedkey0', 'userdefinedkey1');
 
 \begin{boxnote}
 \begin{verbatim}
-use base qw(core);
+use base qw(limit core);
 
-$smph=Thread::Semaphore->new(10);
+&limit::initialize(10);
 $separator = '-';
 
 %xyz = (
@@ -330,6 +330,34 @@ $separator = '-';
 \noindent
 と記述して使う．
 
+\section{\texttt{successor}}
+
+ジョブを宣言的に定義できるようにする．ジョブ定義ハッシュに
+\texttt{successors} というキーが使えるようになるので，例え
+ば，\texttt{\%x, \%y} というジョブを定義したければ，
+\begin{boxnote}
+\begin{verbatim}
+...
+'successor' => ['x', 'y'],
+...
+\end{verbatim}
+\end{boxnote}
+\noindent
+と記述して使う．
+
+\section{\texttt{simple\_convergence}}
+
+投入したジョブの今回値と前回値の差が一定値以下になるまで繰り返す
+Plan-Do-Check-Action (PDCA) サイクルを容易に実現する関数を提供する．ジョ
+ブ定義ハッシュに \texttt{initialvalue}（初期
+値），\texttt{initialvalue}（初期値），\texttt{isConvergent}（収束条
+件），\texttt{inputfile}（namelist形式の入力ファイル
+名），\texttt{sweepname}（入力ファイルから取得する値の名
+前），\texttt{outputfile}（出力ファイル名），\texttt{extractrules}（出
+力ファイルから値を取得するためのData\_Extractionにおける規則群）という
+キーが使えるようになる．
+
+
 \section{\texttt{dry}}
 
 Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
@@ -339,7 +367,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \begin{boxnote}
 \begin{verbatim}
 ...
-':dry' => 1,
+'dry' => 1,
 ...
 \end{verbatim}
 \end{boxnote}

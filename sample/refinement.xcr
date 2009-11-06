@@ -1,6 +1,6 @@
 use base qw(simple_convergence core);
 
-%job = (
+%xyz = (
     'id' => 'job7',
     'exe' => './half.pl',
     'linkedfile0' => 'common/half.pl',
@@ -14,4 +14,4 @@ use base qw(simple_convergence core);
     'option' => '# @$-g gh10034'
 );
 
-&simple_convergence::backward_difference_loop(%job);
+&simple_convergence::backward_difference_loop(%xyz);
