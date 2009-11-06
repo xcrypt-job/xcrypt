@@ -1,11 +1,11 @@
 use base qw(successor core);
 
-%job = (
+%xyz = (
     'id' => 'job10',
     'exe' => 'echo 10',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034',
-#    ':successors' => ['abc']
+    ':successors' => ['abc', 'def']
     );
 %abc = (
     'id' => 'job11',
@@ -13,7 +13,13 @@ use base qw(successor core);
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
     );
+%def = (
+    'id' => 'job12',
+    'exe' => 'echo 12',
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034'
+    );
 
-&prepare_submit_sync(%job);
+&prepare_submit_sync(%xyz);
 
 

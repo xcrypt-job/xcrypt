@@ -19,7 +19,7 @@ if ( $xcropt::options{limit} > 0 ) {
 =cut
 
 our $after_thread; # used in bin/xcrypt
-our $lock_for_after : shared = 0;
+my $lock_for_after : shared = 0;
 my @id_for_after = ();
 my $nilchar = 'nil';
 
@@ -210,9 +210,9 @@ sub invoke_after {
     $after_thread = threads->new( sub {
 	while (1) {
 	    sleep(1);
+	    # submitのスレッド分離部と排他的に
 	    lock($lock_for_after);
 	    foreach my $self (@jobs) {
-		# submitのスレッド分離部と排他的に
 		my $stat = &jobsched::get_job_status($self->{'id'});
 		if ($stat eq 'done') {
 #		    print $self->{'id'} . "\'s post-processing finished.\n";
@@ -225,7 +225,6 @@ sub invoke_after {
 		}
 	    }
 	    # ここまで
-	    $lock_for_after = 1;
 	}
 				  });
 }
