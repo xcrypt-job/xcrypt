@@ -3,12 +3,11 @@
 open(IN, "< template.dat");
 foreach my $item (<IN>) {
     my $str = $item;
-    if ($str =~ m/^(param)/) {
-	if ($str =~ m/(\d+)/) {
+    if ($str =~ m/(param)/) {
+	if ($str =~ m/(\d+)$/) {
 	    my $num = $1;
-	    print $num;
 	    open(OUT, "> out" );
-	    print OUT (2 * $num);
+	    print OUT ($num / 2);
 	    close(OUT);
 	}
     }

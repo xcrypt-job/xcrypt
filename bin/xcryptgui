@@ -242,13 +242,13 @@ sub monitoring {
 	$tiler0->insert( 'end', -itemtype => 'text', -state => 'normal',
 			 -text => $_, -style => $jobcolors{$status} );
     }
-    if ($_[0]) {
-	$toplevel3->after(2, [\&monitoring, 0]);
+    unless ($_[0]) {
+	$toplevel3->after(3, [\&monitoring, 0]);
     }
 }
 
 sub monitor {
-    unless ( Exists( $toplevel3 ) ) {
+#    unless ( Exists( $toplevel3 ) ) {
 	$toplevel3 = $mainwindow->Toplevel( -title => 'Monitor' );
 	$toplevel3->geometry( '600x600' );
 
@@ -271,8 +271,8 @@ sub monitor {
 	    ->Button( -text => 'Close',	-command => ['destroy', $toplevel3] )
 	    ->pack( -fill => 'x' );
 
-	&monitoring();
-    }
+	&monitoring($_[0]);
+#    }
 }
 
 sub del2 {
