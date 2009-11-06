@@ -2,21 +2,20 @@ use base qw(limit core);
 
 $smph=Thread::Semaphore->new(20);
 
-my %job_lu =
-    (
-     'id' => 'job5',
-     'RANGE0' => [1,4],           # # of workers per node
-     'RANGE1' => [2000,4000],     # lu's param
-     'RANGE2' => [1..3],          # # of trials
-     'exe' => './lu',
-     'linkedfile0' => 'lu/lu',
-     'cpu@' => sub { $_[0]; },
-     'proc@' => sub { $_[0]; },
-     'arg0@' => sub {"-n $_[0]";},
-     'arg1@' => sub {"-i \"0 0 $_[1] 2 0\""},
-     'arg2'  => "-a",
-     'queue' => 'gh10034',
-     'option' => '# @$-g gh10034' . "\n" . '# @$-cp 00:03:00'
-     );
+my %job_lu = (
+    'id' => 'job5',
+    'RANGE0' => [1,4],           # # of workers per node
+    'RANGE1' => [2000,4000],     # lu's param
+    'RANGE2' => [1..3],          # # of trials
+    'exe' => './lu',
+    'linkedfile0' => 'lu/lu',
+    'cpu@' => sub { $_[0]; },
+    'proc@' => sub { $_[0]; },
+    'arg0@' => sub {"-n $_[0]";},
+    'arg1@' => sub {"-i \"0 0 $_[1] 2 0\""},
+    'arg2'  => "-a",
+    'queue' => 'gh10034',
+    'option' => '# @$-g gh10034' . "\n" . '# @$-cp 00:03:00'
+    );
 
 &prepare_submit_sync(%job_lu);

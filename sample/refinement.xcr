@@ -1,39 +1,17 @@
-use base qw(core);
-use Data_Extraction;
-use Data_Generation;
+use base qw(simple_convergence core);
 
 %job = (
     'id' => 'job7',
-    'exe' => './times.pl',
-    'linkedfile0' => 'common/times.pl',
-    'copiedfile0' => 'common/template.dat',
+    'exe' => './half.pl',
+    'linkedfile0' => 'common/half.pl',
+    ':initialvalue' => '128',
+    ':isConvergent' => '10',
+    ':inputfile' => 'common/template.dat',
+    ':inputname' => 'param',
+    ':outputfile' => 'out',
+#    ':outputname' => 'result',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
 
-my $today = 10;
-my $yesterday = 0;
-
-until (abs($today - $yesterday) > 45) {
-    $yesterday = $today;
-
-    $job{'id'} = $job{'id'} . '_';
-    @jobs = &prepare(%job) , "\n";
-    # use Data_Generation
-    my $gen = CF("$ENV{'XCRYPT'}/sample/common/template.dat",
-		 "$ENV{'XCRYPT'}/sample/$job{'id'}");
-    $gen->KR('param', "$today");
-    $gen->do();
-    @results = &submit_sync(@jobs) , "\n";
-    foreach (@results) {
-	# use Data_Extraction
-	my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/out");
-	$datum->ED('L/E');
-	my @tmp = $datum->ER();
-	$today = $tmp[0];
-print $today, "\n";
-print $yesterday, "\n";
-    }
-}
-print $today, "\n";
-print $yesterday, "\n";
+&simple_convergence::backward_difference_loop(%job);

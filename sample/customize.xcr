@@ -5,21 +5,20 @@ $separator_nocheck = 0;
 $separator = '-';
 &limit::initialize(10);
 
-my @jobs = &prepare('id' => 'job2',
-		   ':dry' => 0,
-		   'RANGE0' => [0..3],
-		   ':auto0' => '0',
-		   ':auto1@' => '$_[0]',
-		   'added0' => '100',
-		   'added1@' => '$_[0] + 10',
-		   'unadd0' => '200',
-		   'unadd1@' => '$_[0] + 20'
+my @jobs = &prepare(
+    'id' => 'job2',
+    ':dry' => 0,
+    'RANGE0' => [0..3],
+    ':auto0' => '0',
+    ':auto1@' => '$_[0]',
+    'added0' => '100',
+    'added1@' => '$_[0] + 10',
+    'unadd0' => '200',
+    'unadd1@' => '$_[0] + 20'
     );
 
 foreach my $i (0..3) {
-    foreach my $j (':auto0', ':auto1',
-		   'added0', 'added1',
-		   'unadd0', 'unadd1') {
+    foreach my $j (':auto0', ':auto1', 'added0', 'added1', 'unadd0', 'unadd1') {
 	print "$j:\t" . $jobs[$i]{"$j"} . "\n";
     }
 }
