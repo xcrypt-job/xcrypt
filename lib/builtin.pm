@@ -4,6 +4,7 @@ use strict;
 use threads;
 use threads::shared;
 use jobsched;
+use usablekeys;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
@@ -26,7 +27,7 @@ my $nilchar = 'nil';
 sub addkeys {
     my $exist = 0;
     foreach my $i (@_) {
-	foreach my $j ((@user::allkeys, 'id')) {
+	foreach my $j ((@usablekeys::allkeys, 'id')) {
 	    if (($i eq $j)
 		|| ($i =~ /\Aarg[0-9]*/)
 		|| ($i =~ /\Alinkedfile[0-9]*/)
@@ -41,7 +42,7 @@ sub addkeys {
 	} elsif ($i =~ /@\Z/) {
 	    die "Can't use $i as key since $i has @ at its tail.\n";
 	} else {
-	    push(@user::allkeys, $i);
+	    push(@usablekeys::allkeys, $i);
 	}
 	$exist = 0;
     }
@@ -63,7 +64,7 @@ sub addmembers {
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
 	foreach (@premembers) {
 	    my $name = $_ . $i;
-	    push(@user::allkeys, "$name");
+	    push(@usablekeys::allkeys, "$name");
 	}
     }
     foreach my $key (keys(%job)) {
@@ -71,9 +72,9 @@ sub addmembers {
 	    if ($key =~ /@\Z/) {
 		$/ = $user::expandingchar;
 		chomp $key;
-		push(@user::allkeys, $key);
+		push(@usablekeys::allkeys, $key);
 	    } else {
-		push(@user::allkeys, $key);
+		push(@usablekeys::allkeys, $key);
 	    }
 	}
     }
@@ -92,7 +93,7 @@ sub generate {
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
 
     &addmembers(%job);
-    foreach (@user::allkeys) {
+    foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
@@ -134,7 +135,7 @@ sub generate {
 =cut
     foreach my $key (keys(%job)) {
 	my $exist = 0;
-	foreach my $ukey (@user::allkeys, 'id') {
+	foreach my $ukey (@usablekeys::allkeys, 'id') {
 	    if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
 		$exist = 1;
 	    }
@@ -174,7 +175,7 @@ sub MAX {
     my $num = 0;
 
     &addmembers(%job);
-    foreach (@user::allkeys) {
+    foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if (ref($_[0]{"$members"}) eq 'ARRAY') {
@@ -191,7 +192,7 @@ sub MIN {
     my $num = 0;
 
     &addmembers(%job);
-    foreach (@user::allkeys) {
+    foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
 	    if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
@@ -294,7 +295,7 @@ sub prepare_or_prepare_submit {
     my %job = @_;
 
     &addmembers(%job);
-    foreach (@user::allkeys) {
+    foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	unless ( exists($job{"$members"}) ) {
 	    if ( exists($job{"$_"}) ) {
