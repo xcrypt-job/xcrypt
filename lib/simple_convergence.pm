@@ -10,6 +10,10 @@ use NEXT;
 use base qw(Exporter);
 our @EXPORT = qw(backward_difference_loop);
 
+&addkeys('initialvalue', 'isConvergent',
+	 'inputfile', 'sweepname',
+	 'outputfile', 'extractrules');
+
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
@@ -24,17 +28,17 @@ sub start {
 sub before {
     my $self = shift;
     my $dir = $self->{id};
-    my $copied = $self->{":inputfile"};
+    my $copied = $self->{'inputfile'};
     if ( -e $copied ) {
 	fcopy($copied, $dir);
     } else {
 	warn "Can't copy $copied\n";
     }
     # use Data_Generation
-    my $tmp1 = File::Spec->catfile($ENV{'PWD'}, $self->{':inputfile'});
+    my $tmp1 = File::Spec->catfile($ENV{'PWD'}, $self->{'inputfile'});
     my $tmp2 = File::Spec->catfile($ENV{'PWD'}, $self->{'id'});
     my $gen = CF($tmp1, $tmp2);
-    $gen->KR($self->{':inputname'}, $self->{':initialvalue'});
+    $gen->KR($self->{'sweepname'}, $self->{'initialvalue'});
     $gen->do();
 
     $self->NEXT::before();
@@ -49,24 +53,30 @@ sub backward_difference_loop {
     my $yesterday = undef;
 #    my $oname = shift;
     my %job = @_;
+    my $orignail_id = $job{'id'};
+    my $count = 0;
 
     until ((defined $yesterday) &&
-	   (abs($job{':initialvalue'} - $yesterday) < $job{':isConvergent'})) {
-	$yesterday = $job{':initialvalue'};
-	$job{'id'} = $job{'id'} . '_';
+	   (abs($job{'initialvalue'} - $yesterday) < $job{'isConvergent'})) {
+	$yesterday = $job{'initialvalue'};
+	$job{'id'} = $orignail_id . '_iter'. $count;
 	my @results = &prepare_submit_sync(%job);
 	foreach (@results) {
 	    # use Data_Extraction
 	    my $tmp = File::Spec->catfile($ENV{'PWD'},
 					  $_->{'id'},
-					  $job{':outputfile'});
+					  $job{'outputfile'});
 	    my $datum = EF("file:$tmp");
-	    $datum->ED('L/E');
+	    foreach (@{$job{'extractrules'}}) {
+		$datum->ED(@{$_});
+	    }
+#	    $datum->ED('L/E');
 #	    $oname;
 	    my @foo = $datum->ER();
-	    $job{':initialvalue'} = $foo[0];
+	    $job{'initialvalue'} = $foo[0];
+	    $count = $count + 1;
 print $yesterday, "\n";
-print $job{':initialvalue'}, "\n";
+print $job{'initialvalue'}, "\n";
 	}
     }
 }

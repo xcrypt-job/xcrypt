@@ -4,12 +4,12 @@ use base qw(simple_convergence core);
     'id' => 'job7',
     'exe' => './half.pl',
     'linkedfile0' => 'common/half.pl',
-    ':initialvalue' => '128',
-    ':isConvergent' => '10',
-    ':inputfile' => 'common/template.dat',
-    ':inputname' => 'param',
-    ':outputfile' => 'out',
-#    ':outputname' => 'result',
+    'initialvalue' => '128',
+    'isConvergent' => '10',
+    'inputfile' => 'common/template.dat',
+    'sweepname' => 'param',
+    'outputfile' => 'out',
+    'extractrules' => [['L/E']],
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
 );
