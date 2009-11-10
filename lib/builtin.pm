@@ -210,18 +210,6 @@ sub MIN {
     return $num;
 }
 
-sub exit_if_sigaled {
-    # $_[0]: ref to shared variable for thread status
-    if ($$_[0] eq 'signaled') {
-        lock ($$_[0]);
-        if ($$_[0] eq 'signaled') {
-            $$_[0] = 'killed';
-            cond_signal ($$_[0]);
-            thread->exit();
-        }
-    }
-}
-
 sub invoke_before {
     my @jobs = @_;
     $before_thread = threads->new( sub {
@@ -244,7 +232,14 @@ sub invoke_before {
                 }
             }
             # signaledだったらスレッド終了
-            exit_if_sigaled (\$before_thread_status);
+            if ($before_thread_status eq 'signaled') {
+                lock ($before_thread_status);
+                if ($before_thread_status eq 'signaled') {
+                    $before_thread_status = 'killed';
+                    cond_signal ($before_thread_status);
+                    threads->exit();
+                }
+            }
         }
                                    });
     $before_thread->detach();
@@ -270,20 +265,18 @@ sub invoke_after {
                 }
             }
             # signaledだったらスレッド終了
-            exit_if_sigaled (\$after_thread_status);
+            if ($after_thread_status eq 'signaled') {
+                lock ($after_thread_status);
+                if ($after_thread_status eq 'signaled') {
+                    $after_thread_status = 'killed';
+                    cond_signal ($after_thread_status);
+                    threads->exit();
+                }
+            }
         }
                                   });
     $after_thread->detach();
 }
-
-sub signal_and_wait_killed
-{
-    # $_[0]: ref to shared variable for thread status
-    lock($$_[0]);
-    $$_[0] = 'signaled';
-    cond_wait ($$_[0]) until ($$_[0] eq 'killed');
-}
-
 
 sub submit {
     my @array = @_;
@@ -293,7 +286,12 @@ sub submit {
         &jobsched::inventory_write($self->{'id'}, 'prepared');
     }
     # beforeスレッドを立ち上げ直し
-    if ($before_thread) { signal_and_wait_killed (\$before_thread_status); }
+    if ($before_thread) {
+        lock($before_thread_status);
+        $before_thread_status = 'signaled';
+        cond_wait ($before_thread_status) until ($before_thread_status eq 'killed');
+        print "before_thread killed.\n";
+    }
     {
         my @jobs_for_before_new = @array;
         foreach my $j (@jobs_for_before) {
@@ -306,7 +304,12 @@ sub submit {
     }
     &invoke_before(@jobs_for_before);
     # afterスレッドを立ち上げ直し
-    if ($after_thread)  { signal_and_wait_killed (\$after_thread_status); }
+    if ($after_thread) {
+        lock($after_thread_status);
+        $after_thread_status = 'signaled';
+        cond_wait ($after_thread_status) until ($after_thread_status eq 'killed');
+        print "after_thread killed.\n";
+    }
     {
         my @jobs_for_after_new = @array;
         foreach my $j (@jobs_for_after) {
