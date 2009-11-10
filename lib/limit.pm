@@ -1,15 +1,13 @@
 package limit;
 
-#warn "Now limit.pm is obsoleted!";
-
 use strict;
-use NEXT;
-use Thread::Semaphore;
+use threads;
+use threads::shared;
 
-my $smph;
+my $smph : shared = 100;
 
 sub initialize {
-    $smph=Thread::Semaphore->new(@_);
+    $smph= $_[0];
 }
 
 sub new {
@@ -23,25 +21,20 @@ sub start {
     $self->NEXT::start();
 }
 
-sub before {
-    my $self = shift;
-    if (defined $smph) {
-	$smph->down;
+sub before_isready {
+    # print "smph = $smph\n";
+    if ( $smph > 0 ) {
+        $smph--;
+        return 1;
     } else {
-	warn "Not given \$limit.  Not using limit.pm.\n";
+        return 0;
     }
-    $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
     $self->NEXT::after();
-    if (defined $smph) {
-	$smph->up;
-    } else {
-	warn "Not given \$limit.  Not using limit.pm.\n";
-    }
-
+    $smph++;
 }
 
 1;

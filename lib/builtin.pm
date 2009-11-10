@@ -1,6 +1,7 @@
 package builtin;
 
 use strict;
+use NEXT;
 use threads;
 use threads::shared;
 use jobsched;
@@ -19,9 +20,12 @@ if ( $xcropt::options{limit} > 0 ) {
 }
 =cut
 
-our $after_thread; # used in bin/xcrypt
-my $lock_for_after : shared = 0;
-my @id_for_after = ();
+my $before_thread = undef;
+my $after_thread = undef;
+my $before_thread_status : shared = 'killed'; # one of 'killed', 'running', 'signaled'
+my $after_thread_status : shared = 'killed' ; # one of 'killed', 'running', 'signaled'
+my @jobs_for_before = ();
+my @jobs_for_after = ();
 my $nilchar = 'nil';
 
 sub addkeys {
@@ -206,58 +210,115 @@ sub MIN {
     return $num;
 }
 
+sub exit_if_sigaled {
+    # $_[0]: ref to shared variable for thread status
+    if ($$_[0] eq 'signaled') {
+        lock ($$_[0]);
+        if ($$_[0] eq 'signaled') {
+            $$_[0] = 'killed';
+            cond_signal ($$_[0]);
+            thread->exit();
+        }
+    }
+}
+
+sub invoke_before {
+    my @jobs = @_;
+    $before_thread = threads->new( sub {
+        while (1) {
+            sleep (1);
+            foreach my $self (@jobs) {
+                my $stat = &jobsched::get_job_status($self->{'id'});
+                if ($stat eq 'prepared') {
+                    my $before_ready = $self->EVERY::before_isready();
+                    my $failure=0;
+                    foreach my $k (keys %{$before_ready}) {
+                        unless ($before_ready->{$k}) {
+                            $failure=1;
+                        }
+                    }
+                    unless ($failure) {
+                        $self->before();
+                        $self->start();
+                    }
+                }
+            }
+            # signaledだったらスレッド終了
+            exit_if_sigaled (\$before_thread_status);
+        }
+                                   });
+    $before_thread->detach();
+}
+
 sub invoke_after {
     my @jobs = @_;
     $after_thread = threads->new( sub {
-	while (1) {
-	    sleep(1);
-	    # submitのスレッド分離部と排他的に
-	    lock($lock_for_after);
-	    foreach my $self (@jobs) {
-		my $stat = &jobsched::get_job_status($self->{'id'});
-		if ($stat eq 'done') {
-#		    print $self->{'id'} . "\'s post-processing finished.\n";
-		    $self->after();
-		    until ((-e "$self->{'id'}/$self->{'stdofile'}")
-			   && (-e "$self->{'id'}/$self->{'stdefile'}")) {
-			sleep(1);
-		    }
-		    &jobsched::inventory_write($self->{'id'}, "finished");
-		}
-	    }
-	    # ここまで
-	}
-				  });
+        while (1) {
+            sleep(1);
+            foreach my $self (@jobs) {
+                {
+                    my $stat = &jobsched::get_job_status($self->{'id'});
+                    if ($stat eq 'done') {
+#                       print $self->{'id'} . "\'s post-processing finished.\n";
+                        &user::after($self);
+                        until ((-e "$self->{'id'}/$self->{'stdofile'}")
+                               && (-e "$self->{'id'}/$self->{'stdefile'}")) {
+                            sleep(1);
+                        }
+                        &jobsched::inventory_write($self->{'id'}, 'finished');
+                    }
+                }
+            }
+            # signaledだったらスレッド終了
+            exit_if_sigaled (\$after_thread_status);
+        }
+                                  });
+    $after_thread->detach();
 }
+
+sub signal_and_wait_killed
+{
+    # $_[0]: ref to shared variable for thread status
+    lock($$_[0]);
+    $$_[0] = 'signaled';
+    cond_wait ($$_[0]) until ($$_[0] eq 'killed');
+}
+
 
 sub submit {
     my @array = @_;
 
-    # invoke_afterの処理部と排他的に
+    # submit対象のジョブ状態を 'prepared' に
+    foreach my $self (@array) {
+        &jobsched::inventory_write($self->{'id'}, 'prepared');
+    }
+    # beforeスレッドを立ち上げ直し
+    if ($before_thread) { signal_and_wait_killed (\$before_thread_status); }
     {
-	lock($lock_for_after);
-#	&threads::detach('threads', $after_thread);
-	$after_thread->detach();
+        my @jobs_for_before_new = @array;
+        foreach my $j (@jobs_for_before) {
+            my $stat = jobsched::get_job_status($j->{'id'});
+            unless ( $stat eq 'finished' || $stat eq 'aborted' ) {
+                push(@jobs_for_before_new, $j);
+            }
+        }
+        @jobs_for_before = @jobs_for_before_new;
     }
-    # ここまで
-    $after_thread = 0;
-    foreach my $i (@array) {
-	push(@id_for_after, $i);
+    &invoke_before(@jobs_for_before);
+    # afterスレッドを立ち上げ直し
+    if ($after_thread)  { signal_and_wait_killed (\$after_thread_status); }
+    {
+        my @jobs_for_after_new = @array;
+        foreach my $j (@jobs_for_after) {
+            my $stat = jobsched::get_job_status($j->{'id'});
+            unless ( $stat eq 'finished' || $stat eq 'aborted' ) {
+                push(@jobs_for_after_new, $j);
+            }
+        }
+        @jobs_for_after = @jobs_for_after_new;
     }
-    &invoke_after(@id_for_after);
+    &invoke_after(@jobs_for_after);
 
-    foreach (@array) {
-# after 処理をメインスレッド以外ですることになり limit.pm が復活したので
-#        if ( defined $user::smph ) {
-#            $user::smph->down;
-#        }
-#
-#	my $thread = threads->new( sub {
-#	print "$self->{id}\'s pre-processing finished.\n";
-	&user::before($_);
-	&user::start($_);
-#				   } );
-    }
     return @array;
 }
 

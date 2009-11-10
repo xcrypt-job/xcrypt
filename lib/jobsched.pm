@@ -45,7 +45,8 @@ our %job_status : shared;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
-my %status_level = ("active"=>0, "submitted"=>1, "queued"=>2, "running"=>3, "done"=>4, "finished"=>5, "aborted"=>6);
+my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
+                    "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared;
 our $abort_check_thread=undef; # used in bin/xcrypt
@@ -291,6 +292,9 @@ sub handle_inventory {
     } elsif ($line =~ /^time_active\:\s*([0-9]*)/) {   # ジョブ実行予定
         set_job_active ($last_jobname, $1);
         $ret = 1;
+    } elsif ($line =~ /^time_prepared\:\s*([0-9]*)/) {   # ジョブ投入直前
+        set_job_prepared ($last_jobname, $1);
+        $ret = 1;
     } elsif ($line =~ /^time_submitted\:\s*([0-9]*)/) {   # ジョブ投入直前
         set_job_submitted ($last_jobname, $1);
         $ret = 1;
@@ -513,9 +517,15 @@ sub set_job_active  {
         set_job_status ($jobname, "active", $tim);
     }
 }
+sub set_job_prepared  {
+    my ($jobname, $tim) = @_;
+    if (do_set_p ($jobname, $tim, "prepared", "active") ) {
+        set_job_status ($jobname, "prepared", $tim);
+    }
+}
 sub set_job_submitted {
     my ($jobname, $tim) = @_;
-    if (do_set_p ($jobname, $tim, "submitted", "active") ) {
+    if (do_set_p ($jobname, $tim, "submitted", "prepared") ) {
         set_job_status ($jobname, "submitted", $tim);
     }
 }
@@ -533,6 +543,7 @@ sub set_job_running  {
 }
 sub set_job_done   {
     my ($jobname, $tim) = @_;
+    # finished→done はリトライのときに有り得る
     if (do_set_p ($jobname, $tim, "done", "running", "finished" ) ) {
         set_job_status ($jobname, "done", $tim);
         # リトライのときに実行されると，downされてないセマフォをupしてしまう
@@ -551,7 +562,7 @@ sub set_job_finished   {
 sub set_job_aborted  {
     my ($jobname, $tim) = @_;
     my $curstat = get_job_status ($jobname);
-    if (do_set_p ($jobname, $tim, "aborted", "active", "submitted", "queued", "running" )
+    if (do_set_p ($jobname, $tim, "aborted", "active", "prepared", "submitted", "queued", "running" )
         && $curstat ne "done" && $curstat ne "finished" ) {
         set_job_status ($jobname, "aborted", $tim);
     }
@@ -603,6 +614,7 @@ sub wait_job_status {
     # print "$jobname: exit wait_job_status\n";
 }
 sub wait_job_active    { wait_job_status ($_[0], "active"); }
+sub wait_job_prepared  { wait_job_status ($_[0], "prepared"); }
 sub wait_job_submitted { wait_job_status ($_[0], "submitted"); }
 sub wait_job_queued    { wait_job_status ($_[0], "queued"); }
 sub wait_job_running   { wait_job_status ($_[0], "running"); }
