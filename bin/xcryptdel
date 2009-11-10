@@ -18,16 +18,9 @@ foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
 my %opts = ();
 GetOptions(\%opts, 'all');
 
-my $write_command = undef;
-my $inventory_port = 9999;
-if ($inventory_port > 0) {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
-} else {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
-}
-
 # Get qdel command
-my $qdel_command = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
+my $qdel_command
+    = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
 unless ( defined $qdel_command ) {
     die "qdel_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
 }
@@ -36,7 +29,9 @@ unless (&common::cmd_executable ($qdel_command)) {
 }
 
 # Get request ID from jobname
-if ($opts{'all'}) {
+unless ($opts{'all'}) {
+    &command(@ARGV);
+} else {
     my $current_directory=Cwd::getcwd();
     my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
     my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
@@ -47,35 +42,54 @@ if ($opts{'all'}) {
     close ( REQIDS );
 
     my @value = values(%reqid_jobids_hash);
-    foreach (@value) {
-	&command($_);
+    &command(@value);
+}
+
+sub get_job_request_id_from_file {
+    my $current_directory=Cwd::getcwd();
+    my $idfile=File::Spec->catfile($current_directory, "$_[0]", 'request_id');
+    my $id;
+    open(ID, $idfile) or warn "Can't open $idfile.";
+    $id = <ID>;
+    close(ID);
+    return $id;
+}
+
+sub get_job_status_from_file {
+    my $current_directory=Cwd::getcwd();
+    my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
+    my $statfile = File::Spec->catfile($inventory_path, "$_[0]");
+    my $stat;
+    open(STAT, $statfile) or warn "Can't open $statfile.";
+    while (<STAT>) {
+	if ($_ =~ /^status\:\s(.+)/) {
+	    chomp($_);
+	    my @tmp = split(' ', $_);
+	    $stat = $tmp[1];
+	}
     }
-} else {
-    &command($ARGV[0]);
+    close(STAT);
+    return $stat;
 }
 
 sub command {
-    my $tmp = File::Spec->catfile($_[0], "request_id");
-    my $temp;
-    open (DEL, "< $tmp");
-    $temp = <DEL>;
-    close (DEL);
-    system ("$qdel_command $temp");
-    system (inventory_write_cmdline($_[0], "aborted"));
-}
-
-sub inventory_write_cmdline {
-    my ($jobname, $stat) = @_;
-    my $inventory_host = qx/hostname/;
-    $inventory_host =~ s/\n//g;
-#    status_name_to_level ($stat); # 有効な名前かチェック
-    if ( $inventory_port > 0 ) {
-        return "$write_command $inventory_host $inventory_port $jobname $stat";
-    } else {
-	my $current_directory=Cwd::getcwd();
-	my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-        my $file = File::Spec->catfile($inventory_path, $jobname);
-        my $jobspec = "\"spec: $jobname\"";
-        return "$write_command $file \"$stat\" $jobspec";
+    my @args = @_;
+    foreach my $arg (@args) {
+	my $stat = &get_job_status_from_file($arg);
+	if (($stat eq 'active'   ) ||
+	    ($stat eq 'prepared' ) ||
+	    ($stat eq 'submitted')) {
+# 何をする？
+	} elsif (($stat eq 'done'    ) ||
+		 ($stat eq 'finished') ||
+		 ($stat eq 'aborted' )) {
+	    warn "$arg has already been finished.";
+	} elsif (($stat eq 'queued' ) ||
+		 ($stat eq 'running')) {
+	    my $tmp = &get_job_request_id_from_file($arg);
+	    system ("$qdel_command $tmp");
+	} else {
+	    warn "$arg is in an unexpected state."
+	}
     }
 }
