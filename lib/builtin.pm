@@ -290,7 +290,7 @@ sub submit {
         lock($before_thread_status);
         $before_thread_status = 'signaled';
         cond_wait ($before_thread_status) until ($before_thread_status eq 'killed');
-        print "before_thread killed.\n";
+        # print "before_thread killed.\n";
     }
     {
         my @jobs_for_before_new = @array;
@@ -308,7 +308,7 @@ sub submit {
         lock($after_thread_status);
         $after_thread_status = 'signaled';
         cond_wait ($after_thread_status) until ($after_thread_status eq 'killed');
-        print "after_thread killed.\n";
+        # print "after_thread killed.\n";
     }
     {
         my @jobs_for_after_new = @array;
@@ -350,7 +350,9 @@ sub prepare {
 }
 
 sub prepare_submit {
-    &prepare_or_prepare_submit(1, @_);
+#    &prepare_or_prepare_submit(1, @_);
+    &prepare(@_);
+    &submit(@_);
 }
 
 sub prepare_or_prepare_submit {
