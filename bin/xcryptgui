@@ -220,6 +220,7 @@ sub monitoring {
 		      'finished'  => $green,
 		      'aborted'   => $red,
 		      'active'    => $black,
+		      'prepared'  => $black,
 		      'submitted' => $black,
 		      'queued'    => $black,
 		      'running'   => $black
