@@ -351,8 +351,8 @@ sub prepare {
 
 sub prepare_submit {
 #    &prepare_or_prepare_submit(1, @_);
-    &prepare(@_);
-    &submit(@_);
+    my @jobs = &prepare(@_);
+    &submit(@jobs);
 }
 
 sub prepare_or_prepare_submit {

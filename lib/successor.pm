@@ -33,9 +33,10 @@ sub after {
 	my @jobs = &prepare(%bar);
 #	&submit(@jobs);
 	# 自前でsubmit
-	foreach (@jobs) {
-	    &user::before($_);
-	    &user::start($_);
+	foreach my $self (@jobs) {
+	    &jobsched::inventory_write($self->{'id'}, 'prepared');
+	    &user::before($self);
+	    &user::start($self);
 	}
 	push(@objs, @jobs);
     }
@@ -54,7 +55,6 @@ sub after {
 	&jobsched::inventory_write($self->{'id'}, "finished");
 #		}
     }
-
     &sync(@objs);
 }
 

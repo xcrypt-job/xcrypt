@@ -32,17 +32,8 @@ unless (&common::cmd_executable ($qdel_command)) {
 unless ($opts{'all'}) {
     &command(@ARGV);
 } else {
-    my $current_directory=Cwd::getcwd();
-    my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-    my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
-    open ( REQIDS, "< $idfiles" );
-    my $reqid_jobids = <REQIDS>;
-    my @reqid_jobids_array = split(/ /, $reqid_jobids);
-    my %reqid_jobids_hash = @reqid_jobids_array;
-    close ( REQIDS );
-
-    my @value = values(%reqid_jobids_hash);
-    &command(@value);
+    my @jobids = &common::get_jobids();
+    &command(@jobids);
 }
 
 sub get_job_request_id_from_file {
