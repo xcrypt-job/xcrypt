@@ -5,6 +5,7 @@ use File::Spec;
 use Tk;
 use Tk::TList;
 use Tk::ItemStyle;
+use common;
 
 my $mainwindow = MainWindow->new( -title => 'Xcrypt' );
 $mainwindow->geometry( '1000x1000' );
@@ -44,7 +45,6 @@ my $width = 1 / (1+$max);
 my $statcount;
 
 my $inventorydir = 'inv_watch';
-my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
 
 sub connect {
     my ($widget, $pipe, $eof) = @_;
@@ -59,18 +59,6 @@ sub connect {
     ${$widget}->yview('end');
 
     if ($stat == 0) { ${$eof} = 1; }
-}
-
-sub getjobids {
-    open( JOBIDS, "< $_[0]" );
-    my %reqid_jobids = split(' ', <JOBIDS>);
-    my %count;
-    my @vals = values(%reqid_jobids);
-    @vals = grep(!$count{$_}++, @vals);
-    my @jobids = sort @vals;
-    close( JOBIDS );
-
-    return @jobids;
 }
 
 sub del {
@@ -174,7 +162,7 @@ sub fun {
 					      -command => ['destroy', $toplevel2] );
 	    $button1->pack( -fill => 'x' );
 
-	    my @jobids = &getjobids($reqidfile);
+	    my @jobids = &common::get_jobids();
 	    foreach (@jobids) {
 		$listbox->insert('end', $_);
 		$listbox->yview('end');
@@ -214,7 +202,7 @@ $tool->add( 'command', -label => 'Monitor', -command => [\&monitor, 0] );
 $tool->add( 'command', -label => 'Monitor & Delete', -command => [\&monitor, 1] );
 
 sub monitoring {
-    my @jobids = &getjobids($reqidfile);
+    my @jobids = &common::get_jobids();
 
     my %jobcolors = ( 'done'      => $green,
 		      'finished'  => $green,
@@ -286,7 +274,7 @@ sub del2 {
 }
 
 sub del3 {
-    my @jobids = &getjobids($reqidfile);
+    my @jobids = &common::get_jobids();
     my @index = $_[0]->infoSelection();
     my $job = $jobids[$index[0]];
     &del($job);
