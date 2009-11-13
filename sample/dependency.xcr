@@ -1,25 +1,25 @@
 use base qw(successor core);
 
-%xyz = (
+%parent = (
     'id' => 'job10',
     'exe' => 'echo 10',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034',
-    'successors' => ['abc', 'def']
+    'successors' => ['child0', 'child2']
     );
-%abc = (
+%child0 = (
     'id' => 'job11',
     'exe' => 'echo 11',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
     );
-%def = (
+%child2 = (
     'id' => 'job12',
     'exe' => 'echo 12',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
     );
 
-&prepare_submit_sync(%xyz);
+&prepare_submit_sync(%parent);
 
 

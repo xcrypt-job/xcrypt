@@ -1,5 +1,4 @@
-use base qw(limit DC core);
-$smph=Thread::Semaphore->new(100);
+use base qw(DC core);
 
 sub func0
 {
@@ -68,10 +67,10 @@ sub func2
 	close(OUT);
 }
 
-%xyz = (
+%template = (
     'id' => 'job0',
-    'exe' => '/home/abet/e-science/sample/DC/fib.out',
-    'arg0' => 15,
+    'exe' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
+    'arg0' => 12,
     'canDivideFunc' => \&func0,
     'divideFunc' => \&func1,
     'mergeFunc' => \&func2,
@@ -80,6 +79,6 @@ sub func2
     'ofname' => 'out'
 );
 
-@results = &prepare_submit_sync(%xyz);
+@results = &prepare_submit_sync(%template);
 #foreach (@results) { print $_->{stdout} , "\n"; }
 #print "---------------\n";

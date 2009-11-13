@@ -33,28 +33,29 @@ sub after {
 	my @jobs = &prepare(%bar);
 #	&submit(@jobs);
 	# 自前でsubmit
-	foreach my $self (@jobs) {
-	    &jobsched::inventory_write($self->{'id'}, 'prepared');
-	    &user::before($self);
-	    &user::start($self);
+	foreach my $job (@jobs) {
+	    &jobsched::inventory_write($job->{'id'}, 'prepared');
+	    &user::before($job);
+	    &user::start($job);
 	}
 	push(@objs, @jobs);
     }
 
     # 自前でafter
-    foreach my $self (@objs) {
-	&jobsched::wait_job_done ($self->{'id'});
-#		my $stat = &jobsched::get_job_status($self->{'id'});
+    foreach my $job (@objs) {
+	&jobsched::wait_job_done ($job->{'id'});
+#		my $stat = &jobsched::get_job_status($job->{'id'});
 #		if ($stat eq 'done') {
-#		    print $self->{'id'} . "\'s post-processing finished.\n";
-	$self->after();
-	until ((-e "$self->{'id'}/$self->{'stdofile'}")
-	       && (-e "$self->{'id'}/$self->{'stdefile'}")) {
+#		    print $job->{'id'} . "\'s post-processing finished.\n";
+	$job->after();
+	until ((-e "$job->{'id'}/$job->{'stdofile'}")
+	       && (-e "$job->{'id'}/$job->{'stdefile'}")) {
 	    sleep(1);
 	}
-	&jobsched::inventory_write($self->{'id'}, "finished");
+	&jobsched::inventory_write($job->{'id'}, "finished");
 #		}
     }
+    # 自前でsync
     &sync(@objs);
 }
 
