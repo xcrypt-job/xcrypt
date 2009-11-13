@@ -1,13 +1,13 @@
 use base qw(core);
 use Data_Extraction;
 
-%xyz = (
+%template = (
     'id' => 'job4',
     'queue' => 'gh10034',
     'option' => '# @$-g gh10034'
     );
 
-&prepare_submit_sync(%xyz,
+&prepare_submit_sync(%template,
 		    'RANGE0' => [0..9],
 		    'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
  'after' => 'if (&good($self)) { system("xcryptdel --all"); }'

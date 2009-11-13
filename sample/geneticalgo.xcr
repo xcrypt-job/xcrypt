@@ -2,7 +2,7 @@ use base qw(GA core);
 use Data_Extraction;
 use Data_Generation;
 
-%xyz = (
+%template = (
     'id' => 'job3',
     'arg1' => '5',                 # length of string
     'arg2' => 'onePointCrossover', # how to crossover
@@ -11,7 +11,8 @@ use Data_Generation;
     'option' => '# @$-g gh10034'
 );
 
-@jobs = &prepare(%xyz, 'arg0' => '100',
+@jobs = &prepare(%template,
+		 'arg0' => '100', # number of generation
 		 'arg4@' => ['12345 54321 abcde edcba',
 			     '00000 11111 22222 33333 44444']);
 &submit_sync(@jobs);
@@ -21,11 +22,11 @@ foreach (@jobs) {
     my $datum = EF("file:$ENV{'XCRYPT'}/sample/$_->{id}/$_->{stdofile}");
     $datum->ED('L/1');
     $datum->ED('C/1');
-    my @hoge = $datum->ER();
+    my @param = $datum->ER();
 
     # use Data_Generation
     my $gen = CF("$ENV{'XCRYPT'}/sample/common/template.dat",
 		 "$ENV{'XCRYPT'}/sample/$_->{id}/");
-    $gen->KR('param', "$hoge[0]");
+    $gen->KR('param', "$param[0]");
     $gen->do();
 }

@@ -74,13 +74,14 @@ sub command {
 	} elsif (($stat eq 'done'    ) ||
 		 ($stat eq 'finished') ||
 		 ($stat eq 'aborted' )) {
-	    warn "$arg has already been finished.";
+	    print STDERR "$arg has already been done, finished, or aborted.\n";
 	} elsif (($stat eq 'queued' ) ||
 		 ($stat eq 'running')) {
 	    my $tmp = &get_job_request_id_from_file($arg);
+	    print STDOUT "xcryptdel $arg\n";
 	    system ("$qdel_command $tmp");
 	} else {
-	    warn "$arg is in an unexpected state."
+	    print STDERR "$arg is in an unexpected state.\n"
 	}
     }
 }
