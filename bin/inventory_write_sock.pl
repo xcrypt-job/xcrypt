@@ -6,7 +6,6 @@ use Time::HiRes;
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
 
-my $retry = 10; # # of connection trial
 my $log;
 open ($log, ">> invwrite-sock.log");
 select($log); $|=1; select(STDOUT);
@@ -28,7 +27,6 @@ while ($retry) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
-#        if ( $n_trial >= $retry ) {
         if ( 0 ) {
             die "Failed to connect $host:$port. $!\n";
         }
