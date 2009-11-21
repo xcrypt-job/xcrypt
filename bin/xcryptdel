@@ -6,90 +6,70 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use Getopt::Long;
+use IO::Socket;
+use Time::HiRes;
 use common;
-use jsconfig;
 
-foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
-    unless (defined $ENV{"$_"}) {
-	die "Set the environment varialble $_\n";
+my %opts;
+$opts{host} = 'localhost';
+$opts{port} =  9999;
+GetOptions( \%opts, 'all', 'host=s', 'port=i', 'logfile=s');
+
+my $host = $opts{host};
+my $port = $opts{port};
+my $log = undef;
+if ( $opts{logfile} ) {
+    open ($log, ">> $opts{logfile}");
+    select($log); $|=1; select(STDOUT);
+}
+
+my $retry = 1;
+my $trial_limit = 10;
+while ($retry) {
+    my $socket = 0;
+    my $n_trial = 1;
+    until ($socket) {
+        if ( $n_trial > $trial_limit ) {
+            die "Failed to connect $host:$port. $!\n";
+        }
+        $n_trial++;
+        $socket = IO::Socket::INET->new (PeerAddr => $host,
+                                         PeerPort => $port,
+                                         Proto => 'tcp',
+        );
+        unless ($socket) {
+            my $slp = 0.1+rand(1.0);
+            print STDERR "Failed to connect $host:$port. Retry after $slp seconds.\n";
+            Time::HiRes::sleep $slp;
+        }
     }
-}
-
-my %opts = ();
-GetOptions(\%opts, 'all');
-
-# Get qdel command
-my $qdel_command
-    = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
-unless ( defined $qdel_command ) {
-    die "qdel_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
-}
-unless (&common::cmd_executable ($qdel_command)) {
-    die "$qdel_command not executable";
-}
-
-# Get request ID from jobname
-unless ($opts{'all'}) {
-    &command(@ARGV);
-} else {
-    my $current_directory=Cwd::getcwd();
-    my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-    my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
-    open ( REQIDS, "< $idfiles" );
-    my $reqid_jobids = <REQIDS>;
-    my @reqid_jobids_array = split(/ /, $reqid_jobids);
-    my %reqid_jobids_hash = @reqid_jobids_array;
-    close ( REQIDS );
-
-    my @value = values(%reqid_jobids_hash);
-    &command(@value);
-}
-
-sub get_job_request_id_from_file {
-    my $current_directory=Cwd::getcwd();
-    my $idfile=File::Spec->catfile($current_directory, "$_[0]", 'request_id');
-    my $id;
-    open(ID, $idfile) or warn "Can't open $idfile.";
-    $id = <ID>;
-    close(ID);
-    return $id;
-}
-
-sub get_job_status_from_file {
-    my $current_directory=Cwd::getcwd();
-    my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-    my $statfile = File::Spec->catfile($inventory_path, "$_[0]");
-    my $stat;
-    open(STAT, $statfile) or warn "Can't open $statfile.";
-    while (<STAT>) {
-	if ($_ =~ /^status\:\s(.+)/) {
-	    chomp($_);
-	    my @tmp = split(' ', $_);
-	    $stat = $tmp[1];
-	}
+    select($socket); $|=1; select(STDOUT);
+    ###
+    if ( $opts{all} ) {
+        print $socket ":delall\n";
+    } else {
+        foreach my $jobname (@ARGV) {
+            print $socket ":del $jobname\n";
+        }
     }
-    close(STAT);
-    return $stat;
+    print $socket ":end\n";
+
+    if ($log) { print $log "xcryptdel: waiting ack\n"; }
+    my $ackline =  <$socket>;
+    chomp $ackline;
+    if ( $ackline =~ /^:ack/ ) {
+        $retry = 0;
+    } elsif ( $ackline =~ /^:failed/ ) {
+        my $slp = 0.1+rand(1.0);
+        Time::HiRes::sleep $slp;
+    } else {
+        die "Unexpected ack message: $ackline";
+    }
+    if ($log) { print $log "xcryptdel: received $ackline\n"; }
+    $socket->close();
 }
 
-sub command {
-    my @args = @_;
-    foreach my $arg (@args) {
-	my $stat = &get_job_status_from_file($arg);
-	if (($stat eq 'active'   ) ||
-	    ($stat eq 'prepared' ) ||
-	    ($stat eq 'submitted')) {
-# 何をする？
-	} elsif (($stat eq 'done'    ) ||
-		 ($stat eq 'finished') ||
-		 ($stat eq 'aborted' )) {
-	    warn "$arg has already been finished.";
-	} elsif (($stat eq 'queued' ) ||
-		 ($stat eq 'running')) {
-	    my $tmp = &get_job_request_id_from_file($arg);
-	    system ("$qdel_command $tmp");
-	} else {
-	    warn "$arg is in an unexpected state."
-	}
-    }
+if ($log) {
+    print $log "xcryptdel: successfully done\n";
+    close($log);
 }

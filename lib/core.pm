@@ -20,20 +20,25 @@ sub new {
     }
 
     # ジョブをジョブごとに作成されるディレクトリで処理
-    my $dir = $self->{id};
+    my $jobname= $self->{id};
+    my $dir = $jobname;
     if ($dir eq '') { die "Can't generate any job without id\n"; }
 
     # 前回実行時にできたインベントリファイルがあれば反映
-    &jobsched::load_inventory ($self->{id});
-    # doneになってたら処理はとばす
-    my $last_stat = &jobsched::get_job_status ($self->{id});
-    if ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+    &jobsched::load_inventory ($jobname);
+    my $last_stat = &jobsched::get_job_status ($jobname);
+    if ( jobsched::is_signaled_job ($jobname) ) {
+        # xcryptdelされていたらabortにして処理をとばす
+        &jobsched::inventory_write ($jobname, "aborted");
+        jobsched::delete_signaled_job ($jobname);
+    } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+        # done, finishedになってたら処理はとばす
         if ( $last_stat eq 'finished' ) {
-            &jobsched::inventory_write ($self->{id}, "done");
+            &jobsched::inventory_write ($jobname, "done");
         }
     } else {
         # done, finished以外だったらactiveにしてジョブディレクトリを（あれば）削除
-        &jobsched::inventory_write ($self->{id}, "active");
+        &jobsched::inventory_write ($jobname, "active");
         if ( -e $dir ) {
             print "Delete directory $dir\n";
             File::Path::rmtree ($dir);
