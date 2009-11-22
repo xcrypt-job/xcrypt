@@ -6,16 +6,16 @@ use Getopt::Long;
 
 our %options =
   (
-   'port' => 9999,            # ƒCƒ“ƒxƒ“ƒgƒŠ’Ê’m‘Ò‚¿Žó‚¯ƒ|[ƒgD0‚È‚çNFSŒo—R(unstable!)
-   'stack_size' => 32768,     # PerlƒXƒŒƒbƒh‚ÌƒXƒ^ƒbƒNƒTƒCƒY
-   'limit' => undef,          # “¯Žž“Š“üƒWƒ‡ƒu”
+   'port' => 9999,               # ¥¤¥ó¥Ù¥ó¥È¥êÄÌÃÎÂÔ¤Á¼õ¤±¥Ý¡¼¥È¡¥0¤Ê¤éNFS·ÐÍ³(unstable!)
+   'abort_check_interval' => 19, # abort¤Ë¤Ê¤Ã¤¿¥¸¥ç¥Ö¤ò¥Á¥§¥Ã¥¯¤¹¤ë´Ö³Ö(sec)
+   'stack_size' => 32768,        # Perl¥¹¥ì¥Ã¥É¤Î¥¹¥¿¥Ã¥¯¥µ¥¤¥º
    # define other default values...
   );
 
 GetOptions
-  (
-   'port=i' =>       \$options{port},
-   'stack_size=i' => \$options{stack_size},
-   'limit=i' =>      \$options{limit},
+  (\%options,
+   'port=i',
+   'abort_check_interval=i',
+   'stack_size=i',
    # define other command-line options...
   );

@@ -8,6 +8,7 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use IO::Socket;
+use common;
 use xcropt;
 use jsconfig;
 # use Thread::Semaphore;
@@ -23,7 +24,7 @@ chomp $inventory_host;
 my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
 # print "inventory_port: $inventory_port\n"
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $inventory_save_path=$inventory_path;
+my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
 
 my $write_command = undef;
 if ($inventory_port > 0) {
@@ -48,8 +49,13 @@ my %job_last_update : shared;
 my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
-my %running_jobs : shared;
+my %running_jobs : shared = ();
+# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
+my %signaled_jobs : shared = ();
+my $all_jobs_signaled : shared = undef;
+
 our $abort_check_thread=undef; # used in bin/xcrypt
+my $abort_check_interval = $xcropt::options{abort_check_interval};
 
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
@@ -59,13 +65,13 @@ select(STDERR); $|=1; select(STDOUT);
 sub any_to_string {
     my ($arraysep, $x, @args) = @_;
     my $r = ref ($x);
-    if ( $r eq '' ) {
+    if ( $r eq '' ) {             # $x is a scalar
         return $x . join(' ', @args);
-    } elsif ( $r eq 'ARRAY' ) {
+    } elsif ( $r eq 'ARRAY' ) {   # $arraysep works only here
         return join ($arraysep, @$x) . $arraysep . join($arraysep, @args);
     } elsif ( $r eq 'CODE' ) {
         return &$x(@args);
-    } elsif ( $r eq 'SCALAR' ) {
+    } elsif ( $r eq 'SCALAR' ) {  # $x is *a reference to* a scalar
         return $$x . join(' ', @args);
     } else {
         die "any_to_string: Unexpected reference $r";
@@ -74,14 +80,6 @@ sub any_to_string {
 sub any_to_string_nl  { any_to_string ("\n", @_); }
 sub any_to_string_spc { any_to_string (" ", @_); }
 
-sub cmd_executable {
-    my ($cmd) = @_;
-    my @cmd0 = split(/\s+/,$cmd);
-    qx/which $cmd0[0]/;
-    my $ex_code = $? >> 8;
-    # print "$? $ex_code ";
-    return ($ex_code==0)? 1 : 0;
-}
 ##################################################
 # ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
 # ジョブスケジューラによって吐くものが違う
@@ -185,15 +183,14 @@ sub qsub {
 
     # Set job's status "submitted"
     inventory_write ($job_name, "submitted");
-    
-#    print $jsconfig::jobsched_config{$jobsched}{qsub_command}, "\n";
+
     my $qsub_command = $jsconfig::jobsched_config{$jobsched}{qsub_command};
     unless ( defined $qsub_command ) {
         die "qsub_command is not defined in $jobsched.pm";
     }
-    if (cmd_executable ($qsub_command)) {
-# デモの見栄えのためコメントアウト
-#        print STDERR "$qsub_command $qsub_options $scriptfile\n";
+    if (common::cmd_executable ($qsub_command)) {
+        # ここでqsubコマンド実行
+        # print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
         # Get request ID from qsub's output
@@ -211,8 +208,7 @@ sub qsub {
         open (REQUESTID, ">> $idfile");
         print REQUESTID $req_id;
         close (REQUESTID);
-        my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
-        open (REQUESTIDS, ">> $idfiles");
+        open (REQUESTIDS, ">> $reqids_file");
         print REQUESTIDS $req_id . ' ' . $dir . ' ';
         close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
@@ -224,25 +220,50 @@ sub qsub {
     }
 }
 
-## Obsoleted: configファイルにスケジューラごとに記述
-# sub extract_req_id_from_qsub_output {
-#     my ($line) = @_;
-#     my $req_id;
-#     if ($sge) {
-#         if ( $line =~ /^\s*Your\s+job\s+([0-9]+)/ ) {
-#             $req_id = $1;
-#         } else {
-#             die "Can't extract request_id: $line";
-#         }
-#     } else {
-#         if ( $line =~ /([0-9]*)\.nqs/ ) {
-#             $req_id = $1 . '.nqs';
-#         } else {
-#             die "Can't extract request_id: $line";
-#         }
-#     }
-#     return $req_id;
-# }
+# qdelコマンドを実行して指定されたjobnameのジョブを殺す
+sub qdel {
+    my ($jobname) = @_;
+    # qdelコマンドをconfigから獲得
+    my $qdel_command = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
+    unless ( defined $qdel_command ) {
+        die "qdel_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
+    }
+    # jobname -> request id
+    my $req_id = get_job_request_id ($jobname);
+    if ($req_id) {
+        # execute qdel
+        my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
+        if (common::cmd_executable ($command_string)) {
+            print "Deleting $jobname (request ID: $req_id)\n";
+            exec ($command_string);
+        } else {
+            warn "$command_string not executable.";
+        }
+    }
+}
+
+# qstatコマンドを実行して表示されたrequest IDの列を返す
+sub qstat {
+    my $qstat_command = $jsconfig::jobsched_config{$jobsched}{qstat_command};
+    unless ( defined $qstat_command ) {
+        die "qstat_command is not defined in $jobsched.pm";
+    }
+    my $qstat_extractor = $jsconfig::jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+    unless ( defined $qstat_extractor ) {
+        die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
+    } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
+        die "Error in $jobsched.pm: extract_req_ids_from_qstat_output must be a function.";
+    }
+    my $command_string = any_to_string_spc ($qstat_command);
+    unless (common::cmd_executable ($command_string)) {
+        warn "$command_string not executable";
+        return ();
+    }
+    # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
+    my @qstat_out = qx/$command_string/;
+    my @ids = &$qstat_extractor(@qstat_out);
+    return @ids;
+}
 
 ##############################
 # 外部プログラムinventory_writeを起動し，
@@ -273,22 +294,10 @@ sub handle_inventory {
     my $ret = 0;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
-#     } elsif ($line =~ /^status\:\s*active/) {   # ジョブ実行予定
-#         set_job_active ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*submitted/) {   # ジョブ投入直前
-#         set_job_submitted ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-# #     } elsif ($line =~ /^status\:\s*queued/) {     # qsub成功
-# #         set_job_queued ($last_jobname);   # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*running/) {    # プログラム開始
-#         set_job_running ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*done/) {     # プログラムの終了（正常）
-#         set_job_done ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-#     } elsif ($line =~ /^status\:\s*aborted/) {    # ジョブの終了（正常以外）
-#         set_job_aborted ($last_jobname); # ジョブ状態ハッシュを更新（＆通知）
-    ## ↑から変更： "time_submitted: <更新時刻>"  の行を見るようにした
-    ## inventory_watch は同じ更新情報を何度も出力するので，
-    ## 最後の更新より古い情報は無視する
-    ## 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
+    # ・以下はNFS通信版の話
+    # inventory_watch は同じ更新情報を何度も出力するので，
+    # 最後の更新より古い情報は無視する．
+    # 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
     } elsif ($line =~ /^time_active\:\s*([0-9]*)/) {   # ジョブ実行予定
         set_job_active ($last_jobname, $1);
         $ret = 1;
@@ -302,7 +311,7 @@ sub handle_inventory {
         set_job_queued ($last_jobname, $1);
         $ret = 1;
     } elsif ($line =~ /^time_running\:\s*([0-9]*)/) {   # プログラム開始
-        # まだqueuedになっていなければ書き込まず，0を返す
+        # まだqueuedになっていなければ書き込まず，0を返すことで再連絡を促す
         # ここでwaitしないのはデッドロック防止のため
         if ( get_job_status ($last_jobname) eq "queued" ) {
             set_job_running ($last_jobname, $1);
@@ -321,10 +330,16 @@ sub handle_inventory {
         $ret = 1;
     } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
         # とりあえず何もなし
-    } elsif (/^date\_.*\:\s*(.+)/){             # ジョブ状態変化の時刻
+    } elsif ($line =~ /^date\_.*\:\s*(.+)/){    # ジョブ状態変化の時刻
         # とりあえず何もなし
-    } elsif (/^time\_.*\:\s*(.+)/){             # ジョブ状態変化の時刻
+    } elsif ($line =~/^time\_.*\:\s*(.+)/){     # ジョブ状態変化の時刻
         # とりあえず何もなし
+    } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
+        entry_signaled_job ($1);
+        $ret = 0;
+    } elsif ($line =~/^:delall/) {              # 全ジョブ削除依頼
+        signal_all_jobs ();
+        $ret = 0;
     } else {
         warn "unexpected inventory: \"$line\"\n";
         $ret = -1;
@@ -380,7 +395,7 @@ sub invoke_watch_by_file {
     until ( -f $invwatch_ok_file ) { sleep 1; }
 }
 
-# TCP/IP通信によりジョブ状態の変更通知を受け付けるスレッドを起動
+# TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
     $watch_thread = threads-> new ( sub {
         socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
@@ -393,18 +408,25 @@ sub invoke_watch_by_socket {
             or die "listen: $!";
         while (1) {
             my $paddr = accept (CLIENT, CLIENT_WAITING);
+            unless ($paddr) {next;}
             my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
             my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
             my $cl_ip = inet_ntoa ($cl_iaddr);
             my $inv_text = '';
             my $handle_inventory_ret = 0;
             select(CLIENT); $|=1; select(STDOUT);
+            # クライアントからのメッセージは
+            # (0行以上のメッセージ行)+(":end"で始まる行)
             while (<CLIENT>) {
-                if ( $_ =~ /^:end/ ) {
-                    # print STDERR "received :end\n";
-                    last;
+                if ( $_ =~ /^:/ ) {
+                    if ( $_ =~ /^:end/ ) {
+                        # print STDERR "received :end\n";
+                        last;
+                    }
+                } else {
+                    # ':' で始まる行を除いてinventory_fileに保存する
+                    $inv_text .= $_;
                 }
-                $inv_text .= $_;
                 # 一度エラーがでたら以降のhandle_inventoryはとばす
                 if ( $handle_inventory_ret >= 0 ) {
                     $handle_inventory_ret = handle_inventory ($_, 1);
@@ -648,76 +670,69 @@ sub delete_running_job {
     }
 }
 
+sub entry_signaled_job {
+    my ($jobname) = @_;
+    lock (%signaled_jobs);
+    $signaled_jobs{$jobname} = 1;
+    print "$jobname is signaled to be deleted.\n";
+}
+sub signal_all_jobs {
+    lock ($all_jobs_signaled);
+    $all_jobs_signaled = 1;
+    print "All jobs are signaled to be deleted.\n";
+}
+sub delete_signaled_job {
+    my ($jobname) = @_;
+    lock (%signaled_jobs);
+    if ( exists $signaled_jobs{$jobname} ) {
+        delete $signaled_jobs{$jobname};
+    }
+}
+sub is_signaled_job {
+    lock (%signaled_jobs);
+    return ($all_jobs_signaled || $signaled_jobs{$_[0]});
+}
+
 # running_jobsのジョブがabortedになってないかチェック
-# 状態が"running"にもかかわらず，qstatで当該ジョブが出力されないものを
-# abortedとみなす．
-# abortedと思われるものはinventory_write("aborted")する
+# 状態が "queued" または "running"にもかかわらず，qstatで当該ジョブが出力されないものを
+# abortedとみなし，ジョブ状態ハッシュを更新する．
+# また，signaledなジョブがqstatに現れたらqdelする
 ### Note:
 # ジョブ終了後（done書き込みはスクリプト内なので終わっているはず．
 # ただし，NFSのコンシステンシ戦略によっては危ないかも）
 # inventory_watchからdone書き込みの通知がXcryptに届くまでの間に
 # abort_checkが入ると，abortedを書き込んでしまう．
-# ただし，書き込みはdone→abortedの順であり，set_job_statusもその順
-# なのでおそらく問題ない．
-# doneなジョブの状態はabortedに変更できないようにすべき？
-# →とりあえずそうしている（ref. set_job_aborted）
+# → TCP/IP版はジョブ状態変更通知後，ackを待つようにしたので上記は起こらないはず．
+# → NFS版もそうすべき
 sub check_and_write_aborted {
     my %unchecked;
     {
-        my $qstat_command = $jsconfig::jobsched_config{$jobsched}{qstat_command};
-        unless ( defined $qstat_command ) {
-            die "qstat_command is not defined in $jobsched.pm";
-        }
-        unless (cmd_executable ($qstat_command)) {
-            die "$qstat_command not executable";
-        }
-        my $qstat_extractor = $jsconfig::jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
-        unless ( defined $qstat_extractor ) {
-            die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
-        } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-            die "Error in $jobsched.pm: extract_req_ids_from_qstat_output must be a function.";
-        }
+        # %running_jobs のうち，qstatで表示されなかったジョブが%uncheckedに残る
         {
             lock (%running_jobs);
             %unchecked = %running_jobs;
         }
         print "check_and_write_aborted:\n";
         # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
-        # print "\n";
-        my @qstat_out = qx/$qstat_command/;
-        my @ids = &$qstat_extractor(@qstat_out);
-        foreach (@ids) { delete ($unchecked{$_}); }
+        my @ids = qstat();
+        foreach (@ids) {
+            my $jobname = $unchecked{$_};
+            delete ($unchecked{$_});
+            # ここでsignaledのチェックもする．
+            if ($jobname && is_signaled_job($jobname)) {
+                delete_signaled_job($jobname);
+                qdel ($jobname);
+            }
+        }
     }
-    # "aborted"をインベントリファイルに書き込み
-    foreach my $req_id ( keys %unchecked ){
+    # %uncheckedに残っているジョブを"aborted"にする．
+    foreach my $req_id ( keys %unchecked ) {
         if ( exists $running_jobs{$req_id} ) {
             print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
             inventory_write ($unchecked{$req_id}, "aborted");
         }
     }
 }
-## Obsoleted: configファイルにスケジューラごとに記述
-# sub extract_req_id_from_qstat_line {
-#     my ($line) = @_;
-#     ## depend on outputs of NQS's qstat
-#     ## SGEでも動くようにしたつもり
-#     # print STDERR $_ . "\n";
-#     if ($sge) {
-#         # print "--- $_\n";
-#         if ($line =~ /^\s*([0-9]+)/) {
-#             return $1;
-#         } else {
-#             return 0;
-#         }
-#     } else {
-#         # print "=== $_\n";
-#         if ( $line =~ /([0-9]+\.nqs)/ ) {
-#             return $1;
-#         } else {
-#             return 0;
-#         }
-#     }
-# }
 
 sub getjobids {
     open( JOBIDS, "< $_[0]" );
@@ -731,8 +746,8 @@ sub getjobids {
 }
 
 sub check_and_alert_elapsed {
-    my $reqidfile = File::Spec->catfile ('inv_watch', '.request_ids');
-    my @jobids = &getjobids($reqidfile);
+    unless ( -f $reqids_file ) { return; }
+    my @jobids = &getjobids($reqids_file);
 
     my $sum = 0;
     my %elapseds = ();
@@ -775,7 +790,7 @@ sub check_and_alert_elapsed {
 sub invoke_abort_check {
     $abort_check_thread = threads->new( sub {
         while (1) {
-            sleep 19;
+            sleep $abort_check_interval;
             check_and_write_aborted();
             # print_all_job_status();
 	    check_and_alert_elapsed();
@@ -789,8 +804,6 @@ sub invoke_abort_check {
 #invoke_abort_check ();
 ## スレッド終了待ち：デバッグ（jsconfig::jobsched.pm単体実行）用
 # $watch_thread->join();
-
-1;
 
 
 ## 自前でwatchをやろうとした残骸
@@ -807,3 +820,5 @@ sub invoke_abort_check {
 #                 $timestamps{$bname} = $tstamp;
 #             }
 #         }
+
+1;
