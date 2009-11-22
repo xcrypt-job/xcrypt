@@ -13,13 +13,6 @@ prepare_submit_sync prepare_submit submit_sync
 addkeys
 );
 
-=comment
-threads->set_stack_size($xcropt::options{stack_size});
-if ( $xcropt::options{limit} > 0 ) {
-    $user::smph = Thread::Semaphore->new($xcropt::options{limit});
-}
-=cut
-
 my $before_thread = undef;
 my $after_thread = undef;
 my $before_thread_status : shared = 'killed'; # one of 'killed', 'running', 'signaled'
@@ -216,18 +209,24 @@ sub invoke_before {
         while (1) {
             sleep (1);
             foreach my $self (@jobs) {
-                my $stat = &jobsched::get_job_status($self->{'id'});
+                my $jobname = $self->{id};
+                my $stat = &jobsched::get_job_status($jobname);
                 if ($stat eq 'prepared') {
-                    my $before_ready = $self->EVERY::before_isready();
-                    my $failure=0;
-                    foreach my $k (keys %{$before_ready}) {
-                        unless ($before_ready->{$k}) {
-                            $failure=1;
+                    if (jobsched::is_signaled_job ($jobname)) {
+                        &jobsched::inventory_write ($jobname, "aborted");
+                        jobsched::delete_signaled_job ($jobname);
+                    } else {
+                        my $before_ready = $self->EVERY::before_isready();
+                        my $failure=0;
+                        foreach my $k (keys %{$before_ready}) {
+                            unless ($before_ready->{$k}) {
+                                $failure=1;
+                            }
                         }
-                    }
-                    unless ($failure) {
-                        $self->before();
-                        $self->start();
+                        unless ($failure) {
+                            $self->before();
+                            $self->start();
+                        }
                     }
                 }
             }
@@ -283,7 +282,18 @@ sub submit {
 
     # submit対象のジョブ状態を 'prepared' に
     foreach my $self (@array) {
-        &jobsched::inventory_write($self->{'id'}, 'prepared');
+        my $jobname = $self->{id};
+        my $stat = &jobsched::get_job_status($jobname);
+        # すでに done, finished, abortedなら無視
+        unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
+            # xcryptdelされていたら状態をabortedにして処理をとばす
+            if (jobsched::is_signaled_job($self->{id})) {
+                &jobsched::inventory_write ($jobname, "aborted");
+                jobsched::delete_signaled_job ($jobname);
+            } else {
+                &jobsched::inventory_write($self->{'id'}, 'prepared');
+            }
+        }
     }
     # beforeスレッドを立ち上げ直し
     if ($before_thread) {
