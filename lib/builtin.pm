@@ -250,16 +250,21 @@ sub invoke_after {
         while (1) {
             sleep(1);
             foreach my $self (@jobs) {
-                {
-                    my $stat = &jobsched::get_job_status($self->{'id'});
-                    if ($stat eq 'done') {
-#                       print $self->{'id'} . "\'s post-processing finished.\n";
-                        $self->EVERY::LAST::after();
-                        until ((-e "$self->{'id'}/$self->{'stdofile'}")
-                               && (-e "$self->{'id'}/$self->{'stdefile'}")) {
-                            sleep(1);
+                my $stat = &jobsched::get_job_status($self->{'id'});
+                if ($stat eq 'done') {
+                    if ((-e "$self->{'id'}/$self->{'stdofile'}")
+                        && (-e "$self->{'id'}/$self->{'stdefile'}")) {
+                        my $after_ready = $self->EVERY::LAST::after_isready();
+                        my $failure=0;
+                        foreach my $k (keys %{$after_ready}) {
+                            unless ($after_ready->{$k}) {
+                                $failure=1;
+                            }
                         }
-                        &jobsched::inventory_write($self->{'id'}, 'finished');
+                        unless ($failure) {
+                            $self->EVERY::LAST::after();
+                            &jobsched::inventory_write($self->{'id'}, 'finished');
+                        }
                     }
                 }
             }
