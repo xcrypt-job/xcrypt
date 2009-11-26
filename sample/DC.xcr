@@ -17,8 +17,25 @@ sub func0
 sub func1
 {
 	my $job = shift;
-	print "User Function devide"."\n";
-	
+	print "User Function divide"."\n";
+
+=comment
+	my %j1;
+	foreach (keys(%$job)) {
+	    $j1{"$_"}= $job->{"$_"};
+	}
+	$j1{'id'} = $j1{'id'}."_".($j1{'arg0'}-1);
+	$j1{'arg0'} = $j1{'arg0'}-1;
+	my %j2;
+	foreach (keys(%$job)) {
+	    $j2{"$_"}= $job->{"$_"};
+	}
+	$j2{'id'} = $j2{'id'}."_".($j2{'arg0'}-2);
+	$j2{'arg0'} = $j2{'arg0'}-2;
+
+	print $j1{'arg0'}, "\n";
+	print $j2{'arg0'}, "\n";
+=cut
 	my %j1 = (
 		'id' => $job->{id}."_".($job->{arg0}-1),
 		'exe' => $job->{exe},
@@ -41,6 +58,7 @@ sub func1
 		'option' => $job->{option},
 		'ofname' => $job->{ofname}
 	);
+
 	my @children = ();
 	push(@children, \%j1);
 	push(@children, \%j2);
@@ -70,7 +88,7 @@ sub func2
 %template = (
     'id' => 'job0',
     'exe' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
-    'arg0' => 12,
+    'arg0' => 13,
     'canDivideFunc' => \&func0,
     'divideFunc' => \&func1,
     'mergeFunc' => \&func2,
