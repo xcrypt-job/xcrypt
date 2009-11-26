@@ -224,7 +224,7 @@ sub invoke_before {
                             }
                         }
                         unless ($failure) {
-                            $self->before();
+                            $self->EVERY::before();
                             $self->start();
                         }
                     }
@@ -254,7 +254,7 @@ sub invoke_after {
                     my $stat = &jobsched::get_job_status($self->{'id'});
                     if ($stat eq 'done') {
 #                       print $self->{'id'} . "\'s post-processing finished.\n";
-                        &user::after($self);
+                        $self->EVERY::LAST::after();
                         until ((-e "$self->{'id'}/$self->{'stdofile'}")
                                && (-e "$self->{'id'}/$self->{'stdefile'}")) {
                             sleep(1);

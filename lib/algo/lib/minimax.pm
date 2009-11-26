@@ -18,13 +18,13 @@ sub start {
 }
 
 sub before {
-    my $self = shift;
-    $self->NEXT::before();
+#     my $self = shift;
+#     $self->NEXT::before();
 }
 
 sub after {
-    my $self = shift;
-    $self->NEXT::after();
+#     my $self = shift;
+#     $self->NEXT::after();
 }
 
 1;

@@ -755,7 +755,7 @@ sub check_and_alert_elapsed {
     foreach my $i (@jobids) {
 	$elapseds{"$i"} = undef;
 	my $time_done_now = time();
-	my $inventoryfile = File::Spec->catfile ('inv_watch', "$i");
+	my $inventoryfile = File::Spec->catfile ($inventory_path, "$i");
 	my $time_running = 0;
 	open( INV, "$inventoryfile" );
 	while (<INV>) {
@@ -793,7 +793,9 @@ sub invoke_abort_check {
             sleep $abort_check_interval;
             check_and_write_aborted();
             # print_all_job_status();
-	    check_and_alert_elapsed();
+            ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
+            ## とりあえずコメントアウト
+	    # check_and_alert_elapsed();
         }
     });
 }
