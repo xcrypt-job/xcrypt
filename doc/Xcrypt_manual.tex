@@ -181,16 +181,15 @@ $separator = '-';
 \[
 \entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=100pt{
-  *{}
-  \ar[r]|(.4){\txt{\small オブジェクト生成}} &
-  \txt{active} \ar[rrd]|!{[rr];[dl]}\hole|(.6){\txt{\small \texttt{xcryptdel}入力}}
-  \ar[r]|{\txt{\small \texttt{前処理・qsub}実行}} &
-  \txt{submitted} \ar[rd]|!{[r];[dll]}\hole|(.6){\txt{\small \texttt{qsub}失敗}} \ar[r]|{\txt{\small \texttt{qsub}成功}} &
-  \txt{queued} \ar[llld]|(.6){\txt{\small スクリプト開始}} \ar[d]|{\txt{\small 当該ジョブ消滅}}\\
-  \txt{running} \ar[r]|{\txt{\small スクリプト終了}}
-  \ar@/_5pc/[rrr]|{\txt{\small 当該ジョブ消滅}} & \txt{done}
-  \ar[r]|{\txt{\small 後処理}} & \txt{finished} &
-  \txt{aborted}
+  *{} \ar[r]|(.4){\txt{\small オブジェクト生成}} &
+  \txt{active} \ar[r]|{\txt{\small 前処理実行}} \ar[d]|{\txt{\small \texttt{xcryptdel}入力}}&
+  \txt{prepared} \ar[d]|{\txt{\small \texttt{qsub}実行}} \ar[ld]|{\txt{\small \texttt{xcryptdel}入力}}\\
+  \txt{finished} &
+  \txt{aborted} &
+  \txt{submitted} \ar[d]|{\txt{\small \texttt{qsub}成功}} \ar[l]|{\txt{\small \texttt{qsub}失敗}}\\
+  \txt{done} \ar[u]|{\txt{\small 後処理}} &
+  \txt{running} \ar[l]|{\txt{\small スクリプト終了}} \ar[u]|{\txt{\small 当該ジョブ消滅}} &
+  \txt{queued} \ar[l]|{\txt{\small スクリプト開始}} \ar[lu]|{\txt{\small 当該ジョブ消滅}}
 }
 \]
 

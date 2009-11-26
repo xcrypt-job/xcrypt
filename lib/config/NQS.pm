@@ -1,7 +1,7 @@
 # Config file for NQS
 $jsconfig::jobsched_config{"NQS"} = {
     qsub_command => "/thin/local/bin/qsub",
-    qdel_command => "/thin/local/bin/qdel -K",
+    qdel_command => "/usr/bin/qdel -K",
     qstat_command => "/thin/local/bin/qstat",
     jobscript_queue => '# @$-q ',
     jobscript_stdout => '# @$-o ',
