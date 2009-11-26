@@ -8,15 +8,19 @@ use Data_Extraction;
     );
 
 &prepare_submit_sync(%template,
-		    'RANGE0' => [0..9],
+		    'RANGE0' => [0..3],
 		    'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
  'after' => 'if (&good($self)) { system("xcryptdel --all"); }'
     );
 
 sub good {
     my $self = shift;
+    until (-e "$ENV{'XCRYPT'}/sample/$self->{id}/$self->{stdofile}") {
+	sleep(2);
+    }
     my $datum = EF("file:$ENV{'XCRYPT'}/sample/$self->{id}/$self->{stdofile}");
-    $datum->ED('C/1');
+    $datum->ED('L/E');
+#    $datum->ED('C/1');
     my @tmp = $datum->ER();
-    return ($tmp[0] == 2);
+    return ($tmp[0] == 1);
 }
