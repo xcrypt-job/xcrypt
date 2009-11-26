@@ -41,12 +41,12 @@ sub before {
     $gen->KR($self->{'sweepname'}, $self->{'initialvalue'});
     $gen->do();
 
-    $self->NEXT::before();
+    # $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
-    $self->NEXT::after();
+    # $self->NEXT::after();
 }
 
 sub backward_difference_loop {

@@ -32,8 +32,8 @@ sub before_isready {
 }
 
 sub after {
-    my $self = shift;
-    $self->NEXT::after();
+    # my $self = shift;
+    # $self->NEXT::after();
     $smph++;
 }
 

@@ -18,21 +18,21 @@ sub start {
 }
 
 sub before {
-    my $self = shift;
-    $self->NEXT::before();
+    # my $self = shift;
+    # $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
     my @objs;
-    $self->NEXT::after();
+    # $self->NEXT::after();
     foreach (@{$self->{'successors'}}) {
 	no strict 'refs';
 	my $foo = 'user::' . $_;
 	my %bar = %$foo;
 	my @jobs = &prepare(%bar);
 #	&submit(@jobs);
-	# è‡ªå‰ã§submit
+	# ¼«Á°¤Çsubmit
 	foreach my $job (@jobs) {
 	    &jobsched::inventory_write($job->{'id'}, 'prepared');
 	    &user::before($job);
@@ -41,7 +41,7 @@ sub after {
 	push(@objs, @jobs);
     }
 
-    # è‡ªå‰ã§after
+    # ¼«Á°¤Çafter
     foreach my $job (@objs) {
 	&jobsched::wait_job_done ($job->{'id'});
 #		my $stat = &jobsched::get_job_status($job->{'id'});
@@ -55,7 +55,7 @@ sub after {
 	&jobsched::inventory_write($job->{'id'}, "finished");
 #		}
     }
-    # è‡ªå‰ã§sync
+    # ¼«Á°¤Çsync
     &sync(@objs);
 }
 

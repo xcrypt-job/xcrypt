@@ -1,11 +1,11 @@
 use base qw(limit core);
 
-limit::initialize(4);
+limit::initialize(1);
 
 %template = (
     'id' => 'job6',
     'exe' => './fib',
-    'arg0' => '50',
+    'arg0' => '44',
     'arg1' => '> out',
     'linkedfile0' => 'common/fib',
     'queue' => 'gh10034',
@@ -13,8 +13,8 @@ limit::initialize(4);
 );
 
 my @jobs = &prepare(%template,
-		   'arg0@' => [0..3]
-#
+#		   'arg0@' => [0..3],
+                   'RANGE0' => [0..10],
 #		   'RANGE0' => [0..3], 'arg0@' => '$_[0] + 20'
 #		   'RANGE0' => [0..3], 'arg0@' => sub { $_[0] + 20; }
 #
