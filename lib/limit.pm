@@ -22,13 +22,11 @@ sub start {
 }
 
 sub before_isready {
-    # print "smph = $smph\n";
-    if ( $smph > 0 ) {
-        $smph--;
-        return 1;
-    } else {
-        return 0;
-    }
+    return ($smph>0);
+}
+
+sub before {
+    $smph--;
 }
 
 sub after {
