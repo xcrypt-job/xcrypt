@@ -1,11 +1,13 @@
+############################################
+# ＜＜出力データ抽出＞＞                   #
+# Copyright FUJITSU LIMITED 2009           #
+# Ver=0.3 2009/11/20                       #
+############################################
 package Data_Extraction;
 use Exporter;
 @ISA    = (Exporter);
 @EXPORT = qw(EF);
 use strict;
-use threads;
-use threads::shared;
-#use warnings;
 use File::Basename;
 use Cwd;
 
@@ -17,21 +19,25 @@ sub EF {
     # 引数 ： $_[0] = 入力データ情報                                                          #
     #                 ・変数指定    ）変数名                                                  #
     #                 ・ファイル指定）file:ファイル名                                         #
-    #         $_[1] = ユーザseekバッファ数                                                    #
+    #         $_[1] = ユーザ指定最大バッファ数                                                #
     # 処理 ： 入力データチェック、オブジェクト定義（抽出対象ファイル定義）                    #
     # 返却 ： オブジェクト                                                                    #
     #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
     # 入力情報
     my @in_data       = ();
     my @in_index      = ();
     # 抽出条件情報
     my @cond_data     = ();
     my $cond_index    = -1;
-    my @cond_max      = ();
     my $next_index    = 0;
+    # バッファ情報
+    my @buff_data     = ();
+    my @cond_buf_max  = ();
+    my $user_buf_max  = 0;
     # seek情報
-    my @seek_data     = ();
-    my $seek_max      = 0;
     my $seek_kbn      = '';
     my $seek_index    = 0;
     my @seek_num      = ();
@@ -42,39 +48,42 @@ sub EF {
     my @pipe_data     = ();
     # 出力情報
     my @mid_data      = ();
-    my $out_kbn       = '';
+    my $user_out_kbn  = '';
     my @out_index     = ();
     
     # 入力データチェック
     @in_data = &check_in_data($_[0]);
-    # ユーザseekバッファ数チェック
-    $seek_max = &check_seek_max($_[1]);
+    # ユーザ指定最大バッファ数チェック
+    $user_buf_max = &check_user_buf_max($_[1]);
     
-    # オブジェクト定義
+    ####################
+    # オブジェクト定義 #
+    ####################
     my $Job = {
              # 入力情報
                "in_kbn"        =>$in_data[0],                 # 入力区分（ファイルor変数）
                "in_name"       =>$in_data[1],                 # 入力データ名（ファイル名or変数名）
-               "in_index"      =>\@in_index,                  # 入力データindex
+               "in_index"      =>\@in_index,                  # 入力行番号
              # 抽出条件情報
                "cond_data"     =>\@cond_data,                 # 抽出条件
-               "cond_index"    =>$cond_index,                 # 抽出条件index
-               "cond_max"      =>\@cond_max,                  # 抽出バッファ数
-               "next_index"    =>$next_index,                 # next抽出条件index
+               "cond_index"    =>$cond_index,                 # 抽出位置（抽出条件の配列index）
+               "next_index"    =>$next_index,                 # next抽出条件index（抽出条件の配列index）
+             # buff情報
+               "buff_data"     =>\@buff_data,                 # バッファ情報
+               "cond_buf_max"  =>\@cond_buf_max,              # 定型指定最大バッファ数
+               "user_buf_max"  =>$user_buf_max,               # ユーザ指定最大バッファ数
              # seek情報
-               "seek_data"     =>\@seek_data,                 # seekバッファ
-               "seek_max"      =>$seek_max,                   # seekバッファ数
-               "seek_kbn"      =>$seek_kbn,                   # seek区分（seek/cond/input/org）
-               "seek_index"    =>$seek_index,                 # seekバッファindex（バッファの配列index）
-               "seek_num"      =>\@seek_num,                  # seek行情報（オリジナル行番号、バイト位置、入力行番号）
-               "get_kbn"       =>$get_kbn,                    # get区分（seek/cond/input/org）
-               "get_index"     =>$get_index,                  # getバッファindex（バッファの配列index）
-               "get_num"       =>\@get_num,                   # get行情報（オリジナル行番号、バイト位置、入力行番号）
+               "seek_kbn"      =>$seek_kbn,                   # seek区分（"buff"＝バッファ情報/"input"＝入力pipe情報/"org"＝オリジナル情報）
+               "seek_index"    =>$seek_index,                 # seek位置（バッファ情報の配列index）
+               "seek_num"      =>\@seek_num,                  # seek行情報（オリジナル行番号、レコードbyte位置、入力行番号、取得区分（buff/input/org））
+               "get_kbn"       =>$get_kbn,                    # get区分（"buff"＝バッファ情報/"input"＝入力pipe情報/"org"＝オリジナル情報）
+               "get_index"     =>$get_index,                  # get位置（バッファ情報の配列index）
+               "get_num"       =>\@get_num,                   # get行情報（オリジナル行番号、レコードbyte位置、入力行番号、取得区分）
              # pipe情報
-               "pipe_data"     =>\@pipe_data,                 # pipeデータ
+               "pipe_data"     =>\@pipe_data,                 # pipe情報（オリジナル行番号、レコードbyte位置、入力行番号、出力区分、抽出対象データ）
              # 出力情報
-               "mid_data"      =>\@mid_data,                  # ユーザ抽出データ（先読み部分）
-               "out_kbn"       =>$out_kbn,                    # 出力区分
+               "mid_data"      =>\@mid_data,                  # ユーザ先行出力情報
+               "user_out_kbn"  =>$user_out_kbn,               # ユーザ出力区分（"output"＝ユーザ出力済/"seek"＝ユーザ出力後のseek）
                "out_index"     =>\@out_index};                # 出力データindex
     bless $Job;
     return $Job;
@@ -87,62 +96,105 @@ sub check_in_data {
     # 引数 ： $_[0] = 入力データ情報                                                          #
     # 処理 ： 変数指定    ）変数存在チェック、データ存在チェック                              #
     #         ファイル指定）ファイル存在チェック、読込み権限チェック、データ存在チェック      #
-    # 返却 ： 入力区分、入力データ名                                                          #
+    # 返却 ： チェック後入力データ情報（入力区分、入力データ名）                              #
     #-----------------------------------------------------------------------------------------#
-    my @in_data = ();
+    ############
+    # 変数定義 #
+    ############
+    my $in_data  = shift;                                                                     # 入力データ情報
+    my @out_data = ();                                                                        # チェック後入力データ情報(入力区分、入力データ名)
     
-    if ($_[0] !~ /file:/) {
-        # 変数指定
-        $in_data[0] = '';
-        $in_data[1] = '${main::'.$_[0].'}';
-        if (! defined eval($in_data[1])) {
-            # 変数なし
-            print STDERR "Input variable($_[0]) not found\n";
+    # ファイル指定か変数指定かチェック
+    if ($in_data !~ /file:/) {
+        #==========#
+        # 変数指定 #
+        #==========#
+        # ユーザスクリプト定義変数に置換える
+        $out_data[1] = '${main::'.$in_data.'}';
+        # 変数チェック
+        if (! defined eval($out_data[1])) {
+            #----------#
+            # 変数なし #
+            #----------#
+            print STDERR "Input variable($in_data) not found\n";
             exit 99;
-        }
-        if (eval($in_data[1]) eq '') {
-            # 変数に値なし
-            print STDERR "There are not the input data($_[0])\n";
+        } elsif (eval($out_data[1]) eq '') {
+            #--------------#
+            # 変数に値なし #
+            #--------------#
+            print STDERR "There are not the input data($in_data)\n";
             exit 99;
         }
     } else {
-        # ファイル指定
-        $in_data[0] = 'file';
-        $in_data[1] = substr $_[0], 5;
-        if (!-e "$in_data[1]") {
-            # ファイルなし
-            print STDERR "Input file($_[0]) not found\n";
+        #==============#
+        # ファイル指定 #
+        #==============#
+        $out_data[0] = 'file';
+        $out_data[1] = substr $in_data, 5;
+        # ファイルチェック
+        if (!-e "$out_data[1]") {
+            #--------------#
+            # ファイルなし #
+            #--------------#
+            print STDERR "Input file($in_data) not found\n";
             exit 99;
-        } elsif (!-r "$in_data[1]") {
-            # ファイルに読込み権限なし
-            print STDERR "Input file($_[0]) is not read authority\n";
+        } elsif (!-r "$out_data[1]") {
+            #----------------#
+            # 読込み権限なし #
+            #----------------#
+            print STDERR "Input file($in_data) is not read authority\n";
             exit 99;
         }
-        my @in_file_information = stat $in_data[1];
+        my @in_file_information = stat $out_data[1];
         if ($in_file_information[7] == 0) {
-            # ファイルが空
-            print STDERR "There are not the input data($_[0])\n";
+            #------------#
+            # データなし #
+            #------------#
+            print STDERR "There are not the input data($in_data)\n";
             exit 99;
         }
     }
-    return @in_data;
+    
+    ################################
+    # チェック後入力データ情報返却 #
+    ################################
+    return @out_data;
 }
 ###################################################################################################
-#   ＜＜ ユーザseekバッファ数チェック ＞＞                                                        #
+#   ＜＜ ユーザ指定最大バッファ数チェック ＞＞                                                    #
 ###################################################################################################
-sub check_seek_max {
+sub check_user_buf_max {
     #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0] = ユーザseekバッファ数                                                    #
+    # 引数 ： $_[0] = ユーザ指定最大バッファ数                                                #
     # 処理 ： 数値チェック                                                                    #
-    # 返却 ： ユーザseekバッファ数                                                            #
+    # 返却 ： チェック後ユーザ指定最大バッファ数                                              #
     #-----------------------------------------------------------------------------------------#
-    if ($_[0] eq '') {
+    ############
+    # 変数定義 #
+    ############
+    my $user_buf_max = shift;                                                                 # ユーザ指定最大バッファ数
+    
+    ####################################
+    # ユーザ指定最大バッファ数チェック #
+    ####################################
+    # ユーザ指定最大バッファ数が未指定かチェック
+    if ($user_buf_max eq '') {
+        #==========#
+        # 指定なし #
+        #==========#
         return 0;
-    } elsif ($_[0] =~ /^\d+$/) {
-        return $_[0];
+    # ユーザ指定最大バッファ数が実数指定かチェック
+    } elsif ($user_buf_max =~ /^\d+$/) {
+        #======#
+        # 実数 #
+        #======#
+        return $user_buf_max;
     } else {
-        # ユーザseekバッファ数に誤り
-        print STDERR "Greatest Seek Buffers Number is an Error($_[0])\n";
+        #========#
+        # その他 #
+        #========#
+        # ユーザ指定最大バッファ数に誤り
+        print STDERR "Greatest Seek Buffers Number is an Error($user_buf_max)\n";
         exit 99;
     }
 }
@@ -153,36 +205,62 @@ sub ED {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0]  = オブジェクト                                                           #
     #         $_[1～]= 抽出データ指示                                                         #
-    # 処理 ： 抽出条件チェック、抽出条件設定                                                  #
+    # 処理 ： 抽出条件チェック、抽出条件設定、抽出処理に必要な配列の登録                      #
     #-----------------------------------------------------------------------------------------#
     # 抽出データ指示                                                                          #
     #   行抽出                                                                                #
-    #     行番号指定  ：[!]L/行番号[/[範囲][/列抽出]]                                         #
-    #     正規表現指定：[!]LR/抽出条件[/[範囲][/列抽出]]                                      #
+    #     行番号指定  ：[!]L/{行番号|E}                                                       #
+    #                 ：[!]L/{行番号|E}//列抽出                                               #
+    #                 ：[!]L/{開始行番号|E}/{終了行番号|範囲|E}                               #
+    #                 ：[!]L/{開始行番号|E}/{終了行番号|範囲|E}/列抽出                        #
+    #     正規表現指定：[!]LR/抽出条件                                                        #
+    #                 ：[!]LR/抽出条件//列抽出                                                #
+    #                 ：[!]LR/開始条件/{終了条件|範囲}                                        #
+    #                 ：[!]LR/開始条件/{終了条件|範囲}/列抽出                                 #
     #     ※条件以外の抽出は、先頭に"!"を付与                                                 #
+    #     ※最終行の抽出は、"E"を指定                                                         #
+    #     ※範囲は、プラス付き数字、またはマイナス付き数字にて指定                            #
     #   列抽出                                                                                #
-    #     列番号指定  ：[!]C/列番号[/範囲]                                                    #
-    #     正規表現指定：[!]CR/抽出条件[/範囲]                                                 #
+    #     列番号指定  ：[!]C/{列番号|E}                                                       #
+    #                 ：[!]C/{開始列番号|E}/{終了列番号|範囲|E}                               #
+    #     正規表現指定：[!]CR/抽出条件                                                        #
+    #                 ：[!]CR/開始条件/{終了条件|範囲}                                        #
     #     ※条件以外の抽出は、先頭に"!"を付与                                                 #
-    #   ユーザー抽出  ：［"パッケージ名::サブルーチン名"[, "ユーザー抽出条件", ･･･ ]］        #
+    #     ※最終列の抽出は、"E"を指定                                                         #
+    #     ※範囲は、プラス付き数字、またはマイナス付き数字にて指定                            #
+    #   ユーザ抽出    ：［"パッケージ名::サブルーチン名"[, "ユーザ引数", ･･･ ]］              #
     #                   ※大外の［］は、配列定義を意味する                                    #
     #-----------------------------------------------------------------------------------------#
-    my $cond_max = -1;
+    ############
+    # 変数定義 #
+    ############
+    my $obj          = $_[0];                                                                 # オブジェクト
+    my $cond_buf_max = -1;                                                                    # 定型指定最大バッファ数(初期値=-1)
     
-    # 抽出条件チェック
+    ####################
+    # 抽出条件チェック #
+    ####################
     my @cond_data = &check_extraction_cond(@_);
-    foreach (grep{${$_}[0] =~ 'L' and ${$_}[3] =~ /^-\d+$/}@cond_data) {
-         if ($cond_max > ${$_}[3]) {
-             $cond_max = ${$_}[3];
+    
+    ##############################
+    # 定型指定バッファ数チェック #
+    ##############################
+    # 定型抽出条件(行番号指定、且つマイナス付き数字の範囲)から定型指定最大バッファ数を確定
+    foreach my $cond(grep{${$_}[0] =~ 'L' and ${$_}[3] =~ /^-\d+$/}@cond_data) {
+         # 一番小さい値の範囲を「定型指定最大バッファ数」に設定
+         if ($cond_buf_max > ${$cond}[3]) {
+             $cond_buf_max = ${$cond}[3];
          }
     }
     
-    # 抽出条件設定
-    push(@{$_[0]->{cond_data}}, [@cond_data]);
-    push(@{$_[0]->{cond_max}} , ($cond_max * -1));
-    push(@{$_[0]->{pipe_data}}, []);
-    push(@{$_[0]->{seek_data}}, []);
-    push(@{$_[0]->{mid_data}} , []);
+    ############
+    # 配列登録 #
+    ############
+    push(@{$obj->{cond_data}}, [@cond_data]);                                                 # 抽出条件を抽出条件(配列)へ登録
+    push(@{$obj->{cond_buf_max}} , ($cond_buf_max * -1));                                     # 最大バッファ数を実数化して定型指定最大バッファ数(配列)へ登録
+    push(@{$obj->{pipe_data}}, []);                                                           # pipe情報(配列)へ枠のみ登録
+    push(@{$obj->{buff_data}}, []);                                                           # バッファ情報(配列)へ枠のみ登録
+    push(@{$obj->{mid_data}} , []);                                                           # ユーザ先行出力情報(配列)へ枠のみ登録
 }
 ###################################################################################################
 #   ＜＜ 抽出条件チェック ＞＞                                                                    #
@@ -190,66 +268,140 @@ sub ED {
 sub check_extraction_cond {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0]  = オブジェクト                                                           #
-    #         $_[1～]= 抽出データ指示                                                         #
+    #         $_[1～]= 抽出条件                                                               #
+    #                  ※詳細は、抽出条件定義の説明を参照                                     #
     # 処理 ： 抽出条件チェック、定型抽出条件の記述チェック                                    #
+    # 返却 ： チェック後抽出条件                                                              #
     #-----------------------------------------------------------------------------------------#
-    my $obj         = shift;
-    my @cond_data   = ();
+    ############
+    # 変数定義 #
+    ############
+    my $obj           = shift;                                                                # オブジェクト
+    my @in_cond_data  = @_;                                                                   # 抽出条件
+    my @out_cond_data = ();                                                                   # チェック後抽出条件
     
-    foreach my $cond(@_) {
+    ####################
+    # 抽出条件チェック #
+    ####################
+    # 抽出条件が記述ルールに合っているかチェック
+    foreach my $cond(@in_cond_data) {
+        # 定型抽出("L/LR/C/CR")かチェック
         if ($cond =~ /^\!{0,1}[CLcl][Rr]*\//) {
-            # 定型抽出
-            my @in_cond = split /[\/]/, $cond;
-            my @in_kbn  = ();
+            #==========#
+            # 定型抽出 #
+            #==========#
+            # 抽出条件をスラッシュ("/")区切りで分割
+            my @in_cond = split /[\/]/, $cond;                                                # 分割後抽出条件
+            #**************************************************************************************#
+            # ＜分割後抽出条件の詳細＞                                                             #
+            # ${$in_cond}[0] ： 抽出種別1(肯定否定区分＋抽出区分)                                  #
+            # ${$in_cond}[1] ： 開始条件1(行番号/開始行番号/列番号/開始列番号/E/抽出条件/開始条件) #
+            # ${$in_cond}[2] ：[終了条件1(終了行番号/プラスマイナス範囲/E/終了条件)]               #
+            # ${$in_cond}[3] ：[抽出種別2(肯定否定区分＋抽出区分)]                                 #
+            # ${$in_cond}[4] ：[開始条件2(列番号/開始列番号/E/抽出条件/開始条件)]                  #
+            # ${$in_cond}[5] ：[終了条件2(プラスマイナス範囲/E/終了条件)]                          #
+            #**************************************************************************************#
+            my @in_kbn  = ();                                                                 # 抽出処理区分
+            #**************************************************************************************#
+            # ＜抽出処理区分＞                                                                     #
+            # ${$in_kbn}[0] ： 肯定否定区分1(分割後抽出条件の抽出種別1の肯定否定区分)              #
+            # ${$in_kbn}[1] ： 抽出区分1(分割後抽出条件の抽出種別1の抽出区分)                      #
+            # ${$in_kbn}[2] ： 肯定否定区分2(分割後抽出条件の抽出種別2の肯定否定区分)              #
+            # ${$in_kbn}[3] ： 抽出区分2(分割後抽出条件の抽出種別2の抽出区分)                      #
+            # ${$in_kbn}[4] ： 暫定開始位置（正規表現、且つ否定抽出条件時に使用）                  #
+            #**************************************************************************************#
             
+            # 肯定抽出条件か否定抽出条件かチェック
             if ((substr $in_cond[0], 0, 1) ne '!') {
-                $in_kbn[0] = '';
+                #------#
+                # 肯定 #
+                #------#
                 $in_kbn[1] = uc(substr $in_cond[0], 0);
             } else {
+                #------#
+                # 否定 #
+                #------#
                 $in_kbn[0] = substr $in_cond[0], 0, 1;
                 $in_kbn[1] = uc(substr $in_cond[0], 1);
             }
-            &check_fixed_form_cond($obj, $in_kbn[0], $in_kbn[1], $in_cond[1], $in_cond[2], $in_cond[2]);
+            
+            # 定型抽出条件の記述チェック
+            &check_fixed_form_cond($obj, $in_kbn[0], $in_kbn[1], $in_cond[1], $in_cond[2]);
+            
+            # 正規表現、且つ否定抽出条件時の暫定開始位置を設定
             if ($in_kbn[1] eq 'LR' and $in_kbn[0] ne '') {
                 $in_kbn[4] = '0';
-            } else {
-                $in_kbn[4] = '';
             }
             
-            if ($in_cond[3] eq '') {
-                push(@cond_data, ["$in_kbn[1]", "$in_kbn[0]", "$in_cond[1]", "$in_cond[2]", "", "", "", "", "$in_kbn[4]"]);
-            } elsif ($in_cond[3] =~ /^\!{0,1}[Cc][Rr]*$/) {
+            # 列抽出指定("C/CR")があるかチェック
+            if ($in_cond[3] =~ /^\!{0,1}[Cc][Rr]*$/) {
+                # 肯定抽出条件か否定抽出条件かチェック
                 if ((substr $in_cond[3], 0, 1) ne '!') {
-                    $in_kbn[2] = '';
+                    #･･････#
+                    # 肯定 #
+                    #･･････#
                     $in_kbn[3] = uc(substr $in_cond[3], 0);
                 } else {
+                    #･･････#
+                    # 否定 #
+                    #･･････#
                     $in_kbn[2] = substr $in_cond[3], 0, 1;
                     $in_kbn[3] = uc(substr $in_cond[3], 1);
                 }
+                
+                # 定型抽出条件の記述チェック
                 &check_fixed_form_cond($obj, $in_kbn[2], $in_kbn[3], $in_cond[4], $in_cond[5]);
-                push(@cond_data, ["$in_kbn[1]", "$in_kbn[0]", "$in_cond[1]", "$in_cond[2]", "$in_kbn[3]", "$in_kbn[2]", "$in_cond[4]", "$in_cond[5]", "$in_kbn[4]"]);
+                
+                # 抽出条件(列抽出)をチェック後抽出条件へ登録
+                push(@out_cond_data, ["$in_kbn[1]", "$in_kbn[0]", "$in_cond[1]", "$in_cond[2]", "$in_kbn[3]", "$in_kbn[2]", "$in_cond[4]", "$in_cond[5]", "$in_kbn[4]"]);
+            } elsif ($in_cond[3] eq '') {
+                #--------#
+                # 行抽出 #
+                #--------#
+                # 抽出条件(行抽出)をチェック後抽出条件へ登録
+                push(@out_cond_data, ["$in_kbn[1]", "$in_kbn[0]", "$in_cond[1]", "$in_cond[2]", "", "", "", "", "$in_kbn[4]"]);
             } else {
+                #--------#
+                # その他 #
+                #--------#
                 # 抽出区分誤り
                 print STDERR "Extraction Division is an Error \($cond\)\n";
                 exit 99;
             }
+        # ユーザ抽出(配列)かチェック
         } elsif ($cond =~ /^ARRAY\(.*\)/) {
-            my @in_cond_user = @{$cond};
-            # ユーザー抽出
-            if ($in_cond_user[0] =~ /\:\:/) {
-                push(@cond_data, ['USER', @in_cond_user]);
+            #============#
+            # ユーザ抽出 #
+            #============#
+            # ユーザ関数("パッケージ名::関数名")が指定されているかチェック
+            if (${$cond}[0] =~ /^[^\.]+\:\:.+/) {
+                #････････････････････#
+                # ユーザ関数指定あり #
+                #････････････････････#
+                # 抽出区分を"USER"(ユーザ抽出)として、抽出条件(ユーザ抽出)をチェック後抽出条件へ登録
+                push(@out_cond_data, ['USER', @{$cond}]);
             } else {
+                #････････#
+                # その他 #
+                #････････#
                 # 抽出区分誤り
-                print STDERR "Extraction Division is an Error \(@{$cond}\)\n";
+                print STDERR "User Function Name Error \(@{$cond}\)\n";
                 exit 99;
             }
         } else {
+            #========#
+            # その他 #
+            #========#
             # 抽出区分誤り
             print STDERR "Extraction Division is an Error \($cond\)\n";
             exit 99;
         }
     }
-    return @cond_data;
+    
+    ############################
+    # チェック後抽出条件を返却 #
+    ############################
+    return @out_cond_data;
 }
 ###################################################################################################
 #   ＜＜ 定型抽出条件の記述チェック ＞＞                                                          #
@@ -259,55 +411,109 @@ sub check_fixed_form_cond {
     # 引数 ： $_[0] = オブジェクト                                                            #
     #      ： $_[1] = 肯定否定区分                                                            #
     #         $_[2] = 抽出区分                                                                #
-    #         $_[3] = 起点                                                                    #
-    #         $_[4] = 範囲                                                                    #
-    # 処理 ： 定型抽出条件の記述チェック                                                      #
+    #         $_[3] = 開始条件(行番号/開始行番号/列番号/開始列番号/E/抽出条件/開始条件)       #
+    #         $_[4] = 終了条件(終了行番号/終了列番号/範囲/E/終了条件)                         #
+    #         ※カッコ内は、抽出条件定義の説明を参照                                          #
+    # 処理 ： 定型抽出条件の記述チェック、範囲($_[4])を絶対値に変換                           #
     #-----------------------------------------------------------------------------------------#
-    if ($_[1] ne '' and $_[1] ne '!') {
-        # 肯定否定区分誤り
-        print STDERR "Affirmation Negation Division is an Error \($_[1]\)\n";
-        exit 99;
-    }
-    if (($_[2] eq 'L' or $_[2] eq 'C') and ($_[3] eq 'E' or $_[3] eq 'e')) {
-        $_[3] = 'E';
-    } elsif (($_[2] eq 'L' and ($_[3] !~ /^\d+$/ or $_[3] == 0)) or
-             ($_[2] eq 'C' and ($_[3] !~ /^\d+$/ or $_[3] <= 0))) {
-        # 起点番号誤り
-        print STDERR "Starting Point Number is an Error \($_[3]\)\n";
-        exit 99;
-    }
-    if ($_[2] =~ /R/ and $_[3] eq '') {
-        # 起点正規表指定現無し
-        print STDERR "Regular Expression Character string is not Found\n";
-        exit 99;
-    }
-    if ($_[2] =~ /R/ and $_[4] =~ /^[\+-]\d+/ and ($_[4] !~ /^[\+-]\d+$/ or $_[4] == 0))  {
-        # 抽出範囲誤り
-        print STDERR "End Range Number is an Error \($_[4]\)\n";
-        exit 99;
-    }
-    if ($_[2] eq 'L' or $_[2] eq 'C') {
-        if ($_[4] eq '') {
-            $_[4] = $_[3];
-        } elsif ($_[4] =~ /^\d+$/ and $_[4] > 0) {
-            if ($_[3] eq 'E' or $_[3] > $_[4]) {
-                my $temp_su = $_[3];
-                $_[3] = $_[4];
-                $_[4] = $temp_su;
-            }
-        } elsif ($_[4] =~ /^-\d+$/ and $_[4] != 0) {
-            if ($_[3] ne 'E') {
-                my $temp_su = $_[3];
-                $_[3] = $_[3] + $_[4];
-                $_[4] = $temp_su;
-            }
-        } elsif ($_[4] =~ /^\+\d+$/ and $_[4] != 0) {
-            if ($_[3] ne 'E') {
-                $_[4] = $_[3] + $_[4];
-            }
-        } elsif ($_[4] eq 'E' or $_[4] eq 'e') {
-            $_[4] = 'E';
+    ############
+    # 変数定義 #
+    ############
+    my $cond_kbn   = \$_[2];                                                                  # 抽出区分
+    my $cond_start = \$_[3];                                                                  # 開始条件
+    my $cond_end   = \$_[4];                                                                  # 終了条件
+    
+    ##############################
+    # 定型抽出条件の記述チェック #
+    ##############################
+    # 指定方法に基いた記述になっているかチェック
+    if (${$cond_kbn} !~ /R/) {
+        #==========#
+        # 番号指定 #
+        #==========#
+        # ＜開始条件チェック＞
+        if (${$cond_start} eq 'E' or ${$cond_start} eq 'e') {
+            #---------------#
+            # "E"(最終)指定 #
+            #---------------#
+            # 小文字を大文字に変換
+            ${$cond_start} = uc(${$cond_start});
+        } elsif (${$cond_start} =~ /^\d+$/ and ${$cond_start} > 0) {
+            #----------#
+            # 実数指定 #
+            #----------#
+            # 処理なし
         } else {
+            #--------#
+            # その他 #
+            #--------#
+            # 開始番号誤り
+            print STDERR "Starting Point Number is an Error \(${$cond_start}\)\n";
+            exit 99;
+        }
+        
+        # ＜終了条件チェック＞
+        if (${$cond_end} eq 'E' or ${$cond_end} eq 'e') {
+            #---------------#
+            # "E"(最終)指定 #
+            #---------------#
+            # 小文字を大文字に変換
+            ${$cond_end} = uc(${$cond_end});
+        } elsif (${$cond_end} =~ /^\d+$/ and ${$cond_end} > 0) {
+            #----------#
+            # 実数指定 #
+            #----------#
+            # 開始条件よりも終了条件が小さい場合、条件を入替える
+            if (${$cond_start} eq 'E' or ${$cond_start} > ${$cond_end}) {
+                my $temp_su = ${$cond_start};
+                ${$cond_start} = ${$cond_end};
+                ${$cond_end} = $temp_su;
+            }
+        } elsif (${$cond_end} =~ /^\+\d+$/ and ${$cond_end} != 0) {
+            #------------------------------#
+            # 後続範囲指定(プラス付き数字) #
+            #------------------------------#
+            # 開始が"E"以外の場合、終了を絶対値に変換
+            if (${$cond_start} ne 'E') {
+                ${$cond_end} = ${$cond_start} + ${$cond_end};
+            }
+        } elsif (${$cond_end} =~ /^-\d+$/ and ${$cond_end} != 0) {
+            #--------------------------------#
+            # 先行範囲指定(マイナス付き数字) #
+            #--------------------------------#
+            # 開始が"E"以外の場合、値を絶対値に変換し、開始と終了を入替え
+            if (${$cond_start} ne 'E') {
+                my $temp_su = ${$cond_start};
+                ${$cond_start} = ${$cond_start} + ${$cond_end};
+                ${$cond_end} = $temp_su;
+            }
+        } elsif (${$cond_end} eq '') {
+            #----------#
+            # 指定なし #
+            #----------#
+            # 開始を終了に設定
+            ${$cond_end} = ${$cond_start};
+        } else {
+            #--------#
+            # その他 #
+            #--------#
+            # 抽出範囲誤り
+            print STDERR "End Range Number is an Error \(${$cond_end}\)\n";
+            exit 99;
+        }
+    } else {
+        #==============#
+        # 正規表現指定 #
+        #==============#
+        # ＜開始条件チェック＞
+        if (${$cond_start} eq '') {
+            # 起点正規表指定現無し
+            print STDERR "Regular Expression Character string is not Found\n";
+            exit 99;
+        }
+        
+        # ＜終了条件チェック＞
+        if ($_[4] =~ /^[\+-]\d+/ and ($_[4] !~ /^[\+-]\d+$/ or $_[4] == 0))  {
             # 抽出範囲誤り
             print STDERR "End Range Number is an Error \($_[4]\)\n";
             exit 99;
@@ -323,184 +529,431 @@ sub ER {
     # 処理 ： 行データ取得、EDコマンド抽出実行                                                #
     # 返却 ： 抽出結果                                                                        #
     #-----------------------------------------------------------------------------------------#
-    my $obj         = shift;
-    my $seek_byte   = 0;
-    my $read_index  = 0;
+    ############
+    # 変数定義 #
+    ############
+    my $obj         = shift;                                                                  # オブジェクト
+    my $seek_byte   = 0;                                                                      # レコードbyte位置
+    my $index_org   = 0;                                                                      # オリジナル行番号
+    my @index_now   = ();                                                                     # 入力行番号
+    push(@{$obj->{pipe_data}}, []);                                                           # 最終抽出結果出力用の配列を追加
+    my $return_data = \@{${$obj->{pipe_data}}[$#{$obj->{pipe_data}}]};                        # 最終抽出結果
     
+    ########################
+    # 抽出条件存在チェック #
+    ########################
     if ($#{$obj->{cond_data}} < 0) {
+        # 抽出条件なし
         return ();
     }
-    push(@{$obj->{pipe_data}}, []);
-    my $return_data = \@{${$obj->{pipe_data}}[$#{$obj->{pipe_data}}]};
     
-    # ファイルOPEN
+    ################
+    # ファイルOPEN #
+    ################
     if ($obj->{in_kbn} eq 'file') {
+        # ファイル指定
         &in_file_open($obj->{in_name});
     }
+    
+    ############
+    # 抽出実行 #
+    ############
+    # 全ての抽出が完了するまで抽出（無限ループ）
     while (1) {
-        my $cond_index = $obj->{cond_index};
-        my $next_index = $obj->{cond_index} + 1;
-        my $in_data    = \@{${$obj->{pipe_data}}[$obj->{cond_index}]};
-        my $out_data   = \@{${$obj->{pipe_data}}[$next_index]};
+        #==========#
+        # 変数定義 #
+        #==========#
+        my $cond_index = $obj->{cond_index};                                                  # 抽出位置
+        my $next_index = $obj->{cond_index} + 1;                                              # next抽出位置
+        my $in_data    = \@{${$obj->{pipe_data}}[$obj->{cond_index}]};                        # (抽出位置の)入力pipe情報
+        my $out_data   = \@{${$obj->{pipe_data}}[$next_index]};                               # (抽出位置の)出力pipe情報
+        
+        #==================#
+        # データ取得・抽出 #
+        #==================#
+        # 抽出位置をチェックし、実施処理を振り分ける
         if ($obj->{cond_index} < 0) {
-            # データ取得
-            &existence_init($obj, \$seek_byte, \$read_index);
+            #--------------------#
+            # 抽出対象データ取得 #
+            #--------------------#
+            &get_extraction_data($obj, \$seek_byte, \$index_org);
         } else {
-            # 抽出
-            &existence_watch($obj);
+            #--------------------------#
+            # 抽出位置のEDコマンド抽出 #
+            #--------------------------#
+            &watch_extraction_data($obj, \@index_now);
         }
-        # 全ED抽出完了かチェック
+        
+        #==================#
+        # 抽出終了チェック #
+        #==================#
+        # 全EDコマンド抽出が完了したかチェック
         if ($#{$return_data} >= 0 and ${$return_data}[$#{$return_data}] eq 'Data_Extraction_END') {
+            #------------------------#
+            # 全EDコマンド抽出が完了 #
+            #------------------------#
+            # 繰り返し(while)を抜ける
             last;
         }
-        # 後続ED抽出可能かチェック
+        
+        #======================#
+        # 次回抽出位置チェック #
+        #======================#
+        # 後続EDコマンド抽出が可能かチェック
         if ($obj->{cond_index} < $#{$obj->{cond_data}} and
-           (($obj->{cond_index} < 0                               and $#{$out_data} > ${$obj->{cond_max}}[$next_index]) or
-            ($obj->{seek_max} >= ${$obj->{cond_max}}[$next_index] and $#{$out_data} > ($obj->{seek_max} * 2)) or
-            ($obj->{seek_max} < ${$obj->{cond_max}}[$next_index]  and $#{$out_data} > ($obj->{seek_max} + ${$obj->{cond_max}}[$next_index])) or
+            # データ取得(cond_index=-1)時
+           (($obj->{cond_index} < 0                               and $#{$out_data} > ${$obj->{cond_buf_max}}[$next_index]) or
+            # EDコマンド抽出(cond_index>=0)時、且つユーザバッファ数(user_buf_max)＞＝cond_buf_max時
+            ($obj->{user_buf_max} >= ${$obj->{cond_buf_max}}[$next_index] and $#{$out_data} > ($obj->{user_buf_max} * 2)) or
+            # EDコマンド抽出(cond_index>=0)時、且つuser_buf_max＜cond_buf_max時
+            ($obj->{user_buf_max} < ${$obj->{cond_buf_max}}[$next_index]  and $#{$out_data} > ($obj->{user_buf_max} + ${$obj->{cond_buf_max}}[$next_index])) or
+            # "Data_Extraction_END"まで出力済時
             ($#{$out_data} >= 0 and ${$out_data}[$#{$out_data}] eq 'Data_Extraction_END'))) {
+            #----------------------------#
+            # 後続EDコマンドの抽出が可能 #
+            #----------------------------#
+            # 後続EDコマンド抽出へシフト
             $obj->{cond_index}++;
+            # 繰り返し(while)の先頭に戻る
             next;
         }
-        # 先行ED抽出に戻るべきかチェック
+        # 先行EDコマンド抽出に戻るべきかチェック(処理できるEDコマンド抽出まで戻る)
         while ($obj->{cond_index} >= 0 and
+            # 入力データなし(in_data=-1)時
            ($#{$in_data} == -1 or
            (${$in_data}[$#{$in_data}] ne 'Data_Extraction_END' and
-           (($obj->{cond_index} == 0                                      and $#{$in_data} <= ${$obj->{cond_max}}[$obj->{cond_index}]) or
-            ($obj->{seek_max} >= ${$obj->{cond_max}}[$obj->{cond_index}] and $#{$in_data} <= ($obj->{seek_max} * 2)) or
-            ($obj->{seek_max} < ${$obj->{cond_max}}[$obj->{cond_index}]  and $#{$in_data} <= ($obj->{seek_max} + ${$obj->{cond_max}}[$obj->{cond_index}])))))) {
+            # 先頭EDコマンド抽出(cond_index=0)時
+           (($obj->{cond_index} == 0                                      and $#{$in_data} <= ${$obj->{cond_buf_max}}[$obj->{cond_index}]) or
+            # 後続EDコマンド抽出(cond_index>0)時、且つuser_buf_max＞＝cond_buf_max時
+            ($obj->{user_buf_max} >= ${$obj->{cond_buf_max}}[$obj->{cond_index}] and $#{$in_data} <= ($obj->{user_buf_max} * 2)) or
+            # 後続EDコマンド抽出(cond_index>0)時、且つuser_buf_max＜cond_buf_max時
+            ($obj->{user_buf_max} < ${$obj->{cond_buf_max}}[$obj->{cond_index}]  and $#{$in_data} <= ($obj->{user_buf_max} + ${$obj->{cond_buf_max}}[$obj->{cond_index}])))))) {
+            #----------------------------#
+            # 現EDコマンドの抽出が不可能 #
+            #----------------------------#
+            # 先行EDコマンド抽出へシフト
             $obj->{cond_index}--;
         }
     }
-    # ファイルCLOSE
+    
+    #################
+    # ファイルCLOSE #
+    #################
     if ($obj->{in_kbn} eq 'file') {
+        # ファイル指定
         &in_file_close($obj->{in_name});
     }
     
-    # 抽出結果返却
+    ################
+    # 抽出結果返却 #
+    ################
     return &extraction_result(@{$return_data});
 }
 ###################################################################################################
-sub existence_init {
-    my ($obj, $seek_byte, $read_index) = @_;
+#   ＜＜ 抽出対象データ取得 ＞＞                                                                  #
+###################################################################################################
+sub get_extraction_data {
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： $_[0] = オブジェクト                                                            #
+    #      ： $_[1] = レコードbyte位置                                                        #
+    #      ： $_[2] = オリジナル行番号                                                        #
+    # 処理 ： 抽出対象データ取得、抽出対象データ情報をpipe配列へ登録                          #
+    #-----------------------------------------------------------------------------------------#
+    # ※抽出対象データ情報とは、下記を配列化したもの                                          #
+    #   ・"オリジナル行番号"                                                                  #
+    #   ・"レコードbyte位置"         ←取得区分が"ファイル指定"時に使用                       #
+    #   ・"入力行番号"               ←ここでは「オリジナル行番号＝入力行番号」               #
+    #   ・""(null)                   ←ユーザ関数にて使用                                     #
+    #   ・"抽出対象データ"                                                                    #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $seek_byte, $index_org) = @_;                                                   # オブジェクト、レコードbyte位置、オリジナル行番号
     
+    ######################
+    # 抽出対象データ取得 #
+    ######################
+    # レコードbyte位置へ移動
     seek EXTRACTION_FILE, (${$seek_byte}), 0 or "$!($obj->{in_name})";
-    my $line = &get_line_data($obj, ${$read_index});
+    # レコード情報を取得
+    my $line = &get_line_data($obj, ${$index_org});
+    
+    ######################
+    # 取得データチェック #
+    ######################
+    # 取得データがEOFかチェック
     if ($line ne 'Data_Extraction_END') {
-        ${$read_index}++;
+        #============#
+        # データあり #
+        #============#
+        # オリジナル行番号をカウントUP
+        ${$index_org}++;
+        # 取得区分をチェックし、pipe配列への登録方法を確定
         if ($obj->{in_kbn} ne '') {
-            push(@{${$obj->{pipe_data}}[0]}, ["${$read_index}", "${$seek_byte}", "${$read_index}", '', "$line"]);
+            #--------------#
+            # ファイル指定 #
+            #--------------#
+            # 抽出対象データ情報をpipe配列へ登録
+            push(@{${$obj->{pipe_data}}[0]}, ["${$index_org}", "${$seek_byte}", "${$index_org}", '', "$line"]);
+            # レコードbyte位置を退避
             ${$seek_byte} = (tell EXTRACTION_FILE);
         } else {
-            push(@{${$obj->{pipe_data}}[0]}, ["${$read_index}", '', "${$read_index}", '', "$line"]);
+            #----------#
+            # 変数指定 #
+            #----------#
+            # 抽出対象データ情報をpipe配列へ登録
+            push(@{${$obj->{pipe_data}}[0]}, ["${$index_org}", '', "${$index_org}", '', "$line"]);
         }
     } else {
+        #=====#
+        # EOF #
+        #=====#
+        # "Data_Extraction_END"をpipe配列へ登録
         push(@{${$obj->{pipe_data}}[0]}, 'Data_Extraction_END');
     }
 }
 ###################################################################################################
-sub existence_watch {
-    my ($obj) = @_;
+#   ＜＜ 処理位置のEDコマンド抽出 ＞＞                                                            #
+###################################################################################################
+sub watch_extraction_data {
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： $_[0] = オブジェクト                                                            #
+    # 処理 ： 抽出判定、抽出データのpipe配列登録                                              #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $index_now) = @_;                                                               # オブジェクト、入力行番号
     
-    my $input_data = shift(@{${$obj->{pipe_data}}[$obj->{cond_index}]});
-    if ($input_data ne 'Data_Extraction_END') {
-        if (${$input_data}[3] ne 'DEL') {
-            ${$obj->{in_index}}[$obj->{cond_index}]++;
-            ${$input_data}[2] = ${$obj->{in_index}}[$obj->{cond_index}];
-            &check_existence($obj, \@{$input_data});
-        }
+    ################################
+    # 先行EDコマンド抽出結果を取得 #
+    ################################
+    # 処理位置の入力pipe情報をshiftして抽出対象データ情報を取得
+    my $line_data = shift(@{${$obj->{pipe_data}}[$obj->{cond_index}]});
+    
+    ######################
+    # 取得データチェック #
+    ######################
+    if ($line_data ne 'Data_Extraction_END') {
+        #============#
+        # データあり #
+        #============#
+        # 入力行番号をカウントUP
+        ${$index_now}[$obj->{cond_index}]++;
+        # 抽出対象データ情報の入力行番号を最新化
+        ${$line_data}[2] = ${$index_now}[$obj->{cond_index}];
+        # 抽出条件置換え
+        &change_extraction_cond($obj, \@{$line_data});
+        # EDコマンド抽出判定
+        &check_extraction_data($obj, \@{$line_data});
     } else {
+        #=====#
+        # EOF #
+        #=====#
+        # "Data_Extraction_END"をpipe配列へ登録
         push(@{${$obj->{pipe_data}}[($obj->{cond_index} + 1)]}, 'Data_Extraction_END');
     }
 }
 ###################################################################################################
+#   ＜＜ 抽出結果返却 ＞＞                                                                        #
+###################################################################################################
 sub extraction_result {
-    my @return_data = ();
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： @_ = EDコマンド抽出結果                                                         #
+    # 処理 ： EDコマンド抽出結果からユーザスクリプトへ返却する情報を生成                      #
+    # 返却 ： 最終抽出結果(ユーザスクリプトへ返却する情報)                                    #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my @result_data = @_;                                                                     # EDコマンド抽出結果
+    my @return_data = ();                                                                     # 最終抽出結果(ユーザスクリプトへ返却する情報)
     
-    foreach my $result(@_) {
+    ################
+    # 抽出結果生成 #
+    ################
+    # EDコマンド抽出結果からユーザスクリプトへ返却する情報を生成
+    foreach my $result(@result_data) {
+        # 返却対象情報の内、データ部分のみを抜き出す
         if ($result ne 'Data_Extraction_END' and ${$result}[3] ne 'DEL') {
             push(@return_data, "${$result}[4]");
         }
     }
+    
+    ####################
+    # 最終抽出結果返却 #
+    ####################
     return @return_data;
 }
 ###################################################################################################
-sub check_existence {
+#   ＜＜ 抽出条件置換え ＞＞                                                                      #
+###################################################################################################
+sub change_extraction_cond {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = オブジェクト                                                            #
-    #      ： $_[1] = 行データ                                                                #
-    # 処理 ： 定型抽出（行・列・ブロック抽出）、ユーザー抽出（ユーザー関数呼出し）            #
-    # 返却 ： 抽出結果                                                                        #
+    #      ： $_[1] = 抽出対象データ情報                                                      #
+    # 処理 ： 定型抽出条件の置換え                                                            #
     #-----------------------------------------------------------------------------------------#
-    my ($obj, $input_data) = @_;
-    my ($index_org, $seek_byte, $index_now, $out_kbn, $in_line) = @{$input_data};
-    my $cond_index = $obj->{cond_index};
-    my $cond_data  = \@{${$obj->{cond_data}}[$cond_index]};
-    my $pipe_data  = \@{${$obj->{pipe_data}}[$cond_index]};
-    my $cond_max   = ${$obj->{cond_max}}[$cond_index];
-    my $seek_data  = \@{${$obj->{seek_data}}[$cond_index]};
-    my $out_index  = \${$obj->{out_index}}[$cond_index];
-    my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $line_data) = @_;                                                               # オブジェクト、抽出対象データ情報
+    my ($index_org, $seek_byte, $index_now, $out_kbn, $in_line) = @{$line_data};              # オリジナル行番号、レコードbyte位置、入力行番号、出力区分、抽出対象データ
+    my $cond_index        = $obj->{cond_index};                                               # 処理位置
+    my $cond_data         = \@{${$obj->{cond_data}}[$cond_index]};                            # (処理位置の)抽出条件
+    my $pipe_data         = \@{${$obj->{pipe_data}}[$cond_index]};                            # (処理位置の)入力pipe情報
+    my $cond_buf_max      = ${$obj->{cond_buf_max}}[$cond_index];                             # (処理位置の)定型指定最大バッファ数
     
-    # 削除対象チェック
-    if ($out_kbn eq 'DEL') {return ()}
-    
-    # 最終行指定を実行番号指定に変換
-    my $check_end = grep {${$_}[2] eq 'E' or ${$_}[3] eq 'E'}@{$cond_data};
+    #####################################
+    # 最終行指定("E")を行番号指定に変換 #
+    #####################################
+    # 抽出条件に最終行指定("E")があるかチェック
+    my $check_end = grep {${$_}[0] eq 'L' and (${$_}[2] eq 'E' or ${$_}[3] eq 'E')}@{$cond_data};
     if ($check_end > 0) {
+        #=============#
+        # "E"指定あり #
+        #=============#
         my $line_end = 0;
-        if ($#{$pipe_data} >= $cond_max and ${$pipe_data}[$cond_max] eq 'Data_Extraction_END') {
-            $line_end = ${${$pipe_data}[($cond_max - 1)]}[2];
-        } elsif ($#{$pipe_data} >= 0 and $#{$pipe_data} < $cond_max and ${$pipe_data}[$#{$pipe_data}] eq 'Data_Extraction_END') {
-            if ($#{$pipe_data} > 0) {
-                $line_end = ${${$pipe_data}[($#{$pipe_data} - 1)]}[2];
-            } else {
-                $line_end = $index_now;
+        # 入力pipe情報にEOF情報が存在するかチェックし、最終行番号を設定
+        if (($#{$pipe_data} >= $cond_buf_max and ${$pipe_data}[$cond_buf_max] eq 'Data_Extraction_END') or
+            ($#{$pipe_data} >= 0 and $#{$pipe_data} < $cond_buf_max and ${$pipe_data}[$#{$pipe_data}] eq 'Data_Extraction_END')) {
+            my $add_cnt = 0;
+            for (my $index=0 ; $index <= $#{$pipe_data}; $index++) {
+                # index位置がEOFかチェック
+                if (${$pipe_data}[$index] ne 'Data_Extraction_END') {
+                    #------------#
+                    # 通常データ #
+                    #------------#
+                    # 後続データ数をカウントUP
+                    $add_cnt++;
+                } else {
+                    #-----#
+                    # EOF #
+                    #-----#
+                    if ($index == 0) {
+                        #･････････････････････#
+                        # 自レコード直後がEOF #
+                        #･････････････････････#
+                        # 現在行を最終行番号に設定
+                        $line_end = $index_now;
+                    } else {
+                        #･･････････････････････････#
+                        # 自レコード後にデータあり #
+                        #･･････････････････････････#
+                        # 最終行番号を算出
+                        $line_end = $index_now + $add_cnt;
+                    }
+                    last;
+                }
             }
         }
+        # 最終行番号が設定できた場合、抽出条件("E")を実数化
         if ($line_end > 0) {
+            # 開始条件を変換
             &get_cond_l_s($line_end, grep{${$_}[0] eq 'L' and ${$_}[2] eq 'E'}@{$cond_data});
+            # 終了条件を変換
             &get_cond_l_e($line_end, grep{${$_}[0] eq 'L' and ${$_}[3] eq 'E'}@{$cond_data});
         }
     }
     
-    # 正規表現指定を実行番号指定に変換
+    ##################################
+    # 正規表現指定を行番号指定に変換 #
+    ##################################
+    # 開始条件を変換（get_cond_lr_s内で完結できない場合、抽出区分に"r"を設定）
     push(@{$cond_data}, &get_cond_lr_s($obj, $index_now, $in_line, grep{${$_}[0] eq 'LR'}@{$cond_data}));
+    # 終了条件を変換
     &get_cond_lr_e($index_now, grep{${$_}[0] eq 'r' and $in_line =~ /${$_}[3]/}@{$cond_data});
+}
+###################################################################################################
+#   ＜＜ EDコマンド抽出判定 ＞＞                                                                  #
+###################################################################################################
+sub check_extraction_data {
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： $_[0] = オブジェクト                                                            #
+    #      ： $_[1] = 抽出対象データ情報                                                      #
+    # 処理 ： 定型抽出（行・列・ブロック抽出）、ユーザー抽出（ユーザー関数呼出し）            #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $line_data) = @_;                                                               # オブジェクト、抽出対象データ情報
+    my ($index_org, $seek_byte, $index_now, $out_kbn, $in_line) = @{$line_data};              # オリジナル行番号、レコードbyte位置、入力行番号、出力区分、抽出対象データ
+    my $cond_index        = $obj->{cond_index};                                               # 処理位置
+    my $cond_data         = \@{${$obj->{cond_data}}[$cond_index]};                            # (処理位置の)抽出条件
+    my $buff_data         = \@{${$obj->{buff_data}}[$cond_index]};                            # (処理位置の)バッファ情報
+    my $out_data          = \@{${$obj->{pipe_data}}[($cond_index + 1)]};                      # (処理位置の)出力pipe情報
+    my $out_index         = \${$obj->{out_index}}[$cond_index];                               # (処理位置の)出力件数
     
-    # 入力データをseek用にバッファ
-    push(@{$seek_data}, $input_data);
-    if ($#{$seek_data} > $obj->{seek_max}) {shift(@{$seek_data})}
+    ################
+    # バッファ登録 #
+    ################
+    # ユーザ指定最大バッファ数以上になった場合、バッファ情報をshiftして古いデータを削除
+    if ($#{$buff_data} >= $obj->{user_buf_max}) {shift(@{$buff_data})}
+    # 抽出対象データ情報をバッファ情報の最後に登録
+    push(@{$buff_data}, $line_data);
     
-    # ユーザ抽出
+    ##################################
+    # ユーザ関数出力済情報のチェック #
+    ##################################
+    # ユーザ関数によって削除済かチェック
     if (&check_mid_data($obj, $index_now)) {return ()}
+    # ユーザ関数によって追加・更新済かチェック
     if (&put_mid_data($obj, $index_now)) {return ()}
+    
+    ##############
+    # ユーザ抽出 #
+    ##############
     my $extraction_data = &init_extraction_data('', "$in_line") |
                           &get_cond_user($obj, "$in_line", grep{${$_}[0] eq 'USER'}@{$cond_data});
+    # ユーザ抽出結果が０の場合、ユーザ関数で直接更新していないかチェック
     if (&change_Bto2($extraction_data) == 0) {
         # ユーザ出力有無チェック
-        if ($obj->{out_kbn} ne '' and
+        #   ユーザ出力あり、且つ
+        #   最終出力pipe情報の入力行番号が現在行、且つ
+        #   最終出力pipe情報の出力区分が"USER"又は"DEL"
+        if ($obj->{user_out_kbn} ne '' and
             ${${$out_data}[$#{$out_data}]}[0] eq $index_org and
            (${${$out_data}[$#{$out_data}]}[3] eq 'USER' or ${${$out_data}[$#{$out_data}]}[3] eq 'DEL')) {
+            #----------------------------#
+            # ユーザによって現在行を出力 #
+            #----------------------------#
+            # 出力された情報が削除指示かチェック
             if (${${$out_data}[$#{$out_data}]}[3] eq 'DEL') {
+                #･･････････#
+                # 削除指示 #
+                #･･････････#
+                # 出力pipe情報の最後(削除指示データ)を削除
                 pop(@{$out_data});
             }
+            # 呼出し元へ戻る
             return ()
         }
+        # 先行EDコマンド抽出でユーザ出力されたデータかチェック
         if ($out_kbn eq 'USER') {
+            #------------#
+            # ユーザ出力 #
+            #------------#
+            # 出力件数をカウントUPし、抽出対象データ情報を出力pipe情報の最後に登録
             ${$out_index}++;
             push(@{$out_data}, ["$index_org", "$seek_byte", "${$out_index}", 'USER', "$in_line"]);
+            # 呼出し元へ戻る
             return ();
         }
     }
     
-    #print "$index_org=$in_line\n";
-    #foreach my $cond_1(@{$cond_data}) {
-    #    print "cond ${$cond_1}[0],${$cond_1}[1],${$cond_1}[2],${$cond_1}[3],${$cond_1}[4],${$cond_1}[5],${$cond_1}[6],${$cond_1}[7],${$cond_1}[8]\n";
-    #}
-    # 定型抽出
+    ####################################
+    # 定型抽出(行抽出、行抽出＋列抽出) #
+    ####################################
     if (&change_Bto2($extraction_data) !~ /^1/) {
-        # 行抽出、ブロック抽出
+        # 行番号指定による行抽出("L"＝行番号指定、又は行番号指定へ変換した正規表現指定(元"LR"))
+        # ・肯定抽出、且つ（開始行番号≦現在行≦終了行番号、又は終了行番号＝"E"）
+        # ・否定抽出、且つ（開始行番号＝"E"、又は現在行＜終了行番号、又は（終了行番号≠"E"、且つ終了行番号＜現在行））
+        # 正規表現による行抽出("r"＝開始条件のみ行番号指定へ変換している(元"LR"))
+        # ・肯定抽出、且つ開始行番号≦現在行
+        # ・否定抽出、且つ現在行＜開始行番号
+        # 正規表現による行抽出("LR"＝正規表現指定が行番号指定へ変換されていない)
+        # ・否定抽出、且つ抽出条件未検出
         $extraction_data = $extraction_data |
                            &get_cond_lc($in_line,
                                         grep{(${$_}[0] eq 'L' and ((${$_}[1] eq '' and ${$_}[2] ne 'E' and ${$_}[2] <= $index_now and (${$_}[3] eq 'E' or $index_now <= ${$_}[3]))
@@ -509,48 +962,107 @@ sub check_existence {
                                                                 or (${$_}[1] ne '' and $index_now < ${$_}[2])))
                                           or (${$_}[0] eq 'LR' and ${$_}[1] ne '' and ${$_}[8] eq '1' and ${$_}[9] <= $index_now))}@{$cond_data});
     }
-    # 列抽出
+    
+    ####################
+    # 定型抽出(列抽出) #
+    ####################
     if (&change_Bto2($extraction_data) !~ /^1/) {
+        # 列番号指定による列抽出("C")
         $extraction_data = $extraction_data |
                            &get_cond_c($in_line, grep{${$_}[0] eq 'C'}@{$cond_data});
+        # 正規表現による列抽出("CR")
         $extraction_data = $extraction_data |
                            &get_cond_cr($in_line, grep{${$_}[0] eq 'CR'}@{$cond_data});
     }
     
-    # 抽出結果登録
+    ################
+    # 抽出結果登録 #
+    ################
     if (&change_Bto2($extraction_data) > 0) {
+        # 抽出結果データを生成
         my $out_line = &get_out_line("$in_line", &change_Bto2($extraction_data));
+        # 出力カウンタをカウントUP
         ${$out_index}++;
+        # 抽出結果を出力pipe情報に登録
         push(@{$out_data}, ["$index_org", "$seek_byte", "${$out_index}", "$out_kbn", "$out_line"]);
     }
 }
 ###################################################################################################
-sub put_mid_data {
-    my ($obj, $index_now) = @_;
-    my $mid_data   = \@{${$obj->{mid_data}}[$obj->{cond_index}]};
-    my $out_data   = \@{${$obj->{pipe_data}}[($obj->{cond_index} + 1)]};
-    my $out_index  = \${$obj->{out_index}}[$obj->{cond_index}];
-    my $mid_flg    = 0;
-    
-    for (my $index=0 ; $index <= $#{$mid_data}; $index++) {
-        if (${${$mid_data}[$index]}[2] == $index_now) {
-            ${$out_index}++;
-            push(@{$out_data}, ["${${$mid_data}[$index]}[0]", "${${$mid_data}[$index]}[1]", "${$out_index}", "${${$mid_data}[$index]}[3]", "${${$mid_data}[$index]}[4]"]);
-            $mid_flg = 1;
-            $obj->{out_kbn} = 'output';
-        }
-    }
-    return $mid_flg;
-}
+#   ＜＜ ユーザ先行出力情報チェック ＞＞                                                          #
 ###################################################################################################
 sub check_mid_data {
-    my ($obj, $index_now) = @_;
-    my $mid_data          = \@{${$obj->{mid_data}}[$obj->{cond_index}]};
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： $_[0] = オブジェクト                                                            #
+    #      ： $_[1] = 入力行番号                                                              #
+    # 処理 ： 入力行番号と一致するユーザ先行出力情報(削除)があるかチェック                    #
+    # 返却 ： チェックフラグ（１＝削除対象あり、０＝削除対象なし）                            #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $index_now) = @_;                                                               # オブジェクト、入力行番号
+    my $mid_data          = \@{${$obj->{mid_data}}[$obj->{cond_index}]};                      # (処理位置の)ユーザ先行出力情報
     
+    ##############################
+    # ユーザ先行出力情報チェック #
+    ##############################
     for (my $index=0 ; $index <= $#{$mid_data}; $index++) {
-        if (${${$mid_data}[$index]}[2] == $index_now and ${${$mid_data}[$index]}[3] eq 'DEL') {return 1}
+        # 入力行番号が一致するデータが削除情報(出力区分＝"DEL")かチェック
+        if (${${$mid_data}[$index]}[2] == $index_now and ${${$mid_data}[$index]}[3] eq 'DEL') {
+            #==========#
+            # 削除対象 #
+            #==========#
+            # 「削除対象あり」を返却
+            return 1;
+        }
     }
+    # 「削除対象なし」を返却
     return 0;
+}
+###################################################################################################
+#   ＜＜ ユーザ先行出力情報登録 ＞＞                                                              #
+###################################################################################################
+sub put_mid_data {
+    #-----------------------------------------------------------------------------------------#
+    # 引数 ： $_[0] = オブジェクト                                                            #
+    #      ： $_[1] = 入力行番号                                                              #
+    # 処理 ： 入力行番号と一致するユーザ先行出力情報を出力pipe情報へ登録                      #
+    # 返却 ： 出力フラグ（１＝あり、０＝なし）                                                #
+    #-----------------------------------------------------------------------------------------#
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $index_now) = @_;                                                               # オブジェクト、入力行番号
+    my $mid_data          = \@{${$obj->{mid_data}}[$obj->{cond_index}]};                      # (処理位置の)ユーザ先行出力情報
+    my $out_data          = \@{${$obj->{pipe_data}}[($obj->{cond_index} + 1)]};               # (処理位置の)出力pipe情報
+    my $out_index         = \${$obj->{out_index}}[$obj->{cond_index}];                        # (処理位置の)出力件数
+    my $out_flg           = 0;                                                                # 出力フラグ
+    
+    ##############################
+    # ユーザ先行出力情報チェック #
+    ##############################
+    # カレント行に対するユーザ先行出力情報があるか検索
+    for (my $index=0 ; $index <= $#{$mid_data}; $index++) {
+        # 入力行番号が一致するかチェック
+        if ($index_now == ${${$mid_data}[$index]}[2]) {
+            #==============================#
+            # 行番号が一致(カレント行あり) #
+            #==============================#
+            # 出力件数をカウントUP
+            ${$out_index}++;
+            # ユーザ先行出力情報を出力pipe情報へ登録
+            push(@{$out_data}, ["${${$mid_data}[$index]}[0]", "${${$mid_data}[$index]}[1]", "${$out_index}", "${${$mid_data}[$index]}[3]", "${${$mid_data}[$index]}[4]"]);
+            # 「ユーザ先行出力あり」を出力フラグへ設定
+            $out_flg = 1;
+            # 「ユーザ出力あり」をユーザ出力区分へ設定
+            $obj->{user_out_kbn} = 'output';
+        }
+    }
+    
+    ##################
+    # 出力フラグ返却 #
+    ##################
+    return $out_flg;
 }
 ###################################################################################################
 #   ＜＜ 抽出データを取得 ＞＞                                                                    #
@@ -562,15 +1074,30 @@ sub get_out_line {
     # 処理 ： 抽出対象区分から抽出データを取得                                                #
     # 返却 ： 抽出データ                                                                      #
     #-----------------------------------------------------------------------------------------#
-    if ($_[1] =~ /^1/) {
-        # 行抽出
-        return $_[0];
+    ############
+    # 変数定義 #
+    ############
+    my ($line, $extraction_data) = @_;                                                        # 行データ、抽出対象区分
+    
+    ##################
+    # 抽出データ取得 #
+    ##################
+    # 行抽出か列抽出かチェック
+    if ($extraction_data =~ /^1/) {
+        #========#
+        # 行抽出 #
+        #========#
+        # 行データをそのまま抽出データとする
+        return $line;
     } else {
-        # 列抽出
-        my @col_data = &get_col_data('', "$_[0]"); unshift @col_data, '';
+        #========#
+        # 列抽出 #
+        #========#
+        # "1"(抽出対象)になっている列のみ抽出データとする
+        my @col_data = &get_col_data('', "$line"); unshift @col_data, '';
         my $out_data = '';
         for (my $index=1; $index <= $#col_data; $index++) {
-            if ((substr $_[1], $index, 1) eq '1') {
+            if ((substr $extraction_data, $index, 1) eq '1') {
                 $out_data .= "$col_data[$index] ";
             }
         }
@@ -614,16 +1141,31 @@ sub get_line_num {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = オブジェクト                                                            #
     # 処理 ： 処理中の行番号を取得                                                            #
+    # 返却 ： 処理中の行番号                                                                  #
     #-----------------------------------------------------------------------------------------#
-    my $in_data   = \@{${$_[0]->{pipe_data}}[$_[0]->{cond_index}]};
-    my $seek_data = \@{${$_[0]->{seek_data}}[$_[0]->{cond_index}]};
+    ############
+    # 変数定義 #
+    ############
+    my $obj       = shift;                                                                    # オブジェクト
+    my $in_data   = \@{${$obj->{pipe_data}}[$obj->{cond_index}]};                             # (処理位置の)入力pipe情報
+    my $buff_data = \@{${$obj->{buff_data}}[$obj->{cond_index}]};                             # (処理位置の)バッファ情報
     
-    if ($_[0]->{seek_kbn} eq 'seek') {
-        return ${${$seek_data}[$_[0]->{seek_index}]}[2];
-    } elsif ($_[0]->{seek_kbn} eq 'input') {
-        return ${${$in_data}[$_[0]->{seek_index}]}[2];
+    # seek区分をチェックし、seek位置の行番号を取得・返却
+    if ($obj->{seek_kbn} eq 'buff') {
+        #======================#
+        # バッファ情報から取得 #
+        #======================#
+        return ${${$buff_data}[$obj->{seek_index}]}[2];
+    } elsif ($obj->{seek_kbn} eq 'input') {
+        #======================#
+        # 入力pipe情報から取得 #
+        #======================#
+        return ${${$in_data}[$obj->{seek_index}]}[2];
     } else {
-        return ${$_[0]->{seek_num}}[2];
+        #========================#
+        # オリジナル情報から取得 #
+        #========================#
+        return ${$obj->{seek_num}}[2];
     }
 }
 ###################################################################################################
@@ -632,25 +1174,46 @@ sub get_line_num {
 sub check_seek_num {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = オブジェクト                                                            #
-    #      ： $_[1] = 行番号                                                                  #
+    #      ： $_[1] = seek行番号                                                              #
     # 処理 ： 行番号の記述チェック                                                            #
     #-----------------------------------------------------------------------------------------#
-    my $seek_data = \@{${$_[0]->{seek_data}}[$_[0]->{cond_index}]};
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $seek_no) = @_;                                                                 # オブジェクト、seek行番号
+    my $buff_data       = \@{${$obj->{buff_data}}[$obj->{cond_index}]};                       # (処理位置の)バッファ情報
     
-    if ($_[1] !~ /^\d+$/ or $_[1] <= 0) {
-        print STDERR "Seek Line Number Error ($_[1])\n";
+    ######################
+    # seek行番号チェック #
+    ######################
+    # ０より大きい数字かチェック
+    if ($seek_no !~ /^\d+$/ or $seek_no <= 0) {
+        #==============================#
+        # 数字以外、または０以下の数字 #
+        #==============================#
+        # seek行番号エラー
+        print STDERR "Seek Line Number Error ($seek_no)\n";
         exit 99;
     }
-    if ((${${$seek_data}[$#{$seek_data}]}[2] < $_[1] and (${${$seek_data}[$#{$seek_data}]}[2] + $_[0]->{seek_max}) < $_[1]) or
-        (${${$seek_data}[$#{$seek_data}]}[2] > $_[1] and (${${$seek_data}[$#{$seek_data}]}[2] - $_[0]->{seek_max}) > $_[1])) {
-        print STDERR "Seek Buffer Range Error ($_[1])\n";
+    
+    ##############################
+    # seek可能な行番号かチェック #
+    ##############################
+    # ユーザ指定最大バッファ数を越えていないかチェック
+    if ((${${$buff_data}[$#{$buff_data}]}[2] < $seek_no and (${${$buff_data}[$#{$buff_data}]}[2] + $obj->{user_buf_max}) < $seek_no) or
+        (${${$buff_data}[$#{$buff_data}]}[2] > $seek_no and (${${$buff_data}[$#{$buff_data}]}[2] - $obj->{user_buf_max}) > $seek_no)) {
+        #======================================#
+        # ユーザ指定最大バッファ数を越えている #
+        #======================================#
+        # seek範囲エラー
+        print STDERR "Seek Buffer Range Error ($seek_no)\n";
         exit 99;
     }
 }
 ###################################################################################################
 #   ＜＜ データ取得区分チェック ＞＞                                                              #
 ###################################################################################################
-sub check_data_acquisition_flag {
+sub check_data_acquisition_division {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = データ取得区分                                                          #
     # 処理 ： データ取得区分の記述チェック                                                    #
@@ -659,44 +1222,6 @@ sub check_data_acquisition_flag {
         print STDERR "Data Acquisition division Error ($_[0])\n";
         exit 99;
     }
-}
-###################################################################################################
-#   ＜＜ 抽出データ存在チェック ＞＞                                                              #
-###################################################################################################
-sub check_existence_data {
-    #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0] = オブジェクト                                                            #
-    #      ： $_[1] = 行番号                                                                  #
-    # 処理 ： オブジェクトに保存している抽出対象データに指定行が存在するかチェック            #
-    #-----------------------------------------------------------------------------------------#
-    foreach my $check(@{${$_[0]->{seek_data}}[$_[0]->{cond_index}]}) {
-        if ($_[1] == ${$check}[2]) {return 1}
-    }
-    return 0;
-}
-###################################################################################################
-#   ＜＜ １０進数→１６進数変換 ＞＞                                                              #
-###################################################################################################
-sub change_10to16{
-    #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0] = １０進数の文字列                                                        #
-    # 処理 ： １０進数の文字列を１６進数の文字列に変換                                        #
-    #-----------------------------------------------------------------------------------------#
-    if (((length $_[0]) % 2) == 0) {
-        return pack("H*", "$_[0]");
-    } else {
-        return pack("H*", "0$_[0]");
-    }
-}
-###################################################################################################
-#   ＜＜ １６進数→１０進数変換 ＞＞                                                              #
-###################################################################################################
-sub change_16to10{
-    #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0] = １６進数の文字列                                                        #
-    # 処理 ： １６進数の文字列を１０進数の文字列に変換                                        #
-    #-----------------------------------------------------------------------------------------#
-    return unpack("H*", "$_[0]");
 }
 ###################################################################################################
 #   ＜＜ ２進数→バイナリ変換 ＞＞                                                                #
@@ -732,75 +1257,136 @@ sub error_buffers {
 sub seek_line {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = オブジェクト                                                            #
-    #      ： $_[1] = 行番号                                                                  #
+    #      ： $_[1] = seek行番号                                                              #
     # 処理 ： 行番号チェック、抽出対象データの読込む位置を指定行へ移動                        #
     #-----------------------------------------------------------------------------------------#
-    my ($obj, $number) = @_;
-    my $cond_index     = $obj->{cond_index};
-    my $in_data        = \@{${$obj->{pipe_data}}[$cond_index]};
-    my $seek_data      = \@{${$obj->{seek_data}}[$cond_index]};
-    my $out_data       = \@{${$obj->{pipe_data}}[($cond_index + 1)]};
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $seek_no) = @_;                                                                 # オブジェクト、seek行番号
+    my $cond_index      = $obj->{cond_index};                                                 # 処理位置
+    my $in_data         = \@{${$obj->{pipe_data}}[$cond_index]};                              # (処理位置の)入力pipe情報
+    my $buff_data       = \@{${$obj->{buff_data}}[$cond_index]};                              # (処理位置の)バッファ情報
+    my $out_data        = \@{${$obj->{pipe_data}}[($cond_index + 1)]};                        # (処理位置の)出力pipe情報
     
-    &check_seek_num($obj, "$number");
-    if ($obj->{out_kbn} ne '') {$obj->{out_kbn} = 'seek'}
+    ######################
+    # seek行番号チェック #
+    ######################
+    &check_seek_num($obj, "$seek_no");
     
-    if ($number <= ${${$seek_data}[$#{$seek_data}]}[2]) {
-        for (my $index=0; $index <= $#{$seek_data}; $index++) {
-            if ($number == ${${$seek_data}[$index]}[2]) {
+    ########################
+    # seek先データ位置取得 #
+    ########################
+    # ユーザ出力済の場合、"seek"(ユーザ出力後のseek)をユーザ出力区分に設定
+    if ($obj->{user_out_kbn} ne '') {
+        $obj->{user_out_kbn} = 'seek';
+    }
+    # seek行番号をチェックし、seek対象先を振り分ける
+    if ($seek_no <= ${${$buff_data}[$#{$buff_data}]}[2]) {
+        #==================#
+        # seek先が処理済行 #
+        #==================#
+        # バッファ情報を検索
+        for (my $index=0; $index <= $#{$buff_data}; $index++) {
+            # 現在行がseek行番号のデータかチェック
+            if ($seek_no == ${${$buff_data}[$index]}[2]) {
+                #--------------------------#
+                # seek行番号のデータが存在 #
+                #--------------------------#
+                # 入力区分が"ファイル"の場合、検出したレコードbyte位置へ移動
                 if ($obj->{in_kbn} ne '') {
-                    seek EXTRACTION_FILE, (${${$seek_data}[$index]}[1]), 0 or "$!($obj->{in_name})";
+                    seek EXTRACTION_FILE, (${${$buff_data}[$index]}[1]), 0 or "$!($obj->{in_name})";
                 }
-                @{$obj->{seek_num}}[0..2] = @{${$seek_data}[$index]};
-                $obj->{seek_kbn}          = 'seek';
-                $obj->{seek_index}        = $index;
-                @{$obj->{get_num}}        = @{$obj->{seek_num}};
-                $obj->{get_kbn}           = $obj->{seek_kbn};
-                $obj->{get_index}         = $obj->{seek_index};
+                # ＜seek情報の設定＞
+                $obj->{seek_kbn}          = 'buff';                                           # seek区分←バッファ情報("buff")
+                @{$obj->{seek_num}}[0..2] = @{${$buff_data}[$index]};                         # seek行情報←バッファ情報(オリジナル行番号、レコードbyte位置、入力行番号)
+                $obj->{seek_index}        = $index;                                           # seek位置←検出index
+                # ＜get情報の設定＞
+                $obj->{get_kbn}           = $obj->{seek_kbn};                                 # get区分
+                @{$obj->{get_num}}        = @{$obj->{seek_num}};                              # get行情報
+                $obj->{get_index}         = $obj->{seek_index};                               # get位置
+                # ＜呼出し元へ復帰＞
                 return 0;
             }
         }
-        &error_buffers(${${$seek_data}[$#{$seek_data}]}[2],$number);
+        # seekエラー
+        &error_buffers(${${$buff_data}[$#{$buff_data}]}[2],$seek_no);
     } else {
+        #================#
+        # seek先が後続行 #
+        #================#
+        # 何回目のEDコマンド抽出か処理位置をチェックし、処理を振り分ける
         if ($cond_index > 0) {
-            my $for_max = $#{$in_data};
+            #--------------------------------#
+            # 後続(２個目以降)EDコマンド抽出 #
+            #--------------------------------#
+            # 最大検索数(for_max)を設定
+            my $for_max = $#{$in_data};                                                       # 入力pipe情報数を設定
             if (${$in_data}[$#{$in_data}] ne 'Data_Extraction_END') {
-                $for_max = $obj->{seek_max};
+                $for_max = $obj->{user_buf_max};                                              # ユーザ指定最大バッファ数を設定
             }
+            # 入力pipe情報(index=0～最大検索先)を検索
             for (my $index=0; $index <= $for_max; $index++) {
-                if ($number == ${${$in_data}[$index]}[2]) {
+                # 現在行がseek行番号のデータかチェック
+                if ($seek_no == ${${$in_data}[$index]}[2]) {
+                    #･･････････････････････････#
+                    # seek行番号のデータが存在 #
+                    #･･････････････････････････#
+                    # 入力区分が"ファイル"の場合、検出したレコードbyte位置へ移動
                     if ($obj->{in_kbn} ne '') {
                         seek EXTRACTION_FILE, (${${$in_data}[$index]}[1]), 0 or "$!($obj->{in_name})";
                     }
-                    @{$obj->{seek_num}}[0..2] = @{${$in_data}[$index]};
-                    $obj->{seek_kbn}          = 'input';
-                    $obj->{seek_index}        = $index;
-                    @{$obj->{get_num}}        = @{$obj->{seek_num}};
-                    $obj->{get_kbn}           = $obj->{seek_kbn};
-                    $obj->{get_index}         = $obj->{seek_index};
+                    # ＜seek情報の設定＞
+                    $obj->{seek_kbn}          = 'input';                                      # seek区分←入力pipe情報("input")
+                    @{$obj->{seek_num}}[0..2] = @{${$in_data}[$index]};                       # seek行情報←入力pipe情報(オリジナル行番号、レコードbyte位置、入力行番号)
+                    $obj->{seek_index}        = $index;                                       # seek位置←検出index
+                    # ＜get情報の設定＞
+                    $obj->{get_kbn}           = $obj->{seek_kbn};                             # get区分
+                    @{$obj->{get_num}}        = @{$obj->{seek_num}};                          # get行情報
+                    $obj->{get_index}         = $obj->{seek_index};                           # get位置
+                    # ＜呼出し元へ復帰＞
                     return 0;
                 }
             }
-            &error_buffers(${${$seek_data}[$#{$seek_data}]}[2],$number);
+            # seekエラー
+            &error_buffers(${${$buff_data}[$#{$buff_data}]}[2],$seek_no);
         } else {
+            #--------------------#
+            # 初回EDコマンド抽出 #
+            #--------------------#
+            # 入力区分が"ファイル"の場合、最終バッファ情報のレコードbyte位置へ移動
             if ($obj->{in_kbn} ne '') {
-                seek EXTRACTION_FILE, (${${$seek_data}[$#{$seek_data}]}[1]), 0 or "$!($obj->{in_name})";
+                seek EXTRACTION_FILE, (${${$buff_data}[$#{$buff_data}]}[1]), 0 or "$!($obj->{in_name})";
             }
-            my $index = ${${$seek_data}[$#{$seek_data}]}[2];
-            my $line = &get_line_data($obj, $index);
+            # 最終バッファ情報(入力行番号)をチェック行番号へ設定
+            my $check_no = ${${$buff_data}[$#{$buff_data}]}[2];
+            # オリジナル行データを取得
+            my $line = &get_line_data($obj, $check_no);
+            # EOFになるまで、オリジナル情報を検索
             while ($line ne 'Data_Extraction_END') {
-                $index++;
-                if ($number == $index) {
-                    @{$obj->{seek_num}}[0..2] = ($index, (tell EXTRACTION_FILE), $number);
-                    $obj->{seek_kbn}          = 'org';
-                    $obj->{seek_index}        = 0;
-                    @{$obj->{get_num}}        = @{$obj->{seek_num}};
-                    $obj->{get_kbn}           = $obj->{seek_kbn};
-                    $obj->{get_index}         = $obj->{seek_index};
+                # チェック行番号をカウントUP
+                $check_no++;
+                # 現在行がseek行番号のデータかチェック
+                if ($seek_no == $check_no) {
+                    #･･････････････････････････#
+                    # seek行番号のデータを検出 #
+                    #･･････････････････････････#
+                    # ＜seek情報の設定＞
+                    $obj->{seek_kbn}          = 'org';                                        # seek区分←オリジナル情報("org")
+                    @{$obj->{seek_num}}[0..2] = ($check_no, (tell EXTRACTION_FILE), $seek_no);# seek行情報←オリジナル情報(チェック行番号、レコードbyte位置、seek行番号)
+                    $obj->{seek_index}        = 0;                                            # seek位置←０
+                    # ＜get情報の設定＞
+                    $obj->{get_kbn}           = $obj->{seek_kbn};                             # get区分
+                    @{$obj->{get_num}}        = @{$obj->{seek_num}};                          # get行情報
+                    $obj->{get_index}         = $obj->{seek_index};                           # get位置
+                    # ＜呼出し元へ復帰＞
                     return 0;
                 }
-                $line = &get_line_data($obj, $index);
+                # オリジナル行データを取得
+                $line = &get_line_data($obj, $check_no);
             }
-            &error_buffers(${${$seek_data}[$#{$seek_data}]}[2],$number);
+            # seekエラー
+            &error_buffers(${${$buff_data}[$#{$buff_data}]}[2],$seek_no);
         }
     }
 }
@@ -814,115 +1400,205 @@ sub get_line {
     # 処理 ： データ取得区分チェック、抽出対象データの取得                                    #
     # 返却 ： 抽出対象データ                                                                  #
     #-----------------------------------------------------------------------------------------#
-    my ($obj, $flg) = @_;
-    my $line        = '';
-    my $cond_index  = $obj->{cond_index};
-    my $in_data     = \@{${$obj->{pipe_data}}[$cond_index]};
-    my $seek_data   = \@{${$obj->{seek_data}}[$cond_index]};
-    &check_data_acquisition_flag("$flg");
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $data_kbn) = @_;                                                                # オブジェクト、データ取得区分
+    my $line        = '';                                                                     # 抽出対象データ
+    my $cond_index  = $obj->{cond_index};                                                     # 処理位置
+    my $in_data     = \@{${$obj->{pipe_data}}[$cond_index]};                                  # (処理位置の)入力pipe情報
+    my $buff_data   = \@{${$obj->{buff_data}}[$cond_index]};                                  # (処理位置の)バッファ情報
     
-    if ($flg eq 'org' or $obj->{seek_kbn} eq 'org') {
-        # オリジナル
+    ##########################
+    # データ取得区分チェック #
+    ##########################
+    &check_data_acquisition_division("$data_kbn");
+    
+    ######################
+    # 抽出対象データ取得 #
+    ######################
+    # 取得区分をチェックし、処理を振り分ける
+    if ($data_kbn eq 'org' or $obj->{seek_kbn} eq 'org') {
+        #==========================#
+        # オリジナルデータから取得 #
+        #==========================#
+        # seek区分をseek行情報(取得区分)へ設定
         ${$obj->{seek_num}}[3] = $obj->{seek_kbn};
+        # seek位置を補正すべきかチェック
+        # ・前回取得がオリジナル情報以外、且つ後続(２回目以降の)EDコマンド抽出、且つデータ取得区分の指示によるオリジナル情報取得
         if (${$obj->{get_num}}[3] ne 'org' and
-           ($obj->{seek_kbn} eq 'seek' or $obj->{seek_kbn} eq 'input') and
+            $obj->{seek_kbn} ne 'org' and
             ${$obj->{get_num}}[2] ne ${$obj->{seek_num}}[2]) {
+            # 入力区分が"ファイル"の場合、seek行情報のレコードbyte位置へ移動
             if ($obj->{in_kbn} ne '') {
                 seek EXTRACTION_FILE, (${$obj->{seek_num}}[1]), 0 or "$!($obj->{in_name})";
                 my $line2 = &get_line_data($obj, ${$obj->{seek_num}}[0]);
+                # get_line_dataで次へ移動してしまう為、seek行情報の入力行番号を戻す
                 ${$_[0]->{seek_num}}[2]--;
             }
         }
+        # 抽出対象データを取得
         if ($_[0]->{in_kbn} eq '') {
             $line = &get_line_data($obj, (${$obj->{seek_num}}[0] - 1));
         } else {
             $line = &get_line_data($obj);
         }
-        @{$obj->{get_num}} = @{$obj->{seek_num}};
-        $obj->{get_kbn}    = $obj->{seek_kbn};
-        $obj->{get_index}  = $obj->{seek_index};
+        
+        # ＜get情報の設定＞
+        $obj->{get_kbn}    = $obj->{seek_kbn};                                                # get区分
+        @{$obj->{get_num}} = @{$obj->{seek_num}};                                             # get行情報
+        $obj->{get_index}  = $obj->{seek_index};                                              # get位置
+        # ＜seek情報の設定＞
+        # seek行情報(オリジナル行番号)をカウントUP
         ${$obj->{seek_num}}[0]++;
-        if ($obj->{seek_kbn} eq 'seek' or $obj->{seek_kbn} eq 'input') {
+        # seek区分が「オリジナル情報から取得("org")」以外の場合、seek行情報を設定
+        if ($obj->{seek_kbn} eq 'buff' or $obj->{seek_kbn} eq 'input') {
+            # seek位置をカウントUPすべきかチェック
+            # ・get行情報(取得区分)が「オリジナルから取得("org")」、且つseek行情報(取得区分)が「オリジナルから取得("org")」
+            # ・seek区分が「バッファ情報("buff")」、且つseek先オリジナル行番号＜seek行情報(オリジナル行番号)
+            # ・seek区分が「入力pipe情報("input")」、且つseek先オリジナル行番号＜seek行情報(オリジナル行番号)
             if ((${$obj->{get_num}}[3] eq 'org'  and ${$obj->{seek_num}}[3] eq 'org') or
-                ($obj->{seek_kbn} eq 'seek'  and ${${$seek_data}[$obj->{seek_index}]}[0] < ${$obj->{seek_num}}[0]) or
+                ($obj->{seek_kbn} eq 'buff'  and ${${$buff_data}[$obj->{seek_index}]}[0] < ${$obj->{seek_num}}[0]) or
                 ($obj->{seek_kbn} eq 'input' and ${${$in_data}[$obj->{seek_index}]}[0] < ${$obj->{seek_num}}[0])) {
+                # seek位置をカウントUP
                 $obj->{seek_index}++;
             }
-            if ($obj->{seek_kbn} eq 'seek' and $#{$seek_data} < $obj->{seek_index}) {
+            # seek区分が「バッファ情報から取得("buff")」、且つseek位置がバッファ情報数を超えている場合、seek区分・seek位置を設定
+            if ($obj->{seek_kbn} eq 'buff' and $#{$buff_data} < $obj->{seek_index}) {
+                # 抽出位置をチェックし、次の取得情報を決める
                 if ($cond_index > 0) {
-                    $obj->{seek_kbn}   = 'input';
-                    $obj->{seek_index} = 0;
+                    #----------------------------#
+                    # 次回は入力pipe情報から取得 #
+                    #----------------------------#
+                    $obj->{seek_kbn}   = 'input';                                             # seek区分←入力pipe情報("input")
+                    $obj->{seek_index} = 0;                                                   # seek位置←０
                 } else {
-                    $obj->{seek_kbn}   = 'org';
-                    $obj->{seek_index} = 0;
+                    #------------------------------#
+                    # 次回はオリジナル情報から取得 #
+                    #------------------------------#
+                    $obj->{seek_kbn}   = 'org';                                               # seek区分←オリジナル情報("org")
+                    $obj->{seek_index} = 0;                                                   # seek位置←０
                 }
             }
         }
+        # get行情報の取得区分に「オリジナルから取得("org")」を設定
         ${$obj->{get_num}}[3] = 'org';
     } else {
-        # 抽出結果
-        if ($obj->{seek_kbn} eq 'seek') {
-            ${$obj->{seek_num}}[0] = ${${$seek_data}[$obj->{seek_index}]}[0];
-            ${$obj->{seek_num}}[1] = ${${$seek_data}[$obj->{seek_index}]}[1];
-            $line                  = ${${$seek_data}[$obj->{seek_index}]}[4];
+        #================================#
+        # 先行EDコマンド抽出結果から取得 #
+        #================================#
+        # seek区分をチェックし、データ取得先を振り分ける
+        if ($obj->{seek_kbn} eq 'buff') {
+            #----------------------#
+            # バッファ情報から取得 #
+            #----------------------#
+            ${$obj->{seek_num}}[0] = ${${$buff_data}[$obj->{seek_index}]}[0];                 # オリジナル行番号
+            ${$obj->{seek_num}}[1] = ${${$buff_data}[$obj->{seek_index}]}[1];                 # レコードbyte位置
+            $line                  = ${${$buff_data}[$obj->{seek_index}]}[4];                 # 抽出対象データ
         } else {
-            ${$obj->{seek_num}}[0] = ${${$in_data}[$obj->{seek_index}]}[0];
-            ${$obj->{seek_num}}[1] = ${${$in_data}[$obj->{seek_index}]}[1];
-            $line                  = ${${$in_data}[$obj->{seek_index}]}[4];
+            #----------------------#
+            # 入力pipe情報から取得 #
+            #----------------------#
+            ${$obj->{seek_num}}[0] = ${${$in_data}[$obj->{seek_index}]}[0];                   # オリジナル行番号
+            ${$obj->{seek_num}}[1] = ${${$in_data}[$obj->{seek_index}]}[1];                   # レコードbyte位置
+            $line                  = ${${$in_data}[$obj->{seek_index}]}[4];                   # 抽出対象データ
         }
         
-        @{$obj->{get_num}} = @{$obj->{seek_num}};
-        $obj->{get_kbn}    = $obj->{seek_kbn};
-        $obj->{get_index}  = $obj->{seek_index};
+        # ＜get情報の設定＞
+        $obj->{get_kbn}    = $obj->{seek_kbn};                                                # get区分
+        @{$obj->{get_num}} = @{$obj->{seek_num}};                                             # get行情報
+        $obj->{get_index}  = $obj->{seek_index};                                              # get位置
+        # ＜seek情報の設定＞
+        # seek位置をカウントUP
         $obj->{seek_index}++;
-        if ($obj->{seek_kbn} eq 'seek' and $#{$seek_data} < $obj->{seek_index}) {
+        # seek区分・seek位置を再設定する必要があるかチェック
+        # ・seek区分が「バッファ情報から取得("buff")」、且つseek位置がバッファ情報数を超えている
+        if ($obj->{seek_kbn} eq 'buff' and $#{$buff_data} < $obj->{seek_index}) {
+            #----------------------------------#
+            # seek区分・seek位置の再設定が必要 #
+            #----------------------------------#
+            # 抽出位置をチェックし、次の取得情報を決める
             if ($cond_index > 0) {
-                $obj->{seek_kbn}   = 'input';
-                $obj->{seek_index} = 0;
+                #････････････････････････････#
+                # 次回は入力pipe情報から取得 #
+                #････････････････････････････#
+                $obj->{seek_kbn}   = 'input';                                                 # seek区分←入力pipe情報("input")
+                $obj->{seek_index} = 0;                                                       # seek位置←０
             } else {
+                #･･････････････････････････････#
+                # 次回はオリジナル情報から取得 #
+                #･･････････････････････････････#
+                # 入力区分が"ファイル"の場合、seek行情報のレコードbyte位置へ移動
                 if ($obj->{in_kbn} ne '') {
                     seek EXTRACTION_FILE, (${$obj->{seek_num}}[1]), 0 or "$!($obj->{in_name})";
                     my $line2 = &get_line_data($obj, ${$obj->{seek_num}}[0]);
                 }
-                $obj->{seek_kbn}   = 'org';
-                $obj->{seek_index} = 0;
+                $obj->{seek_kbn}   = 'org';                                                   # seek区分←オリジナル情報("org")
+                $obj->{seek_index} = 0;                                                       # seek位置←０
+                # seek行情報(オリジナル行番号)をカウントUP
                 ${$obj->{seek_num}}[0]++;
             }
         }
+        # seek行情報(オリジナル行番号)をカウントUP
         ${$obj->{seek_num}}[0]++;
+        # seek行情報(入力行番号)をカウントUP
         ${$obj->{seek_num}}[2]++;
     }
     return $line;
 }
 ###################################################################################################
+#   ＜＜ レコード情報取得 ＞＞                                                                    #
+###################################################################################################
 sub get_line_data {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = オブジェクト                                                            #
-    #      ： $_[1] = 行カウンタ                                                              #
+    #      ： $_[1] = 入力行番号                                                              #
+    # 返却 ： 取得レコード情報                                                                #
     #-----------------------------------------------------------------------------------------#
-    my $line = '';
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $line_index) = @_;                                                              # オブジェクト、入力行番号
+    my $line = '';                                                                            # 取得レコード情報
     
-    # オリジナル
-    if ($_[0]->{in_kbn} eq '') {
-        # 変数指定
+    # 入力区分をチェックし、取得先を判断
+    if ($obj->{in_kbn} eq '') {
+        #==============#
+        # 変数から取得 #
+        #==============#
         my $check = '^';
-        for (my $index=1; $index <= $_[1]; $index++) {
+        for (my $index=1; $index <= $line_index; $index++) {
             $check .= '.*\n';
         }
         $check .= '(.*\n{0,1})';
-        if ((eval($_[0]->{in_name})) =~ /$check/) {
+        if ((eval($obj->{in_name})) =~ /$check/) {
             $line = $1;
         }
     } else {
-        # ファイル指定
+        #==================#
+        # ファイルから取得 #
+        #==================#
         $line = <EXTRACTION_FILE>;
     }
+    
+    # 取得データがEOFかチェック
     if ($line eq '') {
+        #=====#
+        # EOF #
+        #=====#
+        # EOF("Data_Extraction_END")を取得レコード情報へ設定
         $line = 'Data_Extraction_END';
     } else {
-        $_[0]->cut_last_0a($line);
+        #============#
+        # データあり #
+        #============#
+        # 取得データの改行コードを削除
+        $obj->cut_last_0a($line);
     }
-    ${$_[0]->{seek_num}}[2]++;
+    # seek行情報(入力行番号)をカウントUP
+    ${$obj->{seek_num}}[2]++;
+    
+    # 取得レコード情報を返却
     return $line;
 }
 ###################################################################################################
@@ -959,49 +1635,101 @@ sub add_data {
     #      ： $_[1] = 行データ                                                                #
     # 処理 ： 行データを抽出データのカレント行（seekしている場合は、その行）に追加・更新      #
     #-----------------------------------------------------------------------------------------#
-    my ($obj, $out_line) = @_;
-    my $cond_index = $obj->{cond_index};
-    my $in_data    = \@{${$obj->{pipe_data}}[$cond_index]};
-    my $seek_data  = \@{${$obj->{seek_data}}[$cond_index]};
-    my $mid_data   = \@{${$obj->{mid_data}}[$cond_index]};
-    my $out_index  = \${$obj->{out_index}}[$cond_index];
-    my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};
+    ############
+    # 変数定義 #
+    ############
+    my ($obj, $out_line) = @_;                                                                # オブジェクト、行データ
+    my $cond_index = $obj->{cond_index};                                                      # 処理位置
+    my $in_data    = \@{${$obj->{pipe_data}}[$cond_index]};                                   # (処理位置の)入力pipe情報
+    my $buff_data  = \@{${$obj->{buff_data}}[$cond_index]};                                   # (処理位置の)バッファ情報
+    my $mid_data   = \@{${$obj->{mid_data}}[$cond_index]};                                    # (処理位置の)ユーザ先行出力情報
+    my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};                             # (処理位置の)出力pipe情報
+    my $out_index  = \${$obj->{out_index}}[$cond_index];                                      # (処理位置の)出力件数
     
-    if ($obj->{get_kbn} eq 'seek') {
-        if ($obj->{get_index} == $#{$seek_data}) {
+    # get区分をチェックし、出力先を判断
+    if ($obj->{get_kbn} eq 'buff') {
+        ######################
+        # バッファ情報へ出力 #
+        ######################
+        # カレントが最終バッファ情報位置だった場合、行データをバッファ情報の最後へ追加
+        if ($obj->{get_index} == $#{$buff_data}) {
+            #================================#
+            # カレントが最終バッファ情報位置 #
+            #================================#
+            # バッファ情報の最後に行データを追加
             ${$out_index}++;
-            push(@{$out_data}, ["${${$seek_data}[$#{$seek_data}]}[0]", "${${$seek_data}[$#{$seek_data}]}[1]", "${$out_index}", 'USER', "$out_line"]);
-            $obj->{out_kbn} = 'output';
+            push(@{$out_data}, ["${${$buff_data}[$#{$buff_data}]}[0]", "${${$buff_data}[$#{$buff_data}]}[1]", "${$out_index}", 'USER', "$out_line"]);
+            # ユーザ出力済("output")をユーザ出力区分へ設定
+            $obj->{user_out_kbn} = 'output';
         } else {
+            #====================#
+            # カレントが処理済行 #
+            #====================#
+            # 出力pipe情報を検索
             for (my $index=$#{$out_data} ; $index >= 0 ; $index--) {
+                # オリジナル行番号をチェックし、登録位置を決める
                 if (${${$out_data}[$index]}[0] == ${$obj->{get_num}}[0]) {
-                    if ($obj->{out_kbn} eq '') {
-                        ${${$out_data}[$index]}[3] = 'USER';
-                        ${${$out_data}[$index]}[4] = "$out_line";
-                    } elsif ($index < $#{$out_data}) {
-                        ${$out_index}++;
-                        splice(@{$out_data}, ($index + 1), 0, ["${${$out_data}[$index]}[0]", "${${$out_data}[$index]}[1]", "${$out_index}", 'USER', "$out_line"]);
-                    } else {
+                    #------------------------#
+                    # オリジナル行番号が一致 #
+                    #------------------------#
+                    # 登録方法(追加・更新)の振り分け
+                    if ($obj->{user_out_kbn} ne 'output') {
+                        #･･････････････#
+                        # ユーザ未出力 #
+                        #･･････････････#
+                        # 定型抽出結果をユーザ指定データに置換える
+                        ${${$out_data}[$index]}[3] = 'USER';                                  # 出力区分
+                        ${${$out_data}[$index]}[4] = "$out_line";                             # 抽出対象データ
+                    } elsif ($index == $#{$out_data}) {
+                        #･･････････････････････････････････#
+                        # バッファ情報(最後)にユーザ出力済 #
+                        #･･････････････････････････････････#
+                        # 出力pipe情報の最後に行データを追加
                         ${$out_index}++;
                         push(@{$out_data}, ["${${$out_data}[$index]}[0]", "${${$out_data}[$index]}[1]", "${$out_index}", 'USER', "$out_line"]);
+                    } else {
+                        #･･････････････････････････････････#
+                        # バッファ情報(途中)にユーザ出力済 #
+                        #･･････････････････････････････････#
+                        # 出力pipe情報の途中に行データを挿入
+                        ${$out_index}++;
+                        splice(@{$out_data}, ($index + 1), 0, ["${${$out_data}[$index]}[0]", "${${$out_data}[$index]}[1]", "${$out_index}", 'USER', "$out_line"]);
                     }
-                    $obj->{out_kbn} = 'output';
+                    # ユーザ出力済("output")をユーザ出力区分へ設定
+                    $obj->{user_out_kbn} = 'output';
+                    # 出力pipe情報の検索を終了
                     last;
                 } elsif (${${$out_data}[$index]}[0] < ${$obj->{get_num}}[0]) {
+                    #----------------------------------------------------------------------#
+                    # オリジナル行番号を未検出のまま出力pipe情報(オリジナル行番号)を過ぎた #
+                    #----------------------------------------------------------------------#
+                    # 出力pipe情報の途中に行データを挿入
                     ${$out_index}++;
                     splice(@{$out_data}, $index, 0, ["${$obj->{get_num}}[0]", "${$obj->{get_num}}[1]", "${$out_index}", 'USER', "$out_line"]);
-                    $obj->{out_kbn} = 'output';
+                    # ユーザ出力済("output")をユーザ出力区分へ設定
+                    $obj->{user_out_kbn} = 'output';
+                    # 出力pipe情報の検索を終了
                     last;
                 }
             }
-            if ($obj->{out_kbn} ne 'output') {
-                &error_buffers(${${$seek_data}[$#{$seek_data}]}[2],${$obj->{get_num}}[2]);
+            # 出力できていない場合、エラー
+            if ($obj->{user_out_kbn} ne 'output') {
+                &error_buffers(${${$buff_data}[$#{$buff_data}]}[2],${$obj->{get_num}}[2]);
             }
         }
     } elsif ($obj->{get_kbn} eq 'input') {
+        #================================================#
+        # 入力pipe情報をベースにユーザ先行出力情報へ出力 #
+        #================================================#
+        # カレントの入力pipe情報(行情報)を取得
         my $get_data = \@{${$in_data}[$obj->{get_index}]};
+        # 行データをユーザ先行出力情報の最後に追加
         push(@{$mid_data}, ["${$get_data}[0]", "${$get_data}[1]", "${$get_data}[2]", 'USER', "$out_line"]);
     } else {
+        #==================================================#
+        # オリジナル情報をベースにユーザ先行出力情報へ出力 #
+        #==================================================#
+        # 行情報(get行情報(オリジナル行番号、レコードbyte位置、入力行番号、"USER"、行データ)をユーザ先行出力情報の最後に追加
         push(@{$mid_data}, ["${$obj->{get_num}}[0]", "${$obj->{get_num}}[1]", "${$obj->{get_num}}[2]", 'USER', "$out_line"]);
     }
 }
@@ -1013,39 +1741,82 @@ sub del_data {
     # 引数 ： $_[0] = オブジェクト                                                            #
     # 処理 ： 抽出データからカレント行（seekしている場合は、その行）を削除                    #
     #-----------------------------------------------------------------------------------------#
-    my ($obj) = @_;
+    ############
+    # 変数定義 #
+    ############
+    my ($obj)      = @_;                                                                      # オブジェクト
+    my $cond_index = $obj->{cond_index};                                                      # 処理位置
+    my $in_data    = \@{${$obj->{pipe_data}}[$cond_index]};                                   # (処理位置の)入力pipe情報
+    my $buff_data  = \@{${$obj->{buff_data}}[$cond_index]};                                   # (処理位置の)バッファ情報
+    my $mid_data   = \@{${$obj->{mid_data}}[$cond_index]};                                    # (処理位置の)ユーザ先行出力情報
+    my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};                             # (処理位置の)出力pipe情報
+    my $out_index  = \${$obj->{out_index}}[$cond_index];                                      # (処理位置の)出力件数
     
-    my $cond_index = $obj->{cond_index};
-    my $in_data    = \@{${$obj->{pipe_data}}[$cond_index]};
-    my $seek_data  = \@{${$obj->{seek_data}}[$cond_index]};
-    my $mid_data   = \@{${$obj->{mid_data}}[$cond_index]};
-    my $out_data   = \@{${$obj->{pipe_data}}[($cond_index + 1)]};
-    my $out_index  = \${$obj->{out_index}}[$cond_index];
-    
-    if ($obj->{get_kbn} eq 'seek') {
-        if ($obj->{get_index} < $#{$seek_data}) {
-            my $del_flg = undef;
+    # get区分をチェックし、削除先を判断
+    if ($obj->{get_kbn} eq 'buff') {
+        ######################
+        # バッファ情報を削除 #
+        ######################
+        # カレントが最終バッファ情報位置だった場合、削除データ(出力区分="DEL")をバッファ情報の最後へ追加
+        if ($obj->{get_index} == $#{$buff_data}) {
+            #================================#
+            # カレントが最終バッファ情報位置 #
+            #================================#
+            # バッファ情報の最後に削除データを追加
+            push(@{$out_data}, ["${${$buff_data}[$#{$buff_data}]}[0]", '', '', 'DEL', '']);
+        } else {
+            #====================#
+            # カレントが処理済行 #
+            #====================#
+            # 出力pipe情報を検索
+            my $del_flg = '';                                                                 # 削除フラグ（１＝該当行番号検出）
             for (my $index=$#{$out_data} ; $index >= 0 ; $index--) {
-                if (${${$out_data}[$index]}[0] == ${$obj->{get_num}}[0]) {
-                    if (${${$out_data}[$index]}[3] eq '' or $index == 0) {
+                # 削除対象行かチェック
+                if (${${$out_data}[$index]}[2] == ${$obj->{get_num}}[2]) {
+                    #------------------#
+                    # 入力行番号が一致 #
+                    #------------------#
+                    # 定型抽出による出力かチェック
+                    if (${${$out_data}[$index]}[4] eq '' or $index == 0) {
+                        #･･････････････#
+                        # 定型抽出出力 #
+                        #･･････････････#
+                        # 該当データを削除
                         splice(@{$out_data}, $index, 1);
+                        # 出力pipe情報の検索を終了
                         last;
                     } else {
+                        #････････････････#
+                        # ユーザ抽出出力 #
+                        #････････････････#
+                        # 該当行番号検出("1")を削除フラグに設定
                         $del_flg = '1';
                     }
-                } elsif ($del_flg = '1') {
+                # 削除フラグが該当行番号検出("1")の場合、該当データを削除
+                } elsif ($del_flg eq '1') {
+                    #--------------------#
+                    # が該当行番号検出済 #
+                    #--------------------#
                     splice(@{$out_data}, ($index + 1), 1);
+                    # 出力pipe情報の検索を終了
                     last;
                 }
             }
-        } else {
-            push(@{$out_data}, ["${${$seek_data}[$#{$seek_data}]}[0]", '', '', 'DEL', '']);
         }
-        $obj->{out_kbn} = 'output';
+        # ユーザ出力済("output")をユーザ出力区分へ設定
+        $obj->{user_out_kbn} = 'output';
     } elsif ($obj->{get_kbn} eq 'input') {
+        ######################
+        # 入力pipe情報を削除 #
+        ######################
+        # カレント行の削除指示をユーザ先行出力情報の最後に追加
         my $get_data = \@{${$in_data}[$obj->{get_index}]};
         push(@{$mid_data}, ["${$get_data}[0]", '', "${$get_data}[2]", 'DEL', '']);
     } else {
+        #========================================#
+        # オリジナル情報に該当する行データを削除 #
+        #========================================#
+        # 行情報(get行情報(オリジナル行番号、""、入力行番号･･･)の削除指示をユーザ先行出力情報の最後に追加
         push(@{$mid_data}, ["${$obj->{get_num}}[0]", '', "${$obj->{get_num}}[2]", 'DEL', '']);
     }
 }
@@ -1064,207 +1835,390 @@ sub cut_last_0a{
     }
 }
 ###################################################################################################
-#   ＜＜ 正規表現指定による行抽出の起点行検出 ＞＞                                                #
+#   ＜＜ 正規表現指定による行抽出の起点(開始条件)検出 ＞＞                                        #
 ###################################################################################################
 sub get_cond_lr_s {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0]  = オブジェクト                                                           #
-    #      ： $_[1]  = 行番号                                                                 #
+    #      ： $_[1]  = カレント行番号                                                         #
     #      ： $_[2]  = 行データ                                                               #
     #      ： $_[3～]= 抽出条件（正規表現による行抽出）                                       #
-    # 処理 ： 範囲指定なし）行番号指定（抽出区分＝"L"）に変換                                 #
-    #         範囲指定あり）起点を行番号指定（抽出区分＝"r"）に変換                           #
-    # 返却 ： 起点を行番号指定に変換した抽出条件                                              #
+    # 処理 ： 終了条件なし）                                                                  #
+    #                  ・行番号指定（抽出区分＝"L"）に変換                                    #
+    #         終了条件あり）                                                                  #
+    #                  ・終了条件が正規表現の場合、開始のみ行番号指定（抽出区分＝"r"）に変換  #
+    #                  ・上記以外の場合、行番号指定（抽出区分＝"L"）に変換                    #
+    # 返却 ： 変換後抽出条件（行番号指定に変換した抽出条件）                                  #
     #-----------------------------------------------------------------------------------------#
-    my $obj       = shift;
-    my $line_now  = shift;
-    my $line_data = shift;
-    my @add_cond  = ();
-    my $in_data   = \@{${$obj->{pipe_data}}[$obj->{cond_index}]};
+    ############
+    # 変数定義 #
+    ############
+    my $obj       = shift;                                                                    # オブジェクト
+    my $line_now  = shift;                                                                    # カレント行番号
+    my $line_data = shift;                                                                    # 行データ
+    my @add_cond  = ();                                                                       # 変換後抽出条件
+    my $in_data   = \@{${$obj->{pipe_data}}[$obj->{cond_index}]};                             # (処理位置の)入力pipe情報
     
-    # 正規表現指定を行番号指定に変換（起点行）
+    ##################################
+    # 正規表現指定を行番号指定に変換 #
+    ##################################
     foreach my $cond(@_) {
-        my $cond_flg = '';
+        #********************************************************************************#
+        # ＜抽出条件の詳細＞                                                             #
+        # ${$cond}[0] ： "LR"(正規行現による行抽出)                                      #
+        # ${$cond}[1] ： 肯定否定区分                                                    #
+        # ${$cond}[2] ： 開始条件(抽出条件/開始条件)                                     #
+        # ${$cond}[3] ：[終了条件(プラスマイナス範囲/E/終了条件)]                        #
+        #     ：                   ：                                                    #
+        # ${$cond}[8] ： 否定抽出区分（null＝出力対象外、"0"＝条件検出、"1"＝出力対象）  #
+        # ${$cond}[9] ： 暫定否定抽出開始行                                              #
+        #********************************************************************************#
+        # 抽出条件出力フラグを初期化
+        my $cond_flg = '';                                                                   # 抽出条件出力フラグ（"1"＝変換後抽出条件出力済）
+        # 行データ(カレント行)に開始条件が含まれているかチェック
         if ($line_data =~ /${$cond}[2]/) {
+            #==============#
+            # 開始条件あり #
+            #==============#
+            # 肯定否定かチェック
             if (${$cond}[1] eq '') {
+                #------#
+                # 肯定 #
+                #------#
+                # ＜終了条件チェック＞
                 if (${$cond}[3] eq '') {
+                    #･･････････････#
+                    # 終了条件なし #
+                    #･･････････････#
+                    # 行番号指定抽出("L")を変換後抽出条件へ追加
                     push(@add_cond, ['L', "", "$line_now", "$line_now", "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                 } elsif (${$cond}[3] =~ /^\+\d+$/ ) {
+                    #･･････････････････････････････#
+                    # 後続範囲指定(プラス付き数字) #
+                    #･･････････････････････････････#
+                    # 行番号指定抽出("L")を変換後抽出条件へ追加
                     push(@add_cond, ['L', "", "$line_now", ($line_now + ${$cond}[3]), "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                 } elsif (${$cond}[3] =~ /^-\d+$/ ) {
+                    #････････････････････････････････#
+                    # 先行範囲指定(マイナス付き数字) #
+                    #････････････････････････････････#
+                    # 処理なし
                 } else {
+                    #･･････････････#
+                    # 正規表現指定 #
+                    #･･････････････#
+                    # 開始のみ行番号指定("r")を変換後抽出条件へ追加
                     push(@add_cond, ['r', "", "$line_now", "${$cond}[3]", "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                 }
             } else {
+                #------#
+                # 否定 #
+                #------#
+                # ＜終了条件チェック＞
                 if (${$cond}[3] eq '') {
+                    #･･････････････#
+                    # 終了条件なし #
+                    #･･････････････#
+                    # 否定抽出出力対象の場合、行番号指定抽出("L")を変換後抽出条件へ追加
                     if (${$cond}[8] eq '1') {
                         push(@add_cond, ['L', "", "${$cond}[9]", ($line_now - 1), "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                     }
                     ${$cond}[9] = ($line_now + 1);
                 } elsif (${$cond}[3] =~ /^\+\d+$/ ) {
+                    #･･････････････････････････････#
+                    # 後続範囲指定(プラス付き数字) #
+                    #･･････････････････････････････#
+                    # 否定抽出出力対象の場合、行番号指定抽出("L")を変換後抽出条件へ追加
                     if (${$cond}[8] eq '1') {
                         push(@add_cond, ['L', "", "${$cond}[9]", ($line_now - 1), "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                     }
                     ${$cond}[9] = ($line_now + ${$cond}[3] + 1);
                 } elsif (${$cond}[3] =~ /^-\d+$/ ) {
+                    #････････････････････････････････#
+                    # 先行範囲指定(マイナス付き数字) #
+                    #････････････････････････････････#
+                    # 処理なし
                 } else {
+                    #･･････････････#
+                    # 正規表現指定 #
+                    #･･････････････#
+                    # 否定抽出出力対象の場合、開始のみ行番号指定("r")を変換後抽出条件へ追加
                     if (${$cond}[8] eq '1') {
                         push(@add_cond, ['L', "", "${$cond}[9]", ($line_now - 1), "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                     }
                 }
+                # 否定抽出区分を初期化
                 ${$cond}[8] = '';
             }
+            # 変換後抽出条件出力済("1")を抽出条件出力フラグへ設定
             $cond_flg = '1';
         }
+        # 終了条件がマイナス付き数字だった場合、先行行に開始条件が含まれているかチェック
         if (${$cond}[3] =~ /^-\d+$/ and ${$in_data}[(${$cond}[3] * -1)] ne 'Data_Extraction_END' and ${${$in_data}[(${$cond}[3] * -1)]}[4] =~ /${$cond}[2]/) {
+            # 肯定否定かチェック
             if (${$cond}[1] eq '') {
-                    push(@add_cond, ['L', "", (${${$in_data}[(${$cond}[3] * -1)]}[2] + ${$cond}[3]), ${${$in_data}[(${$cond}[3] * -1)]}[2], "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
+                #------#
+                # 肯定 #
+                #------#
+                # 行番号指定抽出("L")を変換後抽出条件へ追加
+                my $cond_end   = $line_now + (${$cond}[3] * -1) + 1;
+                my $cond_start = $cond_end + ${$cond}[3];
+                push(@add_cond, ['L', "", "$cond_start", "$cond_end", "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
             } else {
+                #------#
+                # 否定 #
+                #------#
+                # 否定抽出出力対象の場合、行番号指定抽出("L")を変換後抽出条件へ追加
                 if (${$cond}[8] eq '1') {
                     push(@add_cond, ['L', "", "${$cond}[9]", "$line_now", "${$cond}[4]", "${$cond}[5]", "${$cond}[6]", "${$cond}[7]"]);
                 }
+                # 暫定否定抽出開始行を再設定
                 ${$cond}[9] = ($line_now + (${$cond}[3] * -1) + 2);
+                # 否定抽出区分を初期化
                 ${$cond}[8] = '';
             }
+            # 変換後抽出条件出力済("1")を抽出条件出力フラグへ設定
             $cond_flg = '1';
         }
+        # 変換後抽出条件が未出力かチェック
         if ($cond_flg eq '') {
+            #========#
+            # 未出力 #
+            #========#
+            # 抽出条件の状態をチェックし、否定抽出区分と暫定否定抽出開始行を設定
             if (${$cond}[8] eq '') {
+                #------------#
+                # 出力対象外 #
+                #------------#
                 if (${$cond}[3] eq '' or ${$cond}[3] =~ /^[\+-]\d+$/ ) {
+                    #･･････････････････････････････････････････････#
+                    # 終了条件無し、又はプラスマイナス付き数字指定 #
+                    #･･････････････････････････････････････････････#
+                    # 暫定否定抽出開始行がカレント行以前を指す場合、出力対象("1")を否定抽出区分に設定
                     if (${$cond}[9] <= $line_now) {
                         ${$cond}[8] = '1';
                     }
                 } else {
+                    #･･････････････#
+                    # 正規表現指定 #
+                    #･･････････････#
+                    # 終了条件が行データに存在する場合、否定抽出区分と暫定否定抽出開始行を設定
                     if ($line_data =~ /${$cond}[3]/) {
+                        # 条件検出("0")を否定抽出区分へ設定
                         ${$cond}[8] = '0';
+                        # 次行の行番号を暫定否定抽出開始行へ設定
                         ${$cond}[9] = ($line_now + 1);
                     }
                 }
             } elsif (${$cond}[8] eq '0') {
+                #----------#
+                # 条件検出 #
+                #----------#
                 ${$cond}[8] = '1';
                 ${$cond}[9] = $line_now;
             }
         }
     }
-    # 検出情報を返却
+    
+    ########################
+    # 変換後抽出条件を返却 #
+    ########################
     return @add_cond;
 }
 ###################################################################################################
-#   ＜＜ 正規表現指定による行抽出の範囲行検出 ＞＞                                                #
+#   ＜＜ 正規表現指定による行抽出の範囲(終了条件)検出 ＞＞                                        #
 ###################################################################################################
 sub get_cond_lr_e {
     #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0]  = 行番号                                                                 #
+    # 引数 ： $_[0]  = カレント行番号                                                         #
     #      ： $_[1～]= 抽出条件                                                               #
-    # 処理 ： 正規表現（範囲）を行番号指定に変換                                              #
+    # 処理 ： 正規表現（終了条件）を行番号指定に変換                                          #
     #-----------------------------------------------------------------------------------------#
-    my $line_now  = shift;
+    ############
+    # 変数定義 #
+    ############
+    my $line_now = shift;                                                                     # カレント行番号
     
-    # 正規表現指定を行番号指定に変換（範囲行）
+    ##################################
+    # 正規表現指定を行番号指定に変換 #
+    ##################################
     foreach my $cond(@_) {
         ${$cond}[0] = 'L';
         ${$cond}[3] = $line_now;
     }
 }
 ###################################################################################################
-#   ＜＜ 最終行指定による行抽出の起点行検出 ＞＞                                                  #
+#   ＜＜ 最終行指定による行抽出の起点(抽出開始条件)検出 ＞＞                                      #
 ###################################################################################################
 sub get_cond_l_s {
     #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0]  = 行番号                                                                 #
+    # 引数 ： $_[0]  = 最終行番号                                                             #
     #      ： $_[1～]= 抽出条件（最終行指定"E"による行抽出）                                  #
     # 処理 ： 最終行指定を行番号指定に変換                                                    #
     #-----------------------------------------------------------------------------------------#
-    my $line_now   = shift;
+    ############
+    # 変数定義 #
+    ############
+    my $line_end = shift;                                                                     # 最終行番号
     
+    ################################
+    # 最終行指定を行番号指定に変換 #
+    ################################
     foreach my $cond(@_) {
-        ${$cond}[2] = $line_now;
+        #********************************************************************************#
+        # ＜抽出条件の詳細＞                                                             #
+        # ${$cond}[0] ： "L"(行番号による行抽出)                                         #
+        # ${$cond}[1] ： 肯定否定区分                                                    #
+        # ${$cond}[2] ： "E"(最終行指定)                                                 #
+        # ${$cond}[3] ：[終了条件(プラスマイナス範囲/E/終了行番号)]                      #
+        #********************************************************************************#
+        # 最終行番号を開始行番号へ設定
+        ${$cond}[2] = $line_end;
+        # 抽出終了条件をチェックし、終了行番号を設定
         if (${$cond}[3] eq '' or ${$cond}[3] eq 'E') {
+            #===============================#
+            # 指定なし、又は最終行指定("E") #
+            #===============================#
+            # 最終行番号を終了行番号へ設定
             ${$cond}[3] = ${$cond}[2];
         } elsif (${$cond}[3] =~ /^\d+$/) {
+            #============#
+            # 行番号指定 #
+            #============#
+            # 開始行番号より終了行番号が小さい場合、入替える
             if (${$cond}[2] > ${$cond}[3]) {
                 my $temp_su = ${$cond}[2];
                 ${$cond}[2] = ${$cond}[3];
                 ${$cond}[3] = $temp_su;
             }
-        } elsif (${$cond}[3] =~ /^-\d+$/ and ${$cond}[3] != 0) {
+        } elsif (${$cond}[3] =~ /^\+\d+$/) {
+            #------------------------------#
+            # 後続範囲指定(プラス付き数字) #
+            #------------------------------#
+            # 終了行番号を算出
+            ${$cond}[3] = ${$cond}[2] + ${$cond}[3];
+        } elsif (${$cond}[3] =~ /^-\d+$/) {
+            #--------------------------------#
+            # 先行範囲指定(マイナス付き数字) #
+            #--------------------------------#
+            # 開始行番号と終了行番号を算出
             my $temp_su = ${$cond}[2];
             ${$cond}[2] = ${$cond}[2] + ${$cond}[3];
             ${$cond}[3] = $temp_su;
-        } elsif (${$cond}[3] =~ /^\+\d+$/ and ${$cond}[3] != 0) {
-            ${$cond}[3] = ${$cond}[2] + ${$cond}[3];
         }
     }
 }
 ###################################################################################################
-#   ＜＜ 最終行指定による行抽出の範囲行検出 ＞＞                                                  #
+#   ＜＜ 最終行指定による行抽出の範囲(抽出終了条件)検出 ＞＞                                      #
 ###################################################################################################
 sub get_cond_l_e {
     #-----------------------------------------------------------------------------------------#
-    # 引数 ： $_[0]  = 行番号                                                                 #
+    # 引数 ： $_[0]  = 最終行番号                                                             #
     #      ： $_[1～]= 抽出条件（最終行指定"E"による行抽出）                                  #
     # 処理 ： 最終行指定を行番号指定に変換                                                    #
     #-----------------------------------------------------------------------------------------#
-    my $line_now = shift;
+    ############
+    # 変数定義 #
+    ############
+    my $line_end = shift;                                                                     # 最終行番号
     
+    ################################
+    # 最終行指定を行番号指定に変換 #
+    ################################
     foreach my $cond(@_) {
-        ${$cond}[3] = $line_now;
+        #********************************************************************************#
+        # ＜抽出条件の詳細＞                                                             #
+        # ${$cond}[0] ： "L"(行番号による行抽出)                                         #
+        #     ：                   ：                                                    #
+        # ${$cond}[3] ： "E"(最終行指定)                                                 #
+        #********************************************************************************#
+        ${$cond}[3] = $line_end;
     }
 }
 ###################################################################################################
-#   ＜＜ ユーザー抽出 ＞＞                                                                        #
+#   ＜＜ ユーザ抽出 ＞＞                                                                          #
 ###################################################################################################
 sub get_cond_user {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0]  = オブジェクト                                                           #
-    #      ： $_[1]  = 入力データ                                                             #
+    #      ： $_[1]  = 行データ                                                               #
     #      ： $_[1～]= ユーザー引数                                                           #
-    # 処理 ： ユーザー関数の呼出し                                                            #
-    # 返却 ： ユーザー関数が返却した抽出対象区分                                              #
+    # 処理 ： ユーザ関数の呼出し                                                              #
+    # 返却 ： ユーザ抽出結果（抽出対象区分）                                                  #
     #-----------------------------------------------------------------------------------------#
-    my $obj             = shift;
-    my $line_data       = shift;
-    my $extraction_data = undef;
-    $obj->{out_kbn}     = undef;
-    my $seek_data       = \@{${$obj->{seek_data}}[$obj->{cond_index}]};
+    ############
+    # 変数定義 #
+    ############
+    my $obj              = shift;                                                             # オブジェクト
+    my $line_data        = shift;                                                             # 行データ
+    my $extraction_data  = undef;                                                             # ユーザ抽出結果（抽出対象区分）
+    $obj->{user_out_kbn} = '';                                                                # ユーザ出力区分
+    my $buff_data        = \@{${$obj->{buff_data}}[$obj->{cond_index}]};                      # (処理位置の)バッファ情報
     
+    ##############
+    # ユーザ抽出 #
+    ##############
     foreach my $user(@_) {
-        # ユーザー関数の呼出し
-        @{$obj->{seek_num}}[0..2] = @{${$seek_data}[$#{$seek_data}]};
-        $obj->{seek_index}        = $#{$seek_data};
-        $obj->{seek_kbn}          = 'seek';
-        @{$obj->{get_num}}        = @{$obj->{seek_num}};
-        $obj->{get_kbn}           = $obj->{seek_kbn};
-        $obj->{get_index}         = $obj->{seek_index};
+        # ＜seek情報の設定＞
+        $obj->{seek_kbn}          = 'buff';                                                   # seek区分←バッファ情報("buff")
+        @{$obj->{seek_num}}[0..2] = @{${$buff_data}[$#{$buff_data}]};                         # seek行情報←バッファ情報(オリジナル行番号、レコードbyte位置、入力行番号)
+        $obj->{seek_index}        = $#{$buff_data};                                           # seek位置←バッファ情報数(カレント情報位置)
+        # ＜get情報の設定＞
+        $obj->{get_kbn}           = $obj->{seek_kbn};                                         # get区分
+        @{$obj->{get_num}}        = @{$obj->{seek_num}};                                      # get行情報
+        $obj->{get_index}         = $obj->{seek_index};                                       # get位置
+        # 最終バッファ情報のレコードbyte位置へ移動
         seek EXTRACTION_FILE, (${$obj->{get_num}}[1]), 0 or "$!($obj->{in_name})";
+        
+        #==================#
+        # ユーザ関数呼出し #
+        #==================#
+        # ユーザ関数呼出し時の構文生成
         my $user_sub = '&'.${$user}[1].'('."\"$line_data\"";
         for (my $index1=2 ; $index1 <= $#{$user}; $index1++) {
             $user_sub .= ', "'.${$user}[$index1].'"';
         }
         $user_sub .= ');';
+        # ユーザ関数の呼出し、結果取得
         $extraction_data = $extraction_data | eval($user_sub);
     }
+    
+    ########################################
+    # ユーザ抽出結果（抽出対象区分）を返却 #
+    ########################################
     return &change_2toB("$extraction_data");
 }
 ###################################################################################################
-#   ＜＜ 行・ブロック抽出 ＞＞                                                                    #
+#   ＜＜ 行・列抽出 ＞＞                                                                          #
 ###################################################################################################
 sub get_cond_lc {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0]  = 行データ                                                               #
     #      ： $_[1～]= 抽出条件（処理行の行・ブロック抽出）                                   #
     # 処理 ： 行抽出、列抽出（列番号指定による列抽出、正規表現指定による列抽出）              #
-    # 返却 ： 抽出対象区分                                                                    #
+    # 返却 ： 抽出結果（抽出対象区分）                                                        #
     #-----------------------------------------------------------------------------------------#
-    my $line_data = shift;
+    ############
+    # 変数定義 #
+    ############
+    my $line_data = shift;                                                                    # 行データ
     
+    # 列抽出条件の有無をチェック
     if ((grep{${$_}[4] eq ''}@_) > 0) {
-        # 行抽出
+        #========#
+        # 行抽出 #
+        #========#
+        # 行抽出("1")を返却
         return &change_2toB('1');
     } else {
-        # 列抽出
+        #========#
+        # 列抽出 #
+        #========#
+        # 列番号指定による列抽出
         my $extraction_data = &get_cond_c($line_data, grep{${$_}[4] eq 'C'}@_);
+        # 正規表現指定による列抽出
         $extraction_data = $extraction_data | &get_cond_cr($line_data, grep{${$_}[4] eq 'CR'}@_);
+        # 列抽出結果(抽出対象区分)を返却
         return $extraction_data;
     }
 }
@@ -1276,65 +2230,128 @@ sub get_cond_c {
     # 引数 ： $_[0]  = 行データ                                                               #
     #      ： $_[1～]= 抽出条件（列番号による列抽出）                                         #
     # 処理 ： 列番号指定による列抽出                                                          #
-    # 返却 ： 抽出対象区分                                                                    #
+    # 返却 ： 列抽出結果（抽出対象区分）                                                      #
     #-----------------------------------------------------------------------------------------#
-    my $col_su          = &get_col_data('', shift);
-    my $col_start       = undef;
-    my $col_end         = undef;
-    my $col_add         = undef;
-    my $in_kbn          = undef;
-    my $in_start        = undef;
-    my $in_end          = undef;
-    my $extraction_data = '0' x $col_su;
+    ############
+    # 変数定義 #
+    ############
+    my $col_su          = &get_col_data('', shift);                                           # (行データの)列数
+    my $col_start       = undef;                                                              # (列抽出の)抽出開始列
+    my $col_end         = undef;                                                              # (列抽出の)抽出終了列
+    my $col_add         = undef;                                                              # (列抽出の)cond判定位置
+    my $extraction_data = '0' x $col_su;                                                      # 列抽出結果（抽出対象区分）
     
+    ##########
+    # 列抽出 #
+    ##########
     foreach my $cond(@_) {
-        # 抽出判定対象をチェック
+        #********************************************************************************#
+        # ＜抽出条件の詳細＞                                                             #
+        # 列抽出時）                                                                     #
+        # ${$cond}[0] ： "C"(列番号による列抽出)                                         #
+        # ${$cond}[1] ： 肯定否定区分                                                    #
+        # ${$cond}[2] ： 開始条件(列番号/開始列番号/E)                                   #
+        # ${$cond}[3] ：[終了条件(プラスマイナス範囲/E/終了列番号)]                      #
+        #     ：                   ：                                                    #
+        # ------------------------------------------------------------------------------ #
+        # 行列抽出時）                                                                   #
+        #     ：                   ：                                                    #
+        # ${$cond}[4] ： "C"(列番号による列抽出)                                         #
+        # ${$cond}[5] ： 肯定否定区分                                                    #
+        # ${$cond}[6] ： 開始条件(列番号/開始列番号/E)                                   #
+        # ${$cond}[7] ：[終了条件(プラスマイナス範囲/E/終了列番号)]                      #
+        #     ：                   ：                                                    #
+        #********************************************************************************#
+        #====================#
+        # cond判定位置の設定 #
+        #====================#
+        # 抽出判定対象をチェックし、cond判定位置を設定
         if (${$cond}[0] eq 'C') {
+            #--------#
+            # 列抽出 #
+            #--------#
             $col_add = 0;
         } else {
+            #----------#
+            # 行列抽出 #
+            #----------#
             $col_add = 4;
         }
-        # 起点を設定
+        
+        #==================#
+        # 抽出開始列を設定 #
+        #==================#
+        # 開始条件の指定方法をチェック
         if (${$cond}[(2 + $col_add)] eq 'E' or ${$cond}[(2 + $col_add)] eq 'e') {
+            #-----------------#
+            # 最終列指定("E") #
+            #-----------------#
             $col_start = $col_su;
         } else {
+            #------------#
+            # 列番号指定 #
+            #------------#
             $col_start = ${$cond}[(2 + $col_add)];
         }
-        # 範囲を算出
+        
+        #==================#
+        # 抽出終了列を設定 #
+        #==================#
+        # 終了条件の指定方法をチェック
         if (${$cond}[(3 + $col_add)] eq '') {
-            # 範囲なし
+            #--------------#
+            # 範囲指定なし #
+            #--------------#
             $col_end = $col_start;
         } elsif (${$cond}[(3 + $col_add)] eq 'E' or ${$cond}[(3 + $col_add)] eq 'e') {
-            # 最終列まで
+            #-----------------#
+            # 最終列指定("E") #
+            #-----------------#
             if ($col_start <= $col_su) {
                 $col_end = $col_su;
             } else {
                 $col_end = $col_start;
             }
         } elsif (${$cond}[(3 + $col_add)] =~ /^\-(\d+)$/) {
-            # －ｎ列まで
+            #--------------------------------#
+            # 先行範囲指定(マイナス付き数字) #
+            #--------------------------------#
             $col_end   = $col_start;
             $col_start = $col_start + ${$cond}[(3 + $col_add)];
         } elsif (${$cond}[(3 + $col_add)] =~ /^\+(\d+)$/) {
-            # ＋ｎ列まで
+            #------------------------------#
+            # 後続範囲指定(プラス付き数字) #
+            #------------------------------#
             $col_end   = $col_start + ${$cond}[(3 + $col_add)];
         } elsif (${$cond}[(2 + $col_add)] <= ${$cond}[(3 + $col_add)]) {
-            # 後続指定列まで
+            #----------------#
+            # 後続列番号指定 #
+            #----------------#
             $col_end   = ${$cond}[(3 + $col_add)];
         } else {
-            # 先行指定列まで
+            #----------------#
+            # 先行列番号指定 #
+            #----------------#
             $col_end   = $col_start;
             $col_start = ${$cond}[(3 + $col_add)];
         }
+        
+        #==================#
+        # 抽出対象列を設定 #
+        #==================#
         if ($col_start < 0) {$col_start = 0}
         if ($col_end   < 0) {$col_end   = 0}
-        # 抽出対象列を設定
         for (my $index2=1; $index2 <= $col_su; $index2++) {
+            # 肯定否定区分と条件範囲をチェックし、抽出対象列を設定
             if ((${$cond}[(1 + $col_add)] eq '' and $index2 >= $col_start and $index2 <= $col_end) or (${$cond}[(1 + $col_add)] ne '' and ($index2 < $col_start or $index2 > $col_end))) {
                 substr($extraction_data, $index2, 1) = '1';
             }
         }
     }
+    
+    ####################
+    # 列抽出結果を返却 #
+    ####################
     return &change_2toB("$extraction_data");
 }
 ###################################################################################################
@@ -1345,27 +2362,67 @@ sub get_cond_cr {
     # 引数 ： $_[0]  = 行データ                                                               #
     #      ： $_[1～]= 抽出条件（正規表現による列抽出）                                       #
     # 処理 ： 正規表現指定による列抽出                                                        #
-    # 返却 ： 抽出対象区分                                                                    #
+    # 返却 ： 列抽出結果（抽出対象区分）                                                      #
     #-----------------------------------------------------------------------------------------#
-    my $in_line         = shift;
-    my $col_su          = &get_col_data('', "$in_line");
-    my $col_start       = undef;
-    my $col_end         = undef;
-    my $col_add         = undef;
-    my $in_kbn          = undef;
-    my $in_start        = undef;
-    my $in_end          = undef;
-    my $extraction_data = '0' x $col_su;
-    my $check_key1      = undef;
-    my $check_key2      = undef;
+    ############
+    # 変数定義 #
+    ############
+    my $in_line         = shift;                                                              # 行データ
+    my $col_su          = &get_col_data('', "$in_line");                                      # (行データの)列数
+    my $col_start       = undef;                                                              # (列抽出の)抽出開始列
+    my $col_end         = undef;                                                              # (列抽出の)抽出終了列
+    my $col_add         = undef;                                                              # (列抽出の)cond判定位置
+    my $check_key1      = undef;                                                              # (列抽出の)開始判定キー
+    my $check_key2      = undef;                                                              # (列抽出の)終了判定キー
+    my $extraction_data = '0' x $col_su;                                                      # 列抽出結果（抽出対象区分）
     
+    ##########
+    # 列抽出 #
+    ##########
     foreach my $cond(@_) {
+        #********************************************************************************#
+        # ＜抽出条件の詳細＞                                                             #
+        # 列抽出時）                                                                     #
+        # ${$cond}[0] ： "CR"(正規行現による列抽出)                                      #
+        # ${$cond}[1] ： 肯定否定区分                                                    #
+        # ${$cond}[2] ： 開始条件(抽出条件/開始条件)                                     #
+        # ${$cond}[3] ：[終了条件(プラスマイナス範囲/E/終了条件)]                        #
+        #     ：                   ：                                                    #
+        # ------------------------------------------------------------------------------ #
+        # 行列抽出時）                                                                   #
+        #     ：                   ：                                                    #
+        # ${$cond}[4] ： "CR"(正規行現による列抽出)                                      #
+        # ${$cond}[5] ： 肯定否定区分                                                    #
+        # ${$cond}[6] ： 開始条件(抽出条件/開始条件)                                     #
+        # ${$cond}[7] ：[終了条件(プラスマイナス範囲/E/終了条件)]                        #
+        #     ：                   ：                                                    #
+        #********************************************************************************#
+        #============================#
+        # 列抽出判定用行データの設定 #
+        #============================#
+        # 行データを列抽出判定用行データへ設定
         my $line_data = $in_line;
+        
+        #====================#
+        # cond判定位置の設定 #
+        #====================#
+        # 抽出判定対象をチェックし、cond判定位置を設定
         if (${$cond}[0] eq 'CR') {
+            #--------#
+            # 列抽出 #
+            #--------#
             $col_add = 0;
         } else {
+            #----------#
+            # 行列抽出 #
+            #----------#
             $col_add = 4;
         }
+        
+        #==========================#
+        # 開始条件・終了条件の補正 #
+        #==========================#
+        # 処理中不要となる記述を削除
         ${$cond}[(2 + $col_add)] =~  s/^\\s\*|^\\,\*|^,\*|^\[\\s\]\*|^\[\\,\]\*|^\[,\]\*|^\[\\,\\s\]\*|^\[,\\s\]\*|^\[\\s\\,\]\*|^\[\\s,\]\*//;
         ${$cond}[(2 + $col_add)] =~  s/^(\[.*)\\s(.*\]\*)/$1$2/;
         ${$cond}[(2 + $col_add)] =~  s/^(\[.*)\\,(.*\]\*)/$1$2/;
@@ -1377,43 +2434,81 @@ sub get_cond_cr {
             ${$cond}[(3 + $col_add)] =~  s/^(\[.*),(.*\]\*)/$1$2/;
         }
         
-        # 抽出判定対象をチェック
-        my @cond_c_new = ();
-        $col_start = 0;
-        $col_end   = 0;
+        #==============#
+        # 変数を初期化 #
+        #==============#
+        my @cond_c_new = ();                                                                  # 条件範囲
+        $col_start = 0;                                                                       # (列抽出の)開始位置
+        $col_end   = 0;                                                                       # (列抽出の)終了位置
+        
+        #============#
+        # 列抽出判定 #
+        #============#
+        # 列抽出が完了するまで抽出（無限ループ）
         while (1) {
+            #----------------#
+            # 開始条件の補正 #
+            #----------------#
             my $key = undef;
+            # 開始条件を列抽出判定用行データから取得
             if ($line_data =~ /(${$cond}[(2 + $col_add)])/) {
                 $key = $1;
             }
-            # 正規表現(起点)を補正
             $check_key1 = '';
+            # 左端が区切り文字でなければ、区切り文字(正規表現)を追加
             if ($key !~ /^\s|^\,/) {
                 $check_key1 .= '[^\s\,]*';
             }
             $check_key1 .= ${$cond}[(2 + $col_add)];
+            # 右端が区切り文字でなければ、区切り文字(正規表現)を追加
             if ($key !~ /\s$|\,$|\n$|\$$/) {
                 $check_key1 .= '[^\s\,\n]*';
             }
+            
+            #--------------------#
+            # 開始条件をチェック #
+            #--------------------#
+            # 列抽出判定用行データが開始条件を含んでいるかチェック
             if ($line_data !~ /($check_key1)(.*)/) {
+                #･･････････････#
+                # 開始条件なし #
+                #･･････････････#
+                # 列抽出判定処理の繰り返し(while)を抜ける
                 last;
             }
+            
+            #------------------------------#
+            # 次回チェック対象データを退避 #
+            #------------------------------#
             my $next_data = $2;
-            # 正規表現(範囲)を補正
+            
+            #----------------#
+            # 終了条件の補正 #
+            #----------------#
             $check_key2 = '';
+            # 正規表現指定の終了条件があるかチェック
             if (${$cond}[(3 + $col_add)] ne '' and ${$cond}[(3 + $col_add)] !~ /^[\+-]\d+$/) {
+                #････････････････････････････#
+                # 正規表現指定の終了条件あり #
+                #････････････････････････････#
+                # 終了条件を列抽出判定用行データから取得
                 if ($line_data =~ /(${$cond}[(3 + $col_add)])/) {
                     $key = $1;
                 }
+                # 左端が区切り文字でなければ、区切り文字(正規表現)を追加
                 if ($key !~ /^\s|^\,/) {
                     $check_key2 .= '[^\s\,]*';
                 }
                 $check_key2 .= ${$cond}[(3 + $col_add)];
+                # 右端が区切り文字でなければ、区切り文字(正規表現)を追加
                 if ($key !~ /\s$|\,$|\n$|\$$/) {
                     $check_key2 .= '[^\s\,]*';
                 }
             }
-            # 抽出範囲を算出
+            
+            #------------------#
+            # 抽出開始列を設定 #
+            #------------------#
             my @split_out1 = split /($check_key1)/, $line_data, 3;
             my $split_out1_add = 0;
             if ($split_out1[0] =~ /^\s+\,*\s*$|^\,+\s*$/) {
@@ -1423,20 +2518,37 @@ sub get_cond_cr {
                 }
             }
             $col_start = $col_start + (&get_col_data('', "$split_out1[0]")) + $split_out1_add + 1;
+            
+            #--------------------------#
+            # 次回チェック開始列を算出 #
+            #--------------------------#
             my $col_split_out1 = &get_col_data('', "$split_out1[1]");
             my $col_end2 = $col_start + $col_split_out1 - 1;
+            
+            #------------------#
+            # 抽出終了列を設定 #
+            #------------------#
+            # 終了条件の指定方法をチェック
             if (${$cond}[(3 + $col_add)] eq '') {
-                # 範囲なし
+                #･･････････････#
+                # 範囲指定なし #
+                #･･････････････#
                 $col_end = $col_end2;
             } elsif (${$cond}[(3 + $col_add)] =~ /^\+(\d+)$/) {
-                # ＋ｎ列まで
+                #･･････････････････････････････#
+                # 後続範囲指定(プラス付き数字) #
+                #･･････････････････････････････#
                 $col_end = $col_end2 + ${$cond}[(3 + $col_add)];
             } elsif (${$cond}[(3 + $col_add)] =~ /^-(\d+)$/) {
-                # －ｎ列まで
+                #････････････････････････････････#
+                # 先行範囲指定(マイナス付き数字) #
+                #････････････････････････････････#
                 $col_start = $col_start + ${$cond}[(3 + $col_add)];
                 $col_end   = $col_end2;
             } else {
-                # 正規表現の列まで
+                #････････････#
+                # 正規表指定 #
+                #････････････#
                 if ($next_data =~ /($check_key2)(.*)/) {
                     my $back_data = $2;
                     my @split_out2 = split /($check_key2)/, $next_data, 3;
@@ -1445,21 +2557,39 @@ sub get_cond_cr {
                     $col_end = $col_su;
                 }
             }
+            
+            #----------------#
+            # 条件範囲を設定 #
+            #----------------#
             if ($col_start < 0) {$col_start = 0}
             if ($col_end   < 0) {$col_end   = 0}
+            # 抽出開始列から抽出終了列が示す列に対してチェック
             for (my $index3=$col_start; $index3 <= $col_end; $index3++) {
+                # 条件範囲内("1")を設定
                 $cond_c_new[$index3] = '1';
             }
-            $col_start = $col_end2;
-            $line_data = $next_data;
+            
+            #------------------------#
+            # 次回チェック情報を設定 #
+            #------------------------#
+            $col_start = $col_end2;                                                           # (列抽出の)開始位置
+            $line_data = $next_data;                                                          # 列抽出判定用行データ
         }
-        # 抽出対象列を設定
+        
+        #==================#
+        # 抽出対象列を設定 #
+        #==================#
         for (my $index2=1; $index2 <= $col_su; $index2++) {
+            # 肯定否定区分と条件範囲をチェックし、抽出対象列を設定
             if ((${$cond}[(1 + $col_add)] eq '' and $cond_c_new[$index2] eq '1') or (${$cond}[(1 + $col_add)] ne '' and $cond_c_new[$index2] eq '')) {
                 substr($extraction_data, $index2, 1) = '1';
             }
         }
     }
+    
+    ####################
+    # 列抽出結果を返却 #
+    ####################
     return &change_2toB("$extraction_data");
 }
 1;

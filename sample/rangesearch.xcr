@@ -5,7 +5,7 @@ use base qw(limit core);
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
-    'arg0' => '50',
+    'arg0' => '30',
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',          #
@@ -13,14 +13,15 @@ use base qw(limit core);
     'option' => '# @$-g gh10034',  # pragma at kyoto-u
 );
 
-my @jobs = &prepare(%template,
-		   'arg0@' => [20..22]
-#		   'arg0@' => [20..29]
-    # i.e., $ qsub ./fib 20 > out; $ qsub ./fib 21 > out; qsub ./fib 22 > out;
-#		   'RANGE0' => [0..2], 'arg0@' => sub { 2 * $_[0] + 20; }
-#		   'RANGE0' => [0..2], 'arg0@' => '2 * $_[0] + 20'
-#
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => sub { 26 + $_[0] + $_[2]; }
+@jobs = &prepare(%template,
+#		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
+#                                            $ qsub ./fib 21 > out
+#                                            $ qsub ./fib 22 > out
+#		 'arg0@' => [20..29]
+#		 'RANGE0' => [0..2]
+#		 'RANGE0' => [0..2], 'arg0@' => [20..21]
+#		 'RANGE0' => [0..2], 'arg0@' => '2 * $R0 + 20;'
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
     );
 &submit(@jobs);
 &sync(@jobs);
