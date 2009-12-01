@@ -1,6 +1,6 @@
 package builtin;
 
-use strict;
+#use strict;
 use NEXT;
 use threads;
 use threads::shared;
@@ -88,25 +88,27 @@ sub generate {
 	}
     }
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
-
     &addmembers(%job);
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
+		for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+		    my $arg = 'R' . $i;
+		    eval "our \$$arg = $ranges[$i];";
+		}
 		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
 	    } else {
-		if ( ref($job{"$members"}) eq 'CODE' ) {
-		    $job{"$_"} = &{$job{"$members"}}(@ranges);
+		if ( (ref($job{"$members"}) eq 'CODE') || ( ref($job{"$members"}) eq 'GLOB' )) {
+#		    $job{"$_"} = &{$job{"$members"}}(@ranges);
+		    die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
 		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
 		    my @tmp = @{$job{"$members"}};
 		    $job{"$_"} = $tmp[$_[0]];
 		} elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
 		    my $tmp = ${$job{"$members"}};
 		    $job{"$_"} = $tmp;
-		} elsif ( ref($job{"$members"}) eq 'GLOB' ) {
-		    die "Can't take GLOB at prepare.\n";
 		} else {
 		    die "Can't take your format at prepare.\n";
 		}
@@ -380,7 +382,8 @@ sub prepare_or_prepare_submit {
 	my $members = "$_" . $user::expandingchar;
 	unless ( exists($job{"$members"}) ) {
 	    if ( exists($job{"$_"}) ) {
-		$job{"$members"} = sub {$job{"$_"};};
+#		$job{"$members"} = sub {$job{"$_"};};
+		$job{"$members"} = \$job{"$_"};
 	    }
 	}
     }
