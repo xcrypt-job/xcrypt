@@ -20,6 +20,7 @@ my $after_thread_status : shared = 'killed' ; # one of 'killed', 'running', 'sig
 my @jobs_for_before = ();
 my @jobs_for_after = ();
 my $nilchar = 'nil';
+my $argument_name = 'R';
 
 sub addkeys {
     my $exist = 0;
@@ -94,13 +95,15 @@ sub generate {
 	if ( exists($job{"$members"}) ) {
 	    unless ( ref($job{"$members"}) ) {
 		for ( my $i = 0; $i < $user::maxrange; $i++ ) {
-		    my $arg = 'R' . $i;
+		    my $arg = $argument_name . $i;
+#		    no strict 'refs';
 		    eval "our \$$arg = $ranges[$i];";
 		}
 		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
 	    } else {
-		if ( (ref($job{"$members"}) eq 'CODE') || ( ref($job{"$members"}) eq 'GLOB' )) {
+		if ( (ref($job{"$members"}) eq 'CODE') ||
+		     (ref($job{"$members"}) eq 'GLOB')) {
 #		    $job{"$_"} = &{$job{"$members"}}(@ranges);
 		    die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
 		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
