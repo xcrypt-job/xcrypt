@@ -150,8 +150,6 @@ sub generate {
     return user->new(\%job);
 }
 
-
-
 sub times {
     if (@_ == ()) { return (); }
     my $head = shift;
