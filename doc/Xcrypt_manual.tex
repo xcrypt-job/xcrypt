@@ -1,9 +1,12 @@
 \documentclass[report]{jsbook}
 
 \usepackage{tascmac}
+\usepackage{alltt}
 \usepackage[all]{xy}
 
 % 
+\def\|{\verb|} %|
+%
 
 \title{Xcrypt マニュアル}
 \author{京大中島研e-scienceグループ}
@@ -176,7 +179,7 @@ $separator = '-';
 
 実際のジョブ処理の流れについて概観する．
 
-\section{概念図}
+\section{概念図}\label{sec:states}
 
 \[
 \entrymodifiers={+[F-:<10pt>]}
@@ -229,7 +232,7 @@ Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
 \texttt{\$ \$XCRYPT/bin/xcrypt sample.xcr}
 \end{screen}
 
-\section{作成物}
+\section{作成物}\label{sec:created}
 
 Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 
@@ -509,7 +512,7 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \def\advanced{発展}
 
 
-\section{\texttt{prepare}}
+\section{\texttt{prepare}}\label{sec:prepare}
 
 ジョブ定義ハッシュと（リファレンス\footnote{本稿ではリファレンスは型グ
 ロブを含まないものとする．}またはスカラで与えられる）パラメタを受け取
@@ -647,7 +650,7 @@ push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
 \end{boxnote}
 とも書くこともできる．
 
-\section{\texttt{submit}}
+\section{\texttt{submit}}\label{sec:submit}
 
 \if0
 ジョブリファレンスの配列を受け取り，各ジョブをジョブスケジューラに渡
@@ -743,5 +746,219 @@ addkeys(文字列の配列);
 
 \texttt{prepare\_submit}，\texttt{sync}を順に行う．\format は
 \texttt{prepare}に準ずる．
+
+
+\appendix
+\chapter{ジョブクラス拡張モジュール実装の手引}
+
+\section{はじめに}
+Xcryptの\|prepare|関数によって生成された全てのジョブオブジェクトは
+\|$XCRYPT/lib/core.pm| %$
+で定義された\|core|クラスに属する．
+Xcryptのユーザや開発者は，拡張モジュールを定義して\|core|クラスを拡張
+することでXcryptの機能を拡張することが可能である．
+本章では，この拡張モジュールを開発するために必要な情報を示す．
+
+\section{拡張モジュールの定義と利用}
+\textit{mymodule}という名前の拡張モジュールを定義するためには，
+\textit{mymodule}\|.pm| という名前の
+ファイルを\|$XCRYPT/lib/|（または\|$PERL5LIB|で指定されている
+  どこかのディレクトリ）に置く．
+Xcryptユーザは，スクリプトの先頭で，
+\begin{screen}
+\begin{alltt}
+use base (\ldots {\it mymodule} \ldots core);
+\end{alltt}
+\end{screen}
+のようにモジュール名を指定することで，当該モジュールの機能を使用できる．
+
+
+\section{拡張モジュールスクリプトの構成}
+
+典型的な拡張モジュールの定義スクリプトは以下のように記述される．
+
+\begin{boxnote}
+  \begin{alltt}
+package {\it mymodule};
+  \end{alltt}
+\begin{verbatim}
+use strict;
+use ...;
+
+&addkeys('my_instance_member', ...);
+
+my $my_class_member;
+
+# special methods
+sub new {
+  my $class = shift;
+  my $self = $class->NEXT::new(@_);
+  ... 
+  return bless $self, $class;
+}
+
+sub before_isready { ... }
+sub before { ... }
+
+sub start
+{
+  my $self = shift;
+  ...
+  $self->NEXT::start();
+  ...
+}
+
+sub after { ... }
+sub after_isready { ... }
+
+# general methods
+sub another_method
+{
+  ...
+}
+\end{verbatim}
+\end{boxnote}
+
+以下，スクリプトの各構成要素について説明する．
+
+\begin{enumerate}
+  \item モジュール名の定義：\|package|で指定する．ここで指定する名前は，
+    モジュールファイル名の拡張子（\|.pm|）を除いた部分と同一でなければ
+    ならない．
+  \item Perlモジュールの取り込み：通常のPerlプログラムと同様に，必要なPerlモジュールを\|use|で取り込む．
+  \item 追加するインスタンス変数の定義：ジョブクラスに新たに追加したい
+    インスタンス変数の名前を\|addkeys|関数により定義する．ここで定義し
+    たインスタンス変数は，ジョブオブジェクトの属性として，Xcryptスクリプトや
+    モジュール内のメソッドから\|$job->{my_instance_menber}| %$
+    などとしてアクセスできる．また，Xcryptユーザがジョブ定義ハッシュの記述時に，\\
+    \|  |\|%template = {| \ldots \|, my_instance_menber=>|{\it value}\|,| \ldots \|}|\\
+    のようにして値を設定することもできる．
+  \item クラス変数の定義：通常のPerlのオブジェクト指向プログラミングと同様，
+    クラス変数はパッケージ内のグローバル変数として定義する．ここで定義した変数は，
+    \|$|{\it mymodule}\|::my_class_member|としてアクセスできる %$
+  \item メソッドの定義：このモジュールにおいて追加，拡張するメソッドをパッケージ内の
+    トップレベル関数として定義する．通常のPerlオブジェクト指向プログラミングと同様であるが，
+    特定の名前を持つメソッドは特別な意味を持つので注意する．（次節で説明）
+\end{enumerate}
+
+\section{特別な意味を持つメソッド}
+\subsection{\texttt{new}メソッド}
+コンストラクタに相当するクラスメソッドであり，
+Xcryptの\|prepare|関数（\ref{sec:prepare}節）の処理中に，
+最もspecializedなクラス（Xcryptスクリプトのヘッダで宣言されているモジュール列
+のうち最も左に書かれているもの）の\|new|メソッドが呼び出される．
+
+このnewメソッドに渡される引数は以下の通りである．
+\begin{enumerate}
+\item Xcryptスクリプトが属するパッケージ名（＝\|user|）
+\item ジョブオブジェクトへの参照．オブジェクトのメンバには，\|prepare|関数に渡されたジョブ定義ハッシュに対応する値がセットされている．
+\end{enumerate}
+ジョブ定義ハッシュの\|RANGE|等の指定により\|prepare|関数が複数のジョブオブジェクト
+を生成した場合は，その各オブジェクトに対して\|new|が適用される．
+
+メソッドの本体では，\|$class->NEXT::new($self,$obj)| %$
+（\|$class|，\|$obj|はそれぞれ引数として渡されたクラス名およびオブジェクトへの参照）
+のようにして親クラスの\|new|メソッドを呼び出すことができる．
+典型的には，各\|new|メソッドはまず親クラスの\|new|メソッドを，
+与えられた2つの引数をそのまま引き渡して呼び出し，
+その返り値のオブジェクトにアクセスしつつ必要な処理を行った後，
+\|bless オブジェクトへの参照, 渡されたクラス名|の値を
+メソッドの返り値として\|return|すべきである．
+
+\|core|モジュールでも\|new|メソッドが定義されており，ここでは
+\label{sec:created}節で説明したジョブの作業ディレクトリおよび
+その中へのファイルのコピー・シンボリックリンクの生成処理を行う．
+子クラスの\|new|メソッドにより\|core|モジュールの\|new|メソッド
+が呼び出されないと，この処理が行われなくなるので注意すること．
+
+\subsection{\texttt{before\_isready}メソッド}
+状態（\ref{sec:states}節）が\|prepared|になったジョブオブジェクトに対して
+適用される．一般にはXcryptスクリプト中の\|submit|関数（\ref{sec:submit}節）
+の適用により，ジョブの状態が\|prepared|になる．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{before\_isready}メソッドが定義されて
+いた場合は，{\bf 子クラス→親クラスの順で全ての}\texttt{before\_isready}メソッド
+が呼び出される．
+
+各メソッドは，真偽値を返す．
+呼び出された\texttt{before\_isready}メソッド列のうち，1つでも偽を返したメソッドが
+あれば，しばらくの時間待ち合わせた後，もう一度\texttt{before\_isready}メソッド列
+の実行が行われる．
+
+\subsection{\texttt{before}メソッド}
+\texttt{before\_isready}メソッド列が適用され，その全てが真を返したジョブオブジェクト
+に対して適用される．引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{before}メソッドが定義されて
+いた場合は，{\bf 子クラス→親クラスの順で全ての}\texttt{before}メソッド
+が呼び出される．
+
+メソッドの返り値は破棄される．
+
+\subsection{\texttt{start}メソッド}
+\texttt{before}メソッドの処理が終わったジョブオブジェクトに対して適用される．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{start}メソッドが定義されていた場合は，
+最もspecializedなクラスの\|start|メソッドが呼び出される．
+
+メソッドの本体では，\|$obj->NEXT::start()| %$
+（\|$obj|は引数として渡されたジョブオブジェクトへの参照）%$
+のようにして親クラスの\|start|メソッドを呼び出すことができる．
+
+\|core|モジュールでも\|start|メソッドが定義されており，ここでは
+ジョブスクリプトの生成およびバッチスケジューラへのジョブ投入処理を行う．
+子クラスの\|start|メソッドにより\|core|モジュールの\|start|メソッド
+が呼び出されないと，この処理が行われなくなるので注意すること．
+
+\subsection{\texttt{after\_isready}メソッド}
+状態（\ref{sec:states}節）が\|done|になったジョブオブジェクトに対して
+適用される．一般には，\|core::start|メソッドによってバッチスケジューラに
+投入したジョブからのジョブ完了通知により，ジョブの状態が\|done|になる．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{after\_isready}メソッドが定義されて
+いた場合は，{\bf 親クラス→子クラスの順で全ての}\texttt{after\_isready}メソッド
+が呼び出される．
+
+各メソッドは，真偽値を返す．
+呼び出された\texttt{after\_isready}メソッド列のうち，1つでも偽を返したメソッドが
+あれば，しばらくの時間待ち合わせた後，もう一度\texttt{after\_isready}メソッド列
+の実行が行われる．
+
+\subsection{\texttt{after}メソッド}
+\texttt{after\_isready}メソッド列が適用され，その全てが真を返したジョブオブジェクト
+に対して適用される．引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{after}メソッドが定義されて
+いた場合は，{\bf 親クラス→子クラスの順で全ての}\texttt{after}メソッド
+が呼び出される．
+
+メソッドの返り値は破棄される．
+
+\subsection{\texttt{before\_isready}，\texttt{before}，\texttt{start}，\texttt{after\_isready}，\texttt{after}の並行性}
+\texttt{before}，\texttt{before\_isready}，\texttt{start}，\texttt{after}，\texttt{after\_isready}の各メソッドは
+Xcryptのユーザスレッドとは並行に実行される．ただし，各ジョブオブジェクト間についてのこれらのメソッドの実行は
+完全に並行に実行されるわけではない．Xcrypt処理系が保証する並行性は以下の通りである．
+\begin{itemize}
+  \item
+    どのジョブオブジェクトの
+    \texttt{before\_isready}，\texttt{before}，\texttt{start}，\texttt{after\_isready}，\texttt{after}メソッドも
+    Xcryptのユーザスレッドとは並行に実行される．
+  \item
+    どのジョブオブジェクトの\texttt{before\_isready}，\texttt{before}，\texttt{start}メソッドも2つ以上並行に実行されることはない．
+  \item
+    どのジョブオブジェクトの\texttt{after\_isready}，\texttt{after}，メソッドも2つ以上並行に実行されることはない．
+  \item
+    あるオブジェクトに対して\texttt{before\_isready}メソッド列が全て真を返した際，
+    それに続くそのオブジェクトへの\texttt{before}メソッド列の実行の前に，
+    他のどのオブジェクトへの\texttt{before\_isready}，\texttt{before}，\texttt{start}
+    メソッド適用も行われることはない．
+  \item
+    あるオブジェクトへの\texttt{before}メソッド列の適用と\texttt{start}メソッドの適用の間に，
+    他のどのオブジェクトへの\texttt{before\_isready}，\texttt{before}，\texttt{start}
+    メソッド適用も行われることはない．
+  \item
+    あるオブジェクトに対して\texttt{after\_isready}メソッド列が全て真を返した際，
+    それに続くそのオブジェクトへの\texttt{after}メソッド列の実行の前に，
+    他のどのオブジェクトへの\texttt{after\_isready}，\texttt{after}
+    メソッド適用も行われることはない．
+\end{itemize}
 
 \end{document}
