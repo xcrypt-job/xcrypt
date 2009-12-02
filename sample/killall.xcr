@@ -9,7 +9,7 @@ use Data_Extraction;
 
 &prepare_submit_sync(%template,
 		    'RANGE0' => [0..3],
-		    'exe@' => sub { "sleep $_[0]; echo $_[0]"; },
+		    'exe@' => '"sleep $R0; echo $R0;"',
  'after' => 'if (&good($self)) { system("xcryptdel --all"); }'
     );
 
