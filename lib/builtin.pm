@@ -97,7 +97,8 @@ sub generate {
 		for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 		    my $arg = $argument_name . $i;
 #		    no strict 'refs';
-		    eval "our \$$arg = $ranges[$i];";
+		    my $tmp = eval "$ranges[$i];";
+		    eval "our \$$arg = $tmp;";
 		}
 		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
