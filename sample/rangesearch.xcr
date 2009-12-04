@@ -20,7 +20,6 @@ use base qw(limit core);
 #		 'arg0@' => [20..29]
 #		 'RANGE0' => [0..2]
 #		 'RANGE0' => [0..2], 'arg0@' => [20..21]
-#		 'RANGE0' => [0..2], 'arg0@' => '2 * $R0 + 20;'
  'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
     );
 &submit(@jobs);
