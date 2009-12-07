@@ -78,16 +78,16 @@ use base qw(core);
 \noindent
 と記述して読み込む．複数読み込む場合は読み込みたい順に
 \begin{boxnote}
-\begin{verbatim}
-use base qw(dry core);
-\end{verbatim}
+\begin{alltt}
+use base qw(\textit{mymodule} core);
+\end{alltt}
 \end{boxnote}
 \noindent
 と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
 述べる．
 
 モジュールを読み込むことにより，利用可能になる変数（例えば
-\texttt{\$separator} ）は
+\texttt{\$separator}）は
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -103,20 +103,20 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 と呼ばれるハッシュを記述すれば，ジョブを生成する際，さらにパラメタを与
 えることで多数のジョブを一度に生成できる．例えば，
 \begin{boxnote}
-\begin{verbatim}
-%xyz = (
-    'id' => 'job100',
-    'exe' => './kempo',
+\begin{alltt}
+%myjob = (
+    'id' => '\textit{myjob}',
+    'exe' => '\textit{./myexe}',
     'arg0' => '100',
-    'arg1' => 'plasma.inp',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
-    'stdofile' => 'hogeout',
-    'stdefile' => 'hogeerr',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'arg1' => '\textit{myinput}',
+    'linkedfile0' => '\textit{myexe}',
+    'copiedfile0' => '\textit{myinput}',
+    'stdofile' => '\textit{myout}',
+    'stdefile' => '\textit{myerr}',
+    'queue' => '\textit{myqueue}',
+    'option' => '\textit{myoption}'
 );
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
 \noindent
 と記述する．デフォルトで定義可能なジョブ定義ハッシュのキーに関
@@ -151,29 +151,29 @@ addkeys('userdefinedkey0', 'userdefinedkey1');
 本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
 
 \begin{boxnote}
-\begin{verbatim}
+\begin{alltt}
 use base qw(limit core);
 
 &limit::initialize(10);
 $separator = '-';
 
-%xyz = (
-    'id' => 'job100',
-    'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'copieddir0' => 'forcopieddir',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
-    'stdofile' => 'hogeout',
-    'stdefile' => 'hogeerr',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+%myjob = (
+    'id' => '\textit{myjob}',
+    'exe' => '\textit{./myexe}',
+    'arg0' => '100',
+    'arg1' => '\textit{myinput}',
+    'linkedfile0' => '\textit{myexe}',
+    'copiedfile0' => '\textit{myinput}',
+    'stdofile' => '\textit{myout}',
+    'stdefile' => '\textit{myerr}',
+    'queue' => '\textit{myqueue}',
+    'option' => '\textit{myoption}'
 );
+&prepare_submit_sync(%myjob, 'arg1@' => [2,4]);
 
-&prepare_submit_sync(%xyz, 'arg1@' => [2,4]);
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
+
 
 \chapter{ジョブ処理の流れ}
 
@@ -251,10 +251,9 @@ Xcrypt が Xcrypt スクリプトから作成する Perl スクリプトである．Xcryptが
 \subsection*{ジョブリンク・ジョブファイル}
 
 ジョブ作業ディレクトリからジョブハッシュの
-\texttt{linkedfile0,...,linkedfile255}キーの値で指定されているファイル
-へシンボリックリンクを張り，\texttt{copiedfile0,...,copiedfile255}キー
-の値で指定されている作業ディレクトリ中のファイルのコピーをジョブ作業ディ
-レクトリに作成する．
+\texttt{linkedfile}\textit{i}キーの値で指定されているファイルへシンボリッ
+クリンクを張り，\texttt{copiedfile}\textit{i}キーの値で指定されている作
+業ディレクトリ中のファイルのコピーをジョブ作業ディレクトリに作成する．
 
 \subsection*{\texttt{NQS.sh}}
 
@@ -299,10 +298,10 @@ Xcrypt コアを読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）を使用
 
 Xcrypt スクリプトで $\texttt{\$separator}$という変数が使えるようになる．
 
-ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separator}で区切った
-名前のディレクトリを作成する．\texttt{\$separator}のデフォルト
-値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
+ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける\texttt{id}と
+\texttt{arg}\textit{i}たちを\texttt{\$separator}で区切った名前のディレ
+クトリを作成する．\texttt{\$separator}のデフォルト値は「\texttt{\_}」で
+ある．「\texttt{-}」に変えたい場合は，
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -398,7 +397,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 \begin{boxnote}
 \begin{verbatim}
-%xyz = (
+%myjob = (
     'id'          => 'job10',
     'linkedfile0' => 'getchildren',
     'linkedfile1' => 'komadoku',
@@ -409,7 +408,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
     'arg2'        => 'getchildren'      # get next positions
 );
 
-@results = &prepare_submit_sync(%xyz, 'arg3@' => ['komadoku',
+@results = &prepare_submit_sync(%myjob, 'arg3@' => ['komadoku',
 				                  'kuraidori',
 				                  'ikiataribattari']);
 \end{verbatim}
@@ -435,13 +434,14 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 \section{\texttt{exe}}
 
-実行されるジョブの実行コマンドを記述する．後述の\texttt{arg0,...,arg255}とともに
+実行されるジョブの実行コマンドを記述する．後述の\texttt{arg}\textit{i}
+とともに
 \begin{screen}
 \texttt{\$ exe arg0 arg1 ... arg255}
 \end{screen}
 といった形で実行される．
 
-\section{\texttt{arg0,...,arg255}}
+\section{\texttt{arg}\textit{i}}
 
 実行されるジョブの実行コマンドの引数を記述する．前述の\texttt{exe}とと
 もに
@@ -450,17 +450,17 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \end{screen}
 といった形で実行される．
 
-\section{\texttt{linkedfile0,...,linkedfile255}}
+\section{\texttt{linkedfile}\textit{i}}
 
 この値のリンク名でジョブ作業ディレクトリから作業ディレクトリのファイル
 へシンボリックリンクを張る．
 
-\section{\texttt{copiedfile0,...,copiedfile255}}
+\section{\texttt{copiedfile}\textit{i}}
 
 この値のファイル名でジョブ作業ディレクトリから作業ディレクトリにコピー
 をつくる．
 
-\section{\texttt{copieddir0,...,copieddir255}}
+\section{\texttt{copieddir}\textit{i}}
 
 この値の名前であるディレクトリ中のファイルから作業ディレクトリにコピー
 をつくる．
@@ -517,7 +517,7 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 ジョブ定義ハッシュと（リファレンス\footnote{本稿ではリファレンスは型グ
 ロブを含まないものとする．}またはスカラで与えられる）パラメタを受け取
 り，適当なジョブリファレンスの配列を返す．特に，ジョブの\texttt{id}は後
-述の\texttt{RANGE0,...,RANGE255}により生成される．
+述の\texttt{RANGE}\textit{i}により生成される．
 
 \subsection{\format}
 
@@ -534,13 +534,13 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 （\texttt{arg0}等）の語尾に\texttt{@}をつけ加えたもの
 （\texttt{arg0@}等）を意味するものとする．
 
-\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+\texttt{RANGE}\textit{i}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \subsection{\example}
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -549,8 +549,8 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'});
-push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
+push(@jobs, {'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '10'});
+push(@jobs, {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '20'});
 \end{verbatim}
 \end{boxnote}
 
@@ -559,8 +559,8 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo',
+    'id' => 'myjob',
+    'exe' => './myexe',
     'arg0@' => [10,20]
 );
 prepare(%abc);
@@ -572,8 +572,8 @@ prepare(%abc);
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 prepare(%abc, 'arg0@' => [10,20]);
 \end{verbatim}
@@ -598,8 +598,8 @@ prepare(%abc, 'arg0@' => [10,20]);
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 @jobs = prepare(%abc, 'arg0@' => [0,1], 'arg1@' => [2,3]);
 \end{verbatim}
@@ -608,8 +608,8 @@ prepare(%abc, 'arg0@' => [10,20]);
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2'});
-push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'});
+push(@jobs, {'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '0', 'arg1' => '2'});
+push(@jobs, {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '1', 'arg1' => '3'});
 \end{verbatim}
 \end{boxnote}
 
@@ -618,8 +618,8 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'})
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0@' => sub { $_[0] + $_[1] });
@@ -629,10 +629,10 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'})
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2'});
-push(@jobs, {'id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4'});
-push(@jobs, {'id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3'});
-push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
+push(@jobs, {'id' => 'myjob_2', 'exe' => './myexe', 'arg0' => '2'});
+push(@jobs, {'id' => 'myjob_4', 'exe' => './myexe', 'arg0' => '4'});
+push(@jobs, {'id' => 'myjob_3', 'exe' => './myexe', 'arg0' => '3'});
+push(@jobs, {'id' => 'myjob_5', 'exe' => './myexe', 'arg0' => '5'});
 \end{verbatim}
 \end{boxnote}
 
@@ -641,8 +641,8 @@ push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0@' => '$_[0] + $_[1]');
@@ -674,7 +674,7 @@ submit(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 submit(@jobs);
 \end{verbatim}
 \end{boxnote}
@@ -683,8 +683,8 @@ submit(@jobs);
 
 \begin{boxnote}
 \begin{verbatim}
-submit({'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'},
-       {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
+submit({'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '10'},
+       {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '20'});
 \end{verbatim}
 \end{boxnote}
 
@@ -712,7 +712,7 @@ sync(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 @objs = submit(@jobs);
 sync(@objs);
 \end{verbatim}
@@ -866,7 +866,7 @@ Xcryptの\|prepare|関数（\ref{sec:prepare}節）の処理中に，
 メソッドの返り値として\|return|すべきである．
 
 \|core|モジュールでも\|new|メソッドが定義されており，ここでは
-\label{sec:created}節で説明したジョブの作業ディレクトリおよび
+\ref{sec:created}節で説明したジョブの作業ディレクトリおよび
 その中へのファイルのコピー・シンボリックリンクの生成処理を行う．
 子クラスの\|new|メソッドにより\|core|モジュールの\|new|メソッド
 が呼び出されないと，この処理が行われなくなるので注意すること．
