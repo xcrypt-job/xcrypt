@@ -10,7 +10,7 @@ use usablekeys;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
-addkeys
+addkeys addperiodiccheck
 );
 
 my $before_thread = undef;
@@ -21,6 +21,12 @@ my @jobs_for_before = ();
 my @jobs_for_after = ();
 my $nilchar = 'nil';
 my $argument_name = 'R';
+
+sub addperiodiccheck {
+    $fun = shift;
+    push(@jobsched::periodicfuns, 'user::' . $fun);
+#    &$fun(@_);
+}
 
 sub addkeys {
     my $exist = 0;
