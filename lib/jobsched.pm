@@ -50,7 +50,7 @@ my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared = ();
-# 定期的実行関数の名前が登録されている配列
+# 定期的実行文字列が登録されている配列
 our @periodicfuns : shared = ();
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
 my %signaled_jobs : shared = ();
@@ -801,7 +801,6 @@ sub invoke_periodic_check {
 	    # check_and_alert_elapsed();
 
 	    foreach my $i (@periodicfuns) {
-#		eval 'print $i';
 		eval "$i";
 	    }
         }

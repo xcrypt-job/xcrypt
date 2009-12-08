@@ -23,8 +23,7 @@ my $nilchar = 'nil';
 my $argument_name = 'R';
 
 sub addperiodiccheck {
-    $fun = shift;
-    push(@jobsched::periodicfuns, $fun);
+    push(@jobsched::periodicfuns, $_[0]);
 }
 
 sub addkeys {
