@@ -50,11 +50,13 @@ my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared = ();
+# 定期的実行関数の名前が登録されている配列
+our @periodicfuns : shared = ();
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
 my %signaled_jobs : shared = ();
 my $all_jobs_signaled : shared = undef;
 
-our $abort_check_thread=undef; # used in bin/xcrypt
+our $periodic_check_thread=undef; # used in bin/xcrypt
 my $abort_check_interval = $xcropt::options{abort_check_interval};
 
 # 出力をバッファリングしない（STDOUT & STDERR）
@@ -787,26 +789,23 @@ sub check_and_alert_elapsed {
     }
 }
 
-sub invoke_abort_check {
-    $abort_check_thread = threads->new( sub {
+sub invoke_periodic_check {
+    $periodic_check_thread = threads->new( sub {
         while (1) {
             sleep $abort_check_interval;
             check_and_write_aborted();
+
             # print_all_job_status();
             ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
             ## とりあえずコメントアウト
 	    # check_and_alert_elapsed();
+
+	    foreach my $i (@periodicfuns) {
+		eval "\&$i();";
+	    }
         }
     });
 }
-
-
-# スレッド起動（読み込むだけで起動，は正しい？）
-#invoke_watch ();
-#invoke_abort_check ();
-## スレッド終了待ち：デバッグ（jsconfig::jobsched.pm単体実行）用
-# $watch_thread->join();
-
 
 ## 自前でwatchをやろうとした残骸
 #         my %timestamps = {};
