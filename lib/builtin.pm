@@ -24,8 +24,7 @@ my $argument_name = 'R';
 
 sub addperiodiccheck {
     $fun = shift;
-    push(@jobsched::periodicfuns, 'user::' . $fun);
-#    &$fun(@_);
+    push(@jobsched::periodicfuns, $fun);
 }
 
 sub addkeys {
