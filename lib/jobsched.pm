@@ -801,7 +801,8 @@ sub invoke_periodic_check {
 	    # check_and_alert_elapsed();
 
 	    foreach my $i (@periodicfuns) {
-		eval "\&$i();";
+#		eval 'print $i';
+		eval "$i";
 	    }
         }
     });

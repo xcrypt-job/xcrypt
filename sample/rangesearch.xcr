@@ -20,12 +20,12 @@ use base qw(limit core);
 #		 'arg0@' => [20..29]
 #		 'RANGE0' => [0..2]
 #		 'RANGE0' => [0..2], 'arg0@' => [20..21]
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
     );
 &submit(@jobs);
-&addperiodiccheck('hoge');
+&addperiodiccheck('&user::foo("bar");');
 &sync(@jobs);
 
-sub hoge {
-    print STDOUT "hoge\n";
-};
+sub foo {
+    print STDOUT "$_[0]\n";
+}
