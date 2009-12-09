@@ -1,4 +1,6 @@
 use base qw(limit core);
+use threads::shared;
+use jobsched;
 
 &limit::initialize(10);
 
@@ -20,10 +22,13 @@ use base qw(limit core);
 #		 'arg0@' => [20..29]
 #		 'RANGE0' => [0..2]
 #		 'RANGE0' => [0..2], 'arg0@' => [20..21]
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 40 + $R2;'
+ 'RANGE0' => [1], 'RANGE2' => [2], 'arg0@' => '$R0 + 40 + $R2;'
     );
 &submit(@jobs);
-&addperiodiccheck('&user::foo("bar");');
+our $hoge : shared = 'HOGE';
+#&addperiodiccheck('&user::foo($user::hoge);');
+&addperiodiccheck('print &builtin::getelapsedtime("job6_1_nil_2"), "\n";');
 &sync(@jobs);
 
 sub foo {
