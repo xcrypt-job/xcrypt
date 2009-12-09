@@ -176,12 +176,16 @@ sub generate {
 		     (ref($job{"$members"}) eq 'GLOB')) {
 #		    $job{"$_"} = &{$job{"$members"}}(@ranges);
 		    die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
-		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-		    my @tmp = @{$job{"$members"}};
-		    $job{"$_"} = $tmp[$_[0]];
+# 配列がジョブ定義ハッシュの値であることは考えられない
+#		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+#		    my @tmp = @{$job{"$members"}};
+#		    $job{"$_"} = $tmp[$_[0]];
 		} elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
 		    my $tmp = ${$job{"$members"}};
 		    $job{"$_"} = $tmp;
+# 配列リファレンスがジョブ定義ハッシュの値の時のため（注意: チェックが甘い）
+		} elsif ( ref($job{"$members"}) eq 'REF' ) {
+		    $job{"$_"} = $tmp[$_[0]];
 		} else {
 		    die "Can't take your format at prepare.\n";
 		}
