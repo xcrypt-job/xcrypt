@@ -59,6 +59,7 @@ my $all_jobs_signaled : shared = undef;
 our $periodic_check_thread=undef; # used in bin/xcrypt
 my $abort_check_interval = $xcropt::options{abort_check_interval};
 
+
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
@@ -747,48 +748,6 @@ sub getjobids {
     return @jobids;
 }
 
-sub check_and_alert_elapsed {
-    unless ( -f $reqids_file ) { return; }
-    my @jobids = &getjobids($reqids_file);
-
-    my $sum = 0;
-    my %elapseds = ();
-    my $length = 0;
-    foreach my $i (@jobids) {
-	$elapseds{"$i"} = undef;
-	my $time_done_now = time();
-	my $inventoryfile = File::Spec->catfile ($inventory_path, "$i");
-	my $time_running = 0;
-	open( INV, "$inventoryfile" );
-	while (<INV>) {
-	    if ($_ =~ /^time_running\:\s*([0-9]*)/) {
-		$time_running = $1;
-	    }
-	    if ($_ =~ /^time_done\:\s*([0-9]*)/) {
-		$time_done_now = $1;
-	    }
-	}
-	close( INV );
-	unless ($time_running == 0) {
-	    my $elapsed = $time_done_now - $time_running;
-	    $sum = $sum + $elapsed;
-	    $elapseds{"$i"} = $elapsed;
-	    $length = $length + 1;
-	}
-    }
-    my $average = 0;
-    unless ($length == 0) {
-	$average = $sum / $length;
-    }
-    foreach (@jobids) {
-	if (defined $elapseds{$_}) {
-	    if ( $elapseds{$_} - $average > 300 ) {
-		print "Warning: $_ takes more time than the other jobs.\n";
-	    }
-	}
-    }
-}
-
 sub invoke_periodic_check {
     $periodic_check_thread = threads->new( sub {
         while (1) {
@@ -798,8 +757,9 @@ sub invoke_periodic_check {
             # print_all_job_status();
             ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
             ## とりあえずコメントアウト
-	    # check_and_alert_elapsed();
+	    # &builtin::check_and_alert_elapsed();
 
+# ユーザ定義の定期的実行文字列
 	    foreach my $i (@periodicfuns) {
 		eval "$i";
 	    }
