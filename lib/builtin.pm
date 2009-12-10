@@ -162,6 +162,7 @@ sub generate {
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
+# 「ジョブ定義ハッシュ@」の値がスカラである時
 	    unless ( ref($job{"$members"}) ) {
 		for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 		    my $arg = $argument_name . $i;
@@ -176,16 +177,18 @@ sub generate {
 		     (ref($job{"$members"}) eq 'GLOB')) {
 #		    $job{"$_"} = &{$job{"$members"}}(@ranges);
 		    die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
-# 配列がジョブ定義ハッシュの値であることは考えられない
-#		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-#		    my @tmp = @{$job{"$members"}};
-#		    $job{"$_"} = $tmp[$_[0]];
-		} elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+# 「ジョブ定義ハッシュ@」の値が配列リファレンスである時
+		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+		    my @tmp = @{$job{"$members"}};
+		    $job{"$_"} = $tmp[$_[0]];
+# 「ジョブ定義ハッシュ@」が未定義，つまり，prepareで「ジョブ定義ハッシュ@」の値が「ジョブ定義ハッシュ」の値のリファレンスにされている時
+		} elsif (ref($job{"$members"}) eq 'SCALAR') {
 		    my $tmp = ${$job{"$members"}};
 		    $job{"$_"} = $tmp;
-# 配列リファレンスがジョブ定義ハッシュの値の時のため（注意: チェックが甘い）
-		} elsif ( ref($job{"$members"}) eq 'REF' ) {
-		    $job{"$_"} = $tmp[$_[0]];
+		} elsif ((ref($job{"$members"}) eq 'REF') &&
+			 (ref(${$job{"$members"}}) eq 'ARRAY')) {
+		    my $tmp = ${$job{"$members"}};
+		    $job{"$_"} = $tmp;
 		} else {
 		    die "Can't take your format at prepare.\n";
 		}
