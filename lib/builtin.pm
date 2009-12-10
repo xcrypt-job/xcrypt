@@ -162,36 +162,22 @@ sub generate {
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
-# 「ジョブ定義ハッシュ@」の値がスカラである時
+	    # 「ジョブ定義ハッシュ@」の値がスカラである時
 	    unless ( ref($job{"$members"}) ) {
 		for ( my $i = 0; $i < $user::maxrange; $i++ ) {
 		    my $arg = $argument_name . $i;
 #		    no strict 'refs';
 		    my $tmp = eval "$ranges[$i];";
 		    eval "our \$$arg = $tmp;";
+#		    $job{"$_"} = &{$job{"$members"}}(@ranges);
 		}
 		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
+	    } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+		my @tmp = @{$job{"$members"}};
+		$job{"$_"} = $tmp[$_[0]];
 	    } else {
-		if ( (ref($job{"$members"}) eq 'CODE') ||
-		     (ref($job{"$members"}) eq 'GLOB')) {
-#		    $job{"$_"} = &{$job{"$members"}}(@ranges);
-		    die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
-# 「ジョブ定義ハッシュ@」の値が配列リファレンスである時
-		} elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-		    my @tmp = @{$job{"$members"}};
-		    $job{"$_"} = $tmp[$_[0]];
-# 「ジョブ定義ハッシュ@」が未定義，つまり，prepareで「ジョブ定義ハッシュ@」の値が「ジョブ定義ハッシュ」の値のリファレンスにされている時
-		} elsif (ref($job{"$members"}) eq 'SCALAR') {
-		    my $tmp = ${$job{"$members"}};
-		    $job{"$_"} = $tmp;
-		} elsif ((ref($job{"$members"}) eq 'REF') &&
-			 (ref(${$job{"$members"}}) eq 'ARRAY')) {
-		    my $tmp = ${$job{"$members"}};
-		    $job{"$_"} = $tmp;
-		} else {
-		    die "Can't take your format at prepare.\n";
-		}
+		die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
 	    }
 	}
     }
@@ -450,19 +436,30 @@ sub prepare_submit {
     &submit(@jobs);
 }
 
+sub belong {
+    my $a = shift;
+    my @b = @_;
+    my $c = 0;
+    foreach (@b) {
+	if (($a eq $_) ||
+	    ($a eq ("$_" . "$user::expandingchar")) ||
+	    ($a =~ /\ARANGE[0-9]+\Z/)
+	    ) {
+	    $c = 1;
+	}
+    }
+    return $c;
+}
+
 sub prepare_or_prepare_submit {
     my $immediate_submit = shift(@_);
     my @objs;
     my %job = @_;
 
     &addmembers(%job);
-    foreach (@usablekeys::allkeys) {
-	my $members = "$_" . $user::expandingchar;
-	unless ( exists($job{"$members"}) ) {
-	    if ( exists($job{"$_"}) ) {
-#		$job{"$members"} = sub {$job{"$_"};};
-		$job{"$members"} = \$job{"$_"};
-	    }
+    foreach my $key (keys(%job)) {
+	unless (&belong($key, 'id', @usablekeys::allkeys)) {
+	    delete($job{"$key"});
 	}
     }
 

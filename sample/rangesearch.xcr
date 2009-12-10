@@ -7,7 +7,7 @@ use jobsched;
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
-    'arg0' => '50',
+    'arg0' => '30',
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',          #
@@ -16,13 +16,12 @@ use jobsched;
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
+#		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
 #                                            $ qsub ./fib 21 > out
 #                                            $ qsub ./fib 22 > out
 #		 'arg0@' => [20..29]
-#		 'RANGE0' => [0..2]
 #		 'RANGE0' => [0..2], 'arg0@' => [20..21]
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
 # 'RANGE0' => [1], 'RANGE2' => [2], 'arg0@' => '$R0 + 40 + $R2;'
     );
 &submit(@jobs);
