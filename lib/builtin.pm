@@ -29,7 +29,7 @@ my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
 my $time_running : shared = undef;
 my $time_done_now = undef;
 sub getelapsedtime {
-    unless ( -f $reqids_file ) { return; }
+    unless ( -e $reqids_file ) { return; }
 
     my $inventoryfile = File::Spec->catfile ($inventory_path, "$_[0]");
     $time_done_now = time();
@@ -55,7 +55,7 @@ sub update_running_and_done_now {
 }
 
 sub check_and_alert_elapsed {
-    unless ( -f $reqids_file ) { return; }
+    unless ( -e $reqids_file ) { return; }
     my @jobids = &getjobids($reqids_file);
 
     my $sum = 0;

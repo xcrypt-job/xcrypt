@@ -377,7 +377,7 @@ sub invoke_watch_by_file {
     # inventory_watchが，監視準備ができたことを通知するために設置するファイル
     my $invwatch_ok_file = "$inventory_path/.tmp/.pjo_invwatch_ok";
     # 起動前にもしあれば消しておく
-    if ( -f $invwatch_ok_file ) { unlink $invwatch_ok_file; }
+    if ( -e $invwatch_ok_file ) { unlink $invwatch_ok_file; }
     # 以下，監視スレッドの処理
     $watch_thread =  threads->new( sub {
         # open (INVWATCH_LOG, ">", "$inventory_path/log");
@@ -395,7 +395,7 @@ sub invoke_watch_by_file {
         # close (INVWATCH_LOG);
     });
     # inventory_watchの準備ができるまで待つ
-    until ( -f $invwatch_ok_file ) { sleep 1; }
+    until ( -e $invwatch_ok_file ) { sleep 1; }
 }
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
