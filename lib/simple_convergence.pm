@@ -62,6 +62,7 @@ sub backward_difference_loop {
 	$job{'id'} = $orignail_id . '_iter'. $count;
 	my @results = &prepare_submit_sync(%job);
 	foreach (@results) {
+	    print @{$_->{extractrules}}, "\n";
 	    # use Data_Extraction
 	    my $tmp = File::Spec->catfile($ENV{'PWD'},
 					  $_->{'id'},

@@ -10,11 +10,11 @@ my @jobs = &prepare(
     ':dry' => 0,
     'RANGE0' => [0..3],
     ':auto0' => '0',
-    ':auto1@' => '$_[0]',
+    ':auto1@' => '$R0',
     'added0' => '100',
-    'added1@' => '$_[0] + 10',
+    'added1@' => '$R0 + 10',
     'unadd0' => '200',
-    'unadd1@' => '$_[0] + 20'
+    'unadd1@' => '$R0 + 20'
     );
 
 foreach my $i (0..3) {
