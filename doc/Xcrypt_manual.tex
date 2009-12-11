@@ -579,15 +579,14 @@ prepare(%abc, 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
-\texttt{RANGE0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
-を生成することができる．例えば，
+\texttt{RANGE0}を使うことでさまざまなパラメタでジョブを生成することができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => sub { 2 * $_[0] });
+@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => '2 * $R0');
 \end{verbatim}
 \end{boxnote}
-は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
-198)}を順番に行ったものと同義である．
+は\texttt{prepare(\%abc, 'arg0' => 0), prepare(\%abc, 'arg0' =>
+2),..., prepare(\%abc, 'arg0' => 198)}を順番に行ったものと同義である．
 
 
 \subsection{\advanced}
@@ -613,29 +612,29 @@ push(@jobs, {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '1', 'arg1' => '3'
 \end{verbatim}
 \end{boxnote}
 
-\texttt{RANGE0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
-ブを生成することができる．例えば，
+\texttt{RANGE0}等を使うことでパラメタをかけ合わせてジョブを生成すること
+ができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
     'id' => 'myjob',
     'exe' => './myexe'
 );
-@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
-                'arg0@' => sub { $_[0] + $_[1] });
+@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4], 'arg0@' => '$R0 + $R1');
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'myjob_2', 'exe' => './myexe', 'arg0' => '2'});
-push(@jobs, {'id' => 'myjob_4', 'exe' => './myexe', 'arg0' => '4'});
-push(@jobs, {'id' => 'myjob_3', 'exe' => './myexe', 'arg0' => '3'});
-push(@jobs, {'id' => 'myjob_5', 'exe' => './myexe', 'arg0' => '5'});
+push(@jobs, {'id' => 'myjob_0_2', 'exe' => './myexe', 'arg0' => '2'});
+push(@jobs, {'id' => 'myjob_0_4', 'exe' => './myexe', 'arg0' => '4'});
+push(@jobs, {'id' => 'myjob_1_2', 'exe' => './myexe', 'arg0' => '3'});
+push(@jobs, {'id' => 'myjob_1_4', 'exe' => './myexe', 'arg0' => '5'});
 \end{verbatim}
 \end{boxnote}
 
+\if0
 引数がリファレンスでなくスカラである時，引数は \texttt{eval} される．ゆ
 えに，上記は，
 \begin{boxnote}
@@ -649,6 +648,7 @@ push(@jobs, {'id' => 'myjob_5', 'exe' => './myexe', 'arg0' => '5'});
 \end{verbatim}
 \end{boxnote}
 とも書くこともできる．
+\fi
 
 \section{\texttt{submit}}\label{sec:submit}
 

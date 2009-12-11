@@ -19,15 +19,14 @@ use jobsched;
 #		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
 #                                            $ qsub ./fib 21 > out
 #                                            $ qsub ./fib 22 > out
-#		 'arg0@' => [20..29]
-#		 'RANGE0' => [0..2], 'arg0@' => [20..21]
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + $R2;'
-# 'RANGE0' => [1], 'RANGE2' => [2], 'arg0@' => '$R0 + 40 + $R2;'
+#		 'RANGE0' => [0..2], 'arg0@' => [20..22]
+#		 'RANGE0' => [0..2], 'arg0@' => [20,21]
+ 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 30 + $R2;'
     );
 &submit(@jobs);
 our $hoge : shared = 'HOGE';
 #&addperiodiccheck('&user::foo($user::hoge);');
-&addperiodiccheck('print &builtin::getelapsedtime("job6_1_nil_2"), "\n";');
+&addperiodiccheck('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";');
 &sync(@jobs);
 
 sub foo {
