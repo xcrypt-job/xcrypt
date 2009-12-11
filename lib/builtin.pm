@@ -41,8 +41,7 @@ sub getelapsedtime {
 }
 
 sub update_running_and_done_now {
-    my $inventoryfile = $_[0];
-    open( INV, "$inventoryfile" );
+    open( INV, "$_[0]" );
     while (<INV>) {
 	if ($_ =~ /^time_running\:\s*([0-9]*)/) {
 	    $time_running = $1;
@@ -66,7 +65,7 @@ sub check_and_alert_elapsed {
 	my $inventoryfile = File::Spec->catfile ($inventory_path, "$i");
 	$time_done_now = time();
 	&update_running_and_done_now($inventoryfile);
-	unless (defined $time_running) {
+	if (defined $time_running) {
 	    my $elapsed = $time_done_now - $time_running;
 	    $sum = $sum + $elapsed;
 	    $elapseds{"$i"} = $elapsed;
@@ -125,7 +124,7 @@ sub rm_tailnis {
     }
 }
 
-sub addmembers {
+sub addusercustomizablecoremembers {
     my %job = @_;
     my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
@@ -151,14 +150,14 @@ sub generate {
     my %job = %{$_[0]};
     shift;
 
-    my @ranges = &rm_tailnis(@_);
     unless ( $user::separator_nocheck) {
 	unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
 	    die "Can't support $user::separator as \$separator.\n";
 	}
     }
+    my @ranges = &rm_tailnis(@_);
     $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
-    &addmembers(%job);
+    &addusercustomizablecoremembers(%job);
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($job{"$members"}) ) {
@@ -169,35 +168,20 @@ sub generate {
 #		    no strict 'refs';
 		    my $tmp = eval "$ranges[$i];";
 		    eval "our \$$arg = $tmp;";
-#		    $job{"$_"} = &{$job{"$members"}}(@ranges);
 		}
 		my $tmp = eval($job{"$members"});
 		$job{"$_"} = $tmp;
 	    } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
 		my @tmp = @{$job{"$members"}};
 		$job{"$_"} = $tmp[$_[0]];
+	    } elsif ( ref($job{"$members"}) eq 'CODE' ) {
+		$job{"$_"} = &{$job{"$members"}}(@ranges);
 	    } else {
 		die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
 	    }
 	}
     }
 
-=comment
-    my $exist = 0;
-    foreach my $i (keys(%job)) {
-	unless (($i =~ /\ARANGE[0-9]+\Z/) || ($i =~ /@\Z/)) {
-	    foreach my $j ((@user::allkeys, 'id')) {
-		if ($i eq $j) {
-		    $exist = 1;
-		}
-	    }
-	    if ($exist == 0) {
-		warn "Warning: $i is given, but not defined by addkeys.\n";
-	    }
-	    $exist = 0;
-	}
-    }
-=cut
     foreach my $key (keys(%job)) {
 	my $exist = 0;
 	foreach my $ukey (@usablekeys::allkeys, 'id') {
@@ -237,7 +221,7 @@ sub MAX {
     my %job = @_;
     my $num = 0;
 
-    &addmembers(%job);
+    &addusercustomizablecoremembers(%job);
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
@@ -254,7 +238,7 @@ sub MIN {
     my %job = @_;
     my $num = 0;
 
-    &addmembers(%job);
+    &addusercustomizablecoremembers(%job);
     foreach (@usablekeys::allkeys) {
 	my $members = "$_" . $user::expandingchar;
 	if ( exists($_[0]{"$members"}) ) {
@@ -426,12 +410,7 @@ sub submit_sync {
     return &sync(@objs);
 }
 
-sub prepare {
-    &prepare_or_prepare_submit(0, @_);
-}
-
 sub prepare_submit {
-#    &prepare_or_prepare_submit(1, @_);
     my @jobs = &prepare(@_);
     &submit(@jobs);
 }
@@ -451,12 +430,10 @@ sub belong {
     return $c;
 }
 
-sub prepare_or_prepare_submit {
-    my $immediate_submit = shift(@_);
-    my @objs;
+sub prepare {
     my %job = @_;
 
-    &addmembers(%job);
+    &addusercustomizablecoremembers(%job);
     foreach my $key (keys(%job)) {
 	unless (&belong($key, 'id', @usablekeys::allkeys)) {
 	    delete($job{"$key"});
@@ -481,6 +458,7 @@ sub prepare_or_prepare_submit {
 	}
     }
 
+    my @objs;
     if ( $existOfRANGE ) {
 	my @ranges = ();
 	for ( my $i = 0; $i < $user::maxrange; $i++ ) {
@@ -495,25 +473,16 @@ sub prepare_or_prepare_submit {
 	my @range = &times(@ranges);
 	foreach (@range) {
 	    my $obj = &generate(\%job, @{$_});
-	    if ($immediate_submit == 1) {
-		&submit($obj);
-	    }
 	    push(@objs, $obj);
 	}
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
 	my @params = (0..(&MIN(\%job)-1));
 	foreach (@params) {
 	    my $obj = &generate(\%job, $_);
-	    if ($immediate_submit == 1) {
-		&submit($obj);
-	    }
 	    push(@objs, $obj);
 	}
     } else {
 	my $obj = &generate(\%job);
-	if ($immediate_submit == 1) {
-	    &submit($obj);
-	}
 	push(@objs, $obj);
     }
     return @objs;

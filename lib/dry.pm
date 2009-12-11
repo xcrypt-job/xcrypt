@@ -25,7 +25,6 @@ sub before {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
-#	$self->{exit_cond} = sub { 1; };
     }
     # $self->NEXT::before();
 }
