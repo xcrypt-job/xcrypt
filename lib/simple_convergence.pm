@@ -68,7 +68,7 @@ sub backward_difference_loop {
 					  $job{'outputfile'});
 	    my $datum = EF("file:$tmp");
 	    foreach (@{$job{'extractrules'}}) {
-		$datum->ED($_);
+		$datum->ED(@{$_});
 	    }
 #	    $datum->ED(@$job{'extractrules'});
 #

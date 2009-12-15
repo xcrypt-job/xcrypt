@@ -26,7 +26,7 @@ use jobsched;
 &submit(@jobs);
 our $hoge : shared = 'HOGE';
 #&addperiodiccheck('&user::foo($user::hoge);');
-&addperiodiccheck('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";');
+&addperiodiccheck('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
 &sync(@jobs);
 
 sub foo {
