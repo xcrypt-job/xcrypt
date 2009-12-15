@@ -87,7 +87,7 @@ sub check_and_alert_elapsed {
 }
 
 sub addperiodiccheck {
-    push(@jobsched::periodicfuns, $_[0]);
+    $jobsched::periodicfuns{"$_[0]"} = $_[1];
 }
 
 sub addkeys {

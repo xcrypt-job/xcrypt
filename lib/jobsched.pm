@@ -51,14 +51,15 @@ my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared = ();
 # 定期的実行文字列が登録されている配列
-our @periodicfuns : shared = ();
+our %periodicfuns : shared = ();
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
 my %signaled_jobs : shared = ();
 my $all_jobs_signaled : shared = undef;
 
-our $periodic_check_thread=undef; # used in bin/xcrypt
+our $check_thread=undef; # used in bin/xcrypt
 my $abort_check_interval = $xcropt::options{abort_check_interval};
 
+our $periodic_thread=undef;
 
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
@@ -748,8 +749,20 @@ sub getjobids {
     return @jobids;
 }
 
-sub invoke_periodic_check {
-    $periodic_check_thread = threads->new( sub {
+sub invoke_periodic {
+    $periodic_thread = threads->new( sub {
+        while (1) {
+# ユーザ定義の定期的実行文字列
+	    foreach my $i (keys(%periodicfuns)) {
+		sleep $periodicfuns{"$i"};
+		eval "$i";
+	    }
+        }
+    });
+}
+
+sub invoke_abort_check {
+    $check_thread = threads->new( sub {
         while (1) {
             sleep $abort_check_interval;
             check_and_write_aborted();
@@ -758,11 +771,6 @@ sub invoke_periodic_check {
             ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
             ## とりあえずコメントアウト
 	    # &builtin::check_and_alert_elapsed();
-
-# ユーザ定義の定期的実行文字列
-	    foreach my $i (@periodicfuns) {
-		eval "$i";
-	    }
         }
     });
 }
