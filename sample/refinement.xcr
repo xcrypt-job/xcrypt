@@ -8,7 +8,7 @@ use base qw(simple_convergence core);
     'option' => '# @$-g gh10034',
 # possible to use the following by simple_convergence.pm
     'initialvalue' => '128',
-    'isConvergent' => '50',
+    'isConvergent' => '30',
     'inputfile' => 'common/template.dat',
     'sweepname' => 'param',
     'outputfile' => 'out',

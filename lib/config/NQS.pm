@@ -9,6 +9,7 @@ $jsconfig::jobsched_config{"NQS"} = {
     jobscript_proc => '# @$-lP ',
     jobscript_cpu => '# @$-lp ',
     jobscript_memory => '# @$-lm ',
+    jobscript_stack => '# @$-ls ',
     jobscript_verbose => '# @$-oi',
     jobscript_verbose_node => '# @$-OI',
     jobscript_workdir => '$QSUB_WORKDIR',

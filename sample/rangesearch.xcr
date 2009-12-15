@@ -21,7 +21,7 @@ use jobsched;
 #                                            $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0@' => [20,21]
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 30 + $R2;'
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 30 + $R2;'
     );
 &submit(@jobs);
 our $hoge : shared = 'HOGE';
