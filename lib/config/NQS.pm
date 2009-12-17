@@ -4,6 +4,7 @@ $jsconfig::jobsched_config{"NQS"} = {
     qdel_command => "/usr/bin/qdel -K",
     qstat_command => "/thin/local/bin/qstat",
     jobscript_queue => '# @$-q ',
+    jobscript_group => '# @$-g ',
     jobscript_stdout => '# @$-o ',
     jobscript_stderr => '# @$-e ',
     jobscript_proc => '# @$-lP ',

@@ -8,7 +8,7 @@ use Data_Generation;
     'arg2' => 'onePointCrossover', # how to crossover
     'arg3' => 'equivalence',       # probability of choice
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'group' => 'gh10034'
 );
 
 @jobs = &prepare(%template,

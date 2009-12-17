@@ -4,7 +4,7 @@ use Data_Extraction;
 %template = (
     'id' => 'job4',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'group' => 'gh10034'
     );
 
 &prepare_submit_sync(%template,

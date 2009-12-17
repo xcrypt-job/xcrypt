@@ -5,7 +5,7 @@ use base qw(simple_convergence core);
     'exe' => './half.pl',
     'linkedfile0' => 'common/half.pl',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
+    'group' => 'gh10034',
 # possible to use the following by simple_convergence.pm
     'initialvalue' => '128',
     'isConvergent' => '30',

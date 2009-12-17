@@ -151,6 +151,11 @@ sub qsub {
         print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
     }
     # other options
+    # computing resources
+    my $group = $self->{group};
+    if ( $group ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_group} ) {
+        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_group}, $group) . "\n";
+    }
     my $option = $self->{option};
     print SCRIPT "$option\n";
 

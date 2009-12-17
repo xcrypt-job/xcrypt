@@ -44,7 +44,7 @@ sub func1
 		'canDivideFunc' => $job->{canDivideFunc},
 		'divideFunc' => $job->{divideFunc},
 		'mergeFunc' => $job->{mergeFunc},
-		'option' => $job->{option},
+		'group' => $job->{group},
 		'ofname' => $job->{ofname}
 	);
 	my %j2 = (
@@ -55,7 +55,7 @@ sub func1
 		'divideFunc' => $job->{divideFunc},
 		'mergeFunc' => $job->{mergeFunc},
 		'queue' => $job->{queue},
-		'option' => $job->{option},
+		'group' => $job->{group},
 		'ofname' => $job->{ofname}
 	);
 
@@ -93,7 +93,7 @@ sub func2
     'divideFunc' => \&func1,
     'mergeFunc' => \&func2,
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
+    'group' => 'gh10034',
     'ofname' => 'out'
 );
 
