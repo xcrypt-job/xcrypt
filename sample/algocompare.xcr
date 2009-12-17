@@ -11,7 +11,7 @@ use base qw(core);
     'arg2' => '0',               # position
 #    'arg3' => 'tree1',          # static evaluation
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'group' => 'gh10034'
 );
 
 &prepare_submit_sync(%template,

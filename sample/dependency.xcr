@@ -4,20 +4,20 @@ use base qw(successor core);
     'id' => 'job10',
     'exe' => 'echo 10',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
+    'group' => 'gh10034',
     'successors' => ['child0', 'child2']
     );
 %child0 = (
     'id' => 'job11',
     'exe' => 'echo 11',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'group' => 'gh10034'
     );
 %child2 = (
     'id' => 'job12',
     'exe' => 'echo 12',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'group' => 'gh10034'
     );
 
 &prepare_submit_sync(%parent);
