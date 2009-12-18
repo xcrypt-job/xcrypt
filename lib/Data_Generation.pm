@@ -244,11 +244,17 @@ sub do{
                         $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$outfile_quote.$value_datas[$index1].$outfile_quote;
                     } else {
                         # （クォートなし）
-                        @outfile_datas2 = split /(\s)/, "$outfile_datas1[2]", 2;
-                        if ($value_datas[$index1] =~ /\D/) {
-                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
-                        } else {
+                        #@outfile_datas2 = split /(\s)/, "$outfile_datas1[2]", 2;
+                        #if ($value_datas[$index1] =~ /\D$/) {
+                        #    $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
+                        #} else {
+                        #    $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
+                        #}
+                        @outfile_datas2 = split /(,|\s)/, "$outfile_datas1[2]", 2;
+                        if ($value_datas[$index1] =~ /^[\+-]\d+\.*\d*$/) {
                             $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
+                        } else {
+                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
                         }
                     }
                     if ($outfile_datas2[2] ne '') {
