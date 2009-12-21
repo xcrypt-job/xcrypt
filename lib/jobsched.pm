@@ -8,6 +8,8 @@ use Cwd;
 use File::Basename;
 use File::Spec;
 use IO::Socket;
+use Time::HiRes;
+
 use common;
 use xcropt;
 use jsconfig;
@@ -30,13 +32,18 @@ my $write_command = undef;
 if ($inventory_port > 0) {
     $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
 } else {
-    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_write.pl');
+    $write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_file.pl');
 }
+# for inventory_write_file
+my $LOCKDIR = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_lock'));
+my $REQUESTFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_req'));
+my $ACKFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_ack'));
+my $REQUEST_TMPFILE = $REQUESTFILE . '.tmp';
+my $ACK_TMPFILE = $ACKFILE . '.tmp';
+rmdir $LOCKDIR;
+unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
 
-# pjo_inventory_watch.pl は出力をバッファリングしない設定 ($|=1)
-# にしておくこと（fujitsuオリジナルはそうなってない）
-my $watch_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'pjo_inventory_watch.pl');
-my $watch_opt="-i summary -e all -t 86400 -s"; # -s: signal end mode
+# 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread=undef; # used in bin/xcrypt
 
 # ジョブ名→ジョブのrequest_id
@@ -290,10 +297,8 @@ sub inventory_write_cmdline {
     status_name_to_level ($stat); # 有効な名前かチェック
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
-    } else { 
-        my $file = File::Spec->catfile($inventory_path, $jobname);
-        my $jobspec = "\"spec: $jobname\"";
-        return "$write_command $file \"$stat\" $jobspec";
+    } else {
+        return "$write_command $LOCKDIR $REQUESTFILE $ACKFILE $jobname $stat";
     }
 }
 
@@ -384,28 +389,59 @@ sub invoke_watch {
 
 # 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
 sub invoke_watch_by_file {
-    # inventory_watchが，監視準備ができたことを通知するために設置するファイル
-    my $invwatch_ok_file = "$inventory_path/.tmp/.pjo_invwatch_ok";
-    # 起動前にもしあれば消しておく
-    if ( -e $invwatch_ok_file ) { unlink $invwatch_ok_file; }
-    # 以下，監視スレッドの処理
-    $watch_thread =  threads->new( sub {
-        # open (INVWATCH_LOG, ">", "$inventory_path/log");
-        open (INVWATCH, "$watch_command $inventory_path $watch_opt |")
-            or die "Failed to execute inventory_watch.";
+    # 監視スレッドの処理
+    $watch_thread = threads->new( sub {
+        my $interval = 0.1;
         while (1) {
-            while (<INVWATCH>){
-                # print INVWATCH_LOG "$_";
-                handle_inventory ($_);
+            common::wait_file ($REQUESTFILE, $interval);
+            open (my $CLIENT_IN, '<', $REQUESTFILE) || next;
+            my $inv_text = '';
+            my $handle_inventory_ret = 0;
+            # クライアントからのメッセージは
+            # (0行以上のメッセージ行)+(":end"で始まる行)
+            while (<$CLIENT_IN>) {
+                if ( $_ =~ /^:/ ) {
+                    if ( $_ =~ /^:end/ ) {
+                        # print STDERR "received :end\n";
+                        last;
+                    }
+                } else {
+                    # ':' で始まる行を除いてinventory_fileに保存する
+                    $inv_text .= $_;
+                }
+                # 一度エラーがでたら以降のhandle_inventoryはとばす
+                if ( $handle_inventory_ret >= 0 ) {
+                    $handle_inventory_ret = handle_inventory ($_, 1);
+                }
             }
-            close (INVWATCH);
-            # print "watch finished.\n";
-            open (INVWATCH, "$watch_command $inventory_path $watch_opt -c |");
+            close ($CLIENT_IN);
+            unlink $REQUESTFILE;
+            ###
+            my $CLIENT_OUT = undef;
+            until ($CLIENT_OUT) {
+                open ($CLIENT_OUT, '>', $ACK_TMPFILE);
+                unless ($CLIENT_OUT) {
+                    warn ("Failed to make ackfile $ACK_TMPFILE");
+                    sleep 1;
+                }
+            }
+            if ($handle_inventory_ret >= 0) {
+                # エラーがなければinventoryファイルにログを書き込んで:ackを返す
+                my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
+                open ( my $SAVE, ">> $inv_save") or die "Failed to write inventory_file $inv_save";
+                print $SAVE $inv_text;
+                close ($SAVE);
+                print $CLIENT_OUT ":ack\n";
+                # print STDERR "sent :ack\n";
+            } else {
+                # エラーがあれば:failedを返す（inventory fileには書き込まない）
+                print $CLIENT_OUT ":failed\n";
+                # print STDERR "sent :failed\n";
+            }
+            close ($CLIENT_OUT);
+            rename $ACK_TMPFILE, $ACKFILE;
         }
-        # close (INVWATCH_LOG);
-    });
-    # inventory_watchの準備ができるまで待つ
-    until ( -e $invwatch_ok_file ) { sleep 1; }
+                                  })
 }
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
@@ -422,12 +458,12 @@ sub invoke_watch_by_socket {
         while (1) {
             my $paddr = accept (CLIENT, CLIENT_WAITING);
             unless ($paddr) {next;}
+            select(CLIENT); $|=1; select(STDOUT);
             my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
             my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
             my $cl_ip = inet_ntoa ($cl_iaddr);
             my $inv_text = '';
             my $handle_inventory_ret = 0;
-            select(CLIENT); $|=1; select(STDOUT);
             # クライアントからのメッセージは
             # (0行以上のメッセージ行)+(":end"で始まる行)
             while (<CLIENT>) {
