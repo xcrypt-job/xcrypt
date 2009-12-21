@@ -6,38 +6,37 @@ use Time::HiRes;
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
 
-my $log;
-open ($log, ">> invwrite-sock.log");
-select($log); $|=1; select(STDOUT);
+my $LOG;
+open ($LOG, ">> invwrite-sock.log");
+select($LOG); $|=1; select(STDOUT);
 
 if ( @ARGV < 4 ) {
-    print $log "usage: $0 [hostname] [port] [jobname] [status]\n";
+    print STDERR "usage: $0 [hostname] [port] [jobname] [status]\n";
     exit -1;
 }
 
-my $host = $ARGV[0];
-my $port = $ARGV[1];
+my $HOST = $ARGV[0];
+my $PORT = $ARGV[1];
+my $JOBNAME = $ARGV[2];
+my $STATUS = $ARGV[3];
 
-my $jobname = $ARGV[2];
-my $status = $ARGV[3];
+my $RETRY_P = 1;
 
-my $retry = 1;
-
-while ($retry) {
+while ($RETRY_P) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
         if ( 0 ) {
-            die "Failed to connect $host:$port. $!\n";
+            die "Failed to connect $HOST:$PORT. $!\n";
         }
         $n_trial++;
-        $socket = IO::Socket::INET->new (PeerAddr => $host,
-                                         PeerPort => $port,
+        $socket = IO::Socket::INET->new (PeerAddr => $HOST,
+                                         PeerPort => $PORT,
                                          Proto => 'tcp',
         );
         unless ($socket) {
             my $slp = 0.1+rand(1.0);
-            print $log "Failed to connect $host:$port. Retry after $slp seconds.\n";
+            print $LOG "$JOBNAME\[$STATUS\]: Failed to connect $HOST:$PORT. Retry after $slp seconds.\n";
             Time::HiRes::sleep $slp;
         }
     }
@@ -47,28 +46,26 @@ while ($retry) {
     my @times = localtime($time_now);
     my ($year, $mon, $mday, $hour, $min, $sec, $wday) = ($times[5] + 1900, $times[4] + 1, $times[3], $times[2], $times[1], $times[0], $times[6]);
     my $timestring = sprintf("%04d%02d%02d_%02d:%02d:%02d", $year, $mon, $mday, $hour, $min, $sec);
-    
-    ###
-    print $socket "spec: $jobname\n";
-    print $socket "status: $status\n";
-    print $socket "date_$status: $timestring\n";
-    print $socket "time_$status: $time_now\n";
+    print $socket "spec: $JOBNAME\n";
+    print $socket "status: $STATUS\n";
+    print $socket "date_$STATUS: $timestring\n";
+    print $socket "time_$STATUS: $time_now\n";
     print $socket ":end\n";
-    
-    print $log "$jobname\[$status\]: waiting ack\n";
+    ###
+    print $LOG "$JOBNAME\[$STATUS\]: waiting ack\n";
     my $ackline =  <$socket>;
     chomp $ackline;
+    print $LOG "$JOBNAME\[$STATUS\]: received $ackline\n";
     if ( $ackline =~ /^:ack/ ) {
-        $retry = 0;
+        $RETRY_P = 0;
     } elsif ( $ackline =~ /^:failed/ ) {
         my $slp = 0.1+rand(1.0);
         Time::HiRes::sleep $slp;
     } else {
         die "Unexpected ack message: $ackline";
     }
-    print $log "$jobname\[$status\]: received $ackline\n";
     $socket->close();
 }
 
-print $log "$jobname\[$status\]: successfully done\n";
-close($log);
+print $LOG "$JOBNAME\[$STATUS\]: successfully done\n";
+close($LOG);

@@ -3,6 +3,7 @@ package common;
 use strict;
 use Cwd;
 use File::Spec;
+use Time::HiRes;
 
 sub get_jobids {
     my $current_directory=Cwd::getcwd();
@@ -27,5 +28,11 @@ sub cmd_executable {
     # print "$? $ex_code ";
     return ($ex_code==0)? 1 : 0;
 }
+
+sub wait_file {
+    my ($path, $interval) = @_;
+    until ( -e $path ) { Time::HiRes::sleep ($interval); }
+}
+
 
 1;
