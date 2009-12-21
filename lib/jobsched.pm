@@ -24,8 +24,7 @@ my $jobsched = $ENV{'XCRJOBSCHED'};
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
 my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
-# print "inventory_port: $inventory_port\n"
-my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
+my $inventory_path=$xcropt::options{inventory_path};
 my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
 
 my $write_command = undef;
