@@ -1,7 +1,4 @@
 use base qw(limit core);
-use threads::shared;
-use jobsched;
-
 &limit::initialize(10);
 
 %template = (
