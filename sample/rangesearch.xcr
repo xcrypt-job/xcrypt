@@ -8,8 +8,11 @@ use base qw(limit core);
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',          #
+    'cpu' => '1',
 #
-    'group' => 'gh10034'
+#    'group' => 'gh10034'
+    'option' => '#% -T 30', # for tsukuba
+    'group' => 'ESCIENCE'
 );
 
 @jobs = &prepare(%template,
