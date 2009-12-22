@@ -251,14 +251,18 @@ sub do{
                         #    $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
                         #}
                         @outfile_datas2 = split /(,|\s)/, "$outfile_datas1[2]", 2;
-                        if ($value_datas[$index1] =~ /^[\+-]\d+\.*\d*$/) {
+                        if ($value_datas[$index1] =~ /^[\+-]*\d+\.*\d*$/) {
                             $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
                         } else {
                             $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
                         }
                     }
+                    #if ($outfile_datas2[2] ne '') {
+                    #    $outfile_data .= (substr $outfile_datas2[1], -1).$outfile_datas2[2];
+                    #}
+                    $outfile_data .= (substr $outfile_datas2[1], -1);
                     if ($outfile_datas2[2] ne '') {
-                        $outfile_data .= (substr $outfile_datas2[1], -1).$outfile_datas2[2];
+                        $outfile_data .= $outfile_datas2[2];
                     }
                     $replace_data = $outfile_data;
                 }
