@@ -1,3 +1,8 @@
+############################################
+# ＜＜入力データ生成＞＞                   #
+# Copyright FUJITSU LIMITED 2009           #
+# Ver=0.2 2009/12/22                       #
+############################################
 package Data_Generation;
 use Exporter;
 @ISA = (Exporter);
@@ -244,22 +249,32 @@ sub do{
                         $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$outfile_quote.$value_datas[$index1].$outfile_quote;
                     } else {
                         # （クォートなし）
-                        #@outfile_datas2 = split /(\s)/, "$outfile_datas1[2]", 2;
-                        #if ($value_datas[$index1] =~ /\D$/) {
-                        #    $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
-                        #} else {
-                        #    $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
-                        #}
                         @outfile_datas2 = split /(,|\s)/, "$outfile_datas1[2]", 2;
-                        if ($value_datas[$index1] =~ /^[\+-]*\d+\.*\d*$/) {
-                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
+                        if ($value_datas[$index1] =~ /^\((.*)\)$/) {
+                            # （カッコあり(複素数)）
+                            my @outfile_datas3 = split /(\s+\,*\s*|\,+\s*)/, $1;
+                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'(';
+                            for (my $index2=0; $index2 <= $#outfile_datas3; $index2++) {
+                                if (($index2%2 ? "1" : "2") == 2) {
+                                    if ($outfile_datas3[$index2] =~ /^[\+-]*\d+\.*\d*[DdEeQq\+-_]*\d*$|^[\+-]*\.\d*[DdEeQq\+-_]*\d*$/) {
+                                        $outfile_data .= $outfile_datas3[$index2];
+                                    } else {
+                                        $outfile_data .= '"'.$outfile_datas3[$index2].'"';
+                                    }
+                                } else {
+                                    $outfile_data .= $outfile_datas3[$index2];
+                                }
+                            }
+                            $outfile_data .= ')';
                         } else {
-                            $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
+                            # （カッコなし(実数、単精度実数、倍精度実数、8バイト整数)）
+                            if ($value_datas[$index1] =~ /^[\+-]*\d+\.*\d*[DdEeQq\+-_]*\d*$|^[\+-]*\.\d*[DdEeQq\+-_]*\d*$/) {
+                                $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
+                            } else {
+                                $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'"'.$value_datas[$index1].'"';
+                            }
                         }
                     }
-                    #if ($outfile_datas2[2] ne '') {
-                    #    $outfile_data .= (substr $outfile_datas2[1], -1).$outfile_datas2[2];
-                    #}
                     $outfile_data .= (substr $outfile_datas2[1], -1);
                     if ($outfile_datas2[2] ne '') {
                         $outfile_data .= $outfile_datas2[2];
