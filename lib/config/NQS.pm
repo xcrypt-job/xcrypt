@@ -1,4 +1,4 @@
-# Config file for NQS
+# Config file for Kyoto Fujitsu NQS
 $jsconfig::jobsched_config{"NQS"} = {
     qsub_command => "/thin/local/bin/qsub",
     qdel_command => "/usr/bin/qdel -K",
