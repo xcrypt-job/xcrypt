@@ -15,7 +15,7 @@ foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
 
 my $xcrfile = shift @ARGV;
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
-    die "A first argument should be an Xcrypt script.\n";
+    die "The first argument should be an Xcrypt script.\n";
 }
 
 my $xcrplfile = "$xcrfile" . '.pl';
@@ -50,7 +50,7 @@ print TMP 'sleep(2);' . "\n";
 # print TMP '$builtin::before_thread->detach;' . "\n";
 # print TMP '$builtin::after_thread->detach;' . "\n";
 print TMP '$jobsched::watch_thread->detach;' . "\n";
-print TMP '$jobsched::check_thread->detach;' . "\n";
+print TMP '$jobsched::abort_check_thread->detach;' . "\n";
 print TMP '$jobsched::periodic_thread->detach;' . "\n";
 close(TMP);
 close(USER);

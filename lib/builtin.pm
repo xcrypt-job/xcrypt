@@ -11,7 +11,7 @@ use Cwd;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
-addkeys addperiodiccheck getelapsedtime
+addkeys addperiodic getelapsedtime
 );
 
 my $before_thread = undef;
@@ -86,8 +86,13 @@ sub check_and_alert_elapsed {
     }
 }
 
-sub addperiodiccheck {
-    $jobsched::periodicfuns{"$_[0]"} = $_[1];
+my $default_period = 10;
+sub addperiodic {
+    if (defined $_[1]) {
+	$jobsched::periodicfuns{"$_[0]"} = $_[1];
+    } else {
+	$jobsched::periodicfuns{"$_[0]"} = $default_period;
+    }
 }
 
 sub addkeys {

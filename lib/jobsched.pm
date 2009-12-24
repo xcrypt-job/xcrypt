@@ -62,7 +62,7 @@ our %periodicfuns : shared = ();
 my %signaled_jobs : shared = ();
 my $all_jobs_signaled : shared = undef;
 
-our $check_thread=undef; # used in bin/xcrypt
+our $abort_check_thread=undef; # used in bin/xcrypt
 my $abort_check_interval = $xcropt::options{abort_check_interval};
 
 our $periodic_thread=undef;
@@ -445,7 +445,7 @@ sub invoke_watch_by_file {
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
-    $watch_thread = threads-> new ( sub {
+    $watch_thread = threads->new( sub {
         socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
             or die "Can't make socket. $!";
         setsockopt (CLIENT_WAITING, SOL_SOCKET, SO_REUSEADDR, 1)
@@ -806,7 +806,7 @@ sub invoke_periodic {
 }
 
 sub invoke_abort_check {
-    $check_thread = threads->new( sub {
+    $abort_check_thread = threads->new( sub {
         while (1) {
             sleep $abort_check_interval;
             check_and_write_aborted();
