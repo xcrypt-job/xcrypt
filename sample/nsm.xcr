@@ -1,0 +1,29 @@
+use base qw(core);
+use Data_Generation;
+use Data_Extraction;
+use n_section_method;
+
+%xyz = (
+    'id' => 'job0',
+    'exe' => './echo.pl',
+    'arg0' => 'template.dat',
+    'linkedfile0' => 'common/echo.pl',
+    'copiedfile0' => 'common/template.dat',
+    'queue' => 'gh10034'
+);
+
+# 5分法，[-1,1]の範囲，0.01の誤差は零点と見なす，$_[0] がパラメタ，
+# f(1)>0, f(-1)<0 を仮定．
+my ($x, $y) = &n_section_method(5, -1, 1, 0.1, sub {
+    $xyz{'id'} = $xyz{'id'} . '_' . $_[0];
+    my @job = &prepare(%xyz);
+    my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$xyz{'id'}");
+    $input->KR("foo", "$_[0]");
+    $input->do;
+    &submit_sync(@job);
+    my $tmp = EF("file:$ENV{PWD}/$xyz{'id'}/output.dat");
+    $tmp->ED('L/E');
+    my @output = $tmp->ER();
+    return $output[0];
+					  });
+print 'The value is ' . $y . ' when foo = ' . $x . ".\n";
