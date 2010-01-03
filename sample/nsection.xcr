@@ -5,16 +5,15 @@ use n_section_method;
 
 %xyz = (
     'id' => 'job0',
-    'exe' => './echo.pl',
+    'exe' => './minushundredtimes.pl',
     'arg0' => 'template.dat',
-    'linkedfile0' => 'common/echo.pl',
-    'copiedfile0' => 'common/template.dat',
+    'linkedfile0' => 'common/minushundredtimes.pl',
     'queue' => 'gh10034'
 );
 
-# 5分法，[-1,1]の範囲，0.01の誤差は零点と見なす，$_[0] がパラメタ，
-# f(1)>0, f(-1)<0 を仮定．
-my ($x, $y) = &n_section_method(5, -1, 1, 0.1, sub {
+# 35分法，[-1,1]の範囲，0.1の誤差で零点と見なす，$_[0] がパラメタ，
+# f(-1)=100, f(1)=-100 を仮定．
+my ($x, $y) = &n_section_method(35, -1, 100, 1, -100, 0.1, sub {
     $xyz{'id'} = $xyz{'id'} . '_' . $_[0];
     my @job = &prepare(%xyz);
     my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$xyz{'id'}");
