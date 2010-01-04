@@ -2,8 +2,9 @@ use base qw(simple_convergence core);
 
 %template = (
     'id' => 'job7',
-    'exe' => './half.pl',
-    'linkedfile0' => 'common/half.pl',
+    'exe' => './minushalf.pl',
+    'arg0' => 'template.dat',
+    'linkedfile0' => 'common/minushalf.pl',
     'queue' => 'gh10034',
     'group' => 'gh10034',
 # possible to use the following by simple_convergence.pm
@@ -11,7 +12,7 @@ use base qw(simple_convergence core);
     'isConvergent' => '30',
     'inputfile' => 'common/template.dat',
     'sweepname' => 'param',
-    'outputfile' => 'out',
+    'outputfile' => 'output.dat',
     'extractrules' => [['C/1', 'L/E'], ['L/1']]
 );
 
