@@ -11,10 +11,12 @@ use n_section_method;
     'queue' => 'gh10034'
 );
 
-# 35分法，[-1,1]の範囲，0.1の誤差で零点と見なす，f(-1)=100, f(1)=-100 を仮定．
-# 第7引数について，$_[0]にx値が充てられるのでユーザの責任でy値をreturnすること．
-my ($x, $y) = &n_section_method(5, -1, 0.5, 1, -0.5, 0.01, sub {
+# 7分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(1)=-0.5 を仮定．
+# 第7引数について，$_[0]にx値が充てられるのでユーザの責任で
+# 「ジョブidをidに代入する」「y値をresultに代入する」を行うこと．
+my ($x, $y) = &n_section_method(7, -1, 0.5, 1, -0.5, 0.01, sub {
     $xyz{'id'} = $xyz{'id'} . '_' . $_[0];
+    $n_section_method::id{"$_[0]"} = $xyz{'id'};
     my @job = &prepare(%xyz);
     my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$xyz{'id'}");
     $input->KR("param", "$_[0]");
@@ -23,6 +25,6 @@ my ($x, $y) = &n_section_method(5, -1, 0.5, 1, -0.5, 0.01, sub {
     my $tmp = EF("file:$ENV{PWD}/$xyz{'id'}/output.dat");
     $tmp->ED('L/E');
     my @output = $tmp->ER();
-    return $output[0];
-					  });
+    $n_section_method::result{"$_[0]"} = $output[0];
+				});
 print 'The value is ' . $y . ' when param = ' . $x . ".\n";
