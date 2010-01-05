@@ -3,6 +3,7 @@ package n_section_method;
 use base qw(Exporter);
 use threads;
 use threads::shared;
+use jobsched;
 our @EXPORT = qw(n_section_method);
 
 our %result : shared;
@@ -14,7 +15,7 @@ sub n_section_method {
     my $pt_k;
     my $pt;
     my %thrd;
-    my %joined;
+    my %joined_or_detached;
     do {
 	%result = ();
 	$seg = ($rt_k - $lt_k) / $num;
@@ -34,37 +35,26 @@ sub n_section_method {
 		    && ($result{"$k"} != $infinity)
 		    && ($result{"$k"} != 0 - $infinity)) {
 		    foreach my $l (keys(%result)) {
-			if ((0 <= $result{"$k"}) &&
-			    ((($lt <= $rt) && ($k < $l))
-			     || (($rt <= $lt) && ($l < $k)))
-			    ) {
-			    if ($joined{"$l"} == 0) {
+			if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k)) {
+			    if ($joined_or_detached{"$l"} == 0) {
 				my $jobid = $id{"$l"};
 				if ($jobid) {
 				    qx/xcryptdel $jobid/;
+#				    &jobsched::qdel($jobid);
 				    $thrd{"$l"}->detach;
-				    $joined{"$l"} = 1;
-				    $result{"$l"} = $infinity;
-				}
-			    }
-			} elsif (($result{"$k"} < 0) &&
-				 ((($lt <= $rt) && ($l < $k))
-				  || (($rt <= $lt) && ($k < $l)))
-			    ) {
-			    if ($joined{"$l"} == 0) {
-				my $jobid = $id{"$l"};
-				if ($jobid) {
-				    qx/xcryptdel $jobid/;
-				    $thrd{"$l"}->detach;
-				    $joined{"$l"} = 1;
-				    $result{"$l"} = 0 - $infinity;
+				    $joined_or_detached{"$l"} = 1;
+				    if (0 < $result{"$k"}) {
+					$result{"$l"} = $infinity;
+				    } else {
+					$result{"$l"} = 0 - $infinity;
+				    }
 				}
 			    }
 			}
 		    }
-		    if ($joined{"$k"} == 0) {
+		    if ($joined_or_detached{"$k"} == 0) {
 			$thrd{"$k"}->join;
-			$joined{"$k"} = 1;
+			$joined_or_detached{"$k"} = 1;
 		    }
 		}
 	    }
@@ -76,7 +66,12 @@ sub n_section_method {
 		}
 	    }
 	}
-	($lt_k, $lt, $rt_k, $rt) = pair_near_zero($lt_k, $lt, $rt_k, $rt, %result);
+
+#	foreach my $k (keys(%result)) {
+#	    print $k . '_' . $result{"$k"} . "\n";
+#	}
+
+	($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
 	if (abs($lt) < abs($rt)) {
 	    $pt_k = $lt_k;
 	    $pt = $lt;
@@ -88,7 +83,7 @@ sub n_section_method {
     return ($pt_k, $pt);
 }
 
-sub pair_near_zero {
+sub across_zero {
     my %arg = @_;
     my $min_k;
     my $max_k;
