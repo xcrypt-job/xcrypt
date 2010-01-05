@@ -8,6 +8,7 @@ our @EXPORT = qw(n_section_method);
 
 our %result : shared;
 our %id : shared;
+our $del_extra_jobs = 0;
 
 my $infinity = (2 ** 31) + 1;
 sub n_section_method {
@@ -16,7 +17,9 @@ sub n_section_method {
     my $pt;
     my %thrd;
     my %joined_or_detached;
+    my $count = -1;
     do {
+	$count++;
 	%result = ();
 	$seg = ($rt_k - $lt_k) / $num;
 	foreach (1..($num-1)) {
@@ -25,22 +28,23 @@ sub n_section_method {
 	}
 	foreach (1..($num-1)) {
 	    $pt_k = $lt_k + ($_ * $seg);
-	    $thrd{"$pt_k"} = threads->new( \&$fun, $pt_k );
+	    $thrd{"$pt_k"} = threads->new(\&$fun, $pt_k, $count);
 	}
-	my $flag = 0;
-	until ($flag == 1) {
-	    sleep(3);
-	    foreach my $k (keys(%result)) {
-		if ((defined $result{"$k"})
-		    && ($result{"$k"} != $infinity)
-		    && ($result{"$k"} != 0 - $infinity)) {
-		    foreach my $l (keys(%result)) {
-			if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k)) {
-			    if ($joined_or_detached{"$l"} == 0) {
+
+	if ($del_extra_jobs == 1) {
+	    my $flag = 0;
+	    until ($flag == 1) {
+		sleep(3);
+		foreach my $k (keys(%result)) {
+		    if ((defined $result{"$k"}) &&
+			($joined_or_detached{"$k"} == 0)) {
+			foreach my $l (keys(%result)) {
+			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
+				($joined_or_detached{"$l"} == 0)) {
 				my $jobid = $id{"$l"};
 				if ($jobid) {
 				    qx/xcryptdel $jobid/;
-#				    &jobsched::qdel($jobid);
+#				&jobsched::qdel($jobid);
 				    $thrd{"$l"}->detach;
 				    $joined_or_detached{"$l"} = 1;
 				    if (0 < $result{"$k"}) {
@@ -51,26 +55,25 @@ sub n_section_method {
 				}
 			    }
 			}
+			if ($joined_or_detached{"$k"} == 0) {
+			    $thrd{"$k"}->join;
+			    $joined_or_detached{"$k"} = 1;
+			}
 		    }
+		}
+		$flag = 1;
+		foreach my $k (keys(%result)) {
 		    if ($joined_or_detached{"$k"} == 0) {
-			$thrd{"$k"}->join;
-			$joined_or_detached{"$k"} = 1;
+			$flag = 0 * $flag;
 		    }
 		}
 	    }
-	    $flag = 1;
+	} else {
 	    foreach my $k (keys(%result)) {
-		if (defined $result{"$k"}) {
-		} else {
-		    $flag = 0 * $flag;
-		}
+#		print $k . '_' . $result{"$k"} . "\n";
+		$thrd{"$k"}->join;
 	    }
 	}
-
-#	foreach my $k (keys(%result)) {
-#	    print $k . '_' . $result{"$k"} . "\n";
-#	}
-
 	($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
 	if (abs($lt) < abs($rt)) {
 	    $pt_k = $lt_k;
