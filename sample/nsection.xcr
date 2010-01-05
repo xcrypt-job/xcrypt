@@ -3,7 +3,7 @@ use Data_Generation;
 use Data_Extraction;
 use n_section_method;
 
-$n_section_method::del_extra_jobs = 0;
+$n_section_method::del_extra_jobs = 1;
 
 %xyz = (
     'id' => 'job0',
