@@ -4,7 +4,7 @@ use base qw(limit core);
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
-    'arg0' => '30',
+    'arg0' => '50',
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',          #

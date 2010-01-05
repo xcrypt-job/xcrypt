@@ -1,4 +1,4 @@
-\documentclass[report]{jsbook}
+\documentclass[a4paper,10pt]{report}
 
 \usepackage{tascmac}
 \usepackage{alltt}
@@ -8,24 +8,24 @@
 \def\|{\verb|} %|
 %
 
-\title{Xcrypt マニュアル}
-\author{京大中島研e-scienceグループ}
+\title{Xcrypt Manual}
+\author{E-science Group, Nakashima Laboratory, Kyoto University}
 
 \begin{document}
 \maketitle
 \tableofcontents
 
-\paragraph{メモ}
+\paragraph{Memo}
 
 Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ない
 はず．
 
 ？氏の Coro.pm を使用している．Perl ライセンスなので問題ないはず．
 
-\part{総論}
-\chapter{はじめに}
+\part{General}
+\chapter{Introduction}
 
-\section{機能}
+\section{Overview}
 
 通常，ある一つの大きな処理を行うには，その処理を小分け（ジョブと呼ぶ）
 にし，それらの処理をジョブスケジューラに依頼する．具体的には，
@@ -46,22 +46,22 @@ Daniel Muey 氏の Recursive.pm を使用している．ライセンス的には問題ない
 TODO: サーチアルゴリズム等のアルゴリズムモジュールの提供についても記述
 する．
 
-\section{動作環境}
+\section{Environment}
 
 ・sh 系（sh，bash，zsh 等）または csh 系（csh，tcsh 等）シェル
 
 ・Perl 5.10.0（GUI 利用時には Perl/Tk 8.4 も要）
 
 
-\chapter{Xcrypt スクリプトの記述}
+\chapter{Description}
 
 Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
 クリプトである．しかし，Xcrypt はジョブに関する操作の補助を行うものと考
 えられ，Xcrypt スクリプトは典型的には以下の順に記述される．
 
-\def\usemodule{モジュールに関する記述}
-\def\defjobdefhash{ジョブ定義ハッシュに関する記述}
-\def\operation{ジョブ処理に関する記述}
+\def\usemodule{Module}
+\def\defjobdefhash{Job Definition Hash}
+\def\operation{Job Processing}
 
 \begin{enumerate}
  \item \usemodule
@@ -148,7 +148,7 @@ addkeys('userdefinedkey0', 'userdefinedkey1');
 通常，人手で行う処理で，今回，Xcrypt に行わせたい処理について記述す
 る．Xcrypt で利用可能な関数については\ref{chapfun}章で述べる．
 
-\section{記述例}\label{secscriptexample}
+\section{Example}\label{secscriptexample}
 
 本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
 
@@ -177,11 +177,11 @@ $separator = '-';
 \end{boxnote}
 
 
-\chapter{ジョブ処理の流れ}
+\chapter{Flow}
 
 実際のジョブ処理の流れについて概観する．
 
-\section{概念図}\label{sec:states}
+\section{Model}\label{sec:states}
 
 \[
 \entrymodifiers={+[F-:<10pt>]}
@@ -198,7 +198,7 @@ $separator = '-';
 }
 \]
 
-\section{実行方法}
+\section{Execution}
 
 環境変数 \texttt{XCRYPT} を Xcrypt をインストールしたディレクトリで定義
 する（ここでは \texttt{/usr/share/xcrypt} と仮定する）．シェルが bash
@@ -234,7 +234,7 @@ Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
 \texttt{\$ \$XCRYPT/bin/xcrypt sample.xcr}
 \end{screen}
 
-\section{作成物}\label{sec:created}
+\section{Product}\label{sec:created}
 
 Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 
@@ -288,50 +288,53 @@ Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
 \texttt{stdefile}キーの値が指定されている場合，その値のファイル名で作成
 される．
 
-\part{各論}
-\chapter{モジュール}\label{chapmodule}
+\part{Details}
+\chapter{Module}\label{chapmodule}
 
-Xcrypt スクリプトで利用可能なモジュールについて紹介する．
+In this chapter, we introduce some modules available in Xcrypt scripts.
 
 \section{\texttt{core}}
 
-Xcrypt コアを読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）を使用
-する場合には必ず読み込まないといけない．
+This module is the Xcrypt core module, and required to be read in
+order to use anything paricular to Xcrypt (e.g., a job definiton
+hash).
 
-Xcrypt スクリプトで $\texttt{\$separator}$という変数が使えるようになる．
-
-ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける\texttt{id}と
-\texttt{arg}\textit{i}たちを\texttt{\$separator}で区切った名前のディレ
-クトリを作成する．\texttt{\$separator}のデフォルト値は「\texttt{\_}」で
-ある．「\texttt{-}」に変えたい場合は，
+It creates a directory of the name
+\begin{center}
+ \texttt{\$myjob->\{'id'\}} \texttt{\$separator}
+ \texttt{\$myjob->\{'arg0'\}} \texttt{\$separator} ...
+\end{center}
+under the job working directory, where \texttt{\%myjob} is a job
+definition hash.  The default of \texttt{\$separator} is \texttt{\_}.
+In order to redefine \texttt{\$separator} to be \texttt{-}, for
+example, it is enough to describe as follows,
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
 \end{verbatim}
 \end{boxnote}
-とする．
 
-使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
-能文字とする．
+Any word of ASCII printable characters except
+\begin{center}
+\verb*+@ "$%&'/:;<=>?[\]`{|}+
+\end{center}
+is available.
 
-また，Xcrypt スクリプトで$\texttt{\$separator\_nocheck}$という変数が使
-えるようになる．
-
-
-この値を $1$ にすると \texttt{\$separator} が使用できるシンボルである
-かのチェックを飛ばす．デフォルト値は $0$ である．
+This module also makes the variable $\texttt{\$separator\_nocheck}$ to
+be available in Xcrypt scripts.  When the value of
+$\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips to check
+\texttt{\$separator} for availability.  The default is $0$.
 
 \section{\texttt{limit}}
 
-投入するジョブの数を制限する．Xcrypt スクリプトで $\texttt{\$initialize}$ と
-いう関数が使えるようになるので，例えば，ジョブ数を$10$に制限したければ，
+This module limits the number of jobs to be submitted.  In order to
+limit the number of jobs to $10$, for example, it is enough to
+describe as follows,
 \begin{boxnote}
 \begin{verbatim}
 &limit::initialize(10);
 \end{verbatim}
 \end{boxnote}
-\noindent
-と記述して使う．
 
 \section{\texttt{successor}}
 
@@ -363,10 +366,10 @@ Plan-Do-Check-Action (PDCA) サイクルを容易に実現する関数を提供する．ジョ
 
 \section{\texttt{dry}}
 
-Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
-とができる．
+This module provides job processing in dry mode (skipping any command
+exectution).
 
-ジョブ定義ハッシュに
+Description in a job definition hash
 \begin{boxnote}
 \begin{verbatim}
 ...
@@ -375,7 +378,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \end{verbatim}
 \end{boxnote}
 \noindent
-と記述することでジョブがドライモードで動作する．
+makes any job (derived from this hash) to process in dry mode.
 
 \if0
 また，
@@ -423,16 +426,20 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 さで先読みした際の値をそれぞれ返す．
 \fi
 
-\chapter{ジョブ定義ハッシュ}\label{chapjobdefhash}
+\chapter{Job Definition Hash}\label{chapjobdefhash}
 
-ジョブ定義ハッシュにおいてデフォルトで利用可能なキーについて紹介する．
+In this chapter, we introduce some keys available in job definition
+hashes by default.
 
 \section{\texttt{id}}
 
 実行されるジョブを識別する語を記述する．
 
-使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可
-能文字とする．
+Any word of ASCII printable characters except
+\begin{center}
+\verb*+@ "$%&'/:;<=>?[\]`{|}+
+\end{center}
+is available.
 
 \section{\texttt{exe}}
 
