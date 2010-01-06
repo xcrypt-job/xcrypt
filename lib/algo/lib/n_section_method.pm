@@ -19,12 +19,9 @@ sub n_section_method {
 	$count++;
 	%result = ();
 	$seg = ($rt_k - $lt_k) / $num;
-	foreach (1..($num-1)) {
-	    $pt_k = $lt_k + ($_ * $seg);
-	    $result{"$pt_k"} = undef;
-	}
 	foreach my $i (1..($num-1)) {
 	    $pt_k = $lt_k + ($i * $seg);
+	    $result{"$pt_k"} = undef;
 	    my %tmp = %$obj;
 	    my %job = %tmp;
 	    $job{'id'} = $obj->{'id'} . '_' . $count . '_' . $pt_k;
@@ -90,29 +87,27 @@ sub n_section_method {
 }
 
 sub across_zero {
+    my $lt_k = shift;
+    my $lt = shift;
+    my $rt_k = shift;
+    my $rt = shift;
     my %arg = @_;
-    my $min_k;
-    my $max_k;
     my $min = 0 - $infinity;
     my $max = $infinity;
     foreach (keys(%arg)) {
-	if ($arg{"$_"} < 0) {
-	    if ($min < $arg{"$_"}) {
-		$min_k = $_;
-		$min = $arg{"$_"};
+	if ($lt * $arg{"$_"} < 0) {
+	    if ($_ < $rt_k) {
+		$rt_k = $_;
+		$rt = $arg{"$_"};
 	    }
 	} else {
-	    if ($arg{"$_"} < $max) {
-		$max_k = $_;
-		$max = $arg{"$_"};
+	    if ($lt_k < $_) {
+		$lt_k = $_;
+		$lt = $arg{"$_"};
 	    }
 	}
     }
-    if ($min_k < $max_k) {
-	return ($min_k, $min, $max_k, $max);
-    } else {
-	return ($max_k, $max, $min_k, $min);
-    }
+    return ($lt_k, $lt, $rt_k, $rt);
 }
 
 1;
