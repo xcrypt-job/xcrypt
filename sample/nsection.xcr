@@ -15,26 +15,21 @@ $n_section_method::del_extra_jobs = 0;
 );
 
 # 9分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(3)=-1.5 を仮定．
-# 第7引数について，$_[0]にx値，$_[1]にターン数が充てられるのでユーザの責任で
-# 「ジョブidをidに代入する」「y値をresultに代入する」を行うこと．
+# 第7,8引数について，$_[0]にジョブハッシュが充てられるので
+# ユーザの責任で「y値をreturnする」を行うこと．
 my @job;
-my ($x, $y) = &n_section_method(3, -1, 0.5, 1, -0.5, 0.01,
+my ($x, $y) = &n_section_method(\%xyz, 3, -1, 0.5, 1, -0.5, 0.01,
 				       sub {
-    my %abc = %xyz;
-    $abc{'id'} = $xyz{'id'} . '_' . $_[1] . '_' . $_[0];
-    $n_section_method::id{"$_[0]"} = $abc{'id'};
-    @job = &prepare(%abc);
-    my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$abc{'id'}");
-    $input->KR("param", "$_[0]");
-    $input->do;
-    &submit(@job);
+@job = &prepare(%{$_[0]});
+my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/" . "$_[0]->{'id'}");
+$input->KR("param", "$_[0]->{'param'}");
+$input->do;
+&submit(@job);
 				       }, sub {
-    my %abc = %xyz;
-    $abc{'id'} = $xyz{'id'} . '_' . $_[1] . '_' . $_[0];
-    &sync(@job);
-    my $tmp = EF("file:$ENV{PWD}/$abc{'id'}/output.dat");
-    $tmp->ED('L/E');
-    my @output = $tmp->ER();
-    $n_section_method::result{"$_[0]"} = $output[0];
+&sync(@job);
+my $tmp = EF("file:$ENV{PWD}/" . "$_[0]->{'id'}" . "/output.dat");
+$tmp->ED('L/E');
+my @output = $tmp->ER();
+return $output[0];
 				       });
 print 'The value is ' . $y . ' when param = ' . $x . ".\n";
