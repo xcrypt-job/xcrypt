@@ -2,15 +2,15 @@ package n_section_method;
 
 use base qw(Exporter);
 use jobsched;
+use builtin;
 our @EXPORT = qw(n_section_method);
-
-our %result;
-our %id;
 our $del_extra_jobs = 0;
-
+&addkeys('param');
 my $infinity = (2 ** 31) + 1;
+my %result;
+my %jobs;
 sub n_section_method {
-    my ($num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
+    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
     my $pt_k;
     my $pt;
     my %finishded_or_deleted;
@@ -24,10 +24,14 @@ sub n_section_method {
 	    $result{"$pt_k"} = undef;
 	}
 	foreach my $i (1..($num-1)) {
-	    my $lpt_k = $lt_k + ($i * $seg);
-	    &$submit($lpt_k, $count);
+	    $pt_k = $lt_k + ($i * $seg);
+	    my %tmp = %$obj;
+	    my %job = %tmp;
+	    $job{'id'} = $obj->{'id'} . '_' . $count . '_' . $pt_k;
+	    $job{'param'} = $pt_k;
+	    $jobs{"$pt_k"} = \%job;
+	    &$submit(\%job);
 	}
-
 	if ($del_extra_jobs == 1) {
 	    my $flag = 0;
 	    until ($flag == 1) {
@@ -38,7 +42,9 @@ sub n_section_method {
 			foreach my $l (keys(%result)) {
 			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
 				($finishded_or_deleted{"$l"} == 0)) {
-				my $jobid = $id{"$l"};
+				my $hash = $jobs{"$l"};
+				my %job = %$hash;
+				my $jobid = $job{'id'};
 				if ($jobid) {
 				    qx/xcryptdel $jobid/;
 #				&jobsched::qdel($jobid);
@@ -65,8 +71,10 @@ sub n_section_method {
 	    }
 	} else {
 	    foreach my $i (1..($num-1)) {
-		my $lpt_k = $lt_k + ($i * $seg);
-		&$sync($lpt_k, $count);
+		$pt_k = $lt_k + ($i * $seg);
+		my $hash = $jobs{"$pt_k"};
+		my %job = %$hash;
+		$result{"$pt_k"} = &$sync(\%job);
 	    }
 	    ($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
 	    if (abs($lt) < abs($rt)) {
