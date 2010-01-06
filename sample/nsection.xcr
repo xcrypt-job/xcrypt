@@ -3,30 +3,38 @@ use Data_Generation;
 use Data_Extraction;
 use n_section_method;
 
-$n_section_method::del_extra_jobs = 1;
+$n_section_method::del_extra_jobs = 0;
 
 %xyz = (
     'id' => 'job0',
     'exe' => './minushalf.pl',
     'arg0' => 'template.dat',
     'linkedfile0' => 'common/minushalf.pl',
+    'group' => 'gh10034',
     'queue' => 'gh10034'
 );
 
 # 9分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(3)=-1.5 を仮定．
 # 第7引数について，$_[0]にx値，$_[1]にターン数が充てられるのでユーザの責任で
 # 「ジョブidをidに代入する」「y値をresultに代入する」を行うこと．
-my ($x, $y) = &n_section_method(9, -1, 0.5, 3, -1.5, 0.01, sub {
-    $xyz{'id'} = $xyz{'id'} . '_' . $_[1] . '_' . $_[0];
-    $n_section_method::id{"$_[0]"} = $xyz{'id'};
-    my @job = &prepare(%xyz);
-    my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$xyz{'id'}");
+my @job;
+my ($x, $y) = &n_section_method(3, -1, 0.5, 1, -0.5, 0.01,
+				       sub {
+    my %abc = %xyz;
+    $abc{'id'} = $xyz{'id'} . '_' . $_[1] . '_' . $_[0];
+    $n_section_method::id{"$_[0]"} = $abc{'id'};
+    @job = &prepare(%abc);
+    my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/$abc{'id'}");
     $input->KR("param", "$_[0]");
     $input->do;
-    &submit_sync(@job);
-    my $tmp = EF("file:$ENV{PWD}/$xyz{'id'}/output.dat");
+    &submit(@job);
+				       }, sub {
+    my %abc = %xyz;
+    $abc{'id'} = $xyz{'id'} . '_' . $_[1] . '_' . $_[0];
+    &sync(@job);
+    my $tmp = EF("file:$ENV{PWD}/$abc{'id'}/output.dat");
     $tmp->ED('L/E');
     my @output = $tmp->ER();
     $n_section_method::result{"$_[0]"} = $output[0];
-				});
+				       });
 print 'The value is ' . $y . ' when param = ' . $x . ".\n";
