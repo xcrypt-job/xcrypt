@@ -18,7 +18,7 @@ $n_section_method::del_extra_jobs = 0;
 # 第7,8引数について，$_[0]にジョブハッシュが充てられるので
 # ユーザの責任で「y値をreturnする」を行うこと．
 my @job;
-my ($x, $y) = &n_section_method(\%xyz, 3, -1, 0.5, 1, -0.5, 0.01,
+my ($x, $y) = &n_section_method(\%xyz, 3, -1, -0.5, 1, 0.5, 0.1,
 				       sub {
 @job = &prepare(%{$_[0]});
 my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/" . "$_[0]->{'id'}");
