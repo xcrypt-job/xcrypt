@@ -6,6 +6,7 @@ foreach my $item (<IN>) {
     if ($str =~ m/(param)/) {
 	my @tmp = split(' ', $str);
 	open(OUT, ">> output.dat" );
+	sleep(2);
 	print OUT (-0.5) * $tmp[2];
 	close(OUT);
     }
