@@ -6,6 +6,7 @@ use builtin;
 
 &addkeys('successors');
 
+my $slp = 1;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
@@ -50,7 +51,7 @@ sub after {
 	$job->after();
 	until ((-e "$job->{'id'}/$job->{'stdofile'}")
 	       && (-e "$job->{'id'}/$job->{'stdefile'}")) {
-	    sleep(1);
+	    sleep $slp;
 	}
 	&jobsched::inventory_write($job->{'id'}, "finished");
 #		}

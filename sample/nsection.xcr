@@ -7,6 +7,8 @@ $n_section_method::del_extra_jobs = 0;
 
 %xyz = (
     'id' => 'job0',
+    'cpu' => '1',
+    'proc' => '64',
     'exe' => './minushalf.pl',
     'arg0' => 'template.dat',
     'linkedfile0' => 'common/minushalf.pl',
@@ -14,11 +16,11 @@ $n_section_method::del_extra_jobs = 0;
     'queue' => 'gh10034'
 );
 
-# 9分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(3)=-1.5 を仮定．
+# 9分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
 # 第7,8引数について，$_[0]にジョブハッシュが充てられるので
 # ユーザの責任で「y値をreturnする」を行うこと．
 my @job;
-my ($x, $y) = &n_section_method(\%xyz, 3, -1, -0.5, 1, 0.5, 0.1,
+my ($x, $y) = &n_section_method(\%xyz, 2, -1, 0.5, 10, -5, 0.001,
 				       sub {
 @job = &prepare(%{$_[0]});
 my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/" . "$_[0]->{'id'}");

@@ -7,8 +7,8 @@ foreach my $item (<IN>) {
 	my @tmp = split(' ', $str);
 	open(OUT, ">> output.dat" );
 	sleep(2);
-#	print OUT (-0.5) * $tmp[2];
-	print OUT (0.5) * $tmp[2];
+	print OUT (-0.5) * $tmp[2];
+#	print OUT (0.5) * $tmp[2];
 #	print OUT (0.5) * ($tmp[2] - 2);
 	close(OUT);
     }

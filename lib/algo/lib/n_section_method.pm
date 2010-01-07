@@ -9,6 +9,7 @@ our $del_extra_jobs = 0;
 my $infinity = (2 ** 31) + 1;
 my %result;
 my %jobs;
+my $slp = 3;
 sub n_section_method {
     my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
     my $pt_k;
@@ -22,8 +23,7 @@ sub n_section_method {
 	foreach my $i (1..($num-1)) {
 	    $pt_k = $lt_k + ($i * $seg);
 	    $result{"$pt_k"} = undef;
-	    my %tmp = %$obj;
-	    my %job = %tmp;
+	    my %job = %$obj;
 	    $job{'id'} = $obj->{'id'} . '_' . $count . '_' . $pt_k;
 	    $job{'param'} = $pt_k;
 	    $jobs{"$pt_k"} = \%job;
@@ -32,7 +32,7 @@ sub n_section_method {
 	if ($del_extra_jobs == 1) {
 	    my $flag = 0;
 	    until ($flag == 1) {
-		sleep(3);
+		sleep $slp;
 		foreach my $k (keys(%result)) {
 		    if ((defined $result{"$k"}) &&
 			($finishded_or_deleted{"$k"} == 0)) {
@@ -92,18 +92,16 @@ sub across_zero {
     my $rt_k = shift;
     my $rt = shift;
     my %arg = @_;
-    my $min = 0 - $infinity;
-    my $max = $infinity;
-    foreach (keys(%arg)) {
-	if ($lt * $arg{"$_"} < 0) {
-	    if ($_ < $rt_k) {
-		$rt_k = $_;
-		$rt = $arg{"$_"};
+    foreach my $i (keys(%arg)) {
+	if ($lt * $arg{"$i"} < 0) {
+	    if ($i < $rt_k) {
+		$rt_k = $i;
+		$rt = $arg{"$i"};
 	    }
 	} else {
-	    if ($lt_k < $_) {
-		$lt_k = $_;
-		$lt = $arg{"$_"};
+	    if ($lt_k < $i) {
+		$lt_k = $i;
+		$lt = $arg{"$i"};
 	    }
 	}
     }

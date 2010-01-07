@@ -22,6 +22,7 @@ my @jobs_for_before = ();
 my @jobs_for_after = ();
 my $nilchar = 'nil';
 my $argument_name = 'R';
+my $before_after_slp = 1;
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
@@ -262,7 +263,7 @@ sub invoke_before {
     my @jobs = @_;
     $before_thread = threads->new( sub {
         while (1) {
-            sleep (1);
+            sleep $before_after_slp;
             foreach my $self (@jobs) {
                 my $jobname = $self->{id};
                 my $stat = &jobsched::get_job_status($jobname);
@@ -303,7 +304,7 @@ sub invoke_after {
     my @jobs = @_;
     $after_thread = threads->new( sub {
         while (1) {
-            sleep(1);
+            sleep $before_after_slp;
             foreach my $self (@jobs) {
                 my $stat = &jobsched::get_job_status($self->{'id'});
                 if ($stat eq 'done') {

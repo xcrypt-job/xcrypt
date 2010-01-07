@@ -387,6 +387,7 @@ sub invoke_watch {
 }
 
 # 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
     $watch_thread = threads->new( sub {
@@ -421,7 +422,7 @@ sub invoke_watch_by_file {
                 open ($CLIENT_OUT, '>', $ACK_TMPFILE);
                 unless ($CLIENT_OUT) {
                     warn ("Failed to make ackfile $ACK_TMPFILE");
-                    sleep 1;
+                    sleep $slp;
                 }
             }
             if ($handle_inventory_ret >= 0) {
