@@ -11,10 +11,10 @@ my %result;
 my %jobs;
 my $slp = 3;
 sub n_section_method {
-    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
+    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $host, $submit, $sync) = @_;
     my $pt_k;
     my $pt;
-    my %finishded_or_deleted;
+    my %finished_or_deleted;
     my $count = -1;
     do {
 	$count++;
@@ -36,20 +36,21 @@ sub n_section_method {
 		foreach my $k (keys(%result)) {
 		    my $hash = $jobs{"$k"};
 		    my %job = %$hash;
+#print "job" . %job, "\n";
 		    my $status = &jobsched::get_job_status($job{'id'});
 		    if (($status eq 'finished') &&
-			($finishded_or_deleted{"$k"} == 0)) {
+			($finished_or_deleted{"$k"} == 0)) {
 			$result{"$k"} = &$sync(\%job);
 			foreach my $l (keys(%result)) {
 			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
-				($finishded_or_deleted{"$l"} == 0)) {
+				($finished_or_deleted{"$l"} == 0)) {
 				my $hash = $jobs{"$l"};
 				my %job = %$hash;
 				my $jobid = $job{'id'};
 				if ($jobid) {
-				    qx/xcryptdel $jobid/;
+				    qx/xcryptdel $jobid --host $host/;
 #				&jobsched::qdel($jobid);
-				    $finishded_or_deleted{"$l"} = 1;
+				    $finished_or_deleted{"$l"} = 1;
 				    if (0 < $result{"$k"}) {
 					$result{"$l"} = $infinity;
 				    } else {
@@ -58,12 +59,12 @@ sub n_section_method {
 				}
 			    }
 			}
-			$finishded_or_deleted{"$k"} = 1;
+			$finished_or_deleted{"$k"} = 1;
 		    }
 		}
 		$flag = 1;
 		foreach my $k (keys(%result)) {
-		    if ($finishded_or_deleted{"$k"} == 0) {
+		    if ($finished_or_deleted{"$k"} == 0) {
 			$flag = 0 * $flag;
 		    }
 		}

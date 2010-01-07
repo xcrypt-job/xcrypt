@@ -12,6 +12,7 @@ use common;
 
 my %opts;
 $opts{host} = 'localhost';
+#$opts{host} = '127.0.1.1';
 $opts{port} =  9999;
 GetOptions( \%opts, 'all', 'host=s', 'port=i', 'logfile=s');
 
@@ -36,7 +37,7 @@ while ($retry) {
         $socket = IO::Socket::INET->new (PeerAddr => $host,
                                          PeerPort => $port,
                                          Proto => 'tcp',
-        );
+	    );
         unless ($socket) {
             my $slp = 0.1+rand(1.0);
             print STDERR "Failed to connect $host:$port. Retry after $slp seconds.\n";
@@ -73,3 +74,5 @@ if ($log) {
     print $log "xcryptdel: successfully done\n";
     close($log);
 }
+
+exit 0;
