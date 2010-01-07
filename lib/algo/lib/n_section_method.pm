@@ -5,13 +5,18 @@ use jobsched;
 use builtin;
 our @EXPORT = qw(n_section_method);
 our $del_extra_jobs = 0;
-&addkeys('param');
+&addkeys('x','partition','x_left','y_left','x_right','y_right','epsilon','pre','post');
 my $infinity = (2 ** 31) + 1;
 my %result;
 my %jobs;
 my $slp = 3;
 sub n_section_method {
-    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
+    my %hoge = @_;
+    my $num = $hoge{'partition'};
+    my $lt_k = $hoge{'x_left'};
+    my $lt = $hoge{'y_left'};
+    my $rt_k = $hoge{'x_right'};
+    my $rt = $hoge{'y_right'};
     my $pt_k;
     my $pt;
     my %finished_or_deleted;
@@ -23,11 +28,11 @@ sub n_section_method {
 	foreach my $i (1..($num-1)) {
 	    $pt_k = $lt_k + ($i * $seg);
 	    $result{"$pt_k"} = undef;
-	    my %job = %$obj;
-	    $job{'id'} = $obj->{'id'} . '_' . $count . '_' . $pt_k;
-	    $job{'param'} = $pt_k;
+	    my %job = %hoge;
+	    $job{'id'} = $hoge{'id'} . '_' . $count . '_' . $pt_k;
+	    $job{'x'} = $pt_k;
 	    $jobs{"$pt_k"} = \%job;
-	    &$submit(\%job);
+	    &{$hoge{'pre'}}(%job);
 	}
 	if ($del_extra_jobs == 1) {
 	    my $flag = 0;
@@ -40,7 +45,7 @@ sub n_section_method {
 		    my $status = &jobsched::get_job_status($job{'id'});
 		    if (($status eq 'finished') &&
 			($finished_or_deleted{"$k"} == 0)) {
-			$result{"$k"} = &$sync(\%job);
+			$result{"$k"} = &{$hoge{'post'}}(%job);
 			foreach my $l (keys(%result)) {
 			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
 				($finished_or_deleted{"$l"} == 0)) {
@@ -73,7 +78,7 @@ sub n_section_method {
 	    foreach my $k (keys(%result)) {
 		my $hash = $jobs{"$k"};
 		my %job = %$hash;
-		$result{"$k"} = &$sync(\%job);
+		$result{"$k"} = &{$hoge{'post'}}(%job);
 	    }
 	}
 	foreach (%result) {
@@ -87,7 +92,7 @@ sub n_section_method {
 	    $pt_k = $rt_k;
 	    $pt = $rt;
 	}
-    } until (abs($pt) < $epsilon);
+    } until (abs($pt) < $hoge{'epsilon'});
     return ($pt_k, $pt);
 }
 
