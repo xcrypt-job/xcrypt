@@ -3,7 +3,7 @@ use Data_Generation;
 use Data_Extraction;
 use n_section_method;
 
-$n_section_method::del_extra_jobs = 0;
+$n_section_method::del_extra_jobs = 1;
 
 %xyz = (
     'id' => 'job0',
@@ -20,10 +20,12 @@ $n_section_method::del_extra_jobs = 0;
 # 第7,8引数について，$_[0]にジョブハッシュが充てられるので
 # ユーザの責任で「y値をreturnする」を行うこと．
 my @job;
-my ($x, $y) = &n_section_method(\%xyz, 2, -1, 0.5, 10, -5, 0.001,
+#my ($x, $y) = &n_section_method(\%xyz, 5, -1, 0.5, 10, -5, 0.001,
+my ($x, $y) = &n_section_method(\%xyz, 5, -1, 0.5, 1, -0.5, 0.001,
 				       sub {
 @job = &prepare(%{$_[0]});
-my $input = CF("$ENV{'PWD'}/common/template.dat", "$ENV{'PWD'}/" . "$_[0]->{'id'}");
+my $input = CF("$ENV{'PWD'}/common/template.dat",
+	       "$ENV{'PWD'}/" . "$_[0]->{'id'}");
 $input->KR("param", "$_[0]->{'param'}");
 $input->do;
 &submit(@job);
