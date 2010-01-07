@@ -11,7 +11,7 @@ my %result;
 my %jobs;
 my $slp = 3;
 sub n_section_method {
-    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $host, $submit, $sync) = @_;
+    my ($obj, $num, $lt_k, $lt, $rt_k, $rt, $epsilon, $submit, $sync) = @_;
     my $pt_k;
     my $pt;
     my %finished_or_deleted;
@@ -48,7 +48,7 @@ sub n_section_method {
 				my %job = %$hash;
 				my $jobid = $job{'id'};
 				if ($jobid) {
-				    qx/xcryptdel $jobid --host $host/;
+				    qx/xcryptdel $jobid/;
 #				&jobsched::qdel($jobid);
 				    $finished_or_deleted{"$l"} = 1;
 				    if (0 < $result{"$k"}) {

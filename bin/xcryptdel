@@ -11,13 +11,14 @@ use Time::HiRes;
 use common;
 
 my %opts;
-$opts{host} = 'localhost';
-#$opts{host} = '127.0.1.1';
-$opts{port} =  9999;
+my $tmp = qx/hostname/;
+chomp($tmp);
+$opts{"host"} = $tmp;
+$opts{"port"} = 9999;
 GetOptions( \%opts, 'all', 'host=s', 'port=i', 'logfile=s');
 
-my $host = $opts{host};
-my $port = $opts{port};
+my $host = $opts{"host"};
+my $port = $opts{"port"};
 my $log = undef;
 if ( $opts{logfile} ) {
     open ($log, ">> $opts{logfile}");

@@ -21,7 +21,7 @@ $n_section_method::del_extra_jobs = 1;
 # ユーザの責任で「y値をreturnする」を行うこと．
 my @job;
 #my ($x, $y) = &n_section_method(\%xyz, 5, -1, 0.5, 10, -5, 0.001,
-my ($x, $y) = &n_section_method(\%xyz, 5, -1, 0.5, 1, -0.5, 0.001, "127.0.1.1",
+my ($x, $y) = &n_section_method(\%xyz, 5, -1, 0.5, 1, -0.5, 0.001,
 				       sub {
 @job = &prepare(%{$_[0]});
 my $input = CF("$ENV{'PWD'}/common/template.dat",
