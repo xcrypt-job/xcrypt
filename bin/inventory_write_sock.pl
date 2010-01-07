@@ -22,11 +22,13 @@ my $STATUS = $ARGV[3];
 
 my $RETRY_P = 1;
 
+my $trial_limit = 10;
 while ($RETRY_P) {
     my $socket = 0;
     my $n_trial = 0;
     until ($socket) {
         if ( 0 ) {
+#        if ( $n_trial > $trial_limit ) {
             die "Failed to connect $HOST:$PORT. $!\n";
         }
         $n_trial++;
