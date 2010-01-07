@@ -34,8 +34,12 @@ sub n_section_method {
 	    until ($flag == 1) {
 		sleep $slp;
 		foreach my $k (keys(%result)) {
-		    if ((defined $result{"$k"}) &&
+		    my $hash = $jobs{"$k"};
+		    my %job = %$hash;
+		    my $status = &jobsched::get_job_status($job{'id'});
+		    if (($status eq 'finished') &&
 			($finishded_or_deleted{"$k"} == 0)) {
+			$result{"$k"} = &$sync(\%job);
 			foreach my $l (keys(%result)) {
 			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
 				($finishded_or_deleted{"$l"} == 0)) {
@@ -54,9 +58,7 @@ sub n_section_method {
 				}
 			    }
 			}
-			if ($finishded_or_deleted{"$k"} == 0) {
-			    $finishded_or_deleted{"$k"} = 1;
-			}
+			$finishded_or_deleted{"$k"} = 1;
 		    }
 		}
 		$flag = 1;
@@ -67,20 +69,22 @@ sub n_section_method {
 		}
 	    }
 	} else {
-	    foreach my $i (1..($num-1)) {
-		$pt_k = $lt_k + ($i * $seg);
-		my $hash = $jobs{"$pt_k"};
+	    foreach my $k (keys(%result)) {
+		my $hash = $jobs{"$k"};
 		my %job = %$hash;
-		$result{"$pt_k"} = &$sync(\%job);
+		$result{"$k"} = &$sync(\%job);
 	    }
-	    ($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
-	    if (abs($lt) < abs($rt)) {
-		$pt_k = $lt_k;
-		$pt = $lt;
-	    } else {
-		$pt_k = $rt_k;
-		$pt = $rt;
-	    }
+	}
+	foreach (%result) {
+	    print $_, "\n";
+	}
+	($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
+	if (abs($lt) < abs($rt)) {
+	    $pt_k = $lt_k;
+	    $pt = $lt;
+	} else {
+	    $pt_k = $rt_k;
+	    $pt = $rt;
 	}
     } until (abs($pt) < $epsilon);
     return ($pt_k, $pt);
