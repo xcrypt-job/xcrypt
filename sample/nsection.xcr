@@ -1,45 +1,32 @@
-use base qw(core);
+use base qw(n_section_method core);
 use Data_Generation;
 use Data_Extraction;
-use n_section_method;
 
-$n_section_method::del_extra_jobs = 1;
-
-%xyz = (
+%job = (
     'id' => 'job0',
-    'cpu' => '1',
-    'proc' => '64',
     'exe' => './minushalf.pl',
     'arg0' => 'template.dat',
     'linkedfile0' => 'common/minushalf.pl',
     'group' => 'gh10034',
-    'queue' => 'gh10034'
-);
-
+    'queue' => 'gh10034',
+# モジュールがキー'x'にパラメタを充てるのでユーザの責任でキー'y'に値を入れる．
+    'before' => sub { my $input = CF("$ENV{'PWD'}/common/template.dat",
+				     "$ENV{'PWD'}/" . $_[0]->{'id'});
+		      $input->KR("param", $_[0]->{'x'});
+		      $input->do(); },
+    'after'  => sub { my $tmp1 = "$ENV{'PWD'}/" . $_[0]->{'id'} . "/output.dat";
+		      sleep(5);
+		      my $tmp2 = EF("file:$tmp1");
+		      $tmp2->ED('L/E');
+		      my @output = $tmp2->ER();
+		      my $tmp3 = $_[0]->{'x'};
+#		      $_[0]->{'y'} = $output[0];
+		      $n_section_method::result{"$tmp3"} = $output[0];
+    });
 # 5分法，[-1,10]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
-# n_section_method.pmが@_にキー'x'にパラメタを与えたジョブオブジェクトを
-# 充てるので，ユーザの責任でy値をpostでreturnする．
-my @jobs;
-my ($x, $y) = &n_section_method(
-    %xyz,
-    'partition' => 5,
-    'x_left'  => -1,
-    'y_left'  => 0.5,
-    'x_right' => 10,
-    'y_right' => -5,
-    'epsilon' => 0.01,
-    'pre'  => sub { my %job = @_;
-		    @jobs = &prepare(%job);
-		    my $input = CF("$ENV{'PWD'}/common/template.dat",
-				   "$ENV{'PWD'}/$job{'id'}");
-		    $input->KR("param", "$job{'x'}");
-		    $input->do();
-		    &submit(@jobs); },
-    'post' => sub { my %job = @_;
-		    &sync(@jobs);
-		    my $tmp = EF("file:$ENV{'PWD'}/$job{'id'}/output.dat");
-		    $tmp->ED('L/E');
-		    my @output = $tmp->ER();
-		    return $output[0]; });
-
+my ($x, $y) = &n_section_method::n_section_method(
+    %job, 'partition' => 5, 'epsilon' => 0.01,
+    'x_left'  => -1,  'x_right' => 10,
+    'y_left'  => 0.5, 'y_right' => -5
+    );
 print 'The value is ' . $y . ' when x = ' . $x . ".\n";
