@@ -1,26 +1,26 @@
 package n_section_method;
 
-use base qw(Exporter);
 use jobsched;
 use builtin;
 use threads;
 use threads::shared;
-our @EXPORT = qw(n_section_method);
-our $del_extra_jobs = 0;
+
 &addkeys('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
-my $infinity = (2 ** 31) + 1;
+
+our $del_extra_jobs = 0;
 our %result : shared;
-my $slp = 3;
+
+my $interval_check_done_or_ignored = 3;
 sub n_section_method {
-    my %obj = @_;
-    my $num = $obj{'partition'};
-    my $x_left = $obj{'x_left'};
-    my $y_left = $obj{'y_left'};
-    my $x_right = $obj{'x_right'};
-    my $y_right = $obj{'y_right'};
+    my %arg = @_;
+    my $num = $arg{'partition'};
+    my $x_left = $arg{'x_left'};
+    my $y_left = $arg{'y_left'};
+    my $x_right = $arg{'x_right'};
+    my $y_right = $arg{'y_right'};
     my $x;
     my $y;
-    my %done_or_deleted;
+    my %done_or_ignored;
     my $count = -1;
     do {
 	$count++;
@@ -29,23 +29,58 @@ sub n_section_method {
 	my @jobs;
 	foreach my $i (1..($num-1)) {
 	    $x = $x_left + ($i * $seg);
-	    $result{"$x"} = undef;
-	    my %job = %obj;
-	    $job{'id'} = $obj{'id'} . '_' . $count . '_' . $x;
+	    my %job = %arg;
+	    $job{'id'} = $arg{'id'} . '_' . $count . '_' . $x;
 	    $job{'x'} = $x;
 	    my @tmp = &prepare(%job);
 	    push(@jobs, $tmp[0]);
 	}
 	&submit(@jobs);
 
-=comment
-	    foreach (%result) {
-		print $_, "\n";
+	if ($del_extra_jobs == 1) {
+	    my $flag = 0;
+	    until ($flag == 1) {
+		sleep $interval_check_done_or_ignored;
+		foreach my $j (@jobs) {
+		    my $jx = $j->{'x'};
+		    my $jid = $j->{'id'};
+		    my $status = &jobsched::get_job_status($jid);
+		    if (($status eq 'done') &&
+			($done_or_ignored{"$jid"} == 0)) {
+			&sync($j);
+			foreach my $k (@jobs) {
+			    my $kx = $k->{'x'};
+			    my $kid = $k->{'id'};
+			    if (0 < ($result{"$jx"}
+				     * ($y_right - $y_left)
+				     * (($k->{'x'}) - ($j->{'x'}))) &&
+				($done_or_ignored{"$kid"} == 0)) {
+				if ($kid) {
+				    qx/xcryptdel $kid/;
+#				    &jobsched::qdel($jobid);
+				    $done_or_ignored{"$kid"} = 1;
+				}
+			    }
+			}
+			$done_or_ignored{"$jid"} = 1;
+		    }
+		}
+		$flag = 1;
+		foreach my $j (@jobs) {
+		    my $jid = $j->{'id'};
+		    if ($done_or_ignored{"$jid"} == 0) {
+			$flag = 0 * $flag;
+		    }
+		}
 	    }
-=cut
-	&sync(@jobs);
+	} else {
+	    &sync(@jobs);
+	}
+#	foreach(%result) {
+#	    print $_, "\n";
+#	}
 	($x_left, $y_left, $x_right, $y_right)
-	    = across_zero($x_left, $y_left, $x_right, $y_right, %result);
+	    = &across_zero($x_left, $y_left, $x_right, $y_right, %result);
 	if (abs($y_left) < abs($y_right)) {
 	    $x = $x_left;
 	    $y = $y_left;
@@ -53,7 +88,7 @@ sub n_section_method {
 	    $x = $x_right;
 	    $y = $y_right;
 	}
-    } until (abs($y) < $obj{'epsilon'});
+    } until (abs($y) < $arg{'epsilon'});
     return ($x, $y);
 }
 
@@ -90,10 +125,7 @@ sub start {
     $self->NEXT::start();
 }
 
-sub before {
-}
-
-sub after {
-}
+sub before {}
+sub after {}
 
 1;
