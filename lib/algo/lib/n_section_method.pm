@@ -3,119 +3,97 @@ package n_section_method;
 use base qw(Exporter);
 use jobsched;
 use builtin;
+use threads;
+use threads::shared;
 our @EXPORT = qw(n_section_method);
 our $del_extra_jobs = 0;
-&addkeys('x','partition','x_left','y_left','x_right','y_right','epsilon','pre','post');
+&addkeys('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 my $infinity = (2 ** 31) + 1;
-my %result;
-my %jobs;
+our %result : shared;
 my $slp = 3;
 sub n_section_method {
-    my %hoge = @_;
-    my $num = $hoge{'partition'};
-    my $lt_k = $hoge{'x_left'};
-    my $lt = $hoge{'y_left'};
-    my $rt_k = $hoge{'x_right'};
-    my $rt = $hoge{'y_right'};
-    my $pt_k;
-    my $pt;
-    my %finished_or_deleted;
+    my %obj = @_;
+    my $num = $obj{'partition'};
+    my $x_left = $obj{'x_left'};
+    my $y_left = $obj{'y_left'};
+    my $x_right = $obj{'x_right'};
+    my $y_right = $obj{'y_right'};
+    my $x;
+    my $y;
+    my %done_or_deleted;
     my $count = -1;
     do {
 	$count++;
 	%result = ();
-	$seg = ($rt_k - $lt_k) / $num;
+	$seg = ($x_right - $x_left) / $num;
+	my @jobs;
 	foreach my $i (1..($num-1)) {
-	    $pt_k = $lt_k + ($i * $seg);
-	    $result{"$pt_k"} = undef;
-	    my %job = %hoge;
-	    $job{'id'} = $hoge{'id'} . '_' . $count . '_' . $pt_k;
-	    $job{'x'} = $pt_k;
-	    $jobs{"$pt_k"} = \%job;
-	    &{$hoge{'pre'}}(%job);
+	    $x = $x_left + ($i * $seg);
+	    $result{"$x"} = undef;
+	    my %job = %obj;
+	    $job{'id'} = $obj{'id'} . '_' . $count . '_' . $x;
+	    $job{'x'} = $x;
+	    my @tmp = &prepare(%job);
+	    push(@jobs, $tmp[0]);
 	}
-	if ($del_extra_jobs == 1) {
-	    my $flag = 0;
-	    until ($flag == 1) {
-		sleep $slp;
-		foreach my $k (keys(%result)) {
-		    my $hash = $jobs{"$k"};
-		    my %job = %$hash;
-#print "job" . %job, "\n";
-		    my $status = &jobsched::get_job_status($job{'id'});
-		    if (($status eq 'finished') &&
-			($finished_or_deleted{"$k"} == 0)) {
-			$result{"$k"} = &{$hoge{'post'}}(%job);
-			foreach my $l (keys(%result)) {
-			    if (0 < $result{"$k"} * ($rt - $lt) * ($l - $k) &&
-				($finished_or_deleted{"$l"} == 0)) {
-				my $hash = $jobs{"$l"};
-				my %job = %$hash;
-				my $jobid = $job{'id'};
-				if ($jobid) {
-				    qx/xcryptdel $jobid/;
-#				&jobsched::qdel($jobid);
-				    $finished_or_deleted{"$l"} = 1;
-				    if (0 < $result{"$k"}) {
-					$result{"$l"} = $infinity;
-				    } else {
-					$result{"$l"} = 0 - $infinity;
-				    }
-				}
-			    }
-			}
-			$finished_or_deleted{"$k"} = 1;
-		    }
-		}
-		$flag = 1;
-		foreach my $k (keys(%result)) {
-		    if ($finished_or_deleted{"$k"} == 0) {
-			$flag = 0 * $flag;
-		    }
-		}
+	&submit(@jobs);
+
+=comment
+	    foreach (%result) {
+		print $_, "\n";
 	    }
+=cut
+	&sync(@jobs);
+	($x_left, $y_left, $x_right, $y_right)
+	    = across_zero($x_left, $y_left, $x_right, $y_right, %result);
+	if (abs($y_left) < abs($y_right)) {
+	    $x = $x_left;
+	    $y = $y_left;
 	} else {
-	    foreach my $k (keys(%result)) {
-		my $hash = $jobs{"$k"};
-		my %job = %$hash;
-		$result{"$k"} = &{$hoge{'post'}}(%job);
-	    }
+	    $x = $x_right;
+	    $y = $y_right;
 	}
-	foreach (%result) {
-	    print $_, "\n";
-	}
-	($lt_k, $lt, $rt_k, $rt) = across_zero($lt_k, $lt, $rt_k, $rt, %result);
-	if (abs($lt) < abs($rt)) {
-	    $pt_k = $lt_k;
-	    $pt = $lt;
-	} else {
-	    $pt_k = $rt_k;
-	    $pt = $rt;
-	}
-    } until (abs($pt) < $hoge{'epsilon'});
-    return ($pt_k, $pt);
+    } until (abs($y) < $obj{'epsilon'});
+    return ($x, $y);
 }
 
 sub across_zero {
-    my $lt_k = shift;
-    my $lt = shift;
-    my $rt_k = shift;
-    my $rt = shift;
+    my $x_left = shift;
+    my $y_left = shift;
+    my $x_right = shift;
+    my $y_right = shift;
     my %arg = @_;
     foreach my $i (keys(%arg)) {
-	if ($lt * $arg{"$i"} < 0) {
-	    if ($i < $rt_k) {
-		$rt_k = $i;
-		$rt = $arg{"$i"};
+	if ($y_left * $arg{"$i"} < 0) {
+	    if ($i < $x_right) {
+		$x_right = $i;
+		$y_right = $arg{"$i"};
 	    }
 	} else {
-	    if ($lt_k < $i) {
-		$lt_k = $i;
-		$lt = $arg{"$i"};
+	    if ($x_left < $i) {
+		$x_left = $i;
+		$y_left = $arg{"$i"};
 	    }
 	}
     }
-    return ($lt_k, $lt, $rt_k, $rt);
+    return ($x_left, $y_left, $x_right, $y_right);
+}
+
+sub new {
+    my $class = shift;
+    my $self = $class->NEXT::new(@_);
+    return bless $self, $class;
+}
+
+sub start {
+    my $self = shift;
+    $self->NEXT::start();
+}
+
+sub before {
+}
+
+sub after {
 }
 
 1;

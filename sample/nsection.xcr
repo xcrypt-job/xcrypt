@@ -16,29 +16,30 @@ $n_section_method::del_extra_jobs = 1;
     'queue' => 'gh10034'
 );
 
-# 9分法，[-1,1]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
-# モジュールが@_にジョブオブジェクトを充てるのでy値をpostでreturnすること．
+# 5分法，[-1,10]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
+# n_section_method.pmが@_にキー'x'にパラメタを与えたジョブオブジェクトを
+# 充てるので，ユーザの責任でy値をpostでreturnする．
 my @jobs;
 my ($x, $y) = &n_section_method(
     %xyz,
     'partition' => 5,
-    'x_left' => -1,
-    'y_left' => 0.5,
+    'x_left'  => -1,
+    'y_left'  => 0.5,
     'x_right' => 10,
     'y_right' => -5,
     'epsilon' => 0.01,
-    'pre' => sub { my %job = @_;
-		   @jobs = &prepare(%job);
-		   my $input = CF("$ENV{'PWD'}/common/template.dat",
-				  "$ENV{'PWD'}/$job{'id'}");
-		   $input->KR("param", "$job{'x'}");
-		   $input->do;
-		   &submit(@jobs); },
+    'pre'  => sub { my %job = @_;
+		    @jobs = &prepare(%job);
+		    my $input = CF("$ENV{'PWD'}/common/template.dat",
+				   "$ENV{'PWD'}/$job{'id'}");
+		    $input->KR("param", "$job{'x'}");
+		    $input->do();
+		    &submit(@jobs); },
     'post' => sub { my %job = @_;
 		    &sync(@jobs);
 		    my $tmp = EF("file:$ENV{'PWD'}/$job{'id'}/output.dat");
 		    $tmp->ED('L/E');
 		    my @output = $tmp->ER();
-		    return $output[0]; }
-    );
+		    return $output[0]; });
+
 print 'The value is ' . $y . ' when x = ' . $x . ".\n";
