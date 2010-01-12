@@ -45,24 +45,19 @@ sub n_section_method {
 		    my $jx = $j->{'x'};
 		    my $jid = $j->{'id'};
 		    my $status = &jobsched::get_job_status($jid);
-		    if (($status eq 'done') &&
-			($done_or_ignored{"$jid"} == 0)) {
+		    if ($status eq 'done' && ($done_or_ignored{"$jid"} == 0)) {
 			&sync($j);
+			$done_or_ignored{"$jid"} = 1;
 			foreach my $k (@jobs) {
-			    my $kx = $k->{'x'};
 			    my $kid = $k->{'id'};
-			    if (0 < ($result{"$jx"}
-				     * ($y_right - $y_left)
-				     * (($k->{'x'}) - ($j->{'x'}))) &&
-				($done_or_ignored{"$kid"} == 0)) {
+			    if (0 < $result{"$jx"} * ($y_right - $y_left) * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
 				if ($kid) {
-				    qx/xcryptdel $kid/;
+				    system("xcryptdel $kid");
 #				    &jobsched::qdel($jobid);
 				    $done_or_ignored{"$kid"} = 1;
 				}
 			    }
 			}
-			$done_or_ignored{"$jid"} = 1;
 		    }
 		}
 		$flag = 1;

@@ -363,6 +363,31 @@ Plan-Do-Check-Action (PDCA) サイクルを容易に実現する関数を提供する．ジョ
 力ファイルから値を取得するためのData\_Extractionにおける規則群）という
 キーが使えるようになる．
 
+\if0
+\section{\texttt{n\_section\_method}}
+
+This module provides \textit{n}-section method, a root-finding
+algorithm of the only difference from bisection
+method\footnote{\texttt{http://en.wikipedia.org/wiki/Bisection\_method/}}
+is the number of sections.
+
+The values \texttt{partition} and \texttt{epsilon}, denote
+    a partition number and an error, respectively.  An interval is
+    expressed by \texttt{x\_left} and \texttt{x\_right}.  The values
+    \texttt{y\_left} and \texttt{y\_right} are values on \texttt{x\_left}
+    and \texttt{x\_right}.  Typically, we can call the function
+    \texttt{n\_section\_method} with these keys, e.g.,
+\begin{boxnote}
+\begin{verbatim}
+&n_section_method::n_section_method(%job,
+    'partition' => 12, 'epsilon' => 0.01,
+    'x_left'  => -1,  'x_right' => 10,
+    'y_left'  => 0.5, 'y_right' => -5
+     );
+\end{verbatim}
+\end{boxnote}
+\noindent
+\fi
 
 \section{\texttt{dry}}
 
