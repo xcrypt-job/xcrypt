@@ -254,7 +254,8 @@ sub qdel {
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
         if (common::cmd_executable ($command_string)) {
             print "Deleting $jobname (request ID: $req_id)\n";
-            exec ($command_string);
+#            exec ($command_string);
+            system($command_string);
         } else {
             warn "$command_string not executable.";
         }

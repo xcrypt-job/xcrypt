@@ -27,7 +27,7 @@ $n_section_method::del_extra_jobs = 1;
     });
 # 5分法，[-1,10]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
 my ($x, $y) = &n_section_method::n_section_method(
-    %job, 'partition' => 5, 'epsilon' => 0.01,
+    %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
     );
