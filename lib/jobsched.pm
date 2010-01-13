@@ -1,6 +1,12 @@
 # Job scheduler I/F  (written by Tasuku HIRAISHI)
 package jobsched;
 
+use base qw(Exporter);
+our @EXPORT = qw(any_to_string_nl
+inventory_write_cmdline inventory_write
+set_job_request_id
+);
+
 use strict;
 use threads;
 use threads::shared;
