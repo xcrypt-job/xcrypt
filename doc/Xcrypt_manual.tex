@@ -14,7 +14,7 @@
 %
 
 \title{Xcrypt Manual}
-\author{E-science Group, Nakashima Laboratory, Kyoto University}
+\author{E-Science Group, Nakashima Laboratory, Kyoto University}
 
 \begin{document}
 \maketitle
@@ -344,19 +344,20 @@ describe as follows,
 
 \section{\texttt{successor}}
 
-ジョブを宣言的に定義できるようにする．ジョブ定義ハッシュに
-\texttt{successors} というキーが使えるようになるので，例え
-ば，\texttt{\%x, \%y} というジョブを定義したければ，
+This module provides how to describe dependency of jobs declaratively.
+For example, in order to define jobs of the name \texttt{\%x, \%y},
+describe:
 \begin{boxnote}
 \begin{verbatim}
 ...
-'successor' => ['x', 'y'],
+'successors' => ['x', 'y'],
 ...
 \end{verbatim}
 \end{boxnote}
 \noindent
-と記述して使う．
+using the key \texttt{successors} in the job definition hash.
 
+\if0
 \section{\texttt{simple\_convergence}}
 
 投入したジョブの今回値と前回値の差が一定値以下になるまで繰り返す
@@ -368,8 +369,8 @@ Plan-Do-Check-Action (PDCA) サイクルを容易に実現する関数を提供する．ジョ
 前），\texttt{outputfile}（出力ファイル名），\texttt{extractrules}（出
 力ファイルから値を取得するためのData\_Extractionにおける規則群）という
 キーが使えるようになる．
+\fi
 
-\if0
 \section{\texttt{n\_section\_method}}
 
 This module provides \textit{n}-section method, a root-finding
@@ -389,18 +390,14 @@ The values \texttt{partition} and \texttt{epsilon}, denote
     'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
-     );
+);
 \end{verbatim}
 \end{boxnote}
-\noindent
-\fi
 
 \section{\texttt{dry}}
 
 This module provides job processing in dry mode (skipping any command
-exectution).
-
-Description in a job definition hash
+exectution).  Description in a job definition hash
 \begin{boxnote}
 \begin{verbatim}
 ...
