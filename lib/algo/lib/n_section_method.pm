@@ -18,6 +18,7 @@ sub n_section_method {
     my $y_left = $arg{'y_left'};
     my $x_right = $arg{'x_right'};
     my $y_right = $arg{'y_right'};
+    my $inc_or_dec = $y_right - $y_left;
     my $x;
     my $y;
     my %done_or_ignored;
@@ -50,7 +51,7 @@ sub n_section_method {
 			$done_or_ignored{"$jid"} = 1;
 			foreach my $k (@jobs) {
 			    my $kid = $k->{'id'};
-			    if (0 < $result{"$jx"} * ($y_right - $y_left) * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
+			    if (0 < $result{"$jx"} * $inc_or_dec * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
 				if ($kid) {
 				    system("xcryptdel $kid");
 #				    &jobsched::qdel($jobid);

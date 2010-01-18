@@ -11,7 +11,7 @@ $n_section_method::del_extra_jobs = 1;
     'linkedfile0' => 'common/minushalf.pl',
     'group' => 'gh10034',
     'queue' => 'gh10034',
-# モジュールがキー'x'にパラメタを充てるのでユーザの責任でキー'y'に値を入れる．
+# Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
     'before' => sub { my $input = CF("$ENV{'PWD'}/common/template.dat",
 				     "$ENV{'PWD'}/" . $_[0]->{'id'});
 		      $input->KR("param", $_[0]->{'x'});
@@ -25,7 +25,7 @@ $n_section_method::del_extra_jobs = 1;
 		      my $tmp3 = $_[0]->{'x'};
 		      $n_section_method::result{"$tmp3"} = $output[0];
     });
-# 5分法，[-1,10]の範囲，0.01の誤差で零点と見なす，f(-1)=0.5, f(10)=-5 を仮定．
+# 5-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
     %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,

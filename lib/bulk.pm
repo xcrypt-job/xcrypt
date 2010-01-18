@@ -31,7 +31,7 @@ sub start {
     my $self = shift;
     my $dir = $self->{id};
 
-    # å‰å›done, finishedã«ãªã£ãŸã‚¸ãƒ§ãƒ–ãªã‚‰ã¨ã°ã™ï¼
+    # Á°²ódone, finished¤Ë¤Ê¤Ã¤¿¥¸¥ç¥Ö¤Ê¤é¤È¤Ğ¤¹¡¥
     my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
@@ -45,8 +45,8 @@ sub start {
 
 
 
-# ä»¥ä¸‹ã¯jobsched.pmã®ã‚³ãƒ”ãƒ¼ã‚’æ”¹å¤‰ã—ãŸã‚‚ã®ï¼
-# TODO: ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«åŒ–ã—ã¦ã‚³ãƒ¼ãƒ‰ã®é‡è¤‡ã‚’ãªãã™ï¼
+# °Ê²¼¤Ïjobsched.pm¤Î¥³¥Ô¡¼¤ò²şÊÑ¤·¤¿¤â¤Î¡¥
+# TODO: ¥â¥¸¥å¡¼¥ë²½¤·¤Æ¥³¡¼¥É¤Î½ÅÊ£¤ò¤Ê¤¯¤¹¡¥
 sub qsub {
     my $self = shift;
 
@@ -59,7 +59,7 @@ my $jobsched = $ENV{'XCRJOBSCHED'};
 ### Inventory
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
-my $inventory_port = $xcropt::options{port};           # ã‚¤ãƒ³ãƒ™ãƒ³ãƒˆãƒªé€šçŸ¥å¾…ã¡å—ã‘ãƒãƒ¼ãƒˆï¼0ãªã‚‰NFSçµŒç”±(unstable!)
+my $inventory_port = $xcropt::options{port};           # ¥¤¥ó¥Ù¥ó¥È¥êÄÌÃÎÂÔ¤Á¼õ¤±¥İ¡¼¥È¡¥0¤Ê¤éNFS·ĞÍ³(unstable!)
 my $inventory_path=$xcropt::options{inventory_path};
 my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
 
@@ -84,7 +84,7 @@ unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
     my $scriptfile = File::Spec->catfile($dir, $jobsched . '.sh');
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
-    # NQS ã‚‚ SGE ã‚‚ï¼Œã‚ªãƒ—ã‚·ãƒ§ãƒ³ä¸­ã®ç’°å¢ƒå¤‰æ•°ã‚’å±•é–‹ã—ãªã„ã®ã§æ³¨æ„ï¼
+    # NQS ¤â SGE ¤â¡¤¥ª¥×¥·¥ç¥óÃæ¤Î´Ä¶­ÊÑ¿ô¤òÅ¸³«¤·¤Ê¤¤¤Î¤ÇÃí°Õ¡ª
     if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_preamble} ) {
         foreach (@{$jsconfig::jobsched_config{$jobsched}{jobscript_preamble}}) {
             print SCRIPT $_ . "\n";
@@ -166,7 +166,7 @@ my $dir = $subself->{id};
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $subself->{"arg$i"}); }
     my $cmd = $subself->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
-    # æ­£å¸¸çµ‚äº†ã§ãªã‘ã‚Œã° "aborted" ã‚’æ›¸ãè¾¼ã‚€ã¹ãï¼Ÿ
+    # Àµ¾ï½ªÎ»¤Ç¤Ê¤±¤ì¤Ğ "aborted" ¤ò½ñ¤­¹ş¤à¤Ù¤­¡©
 
     # Set job's status "done"
 #    print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
@@ -194,7 +194,7 @@ print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
         die "qsub_command is not defined in $jobsched.pm";
     }
     if (common::cmd_executable ($qsub_command)) {
-        # ã“ã“ã§qsubã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œ
+        # ¤³¤³¤Çqsub¥³¥Ş¥ó¥É¼Â¹Ô
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;
