@@ -9,7 +9,7 @@
 \usepackage{alltt}
 \usepackage[all]{xy}
 
-% 
+%
 \def\|{\verb|} %|
 %
 
@@ -25,91 +25,98 @@
 Xcrypt requires
 \begin{itemize}
 \item Marc Lehmann's AnyEvent, common::sense, Coro, EV, and Guard,
-\item Joshua Nathaniel Pritikin's Event,
+\item Joshua Nathaniel Pritikin's Event, and
 \item Daniel Muey's Recursive.
 \end{itemize}
-
 
 \part{General}
 \chapter{Introduction}
 
 \section{Overview}
 
-通常，ある一つの大きな処理を行うには，その処理を小分け（ジョブと呼ぶ）
-にし，それらの処理をジョブスケジューラに依頼する．具体的には，
-\begin{enumerate}
-\item ジョブスケジューラが理解できるスクリプトを作成し，
-\item そのスクリプトをジョブスケジューラに渡し，
-\item ジョブスケジューラが返す結果からまた別のスクリプトを作成し，それ
-      をジョブスケジューラに渡す，
-\end{enumerate}
-という一連の操作を繰り返すというものである．
+In using a high-performance computer, we usually commit job-processing
+to a job scheduler.  At this time, we often go through the following
+procedure:
+\begin{itemize}
+\item to create a script in its writing style depending on what the
+      job scheduler is,
+\item to pass the script to the job scheduler, and
+\item to extract data from its result, to create another script from
+      the data, and to pass it to the job scheduler.
+\end{itemize}
 
-しかし，この方法は処理の繰り返しごとに人手による介入を要し，作業効率が
-悪い．そこで，人手で行うところを適当なスクリプト言語により記述すること
-で自動実行を実現することが考えられる．Xcrypt はそのスクリプト言語とし
-て Perl を採用し，パラメタ指定によるジョブの生成や投入を Perl の関数と
-して提供することで，ユーザがジョブ処理を容易に行うことを補助する．
-
-TODO: サーチアルゴリズム等のアルゴリズムモジュールの提供についても記述
-する．
+However, such a procedure requires manual intervention cost.  It
+therefore seems better to remove manual intervention in mid-processing
+by using an appropriate script language.  Xcrypt is a script language
+for job parallelization.  Xcrypt provides some functions and modules
+for facilitating job generation, submission, syncronization, etc.
+Xcrypt makes it easy to write scripts to process job, and supports
+users to process jobs easily.
 
 \section{Environment}
 
 Xcrypt requires a superset of Bourne or C shell, Perl 5.10.0 or any
 later version, and Perl/Tk 8.4 for GUI.
 
-\chapter{Description}
-
-Xcrypt は Perl の拡張である．よって，全ての Perl スクリプトは Xcryptス
-クリプトである．しかし，Xcrypt はジョブに関する操作の補助を行うものと考
-えられ，Xcrypt スクリプトは典型的には以下の順に記述される．
+\chapter{Script}
 
 \def\usemodule{Module}
-\def\defjobdefhash{Job Definition Hash}
-\def\operation{Job Processing}
+\def\defjobdefhash{Template}
+\def\operation{Procedure}
 
+Xcrypt is a script language, an extension of Perl.  Xcrypt provides
+some functions and modules (not in Perl) which supports how to deal
+with \textit{jobs}.
+
+An Xcrypt script consists of descriptions of
 \begin{enumerate}
- \item \usemodule
- \item \defjobdefhash
- \item \operation
+ \item \usemodule,
+ \item \defjobdefhash, and
+ \item \operation.
 \end{enumerate}
 
 \section{\usemodule}
 
-モジュールは
+Modules for job objects are used as follows,
 \begin{boxnote}
 \begin{verbatim}
 use base qw(core);
 \end{verbatim}
 \end{boxnote}
-\noindent
-と記述して読み込む．複数読み込む場合は読み込みたい順に
+\vspace{\baselineskip}
+
+When you use multiple modules, it is enough to write
 \begin{boxnote}
 \begin{alltt}
 use base qw(\textit{mymodule} core);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
-と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
-述べる．
+Every module is used in order.  In Chapter~\ref{chapmodule}, modules
+are explained in detail.
 
-モジュールを読み込むことにより，利用可能になる変数（例えば
-\texttt{\$separator}）は
+Ordinal modules are used as follows,
+\begin{boxnote}
+\begin{verbatim}
+use builtin;
+\end{verbatim}
+\end{boxnote}
+\vspace{\baselineskip}
+\noindent
+similarly to how to use modules in Perl.
+
+Some modules define variables.  In order to use such variables, it is
+enough to write e.g.,
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
 \end{verbatim}
 \end{boxnote}
-\noindent
-と記述してセットする．
 
 \section{\defjobdefhash}
 
-Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
-ブを定義するにあたり，ハッシュ自身を記述してもよいが，ジョブ定義ハッシュ
-と呼ばれるハッシュを記述すれば，ジョブを生成する際，さらにパラメタを与
-えることで多数のジョブを一度に生成できる．例えば，
+Xcrypt's templates are implemented as Perl's hashes.  For example,
 \begin{boxnote}
 \begin{alltt}
 %myjob = (
@@ -126,38 +133,19 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 );
 \end{alltt}
 \end{boxnote}
-\noindent
-と記述する．デフォルトで定義可能なジョブ定義ハッシュのキーに関
-しては\ref{chapjobdefhash}章で述べる．
+\vspace{\baselineskip}
 
-\if0
-ジョブ定義ハッシュキー（例えば
-\texttt{userdefinedkey0}と\texttt{userdefinedkey1}）をユーザ定義するに
-はあらかじめ
-\begin{boxnote}
-\begin{verbatim}
-addkeys('userdefinedkey0', 'userdefinedkey1');
-\end{verbatim}
-\end{boxnote}
-と書いておく（\ref{chapfun}章を参照のこと）か，または，ジョブ定義ハッ
-シュのキーを与える際，
-\begin{boxnote}
-\begin{verbatim}
-':userdefinedkey0' => 0
-\end{verbatim}
-\end{boxnote}
-とキー名を\texttt{:}で始める．
-\fi
+Keys in templates are described in Chapter~\ref{chapjobdefhash} in
+detail.
 
 \section{\operation}
 
-通常，人手で行う処理で，今回，Xcrypt に行わせたい処理について記述す
-る．Xcrypt で利用可能な関数については\ref{chapfun}章で述べる．
+Procedure (usually manually done) are written in Xcrypt (and Perl).
+Xcrypt's functions are decribed in Chapter~\ref{chapfun}.
 
 \section{Example}\label{secscriptexample}
 
-本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
-
+An example script is as follows,
 \begin{boxnote}
 \begin{alltt}
 use base qw(limit core);
@@ -177,7 +165,7 @@ $separator = '-';
     'queue' => '\textit{myqueue}',
     'option' => '\textit{myoption}'
 );
-&prepare_submit_sync(%myjob, 'arg1@' => [2,4]);
+&prepare_submit_sync(%myjob, 'arg0@' => [2,4]);
 
 \end{alltt}
 \end{boxnote}
@@ -185,114 +173,99 @@ $separator = '-';
 
 \chapter{Flow}
 
-実際のジョブ処理の流れについて概観する．
+In this chapter, we introduce how jobs process.
 
 \section{Model}\label{sec:states}
 
+Any job transits to some states as follows,
 \[
 \entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=100pt{
-  *{} \ar[r]|(.4){\txt{\small オブジェクト生成}} &
-  \txt{active} \ar[r]|{\txt{\small 前処理実行}} \ar[d]|{\txt{\small \texttt{xcryptdel}入力}}&
-  \txt{prepared} \ar[d]|{\txt{\small \texttt{qsub}実行}} \ar[ld]|{\txt{\small \texttt{xcryptdel}入力}}\\
+  *{} \ar[r]|(.4){\txt{\small job object generation}} &
+  \txt{active} \ar[r]|{\txt{\small pre-processing}} \ar[d]|{\txt{\small \texttt{\$ xcryptdel}}}&
+  \txt{prepared} \ar[d]|{\txt{\small \texttt{\$ qsub}}} \ar[ld]|{\txt{\small \texttt{\$ xcryptdel}}}\\
   \txt{finished} &
   \txt{aborted} &
-  \txt{submitted} \ar[d]|{\txt{\small \texttt{qsub}成功}} \ar[l]|{\txt{\small \texttt{qsub}失敗}}\\
-  \txt{done} \ar[u]|{\txt{\small 後処理}} &
-  \txt{running} \ar[l]|{\txt{\small スクリプト終了}} \ar[u]|{\txt{\small 当該ジョブ消滅}} &
-  \txt{queued} \ar[l]|{\txt{\small スクリプト開始}} \ar[lu]|{\txt{\small 当該ジョブ消滅}}
+  \txt{submitted} \ar[d]|{\txt{\small \texttt{qsub} ok\\job generated}} \ar[l]|{\txt{\small \texttt{qsub} failed}}\\
+  \txt{done} \ar[u]|{\txt{\small post-processing}} &
+  \txt{running} \ar[l]|{\txt{\small job script done}} \ar[u]|{\txt{\small job aborted}} &
+  \txt{queued} \ar[l]|{\txt{\small job started}} \ar[lu]|{\txt{\small job aborted}}
 }
 \]
 
 \section{Execution}
 
-環境変数 \texttt{XCRYPT} を Xcrypt をインストールしたディレクトリで定義
-する（ここでは \texttt{/usr/share/xcrypt} と仮定する）．シェルが bash
-なら，
+The following environment variables must be set appropriately.
+
+\texttt{XCRYPT} is set to the directory
+(e.g., \texttt{/usr/share/xcrypt}) in which Xcrypt is installed.  For
+example, it is enough to type
 \begin{screen}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
+when you use Bourne shell.
+\texttt{XCRJOBSCHED}\footnote{\texttt{NQS}, \texttt{hNQS},
+\texttt{SGE}, and \texttt{tSGE} are available.  In addition, sh-mode
+is also available (by being set to \texttt{sh}) for environments
+without any job scheduler.  In that case, jobs are dealt with as
+processes in OS.} is set to a job scheduler.  \texttt{PERL5LIB} is set
+to \texttt{\$XCRYPT/lib} and \texttt{\$XCRYPT/lib/algo/lib}.
 
-環境変数 \texttt{XCRJOBSCHED} をジョブスケジューラの名前
-\footnote{\texttt{NQS}と\texttt{SGE}とが利用可能である．また，環境変数
-\texttt{XCRJOBSCHED} に \texttt{sh} も利用可能である．この場合，ジョブ
-をOSのプロセスとして扱い，ジョブスケジューラが導入されていない環境にお
-けるジョブの投入・削除・状態取得を行う．}に設定する．シェルが bash
-なら，例えば，
-\begin{screen}
-\texttt{\$ XCRJOBSCHED=SGE; export XCRJOBSCHED}
-\end{screen}
-とする．
-
-環境変数 \texttt{PERL5LIB} に\texttt{\$XCRYPT/lib}と\texttt{\$XCRYPT/lib/algo/lib}とを追加する．
-
-
-作業ディレクトリに移動する（ここでは \texttt{\$HOME/wd} とする）．
+Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
 \texttt{\$ cd \$HOME/wd}
 \end{screen}
+and write an Xcrpyt script (e.g., \texttt{sample.xcr}).  See
+Section~\ref{secscriptexample} in order to know how to write.
 
-Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
-\texttt{sample.xcr} とする）．
-
-実行する．
+Finally, execute Xcrypt with the script:
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcrypt sample.xcr}
 \end{screen}
 
 \section{Product}\label{sec:created}
 
-Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
+Xcrypt creates the following in the working directory just/after then.
 
-\subsection*{ディレクトリ}
+\subsection*{directory}
 
-Xcrypt はジョブごとにディレクトリ（ジョブ作業ディレクトリと呼ぶ）を作成
-する．ディレクトリの名前はジョブハッシュの\texttt{id}キーの値である．
-ジョブ処理はジョブ作業ディレクトリで行われる．
+is created each job (called a \textit{job working directory}).  It is
+named by the value of the job hash's key \texttt{id}.  Job-processing
+is done in the job working directory.
 
-\subsection*{(Xcrypt スクリプト名)\texttt{.pl}}
+\subsection*{\textit{myscript}\texttt{.pl}}
 
-Xcrypt が Xcrypt スクリプトから作成する Perl スクリプトである．Xcryptが
-行う Xcryptスクリプトの実行は，Perl が行うこの Perl スクリプトの実行を
-含む．
+is a Perl script created from the Xcrypt script \textit{myscript}.
 
-\subsection*{ジョブリンク・ジョブファイル}
+\subsection*{file and soft link}
 
-ジョブ作業ディレクトリからジョブハッシュの
-\texttt{linkedfile}\textit{i}キーの値で指定されているファイルへシンボリッ
-クリンクを張り，\texttt{copiedfile}\textit{i}キーの値で指定されている作
-業ディレクトリ中のファイルのコピーをジョブ作業ディレクトリに作成する．
+of the names (which are the values of \texttt{copiedfile}\textit{i}
+and \texttt{linkedfile}\textit{i}) are copied and created in the job
+working directory, respectively.
 
-\subsection*{\texttt{NQS.sh}}
+\subsection*{\texttt{\$XCRJOBSCHED.sh}}
 
-ジョブスケジューラが NQS である際，NQS に渡されるスクリプトである．
-
-\subsection*{\texttt{SGE.sh}}
-
-ジョブスケジューラが Sun Grid Engine である際，Sun Grid Engine に渡され
-るスクリプトである．
+is a job script, which is passed to a job scheduler.
 
 \subsection*{\texttt{sh.sh}}
 
-シェルをジョブスケジューラとして仮想的に利用す際，シェルに渡されるスク
-リプトである．
+is a Bourne shell script, which is executed, regarding OS as a job
+scheduler.
 
 \subsection*{\texttt{request\_id}}
 
-Xcrypt によるジョブの投入に対し，ジョブスケジューラが返すジョブのリクエ
-ストIDを格納する．
+is a file storing the job's request ID (which the job scheduler
+returns).
 
 \subsection*{\texttt{stdout}}
 
-ジョブの実行コマンドの標準出力が格納される．ジョブハッシュの
-\texttt{stdofile}キーの値が指定されている場合，その値のファイル名で作成
-される．
+is a file storing the job's standard output.  When \texttt{stdofile}
+is defined, the file is renamed as its value.
 
 \subsection*{\texttt{stderr}}
 
-ジョブの実行コマンドの標準エラー出力が格納される．ジョブハッシュの
-\texttt{stdefile}キーの値が指定されている場合，その値のファイル名で作成
-される．
+is a file storing the job's standard error.  When \texttt{stdefile}
+is defined, the file is renamed as its value.
 
 \part{Details}
 \chapter{Module}\label{chapmodule}
@@ -313,7 +286,7 @@ It creates a directory of the name
 under the job working directory, where \texttt{\%myjob} is a job
 definition hash.  The default of \texttt{\$separator} is \texttt{\_}.
 In order to redefine \texttt{\$separator} to be \texttt{-}, for
-example, it is enough to describe as follows,
+example, it is enough to write as follows,
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -335,7 +308,7 @@ $\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips to check
 
 This module limits the number of jobs to be submitted.  In order to
 limit the number of jobs to $10$, for example, it is enough to
-describe as follows,
+write as follows,
 \begin{boxnote}
 \begin{verbatim}
 &limit::initialize(10);
@@ -344,9 +317,9 @@ describe as follows,
 
 \section{\texttt{successor}}
 
-This module provides how to describe dependency of jobs declaratively.
+This module provides how to write dependency of jobs declaratively.
 For example, in order to define jobs of the name \texttt{\%x, \%y},
-describe:
+write:
 \begin{boxnote}
 \begin{verbatim}
 ...
@@ -454,7 +427,7 @@ makes any job (derived from this hash) to process in dry mode.
 さで先読みした際の値をそれぞれ返す．
 \fi
 
-\chapter{Job Definition Hash}\label{chapjobdefhash}
+\chapter{Template}\label{chapjobdefhash}
 
 In this chapter, we introduce keys and values available in job
 definition hashes by default.
@@ -699,7 +672,7 @@ Typically, this function takes a return value of \texttt{prepare}.
 submit(@jobs);
 \end{alltt}
 \end{boxnote}
-It is possible to describe job references without using
+It is possible to define job references without using
 \texttt{prepare} (though not to be recommended).
 \begin{boxnote}
 \begin{alltt}
