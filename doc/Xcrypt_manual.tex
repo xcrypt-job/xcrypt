@@ -48,10 +48,12 @@ procedure:
 However, such a procedure requires manual intervention cost.  It
 therefore seems better to remove manual intervention in mid-processing
 by using an appropriate script language.  Xcrypt is a script language
-for job parallelization.  Xcrypt provides some functions and modules
-for facilitating job generation, submission, syncronization, etc.
-Xcrypt makes it easy to write scripts to process job, and supports
-users to process jobs easily.
+for job parallelization.  We can deal with jobs as objects (called
+\textit{job objects})in Xcrypt and manipulate the jobs as well as
+objects in an object-oriented language.  Xcrypt provides some
+functions and modules for facilitating job generation, submission,
+syncronization, etc.  Xcrypt makes it easy to write scripts to process
+job, and supports users to process jobs easily.
 
 \section{Environment}
 
@@ -173,11 +175,11 @@ $separator = '-';
 
 \chapter{Flow}
 
-In this chapter, we introduce how jobs process.
+In this chapter, we introduce how jobs are processed.
 
 \section{Model}\label{sec:states}
 
-Any job transits to some states as follows,
+Any job transits to \textit{states} as follows,
 \[
 \entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=100pt{
@@ -195,10 +197,9 @@ Any job transits to some states as follows,
 
 \section{Execution}
 
-The following environment variables must be set appropriately.
-
-\texttt{XCRYPT} is set to the directory
-(e.g., \texttt{/usr/share/xcrypt}) in which Xcrypt is installed.  For
+Set the following environment variables appropriately.
+\texttt{XCRYPT} is set to the directory (e.g.,
+\texttt{/usr/share/xcrypt}) in which Xcrypt is installed.  For
 example, it is enough to type
 \begin{screen}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
@@ -275,23 +276,23 @@ In this chapter, we introduce some modules available in Xcrypt scripts.
 \section{\texttt{core}}
 
 This module is the Xcrypt core module, and required to be read in
-order to use anything paricular to Xcrypt (e.g., a job definiton
-hash).
+order to use anything paricular to Xcrypt.
 
 It creates a directory of the name
 \begin{center}
  \texttt{\$myjob->\{'id'\}} \texttt{\$separator}
  \texttt{\$myjob->\{'arg0'\}} \texttt{\$separator} ...
 \end{center}
-under the job working directory, where \texttt{\%myjob} is a job
-definition hash.  The default of \texttt{\$separator} is \texttt{\_}.
-In order to redefine \texttt{\$separator} to be \texttt{-}, for
-example, it is enough to write as follows,
+under the job working directory, where \texttt{\%myjob} is a template.
+The default of \texttt{\$separator} is \texttt{\_}.  In order to
+redefine \texttt{\$separator} to be \texttt{-}, for example, it is
+enough to write as follows,
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
 \end{verbatim}
 \end{boxnote}
+\vspace{\baselineskip}
 
 Any word of ASCII printable characters except
 \begin{center}
@@ -318,8 +319,8 @@ write as follows,
 \section{\texttt{successor}}
 
 This module provides how to write dependency of jobs declaratively.
-For example, in order to define jobs of the name \texttt{\%x, \%y},
-write:
+For example, in order to define job objects of the name \texttt{\%x,
+\%y}, write:
 \begin{boxnote}
 \begin{verbatim}
 ...
@@ -327,8 +328,9 @@ write:
 ...
 \end{verbatim}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
-using the key \texttt{successors} in the job definition hash.
+using the key \texttt{successors} in the template.
 
 \if0
 \section{\texttt{simple\_convergence}}
@@ -369,8 +371,8 @@ The values \texttt{partition} and \texttt{epsilon}, denote
 
 \section{\texttt{dry}}
 
-This module provides job processing in dry mode (skipping any command
-exectution).  Description in a job definition hash
+This module provides job-processing in dry mode (skipping any command
+exectution).  Description in a template
 \begin{boxnote}
 \begin{verbatim}
 ...
@@ -429,12 +431,13 @@ makes any job (derived from this hash) to process in dry mode.
 
 \chapter{Template}\label{chapjobdefhash}
 
-In this chapter, we introduce keys and values available in job
-definition hashes by default.
+In this chapter, we introduce keys and values available in templates
+by default.
 
 \section{\texttt{id}}
 
-Its value is a word for identifying a job.  Any word of ASCII
+Its value is a word.  The value is used for creating job objects and
+identifying the job objects as their prefixes.  Any word of ASCII
 printable characters except
 \begin{center}
 \verb*+@ "$%&'/:;<=>?[\]`{|}+        % " for highlight
@@ -443,9 +446,9 @@ is available.
 
 \section{\texttt{exe}}
 
-Its value is a command for a job.  The command is executed as follows,
+Its value denotes a command.  The command is executed as follows,
 \begin{screen}
-\texttt{\$ exe arg0 arg1 ... arg255}
+\texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
 \end{screen}
 with \texttt{arg}\textit{i} as explained below.
 
@@ -454,13 +457,13 @@ with \texttt{arg}\textit{i} as explained below.
 Its values are arguments of a command.  The command is executed as
 follows,
 \begin{screen}
-\texttt{\$ exe arg0 arg1 ... arg255}
+\texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
 \end{screen}
 
 \section{\texttt{linkedfile}\textit{i}}
 
-A soft link of the file of the name its value is created in the job
-working directory.
+A soft link of the file (whose name is its value) is created in the
+job working directory.
 
 \section{\texttt{copiedfile}\textit{i}}
 
@@ -518,19 +521,21 @@ In this chapter, we introduce built-in functions.
 
 \section{\texttt{prepare}}\label{sec:prepare}
 
-This function takes a job definition hash and parameters of references\footnote{In this manual, references do not denote type globs.}, and returns an array of job references.  The \texttt{id}s of
-job objects are generated by \texttt{RANGE}\textit{i} as described
-later.
+This function takes a job definition hash and parameters of
+references\footnote{In this manual, references do not denote type
+globs.}, and returns an array of job objects.  The \texttt{id}s of job
+objects are generated by \texttt{RANGE}\textit{i} as described later.
 
 \subsubsection{\format}
 
 \begin{boxnote}
 \begin{alltt}
-prepare(\textit{%myjob}
- [,'RANGE0' => \verb+\+@myparam0s]...[,'RANGE255' => \verb+\+@myparam255s]
- [,'\textit{key}@' => \verb+\+@myparams]...);
+prepare(\textit{%template}
+        [,'RANGE0' => \verb+\+@\textit{myparam0s}]...[,'RANGE255' => \verb+\+@\textit{myparam255s}]
+        [,'\textit{key}@' => \verb+\+@\textit{myparams}]...);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
 where \textit{key}\texttt{@} denotes the one whose postfix is the
 character \texttt{@} (e.g., \texttt{arg0@}).
@@ -545,100 +550,91 @@ is available for \texttt{RANGE}\textit{i}'s values.
 
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}',
-                'arg0@' => [10,20]);
+@jobs = prepare('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'arg0@' => [10,20]);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
+
 This is almost the same as
 \begin{boxnote}
 \begin{alltt}
 @jobs = ();
-push(@jobs, {'id' => '\textit{myjob_0}', 'exe' => '\textit{./myexe}', 'arg0' => '10'});
-push(@jobs, {'id' => '\textit{myjob_1}', 'exe' => '\textit{./myexe}', 'arg0' => '20'});
+push(@jobs, \{'id' => '\textit{myjob_0}', 'exe' => '\textit{./myexe}', 'arg0' => '10'\});
+push(@jobs, \{'id' => '\textit{myjob_1}', 'exe' => '\textit{./myexe}', 'arg0' => '20'\});
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
+
 Declarative description is as follows,
 \begin{boxnote}
 \begin{alltt}
-%template = (
-    'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe}',
-    'arg0@' => [10,20]
-);
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'arg0@' => [10,20]);
 prepare(%template);
 \end{alltt}
 \end{boxnote}
-Description fo a job definition hash can be separated
-from parameters:
+\vspace{\baselineskip}
+
+Description of a template can be separated from parameters:
 \begin{boxnote}
 \begin{alltt}
-%template = (
-    'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe}'
-);
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}');
 prepare(%template, 'arg0@' => [10,20]);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 
-Various job objects can be generated by using \texttt{RANGE0}.  For example,
+Various job objects can be generated by using
+\texttt{RANGE}\textit{i}s.  For example,
 \begin{boxnote}
 \begin{verbatim}
 @jobs = prepare(%template, 'RANGE0' => [0..99], 'arg0@' => '2 * $R0');
 \end{verbatim}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
 is the same as a sequence of \texttt{prepare(\%template, 'arg0' => 0),
 prepare(\%template, 'arg0' => 2),..., prepare(\%template, 'arg0' => 198)}.
 
-
 \subsubsection{\advanced}
 
-Multiple parameters can be available.  For example,
-
+It is possible to generate job objects by using multiple parameters.
+For example,
 \begin{boxnote}
-\begin{verbatim}
-%template = (
-    'id' => 'myjob',
-    'exe' => './myexe'
-);
+\begin{alltt}
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}');
 @jobs = prepare(%template, 'arg0@' => [0,1], 'arg1@' => [2,3]);
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
 is almost the same as
 \begin{boxnote}
-\begin{verbatim}
-%template = (
-    'id' => 'myjob',
-    'exe' => './myexe'
-);
+\begin{alltt}
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}');
 @jobs = ();
 @job0 = prepare(%template, 'arg0' => '0', 'arg1' => '2');
 push(@jobs, $job0[0]);
 @job1 = prepare(%template, 'arg0' => '1', 'arg1' => '3');
 push(@jobs, $job1[0]);
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
+
 To use \texttt{RANGE}\textit{i}s makes it to generate job products by
 multiple parameters, e.g.,
 \begin{boxnote}
-\begin{verbatim}
-%template = (
-    'id' => 'myjob',
-    'exe' => './myexe'
-);
+\begin{alltt}
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}');
 @jobs = prepare(%template, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                            'arg0@' => '$R0 + $R1');
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 \noindent
 is almost the same as
 \begin{boxnote}
-\begin{verbatim}
-%template = (
-    'id' => 'myjob',
-    'exe' => './myexe'
-);
+\begin{alltt}
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}');
 @jobs = ();
 @job0 = prepare(%template, 'arg0' => '0', 'arg1' => '2');
 push(@jobs, $job0[0]);
@@ -648,30 +644,32 @@ push(@jobs, $job1[0]);
 push(@jobs, $job2[0]);
 @job3 = prepare(%template, 'arg0' => '1', 'arg1' => '4');
 push(@jobs, $job3[0]);
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
 
 \section{\texttt{submit}}\label{sec:submit}
 
-This function takes an array of job references, passes jobs to a job
-scheduler, and returns the array of job references.
+This function takes an array of job objects, passes the jobs
+(corresponding to the job objects) to a job scheduler.  Its return
+value is no change (the array of job objects).
 
 \subsubsection{\format}
 \begin{boxnote}
 \begin{alltt}
-submit(\textit{@myjobs});
+submit(@\textit{myjobs});
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 
 \subsubsection{\example}
 Typically, this function takes a return value of \texttt{prepare}.
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}',
-                'arg0@' => [10,20]);
+@jobs = prepare('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'arg0@' => [10,20]);
 submit(@jobs);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 It is possible to define job references without using
 \texttt{prepare} (though not to be recommended).
 \begin{boxnote}
@@ -683,8 +681,8 @@ submit({'id' => '\textit{myjob_0}', 'exe' => '\textit{./myexe}', 'arg0' => '10'}
 
 \section{\texttt{sync}}
 
-This function takes an array of job references, syncs the jobs, and
-returns the array of job references.
+This function takes an array of job objects, syncs the job objects.
+Its return value is no change (the array of job objects).
 
 \subsubsection{\format}
 
@@ -693,6 +691,7 @@ returns the array of job references.
 sync(\textit{@myjobs});
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 
 \subsubsection{\example}
 
@@ -715,22 +714,25 @@ definition hashes.
 
 \begin{boxnote}
 \begin{alltt}
-addkeys(\textit{@words});
+addkeys(@\textit{words});
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 
 \section{\texttt{addperiodic}}
 
-This function takes a Xcrypt's code and an integer $i$, and evaluates
-it each the $i$ seconds.
+This function takes a Xcrypt's script code (written as
+\textit{mystring}) and an integer $i$, and evaluates it each the $i$
+seconds.
 
 \subsubsection{\format}
 
 \begin{boxnote}
 \begin{alltt}
-addperiodic(\textit{string}, \textit{i});
+addperiodic(\textit{mystring}, \textit{i});
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
 
 \section{\texttt{prepare\_submit}}
 
