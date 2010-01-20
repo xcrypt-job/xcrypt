@@ -10,14 +10,13 @@ use base qw(bulk limit core);
     'queue' => 'gh10034',          #
     'cpu' => '1',
 #
-#    'group' => 'gh10034'
-#
-    'option' => '#% -T 30', # for tsukuba
-    'group' => 'ESCIENCE'
+    'group' => 'gh10034'
+#    'option' => '#% -T 30', # for tsukuba
+#    'group' => 'ESCIENCE'   # for tsukuba
 );
 
 @jobs = &prepare(%template,
-#		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
+		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
 #                                            $ qsub ./fib 21 > out
 #                                            $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0@' => [20..22]
