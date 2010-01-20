@@ -2,8 +2,14 @@ package builtin;
 
 #use strict;
 use NEXT;
-use threads;
+use threads ();
 use threads::shared;
+use Coro;
+use Coro::Signal;
+use Coro::AnyEvent;
+use Cwd;
+use Data::Dumper;
+
 use jobsched;
 use usablekeys;
 use Cwd;
@@ -14,12 +20,6 @@ prepare_submit_sync prepare_submit submit_sync
 addkeys addperiodic getelapsedtime
 );
 
-my $before_thread = undef;
-my $after_thread = undef;
-my $before_thread_status : shared = 'killed'; # one of 'killed', 'running', 'signaled'
-my $after_thread_status : shared = 'killed' ; # one of 'killed', 'running', 'signaled'
-my @jobs_for_before = ();
-my @jobs_for_after = ();
 my $nilchar = 'nil';
 my $argument_name = 'R';
 my $before_after_slp = 1;
@@ -259,154 +259,59 @@ sub MIN {
     return $num;
 }
 
-sub invoke_before {
-    my @jobs = @_;
-    $before_thread = threads->new( sub {
-        while (1) {
-            sleep $before_after_slp;
-            foreach my $self (@jobs) {
-                my $jobname = $self->{id};
-                my $stat = &jobsched::get_job_status($jobname);
-                if ($stat eq 'prepared') {
-                    if (jobsched::is_signaled_job ($jobname)) {
-                        &jobsched::inventory_write ($jobname, "aborted");
-                        jobsched::delete_signaled_job ($jobname);
-                    } else {
-                        my $before_ready = $self->EVERY::before_isready();
-                        my $failure=0;
-                        foreach my $k (keys %{$before_ready}) {
-                            unless ($before_ready->{$k}) {
-                                $failure=1;
-                            }
-                        }
-                        unless ($failure) {
-                            $self->EVERY::before();
-                            $self->start();
-                        }
-                    }
-                }
-            }
-            # signaledだったらスレッド終了
-            if ($before_thread_status eq 'signaled') {
-                lock ($before_thread_status);
-                if ($before_thread_status eq 'signaled') {
-                    $before_thread_status = 'killed';
-                    cond_signal ($before_thread_status);
-                    threads->exit();
-                }
-            }
-        }
-                                   });
-    $before_thread->detach();
-}
-
-sub invoke_after {
-    my @jobs = @_;
-    $after_thread = threads->new( sub {
-        while (1) {
-            sleep $before_after_slp;
-            foreach my $self (@jobs) {
-                my $stat = &jobsched::get_job_status($self->{'id'});
-                if ($stat eq 'done') {
-                    if ((-e "$self->{'id'}/$self->{'stdofile'}")
-                        && (-e "$self->{'id'}/$self->{'stdefile'}")) {
-                        my $after_ready = $self->EVERY::LAST::after_isready();
-                        my $failure=0;
-                        foreach my $k (keys %{$after_ready}) {
-                            unless ($after_ready->{$k}) {
-                                $failure=1;
-                            }
-                        }
-                        unless ($failure) {
-                            $self->EVERY::LAST::after();
-                            &jobsched::inventory_write($self->{'id'}, 'finished');
-                        }
-                    }
-                }
-            }
-            # signaledだったらスレッド終了
-            if ($after_thread_status eq 'signaled') {
-                lock ($after_thread_status);
-                if ($after_thread_status eq 'signaled') {
-                    $after_thread_status = 'killed';
-                    cond_signal ($after_thread_status);
-                    threads->exit();
-                }
-            }
-        }
-                                  });
-    $after_thread->detach();
-}
-
 sub submit {
     my @array = @_;
-
-    # submit対象のジョブ状態を 'prepared' に
-    foreach my $self (@array) {
-        my $jobname = $self->{id};
+    # my @coros = ();
+    foreach my $job (@array) {
+        my $jobname = $job->{id};
         my $stat = &jobsched::get_job_status($jobname);
-        # すでに done, finished, abortedなら無視
+        # submit対象のジョブ状態を 'prepared' にする．
+        # ただし，すでに done, finished, abortedなら無視
         unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
             # xcryptdelされていたら状態をabortedにして処理をとばす
-            if (jobsched::is_signaled_job($self->{id})) {
+            if (jobsched::is_signaled_job($job->{id})) {
                 &jobsched::inventory_write ($jobname, "aborted");
                 jobsched::delete_signaled_job ($jobname);
+                push (@coros, undef);
+                next;
             } else {
-                &jobsched::inventory_write($self->{'id'}, 'prepared');
+                &jobsched::inventory_write($job->{id}, 'prepared');
             }
         }
-    }
-    # beforeスレッドを立ち上げ直し
-    if ($before_thread) {
-        lock($before_thread_status);
-        $before_thread_status = 'signaled';
-        cond_wait ($before_thread_status) until ($before_thread_status eq 'killed');
-        # print "before_thread killed.\n";
-    }
-    {
-        my @jobs_for_before_new = @array;
-        foreach my $j (@jobs_for_before) {
-            my $stat = jobsched::get_job_status($j->{'id'});
-            unless ( $stat eq 'finished' || $stat eq 'aborted' ) {
-                push(@jobs_for_before_new, $j);
+        # ジョブスレッドを立ち上げる
+        my $job_coro = Coro::async {
+            my $self = $_[0];
+            # Coro::on_enter {
+            #     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
+            # };
+            # Coro::on_leave {
+            #     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
+            # };
+            ## before(), start()
+            $self->EVERY::before();
+            $self->start();
+            ## Waiting for the job "done"
+            &jobsched::wait_job_done($self->{id});
+            until ((-e "$self->{id}/$self->{stdofile}")
+                   && (-e "$self->{id}/$self->{stdefile}")) {
+                cede;
             }
-        }
-        @jobs_for_before = @jobs_for_before_new;
+            ## after()
+            $self->EVERY::LAST::after();
+            &jobsched::inventory_write ($self->{id}, 'finished');
+        } $job;
+        # push (@coros, $job_coro);
+        $job->{thread} = $job_coro;
     }
-    &invoke_before(@jobs_for_before);
-    # afterスレッドを立ち上げ直し
-    if ($after_thread) {
-        lock($after_thread_status);
-        $after_thread_status = 'signaled';
-        cond_wait ($after_thread_status) until ($after_thread_status eq 'killed');
-        # print "after_thread killed.\n";
-    }
-    {
-        my @jobs_for_after_new = @array;
-        foreach my $j (@jobs_for_after) {
-            my $stat = jobsched::get_job_status($j->{'id'});
-            unless ( $stat eq 'finished' || $stat eq 'aborted' ) {
-                push(@jobs_for_after_new, $j);
-            }
-        }
-        @jobs_for_after = @jobs_for_after_new;
-    }
-    &invoke_after(@jobs_for_after);
-
     return @array;
 }
 
 sub sync {
-    my @array = @_;
-    # thread->syncを使うと同期が完了するまでスレッドオブジェクトが生き残る
-    my %hash;
-    foreach my $i (@array) {
-        $hash{"$i->{id}"} = $i;
-    }
-    foreach (keys(%hash)) {
-        # print "Waiting for $_->{id} finished.\n";
-        &jobsched::wait_job_finished ($_);
-        # print "$_->{id} finished.\n";
+    my @jobs = @_;
+    foreach (@jobs) {
+        # print "Waiting for $_($_->{thread}) finished.\n";
+        $_->{thread}->join;
+        # print "$_- finished.\n";
     }
     return @_;
 }
