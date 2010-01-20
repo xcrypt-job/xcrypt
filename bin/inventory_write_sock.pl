@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-use IO::Socket;
 use strict;
+use IO::Socket;
 use Time::HiRes;
 
 $|=1;
@@ -42,6 +42,7 @@ while ($RETRY_P) {
             Time::HiRes::sleep $slp;
         }
     }
+    print $LOG "$JOBNAME\[$STATUS\]: Connection to Xcrypt process succeeded.\n";
     select($socket); $|=1; select(STDOUT);
     ###
     my $time_now = time();
