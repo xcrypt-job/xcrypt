@@ -41,12 +41,12 @@ sub before {
     $gen->KR($self->{'sweepname'}, $self->{'initialvalue'});
     $gen->do();
 
-    $self->NEXT::before();
+    # $self->NEXT::before();
 }
 
 sub after {
     my $self = shift;
-    $self->NEXT::after();
+    # $self->NEXT::after();
 }
 
 sub backward_difference_loop {
@@ -70,6 +70,8 @@ sub backward_difference_loop {
 	    foreach (@{$job{'extractrules'}}) {
 		$datum->ED(@{$_});
 	    }
+#	    $datum->ED(@$job{'extractrules'});
+#
 #	    $datum->ED('L/E');
 #	    $oname;
 	    my @foo = $datum->ER();

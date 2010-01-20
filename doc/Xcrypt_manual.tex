@@ -1,9 +1,12 @@
 \documentclass[report]{jsbook}
 
 \usepackage{tascmac}
+\usepackage{alltt}
 \usepackage[all]{xy}
 
 % 
+\def\|{\verb|} %|
+%
 
 \title{Xcrypt マニュアル}
 \author{京大中島研e-scienceグループ}
@@ -75,16 +78,16 @@ use base qw(core);
 \noindent
 と記述して読み込む．複数読み込む場合は読み込みたい順に
 \begin{boxnote}
-\begin{verbatim}
-use base qw(dry core);
-\end{verbatim}
+\begin{alltt}
+use base qw(\textit{mymodule} core);
+\end{alltt}
 \end{boxnote}
 \noindent
 と記述して読み込む．利用可能なモジュールに関しては\ref{chapmodule}章で
 述べる．
 
 モジュールを読み込むことにより，利用可能になる変数（例えば
-\texttt{\$separator} ）は
+\texttt{\$separator}）は
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -100,20 +103,20 @@ Xcrypt ではジョブはハッシュ（ジョブハッシュと呼ぶ）で実現されている．ジョ
 と呼ばれるハッシュを記述すれば，ジョブを生成する際，さらにパラメタを与
 えることで多数のジョブを一度に生成できる．例えば，
 \begin{boxnote}
-\begin{verbatim}
-%xyz = (
-    'id' => 'job100',
-    'exe' => './kempo',
+\begin{alltt}
+%myjob = (
+    'id' => '\textit{myjob}',
+    'exe' => '\textit{./myexe}',
     'arg0' => '100',
-    'arg1' => 'plasma.inp',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
-    'stdofile' => 'hogeout',
-    'stdefile' => 'hogeerr',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+    'arg1' => '\textit{myinput}',
+    'linkedfile0' => '\textit{myexe}',
+    'copiedfile0' => '\textit{myinput}',
+    'stdofile' => '\textit{myout}',
+    'stdefile' => '\textit{myerr}',
+    'queue' => '\textit{myqueue}',
+    'option' => '\textit{myoption}'
 );
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
 \noindent
 と記述する．デフォルトで定義可能なジョブ定義ハッシュのキーに関
@@ -148,49 +151,48 @@ addkeys('userdefinedkey0', 'userdefinedkey1');
 本章で前節までの説明を踏まえたスクリプト記述例を以下に示す．
 
 \begin{boxnote}
-\begin{verbatim}
+\begin{alltt}
 use base qw(limit core);
 
 &limit::initialize(10);
 $separator = '-';
 
-%xyz = (
-    'id' => 'job100',
-    'exe' => './kempo',
-    'arg0' => 'plasma.inp',
-    'arg1' => '100',
-    'copieddir0' => 'forcopieddir',
-    'linkedfile0' => 'kempo',
-    'copiedfile0' => 'plasma.inp',
-    'stdofile' => 'hogeout',
-    'stdefile' => 'hogeerr',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034'
+%myjob = (
+    'id' => '\textit{myjob}',
+    'exe' => '\textit{./myexe}',
+    'arg0' => '100',
+    'arg1' => '\textit{myinput}',
+    'linkedfile0' => '\textit{myexe}',
+    'copiedfile0' => '\textit{myinput}',
+    'stdofile' => '\textit{myout}',
+    'stdefile' => '\textit{myerr}',
+    'queue' => '\textit{myqueue}',
+    'option' => '\textit{myoption}'
 );
+&prepare_submit_sync(%myjob, 'arg1@' => [2,4]);
 
-&prepare_submit_sync(%xyz, 'arg1@' => [2,4]);
-\end{verbatim}
+\end{alltt}
 \end{boxnote}
+
 
 \chapter{ジョブ処理の流れ}
 
 実際のジョブ処理の流れについて概観する．
 
-\section{概念図}
+\section{概念図}\label{sec:states}
 
 \[
 \entrymodifiers={+[F-:<10pt>]}
 \xymatrix@=100pt{
-  *{}
-  \ar[r]|(.4){\txt{\small オブジェクト生成}} &
-  \txt{active} \ar[rrd]|!{[rr];[dl]}\hole|(.6){\txt{\small \texttt{xcryptdel}入力}}
-  \ar[r]|{\txt{\small \texttt{前処理・qsub}実行}} &
-  \txt{submitted} \ar[rd]|!{[r];[dll]}\hole|(.6){\txt{\small \texttt{qsub}失敗}} \ar[r]|{\txt{\small \texttt{qsub}成功}} &
-  \txt{queued} \ar[llld]|(.6){\txt{\small スクリプト開始}} \ar[d]|{\txt{\small 当該ジョブ消滅}}\\
-  \txt{running} \ar[r]|{\txt{\small スクリプト終了}}
-  \ar@/_5pc/[rrr]|{\txt{\small 当該ジョブ消滅}} & \txt{done}
-  \ar[r]|{\txt{\small 後処理}} & \txt{finished} &
-  \txt{aborted}
+  *{} \ar[r]|(.4){\txt{\small オブジェクト生成}} &
+  \txt{active} \ar[r]|{\txt{\small 前処理実行}} \ar[d]|{\txt{\small \texttt{xcryptdel}入力}}&
+  \txt{prepared} \ar[d]|{\txt{\small \texttt{qsub}実行}} \ar[ld]|{\txt{\small \texttt{xcryptdel}入力}}\\
+  \txt{finished} &
+  \txt{aborted} &
+  \txt{submitted} \ar[d]|{\txt{\small \texttt{qsub}成功}} \ar[l]|{\txt{\small \texttt{qsub}失敗}}\\
+  \txt{done} \ar[u]|{\txt{\small 後処理}} &
+  \txt{running} \ar[l]|{\txt{\small スクリプト終了}} \ar[u]|{\txt{\small 当該ジョブ消滅}} &
+  \txt{queued} \ar[l]|{\txt{\small スクリプト開始}} \ar[lu]|{\txt{\small 当該ジョブ消滅}}
 }
 \]
 
@@ -230,7 +232,7 @@ Xcrypt スクリプト（\ref{secscriptexample}節参照）を作成する（ここでは
 \texttt{\$ \$XCRYPT/bin/xcrypt sample.xcr}
 \end{screen}
 
-\section{作成物}
+\section{作成物}\label{sec:created}
 
 Xcrypt を実行した際，作業ディレクトリ以下に作成される物について説明する．
 
@@ -249,10 +251,9 @@ Xcrypt が Xcrypt スクリプトから作成する Perl スクリプトである．Xcryptが
 \subsection*{ジョブリンク・ジョブファイル}
 
 ジョブ作業ディレクトリからジョブハッシュの
-\texttt{linkedfile0,...,linkedfile255}キーの値で指定されているファイル
-へシンボリックリンクを張り，\texttt{copiedfile0,...,copiedfile255}キー
-の値で指定されている作業ディレクトリ中のファイルのコピーをジョブ作業ディ
-レクトリに作成する．
+\texttt{linkedfile}\textit{i}キーの値で指定されているファイルへシンボリッ
+クリンクを張り，\texttt{copiedfile}\textit{i}キーの値で指定されている作
+業ディレクトリ中のファイルのコピーをジョブ作業ディレクトリに作成する．
 
 \subsection*{\texttt{NQS.sh}}
 
@@ -297,10 +298,10 @@ Xcrypt コアを読み込む．Xcrypt 特有のもの（ジョブ定義ハッシュ等）を使用
 
 Xcrypt スクリプトで $\texttt{\$separator}$という変数が使えるようになる．
 
-ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける
-\texttt{id,arg0,\ldots,arg255}を\texttt{\$separator}で区切った
-名前のディレクトリを作成する．\texttt{\$separator}のデフォルト
-値は「\texttt{\_}」である．「\texttt{-}」に変えたい場合は，
+ジョブ作業ディレクトリ以下にジョブ定義ハッシュにおける\texttt{id}と
+\texttt{arg}\textit{i}たちを\texttt{\$separator}で区切った名前のディレ
+クトリを作成する．\texttt{\$separator}のデフォルト値は「\texttt{\_}」で
+ある．「\texttt{-}」に変えたい場合は，
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -396,7 +397,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 \begin{boxnote}
 \begin{verbatim}
-%xyz = (
+%myjob = (
     'id'          => 'job10',
     'linkedfile0' => 'getchildren',
     'linkedfile1' => 'komadoku',
@@ -407,7 +408,7 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
     'arg2'        => 'getchildren'      # get next positions
 );
 
-@results = &prepare_submit_sync(%xyz, 'arg3@' => ['komadoku',
+@results = &prepare_submit_sync(%myjob, 'arg3@' => ['komadoku',
 				                  'kuraidori',
 				                  'ikiataribattari']);
 \end{verbatim}
@@ -433,13 +434,14 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 
 \section{\texttt{exe}}
 
-実行されるジョブの実行コマンドを記述する．後述の\texttt{arg0,...,arg255}とともに
+実行されるジョブの実行コマンドを記述する．後述の\texttt{arg}\textit{i}
+とともに
 \begin{screen}
 \texttt{\$ exe arg0 arg1 ... arg255}
 \end{screen}
 といった形で実行される．
 
-\section{\texttt{arg0,...,arg255}}
+\section{\texttt{arg}\textit{i}}
 
 実行されるジョブの実行コマンドの引数を記述する．前述の\texttt{exe}とと
 もに
@@ -448,17 +450,17 @@ Xcrypt をドライモード（コマンドの実行のみ行わないモード）で動作させるこ
 \end{screen}
 といった形で実行される．
 
-\section{\texttt{linkedfile0,...,linkedfile255}}
+\section{\texttt{linkedfile}\textit{i}}
 
 この値のリンク名でジョブ作業ディレクトリから作業ディレクトリのファイル
 へシンボリックリンクを張る．
 
-\section{\texttt{copiedfile0,...,copiedfile255}}
+\section{\texttt{copiedfile}\textit{i}}
 
 この値のファイル名でジョブ作業ディレクトリから作業ディレクトリにコピー
 をつくる．
 
-\section{\texttt{copieddir0,...,copieddir255}}
+\section{\texttt{copieddir}\textit{i}}
 
 この値の名前であるディレクトリ中のファイルから作業ディレクトリにコピー
 をつくる．
@@ -510,12 +512,12 @@ Xcrypt で利用可能な組込み関数のうち，Perl の組込み関数でないものについ
 \def\advanced{発展}
 
 
-\section{\texttt{prepare}}
+\section{\texttt{prepare}}\label{sec:prepare}
 
 ジョブ定義ハッシュと（リファレンス\footnote{本稿ではリファレンスは型グ
 ロブを含まないものとする．}またはスカラで与えられる）パラメタを受け取
 り，適当なジョブリファレンスの配列を返す．特に，ジョブの\texttt{id}は後
-述の\texttt{RANGE0,...,RANGE255}により生成される．
+述の\texttt{RANGE}\textit{i}により生成される．
 
 \subsection{\format}
 
@@ -532,13 +534,13 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 （\texttt{arg0}等）の語尾に\texttt{@}をつけ加えたもの
 （\texttt{arg0@}等）を意味するものとする．
 
-\texttt{RANGE0,...,RANGE255}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
+\texttt{RANGE}\textit{i}の値であるところの配列リファレンスにおける配列に使用できるシンボルは \verb*+@ "$%&'/:;<=>?[\]`{|}+ を除く ASCII 印字可能文字とする．
 
 \subsection{\example}
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
@@ -547,8 +549,8 @@ prepare(ジョブ定義ハッシュ[,'RANGE0' => (配列リファレンス)]
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'});
-push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
+push(@jobs, {'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '10'});
+push(@jobs, {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '20'});
 \end{verbatim}
 \end{boxnote}
 
@@ -557,8 +559,8 @@ push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo',
+    'id' => 'myjob',
+    'exe' => './myexe',
     'arg0@' => [10,20]
 );
 prepare(%abc);
@@ -570,22 +572,21 @@ prepare(%abc);
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 prepare(%abc, 'arg0@' => [10,20]);
 \end{verbatim}
 \end{boxnote}
 
-\texttt{RANGE0}と関数リファレンスを使うことでさまざまなパラメタでジョブ
-を生成することができる．例えば，
+\texttt{RANGE0}を使うことでさまざまなパラメタでジョブを生成することができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => sub { 2 * $_[0] });
+@jobs = prepare(%abc, 'RANGE0' => [0..99], 'arg0@' => '2 * $R0');
 \end{verbatim}
 \end{boxnote}
-は\texttt{prepare(\%abc, 0), prepare(\%abc, 2),..., prepare(\%abc,
-198)}を順番に行ったものと同義である．
+は\texttt{prepare(\%abc, 'arg0' => 0), prepare(\%abc, 'arg0' =>
+2),..., prepare(\%abc, 'arg0' => 198)}を順番に行ったものと同義である．
 
 
 \subsection{\advanced}
@@ -596,8 +597,8 @@ prepare(%abc, 'arg0@' => [10,20]);
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 @jobs = prepare(%abc, 'arg0@' => [0,1], 'arg1@' => [2,3]);
 \end{verbatim}
@@ -606,49 +607,50 @@ prepare(%abc, 'arg0@' => [10,20]);
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '0', 'arg1' => '2'});
-push(@jobs, {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '1', 'arg1' => '3'});
+push(@jobs, {'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '0', 'arg1' => '2'});
+push(@jobs, {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '1', 'arg1' => '3'});
 \end{verbatim}
 \end{boxnote}
 
-\texttt{RANGE0}等と関数リファレンスを使うことでパラメタをかけ合わせてジョ
-ブを生成することができる．例えば，
+\texttt{RANGE0}等を使うことでパラメタをかけ合わせてジョブを生成すること
+ができる．例えば，
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
-@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
-                'arg0@' => sub { $_[0] + $_[1] });
+@jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4], 'arg0@' => '$R0 + $R1');
 \end{verbatim}
 \end{boxnote}
 は以下と同義である．
 \begin{boxnote}
 \begin{verbatim}
 @jobs = ();
-push(@jobs, {'id' => 'xyz_2', 'exe' => './kempo', 'arg0' => '2'});
-push(@jobs, {'id' => 'xyz_4', 'exe' => './kempo', 'arg0' => '4'});
-push(@jobs, {'id' => 'xyz_3', 'exe' => './kempo', 'arg0' => '3'});
-push(@jobs, {'id' => 'xyz_5', 'exe' => './kempo', 'arg0' => '5'});
+push(@jobs, {'id' => 'myjob_0_2', 'exe' => './myexe', 'arg0' => '2'});
+push(@jobs, {'id' => 'myjob_0_4', 'exe' => './myexe', 'arg0' => '4'});
+push(@jobs, {'id' => 'myjob_1_2', 'exe' => './myexe', 'arg0' => '3'});
+push(@jobs, {'id' => 'myjob_1_4', 'exe' => './myexe', 'arg0' => '5'});
 \end{verbatim}
 \end{boxnote}
 
+\if0
 引数がリファレンスでなくスカラである時，引数は \texttt{eval} される．ゆ
 えに，上記は，
 \begin{boxnote}
 \begin{verbatim}
 %abc = (
-    'id' => 'xyz',
-    'exe' => './kempo'
+    'id' => 'myjob',
+    'exe' => './myexe'
 );
 @jobs = prepare(%abc, 'RANGE0' => [0,1], 'RANGE1' => [2,4],
                 'arg0@' => '$_[0] + $_[1]');
 \end{verbatim}
 \end{boxnote}
 とも書くこともできる．
+\fi
 
-\section{\texttt{submit}}
+\section{\texttt{submit}}\label{sec:submit}
 
 \if0
 ジョブリファレンスの配列を受け取り，各ジョブをジョブスケジューラに渡
@@ -672,7 +674,7 @@ submit(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 submit(@jobs);
 \end{verbatim}
 \end{boxnote}
@@ -681,8 +683,8 @@ submit(@jobs);
 
 \begin{boxnote}
 \begin{verbatim}
-submit({'id' => 'xyz_0', 'exe' => './kempo', 'arg0' => '10'},
-       {'id' => 'xyz_1', 'exe' => './kempo', 'arg0' => '20'});
+submit({'id' => 'myjob_0', 'exe' => './myexe', 'arg0' => '10'},
+       {'id' => 'myjob_1', 'exe' => './myexe', 'arg0' => '20'});
 \end{verbatim}
 \end{boxnote}
 
@@ -710,7 +712,7 @@ sync(ジョブリファレンスの配列);
 
 \begin{boxnote}
 \begin{verbatim}
-@jobs = prepare('id' => 'xyz', 'exe' => './kempo', 'arg0@' => [10,20]);
+@jobs = prepare('id' => 'myjob', 'exe' => './myexe', 'arg0@' => [10,20]);
 @objs = submit(@jobs);
 sync(@objs);
 \end{verbatim}
@@ -744,5 +746,219 @@ addkeys(文字列の配列);
 
 \texttt{prepare\_submit}，\texttt{sync}を順に行う．\format は
 \texttt{prepare}に準ずる．
+
+
+\appendix
+\chapter{ジョブクラス拡張モジュール実装の手引}
+
+\section{はじめに}
+Xcryptの\|prepare|関数によって生成された全てのジョブオブジェクトは
+\|$XCRYPT/lib/core.pm| %$
+で定義された\|core|クラスに属する．
+Xcryptのユーザや開発者は，拡張モジュールを定義して\|core|クラスを拡張
+することでXcryptの機能を拡張することが可能である．
+本章では，この拡張モジュールを開発するために必要な情報を示す．
+
+\section{拡張モジュールの定義と利用}
+\textit{mymodule}という名前の拡張モジュールを定義するためには，
+\textit{mymodule}\|.pm| という名前の
+ファイルを\|$XCRYPT/lib/|（または\|$PERL5LIB|で指定されている
+  どこかのディレクトリ）に置く．
+Xcryptユーザは，スクリプトの先頭で，
+\begin{screen}
+\begin{alltt}
+use base (\ldots {\it mymodule} \ldots core);
+\end{alltt}
+\end{screen}
+のようにモジュール名を指定することで，当該モジュールの機能を使用できる．
+
+
+\section{拡張モジュールスクリプトの構成}
+
+典型的な拡張モジュールの定義スクリプトは以下のように記述される．
+
+\begin{boxnote}
+  \begin{alltt}
+package {\it mymodule};
+  \end{alltt}
+\begin{verbatim}
+use strict;
+use ...;
+
+&addkeys('my_instance_member', ...);
+
+my $my_class_member;
+
+# special methods
+sub new {
+  my $class = shift;
+  my $self = $class->NEXT::new(@_);
+  ... 
+  return bless $self, $class;
+}
+
+sub before_isready { ... }
+sub before { ... }
+
+sub start
+{
+  my $self = shift;
+  ...
+  $self->NEXT::start();
+  ...
+}
+
+sub after { ... }
+sub after_isready { ... }
+
+# general methods
+sub another_method
+{
+  ...
+}
+\end{verbatim}
+\end{boxnote}
+
+以下，スクリプトの各構成要素について説明する．
+
+\begin{enumerate}
+  \item モジュール名の定義：\|package|で指定する．ここで指定する名前は，
+    モジュールファイル名の拡張子（\|.pm|）を除いた部分と同一でなければ
+    ならない．
+  \item Perlモジュールの取り込み：通常のPerlプログラムと同様に，必要なPerlモジュールを\|use|で取り込む．
+  \item 追加するインスタンス変数の定義：ジョブクラスに新たに追加したい
+    インスタンス変数の名前を\|addkeys|関数により定義する．ここで定義し
+    たインスタンス変数は，ジョブオブジェクトの属性として，Xcryptスクリプトや
+    モジュール内のメソッドから\|$job->{my_instance_menber}| %$
+    などとしてアクセスできる．また，Xcryptユーザがジョブ定義ハッシュの記述時に，\\
+    \|  |\|%template = {| \ldots \|, my_instance_menber=>|{\it value}\|,| \ldots \|}|\\
+    のようにして値を設定することもできる．
+  \item クラス変数の定義：通常のPerlのオブジェクト指向プログラミングと同様，
+    クラス変数はパッケージ内のグローバル変数として定義する．ここで定義した変数は，
+    \|$|{\it mymodule}\|::my_class_member|としてアクセスできる %$
+  \item メソッドの定義：このモジュールにおいて追加，拡張するメソッドをパッケージ内の
+    トップレベル関数として定義する．通常のPerlオブジェクト指向プログラミングと同様であるが，
+    特定の名前を持つメソッドは特別な意味を持つので注意する．（次節で説明）
+\end{enumerate}
+
+\section{特別な意味を持つメソッド}
+\subsection{\texttt{new}メソッド}
+コンストラクタに相当するクラスメソッドであり，
+Xcryptの\|prepare|関数（\ref{sec:prepare}節）の処理中に，
+最もspecializedなクラス（Xcryptスクリプトのヘッダで宣言されているモジュール列
+のうち最も左に書かれているもの）の\|new|メソッドが呼び出される．
+
+このnewメソッドに渡される引数は以下の通りである．
+\begin{enumerate}
+\item Xcryptスクリプトが属するパッケージ名（＝\|user|）
+\item ジョブオブジェクトへの参照．オブジェクトのメンバには，\|prepare|関数に渡されたジョブ定義ハッシュに対応する値がセットされている．
+\end{enumerate}
+ジョブ定義ハッシュの\|RANGE|等の指定により\|prepare|関数が複数のジョブオブジェクト
+を生成した場合は，その各オブジェクトに対して\|new|が適用される．
+
+メソッドの本体では，\|$class->NEXT::new($self,$obj)| %$
+（\|$class|，\|$obj|はそれぞれ引数として渡されたクラス名およびオブジェクトへの参照）
+のようにして親クラスの\|new|メソッドを呼び出すことができる．
+典型的には，各\|new|メソッドはまず親クラスの\|new|メソッドを，
+与えられた2つの引数をそのまま引き渡して呼び出し，
+その返り値のオブジェクトにアクセスしつつ必要な処理を行った後，
+\|bless オブジェクトへの参照, 渡されたクラス名|の値を
+メソッドの返り値として\|return|すべきである．
+
+\|core|モジュールでも\|new|メソッドが定義されており，ここでは
+\ref{sec:created}節で説明したジョブの作業ディレクトリおよび
+その中へのファイルのコピー・シンボリックリンクの生成処理を行う．
+子クラスの\|new|メソッドにより\|core|モジュールの\|new|メソッド
+が呼び出されないと，この処理が行われなくなるので注意すること．
+
+\subsection{\texttt{before\_isready}メソッド}
+状態（\ref{sec:states}節）が\|prepared|になったジョブオブジェクトに対して
+適用される．一般にはXcryptスクリプト中の\|submit|関数（\ref{sec:submit}節）
+の適用により，ジョブの状態が\|prepared|になる．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{before\_isready}メソッドが定義されて
+いた場合は，{\bf 子クラス→親クラスの順で全ての}\texttt{before\_isready}メソッド
+が呼び出される．
+
+各メソッドは，真偽値を返す．
+呼び出された\texttt{before\_isready}メソッド列のうち，1つでも偽を返したメソッドが
+あれば，しばらくの時間待ち合わせた後，もう一度\texttt{before\_isready}メソッド列
+の実行が行われる．
+
+\subsection{\texttt{before}メソッド}
+\texttt{before\_isready}メソッド列が適用され，その全てが真を返したジョブオブジェクト
+に対して適用される．引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{before}メソッドが定義されて
+いた場合は，{\bf 子クラス→親クラスの順で全ての}\texttt{before}メソッド
+が呼び出される．
+
+メソッドの返り値は破棄される．
+
+\subsection{\texttt{start}メソッド}
+\texttt{before}メソッドの処理が終わったジョブオブジェクトに対して適用される．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{start}メソッドが定義されていた場合は，
+最もspecializedなクラスの\|start|メソッドが呼び出される．
+
+メソッドの本体では，\|$obj->NEXT::start()| %$
+（\|$obj|は引数として渡されたジョブオブジェクトへの参照）%$
+のようにして親クラスの\|start|メソッドを呼び出すことができる．
+
+\|core|モジュールでも\|start|メソッドが定義されており，ここでは
+ジョブスクリプトの生成およびバッチスケジューラへのジョブ投入処理を行う．
+子クラスの\|start|メソッドにより\|core|モジュールの\|start|メソッド
+が呼び出されないと，この処理が行われなくなるので注意すること．
+
+\subsection{\texttt{after\_isready}メソッド}
+状態（\ref{sec:states}節）が\|done|になったジョブオブジェクトに対して
+適用される．一般には，\|core::start|メソッドによってバッチスケジューラに
+投入したジョブからのジョブ完了通知により，ジョブの状態が\|done|になる．
+引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{after\_isready}メソッドが定義されて
+いた場合は，{\bf 親クラス→子クラスの順で全ての}\texttt{after\_isready}メソッド
+が呼び出される．
+
+各メソッドは，真偽値を返す．
+呼び出された\texttt{after\_isready}メソッド列のうち，1つでも偽を返したメソッドが
+あれば，しばらくの時間待ち合わせた後，もう一度\texttt{after\_isready}メソッド列
+の実行が行われる．
+
+\subsection{\texttt{after}メソッド}
+\texttt{after\_isready}メソッド列が適用され，その全てが真を返したジョブオブジェクト
+に対して適用される．引数はジョブオブジェクトへの参照である．
+複数のモジュールで\texttt{after}メソッドが定義されて
+いた場合は，{\bf 親クラス→子クラスの順で全ての}\texttt{after}メソッド
+が呼び出される．
+
+メソッドの返り値は破棄される．
+
+\subsection{\texttt{before\_isready}，\texttt{before}，\texttt{start}，\texttt{after\_isready}，\texttt{after}の並行性}
+\texttt{before}，\texttt{before\_isready}，\texttt{start}，\texttt{after}，\texttt{after\_isready}の各メソッドは
+Xcryptのユーザスレッドとは並行に実行される．ただし，各ジョブオブジェクト間についてのこれらのメソッドの実行は
+完全に並行に実行されるわけではない．Xcrypt処理系が保証する並行性は以下の通りである．
+\begin{itemize}
+  \item
+    どのジョブオブジェクトの
+    \texttt{before\_isready}，\texttt{before}，\texttt{start}，\texttt{after\_isready}，\texttt{after}メソッドも
+    Xcryptのユーザスレッドとは並行に実行される．
+  \item
+    どのジョブオブジェクトの\texttt{before\_isready}，\texttt{before}，\texttt{start}メソッドも2つ以上並行に実行されることはない．
+  \item
+    どのジョブオブジェクトの\texttt{after\_isready}，\texttt{after}，メソッドも2つ以上並行に実行されることはない．
+  \item
+    あるオブジェクトに対して\texttt{before\_isready}メソッド列が全て真を返した際，
+    それに続くそのオブジェクトへの\texttt{before}メソッド列の実行の前に，
+    他のどのオブジェクトへの\texttt{before\_isready}，\texttt{before}，\texttt{start}
+    メソッド適用も行われることはない．
+  \item
+    あるオブジェクトへの\texttt{before}メソッド列の適用と\texttt{start}メソッドの適用の間に，
+    他のどのオブジェクトへの\texttt{before\_isready}，\texttt{before}，\texttt{start}
+    メソッド適用も行われることはない．
+  \item
+    あるオブジェクトに対して\texttt{after\_isready}メソッド列が全て真を返した際，
+    それに続くそのオブジェクトへの\texttt{after}メソッド列の実行の前に，
+    他のどのオブジェクトへの\texttt{after\_isready}，\texttt{after}
+    メソッド適用も行われることはない．
+\end{itemize}
 
 \end{document}

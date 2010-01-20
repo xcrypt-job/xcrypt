@@ -25,14 +25,13 @@ sub before {
 	    my $arg = 'arg' . $i;
 	    $self->{$arg} = '';
 	}
-#	$self->{exit_cond} = sub { 1; };
     }
-    $self->NEXT::before();
+    # $self->NEXT::before();
 }
 
 sub after {
-  my $self = shift;
-  $self->NEXT::after();
+  # my $self = shift;
+  # $self->NEXT::after();
 }
 
 1;
