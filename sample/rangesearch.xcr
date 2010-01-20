@@ -1,24 +1,33 @@
 use base qw(limit core);
-
-limit::initialize(4);
+&limit::initialize(10);
 
 %template = (
-    'id' => 'job6',
+    'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
-    'arg0' => '50',
-    'arg1' => '> out',
-    'linkedfile0' => 'common/fib',
-    'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
+    'arg0' => '30',
+    'arg1' => '> out',             # i.e., $ ./fib 50 > out
+    'linkedfile0' => 'common/fib', # where exe-file exists
+    'queue' => 'gh10034',          #
+    'cpu' => '1',
+#
+    'group' => 'gh10034'
+#    'option' => '#% -T 30', # for tsukuba
+#    'group' => 'ESCIENCE'   # for tsukuba
 );
 
-my @jobs = &prepare(%template,
-		   'arg0@' => [0..3]
-#
-#		   'RANGE0' => [0..3], 'arg0@' => '$_[0] + 20'
-#		   'RANGE0' => [0..3], 'arg0@' => sub { $_[0] + 20; }
-#
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => sub { 26 + $_[0] + $_[2]; }
+@jobs = &prepare(%template,
+		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
+#                                            $ qsub ./fib 21 > out
+#                                            $ qsub ./fib 22 > out
+#		 'RANGE0' => [0..2], 'arg0@' => [20..22]
+#		 'RANGE0' => [0..2], 'arg0@' => [20,21]
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 30 + $R2;'
     );
 &submit(@jobs);
+our $hoge : shared = 'HOGE';
+&addperiodic('&user::foo($user::hoge);');
+#&addperiodic('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
 &sync(@jobs);
+sub foo {
+    print STDOUT "$_[0]\n";
+}

@@ -12,6 +12,6 @@ my $XCRFILE=File::Spec->rel2abs("rangesearch.xcr");
     # .xcr以外の必要ファイル
     'copiedfile0' => 'common/fib',
     'queue' => 'gh10034',
-    'option' => '# @$-g gh10034',
+    'group' => 'gh10034',
     'memory' => '31gb',
 );

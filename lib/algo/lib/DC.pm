@@ -69,14 +69,14 @@ sub before
 			$self->{exe} = "echo hoge";
 		#}
 	}
-	$self->NEXT::before();
+#	$self->NEXT::before();
 }
 
 sub after
 {
-	my $self = shift;
+#	my $self = shift;
 	print "\tafter DC\n";
-	$self->NEXT::after();
+#	$self->NEXT::after();
 }
 
 sub divide
