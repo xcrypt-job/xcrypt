@@ -85,39 +85,23 @@ sub new {
 sub start {
     my $self = shift;
     my $dir = $self->{id};
-
     # 前回done, finishedになったジョブならとばす．
     my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
+        # print "$self->{id}: calling qsub.\n";
         $self->{request_id} = &jobsched::qsub($self);
-#	&jobsched::wait_job_done($self->{id});
+        # print "$self->{id}: qsub finished.\n";
     }
 }
 
 sub before {
     my $self = shift;
-#    foreach (@{$self->{predecessor}}) {
-#	&jobsched::wait_job_done($_);
-#    }
 }
 
 sub after {
     my $self = shift;
-
-=comment
-    my @thrds = ();
-    foreach (@{$self->{successor}}) {
-	no strict 'refs';
-	my $foo = 'user::' . $_;
-	my %bar = %$foo;
-	my $obj = user->new(\%bar);
-	my $thrd = threads->new(\&start, $obj);
-	push(@thrds , $thrd);
-    }
-    foreach (@thrds) { $_->join; }
-=cut
 }
 
 1;

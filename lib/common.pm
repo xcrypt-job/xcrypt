@@ -34,5 +34,15 @@ sub wait_file {
     until ( -e $path ) { Time::HiRes::sleep ($interval); }
 }
 
+sub exec_async {
+    my @args = @_;
+    my $pid = fork();
+    if ($pid == 0) {
+        exec @args
+            or die "Failed to exec @args: $!";
+    } else {
+        return $pid;
+    }
+}
 
 1;

@@ -1,12 +1,17 @@
 # Get Xcrypt command-line options
 package xcropt;
+
 use Cwd;
 use File::Spec;
 use strict;
 use Getopt::Long;
 
+my $localhost = qx/hostname/;
+chomp $localhost;
+
 our %options =
   (
+   'localhost' => $localhost,
    'port' => 9999,               # インベントリ通知待ち受けポート．0ならNFS経由
    'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
    'inventory_path' => File::Spec->catfile(Cwd::getcwd(), 'inv_watch'),
@@ -17,6 +22,7 @@ our %options =
 
 GetOptions
   (\%options,
+   'localhost=s',
    'port=i',
    'abort_check_interval=i',
    'inventory_path=s',
