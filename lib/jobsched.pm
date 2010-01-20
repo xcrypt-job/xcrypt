@@ -2,18 +2,23 @@
 package jobsched;
 
 use strict;
-use threads;
+use threads ();
 use threads::shared;
 use Cwd;
 use File::Basename;
 use File::Spec;
 use IO::Socket;
-use Time::HiRes;
+use Coro;
+use Coro::Signal;
+use Coro::AnyEvent;
+use AnyEvent::Socket;
+# use Coro::Socket;
 
 use common;
 use xcropt;
 use jsconfig;
 # use Thread::Semaphore;
+
 
 ##################################################
 
@@ -21,11 +26,10 @@ my $current_directory=Cwd::getcwd();
 my $jobsched = $ENV{'XCRJOBSCHED'};
 
 ### Inventory
-my $inventory_host = qx/hostname/;
-chomp $inventory_host;
-my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
-my $inventory_path=$xcropt::options{inventory_path};
-my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
+my $inventory_host = $xcropt::options{localhost};
+my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由
+my $inventory_path = $xcropt::options{inventory_path};
+my $reqids_file = File::Spec->catfile($inventory_path, '.request_ids');
 
 my $write_command = undef;
 if ($inventory_port > 0) {
@@ -48,7 +52,8 @@ our $watch_thread=undef; # used in bin/xcrypt
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
 # ジョブ名→ジョブの状態
-our %job_status : shared;
+my %job_status : shared;
+my $job_status_signal = new Coro::Signal;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
@@ -62,8 +67,13 @@ our %periodicfuns : shared = ();
 my %signaled_jobs : shared = ();
 my $all_jobs_signaled : shared = undef;
 
-our $abort_check_thread=undef; # used in bin/xcrypt
+# 外部からの状態変更通知を待ち受け，処理するスレッド
+our $watch_thread=undef;    # accessed from bin/xcrypt
+# ジョブがabortedになってないかチェックするスレッド
+our $abort_check_thread=undef;    # accessed from bin/xcrypt
 my $abort_check_interval = $xcropt::options{abort_check_interval};
+# ユーザ定義のタイム割り込み関数を実行するスレッド
+our $periodic_thread=undef; # accessed from bin/xcrypt
 
 our $periodic_thread=undef;
 
@@ -95,7 +105,6 @@ sub any_to_string_spc { any_to_string (" ", @_); }
 # ジョブスケジューラによって吐くものが違う
 sub qsub {
     my $self = shift;
-
     my $job_name = $self->{id};
     my $dir = $self->{id};
 
@@ -165,26 +174,22 @@ sub qsub {
     my $option = $self->{option};
     print SCRIPT "$option\n";
 
-    ## Commands
+    ## Job script body
     # print SCRIPT "PATH=$ENV{'PATH'}\n";
     # print SCRIPT "set -x\n";
-    # Move to the job directory
+    # Chdir to the job's working directory
     my $wkdir_str = defined ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
         ? any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
         : $ENV{'PWD'};
     print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
-
-    # Set job's status "running"
+    # Set the job's status to "running"
     print SCRIPT inventory_write_cmdline($job_name, "running") . " || exit 1\n";
-
-    # Execute a program
+    # Execute the program
     my @args = ();
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
     my $cmd = $self->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
-    # 正常終了でなければ "aborted" を書き込むべき？
-
-    # Set job's status "done"
+    # Set the job's status to "done" (should set to "aborted" when failed?)
     print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
     close (SCRIPT);
     ### --> Create job script file -->
@@ -254,7 +259,7 @@ sub qdel {
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
         if (common::cmd_executable ($command_string)) {
             print "Deleting $jobname (request ID: $req_id)\n";
-            exec ($command_string);
+            common::exec_async ($command_string);
         } else {
             warn "$command_string not executable.";
         }
@@ -285,19 +290,31 @@ sub qstat {
 }
 
 ##############################
-# 外部プログラムinventory_writeを起動し，
-# インベントリファイルに$jobnameの状態が$statに変化したことを書き込む
+# Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
     my ($jobname, $stat) = @_;
-    system (inventory_write_cmdline($jobname,$stat));
+    my $cmdline = inventory_write_cmdline($jobname, $stat);
+    # print "$cmdline\n";
+    system ($cmdline);
+    ## Use the following when $watch_thread is a Coro.
+    # {
+    #     my $pid = common::exec_async ($cmdline);
+    #     ## polling for checking the child process finished.
+    #     ## DO NOT USE blocking waitpid(*,0) for Coros.
+    #     # print "Waiting for $pid finished.\n";
+    #     # until (waitpid($pid,1)) { Coro::AnyEvent::sleep 0.1; }
+    #     # print "$pid finished.\n";
+    # }
 }
 sub inventory_write_cmdline {
     my ($jobname, $stat) = @_;
-    status_name_to_level ($stat); # 有効な名前かチェック
+    status_name_to_level ($stat); # Valid status name?
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
-    } else {
-        return "$write_command $LOCKDIR $REQUESTFILE $ACKFILE $jobname $stat";
+    } else { 
+        my $file = File::Spec->catfile($inventory_path, $jobname);
+        my $jobspec = "\"spec: $jobname\"";
+        return "$write_command $file \"$stat\" $jobspec";
     }
 }
 
@@ -440,32 +457,34 @@ sub invoke_watch_by_file {
             close ($CLIENT_OUT);
             rename $ACK_TMPFILE, $ACKFILE;
         }
-                                  })
+        # close (INVWATCH_LOG);
+    });
+    $watch_thread->detach();
 }
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
-    $watch_thread = threads->new( sub {
-        socket (CLIENT_WAITING, PF_INET, SOCK_STREAM, 0)
-            or die "Can't make socket. $!";
-        setsockopt (CLIENT_WAITING, SOL_SOCKET, SO_REUSEADDR, 1)
-            or die "setsockopt failed. $!";
-        bind (CLIENT_WAITING, pack_sockaddr_in ($inventory_port, inet_aton($inventory_host)))
-            or die "Can't bind socket. $!";
-        listen (CLIENT_WAITING, SOMAXCONN)
-            or die "listen: $!";
+    my $listen_socket = IO::Socket::INET->new (LocalAddr => $inventory_host,
+                                               LocalPort => $inventory_port,
+                                               Listen => 10,
+                                               Proto => 'tcp',
+                                               ReuseAddr => 1);
+    unless ($listen_socket) {
+        die "Cant' bind : $@\n";
+    }
+    $watch_thread = threads->new (sub {
+        my $socket;
         while (1) {
-            my $paddr = accept (CLIENT, CLIENT_WAITING);
-            unless ($paddr) {next;}
-            select(CLIENT); $|=1; select(STDOUT);
-            my ($cl_port, $cl_iaddr) = unpack_sockaddr_in ($paddr);
-            my $cl_hostname = gethostbyaddr ($cl_iaddr, AF_INET);
-            my $cl_ip = inet_ntoa ($cl_iaddr);
+            # print "Waiting for connection.\n";
+            $socket = $listen_socket->accept;
+            # print "Connection accepted.\n";
+            unless ($socket) {next;}
+            $socket->autoflush();
             my $inv_text = '';
             my $handle_inventory_ret = 0;
             # クライアントからのメッセージは
             # (0行以上のメッセージ行)+(":end"で始まる行)
-            while (<CLIENT>) {
+            while (<$socket>) {
                 if ( $_ =~ /^:/ ) {
                     if ( $_ =~ /^:end/ ) {
                         # print STDERR "received :end\n";
@@ -486,16 +505,17 @@ sub invoke_watch_by_socket {
                 open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
                 print SAVE $inv_text;
                 close (SAVE);
-                print CLIENT ":ack\n";
+                $socket->print (":ack\n");
                 # print STDERR "sent :ack\n";
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
-                print CLIENT ":failed\n";
+                $socket->print (":failed\n");
                 # print STDERR "sent :failed\n";
             }
-            close (CLIENT);
+            $socket->close();
         }
     });
+    $watch_thread->detach();
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
@@ -569,10 +589,9 @@ sub set_job_status {
     status_name_to_level ($stat); # 有効な名前かチェック
     print "$jobname <= $stat\n";
     {
-        lock (%job_status);
         $job_status{$jobname} = $stat;
         $job_last_update{$jobname} = $tim;
-        cond_broadcast (%job_status);
+        $job_status_signal->broadcast();
     }
     # 実行中ジョブ一覧に登録／削除
     if ( $stat eq "queued" || $stat eq "running" ) {
@@ -675,11 +694,15 @@ sub expect_job_stat {
 sub wait_job_status {
     my ($jobname, $stat) = @_;
     my $stat_lv = status_name_to_level ($stat);
+    my $slp=0.1; my $slp_max=2;
     # print "$jobname: wait for the status changed to $stat($stat_lv)\n";
-    lock (%job_status);
     until ( &status_name_to_level (&get_job_status ($jobname))
             >= $stat_lv) {
-        cond_wait (%job_status);
+        Coro::AnyEvent::sleep $slp;
+        $slp *= 2;
+        $slp = $slp>$slp_max ? $slp_max : $slp;
+        ## Does not work because inventory_watch thread is a Perl thread
+        # $job_status_signal->wait;
     }
     # print "$jobname: exit wait_job_status\n";
 }
@@ -794,44 +817,31 @@ sub getjobids {
 }
 
 sub invoke_periodic {
-    $periodic_thread = threads->new( sub {
-        while (1) {
+    $periodic_thread = Coro::async_pool {
+       while (1) {
 # ユーザ定義の定期的実行文字列
-	    foreach my $i (keys(%periodicfuns)) {
-		sleep $periodicfuns{"$i"};
-		eval "$i";
-	    }
+           foreach my $i (keys(%periodicfuns)) {
+               Coro::AnyEvent::sleep $periodicfuns{"$i"};
+               eval "$i"
+           }
         }
-    });
+   };
 }
 
 sub invoke_abort_check {
-    $abort_check_thread = threads->new( sub {
+    # print "invoke_abort_check.\n";
+    $abort_check_thread = Coro::async_pool {
         while (1) {
-            sleep $abort_check_interval;
+            Coro::AnyEvent::sleep $abort_check_interval;
             check_and_write_aborted();
 
             # print_all_job_status();
             ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
             ## とりあえずコメントアウト
-	    # &builtin::check_and_alert_elapsed();
+            # &builtin::check_and_alert_elapsed();
         }
-    });
+    };
+    # print "invoke_abort_check done.\n";
 }
-
-## 自前でwatchをやろうとした残骸
-#         my %timestamps = {};
-#         my @updates = ();
-#         foreach (glob "$inventory_path/*") {
-#             my $bname = fileparse($_);
-#             my @filestat = stat $_;
-#             my $tstamp = @filestat[9];
-#             if ( !exists ($timestamps{$bname})
-#                  || $timestamps{$bname} < $tstamp )
-#             {
-#                 push (@updates, $bname);
-#                 $timestamps{$bname} = $tstamp;
-#             }
-#         }
 
 1;
