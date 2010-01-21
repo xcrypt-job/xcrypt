@@ -2,7 +2,7 @@
 package jobsched;
 
 use base qw(Exporter);
-our @EXPORT = qw(any_to_string_nl
+our @EXPORT = qw(any_to_string_nl any_to_string_spc
 inventory_write_cmdline inventory_write
 set_job_request_id
 );
