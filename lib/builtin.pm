@@ -112,10 +112,17 @@ sub addperiodic {
     } else {
         warn "addperiodic accepts code or eval-string.";
     }
-    if ($newcoro) {
-        push (@periodic_threads, $newcoro);
+    if ($new_coro) {
+        push (@periodic_threads, $new_coro);
     }
-    return $newcoro;
+    if ( $xcropt::options{verbose} >= 2 ) {
+        print "periodic = (";
+        foreach (@periodic_threads) {
+            print "$_ "
+        }
+        print ")\n";
+    }
+    return $new_coro;
 }
 
 sub addkeys {

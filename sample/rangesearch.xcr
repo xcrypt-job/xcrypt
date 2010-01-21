@@ -28,8 +28,13 @@ use base qw(core);
 # my @bulkedjobs = &bulk::bulk(@jobs);
 # &submit(@bulkedjobs);
 &submit(@jobs);
-#our $hoge : shared = 'HOGE';
-#&addperiodic('&user::foo($user::hoge);');
+
+&addperiodic('print "fuga\n";');
+sub foo {
+    print STDOUT "hoge\n";
+}
+&addperiodic(foo,3);
+
 #our $hoge : shared = 'HOGE';
 #&addperiodic('&user::foo($user::hoge);');
 #&addperiodic('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
@@ -37,6 +42,3 @@ use base qw(core);
 #&sync(@bulkedjobs);
 # &sync(@bulkedjobs);
 
-sub foo {
-    print STDOUT "$_[0]\n";
-}
