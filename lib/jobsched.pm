@@ -833,6 +833,7 @@ sub invoke_periodic {
                Coro::AnyEvent::sleep $periodicfuns{"$i"};
                eval "$i"
            }
+           Coro::AnyEvent::sleep 0.1;
         }
    };
 }
