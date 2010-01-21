@@ -38,7 +38,7 @@ print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
-print TMP '&jobsched::invoke_periodic();' . "\n";
+# print TMP '&jobsched::invoke_periodic();' . "\n";
 print TMP 'sub before {my $self = shift;if ($self->{before}) {&{$self->{before}}($self)};$self->SUPER::before();}' . "\n";
 print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 print TMP 'sub after  {my $self = shift;$self->SUPER::after();if ($self->{after}) {&{$self->{after}}($self)};}' . "\n";

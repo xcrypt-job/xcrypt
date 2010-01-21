@@ -89,12 +89,33 @@ sub check_and_alert_elapsed {
 }
 
 my $default_period = 10;
+my $periodic_threads = ();
 sub addperiodic {
-    if (defined $_[1]) {
-	$jobsched::periodicfuns{"$_[0]"} = $_[1];
+    my $new_coro = undef;
+    my $sub_or_str = $_[0];
+    my $slp = $_[1];
+    unless ($slp) { $slp = 10; }
+    if ( ref $_[0] eq 'code' ) {
+        $new_coro = Coro::async_pool {
+            while (1) {
+                Coro::AnyEvent::sleep $slp;
+                &{$sub_or_str};
+            }
+        };
+    } elsif (!(ref $_[0])) {
+        $new_coro = Coro::async_pool {
+            while (1) {
+                Coro::AnyEvent::sleep $slp;
+                eval $sub_or_str;
+            }
+        };
     } else {
-	$jobsched::periodicfuns{"$_[0]"} = $default_period;
+        warn "addperiodic accepts code or eval-string.";
     }
+    if ($newcoro) {
+        push (@periodic_threads, $newcoro);
+    }
+    return $newcoro;
 }
 
 sub addkeys {
