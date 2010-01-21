@@ -11,6 +11,7 @@ use Cwd;
 use Data::Dumper;
 
 use jobsched;
+use xcropt;
 use usablekeys;
 use Cwd;
 
@@ -281,12 +282,14 @@ sub submit {
         # ジョブスレッドを立ち上げる
         my $job_coro = Coro::async {
             my $self = $_[0];
-            # Coro::on_enter {
-            #     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
-            # };
-            # Coro::on_leave {
-            #     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
-            # };
+            if ( $xcropt::options{verbose} >= 2 ) {
+                Coro::on_enter {
+                    print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
+                };
+                Coro::on_leave {
+                    print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
+                };
+              }
             ## before(), start()
             $self->EVERY::before();
             $self->start();
@@ -309,9 +312,13 @@ sub submit {
 sub sync {
     my @jobs = @_;
     foreach (@jobs) {
-        # print "Waiting for $_($_->{thread}) finished.\n";
+        if ( $xcropt::options{verbose} >= 1 ) {
+            print "Waiting for $_->{id}($_->{thread}) finished.\n";
+        }
         $_->{thread}->join;
-        # print "$_- finished.\n";
+        if ( $xcropt::options{verbose} >= 1 ) {
+            print "$_->{id} finished.\n";
+        }
     }
     return @_;
 }

@@ -37,8 +37,8 @@ sub new {
             &jobsched::inventory_write ($jobname, "done");
         }
     } else {
-        # done, finished以外だったらactiveにしてジョブディレクトリを（あれば）削除
         &jobsched::inventory_write ($jobname, "active");
+        # done, finished以外だったらactiveにしてジョブディレクトリを（あれば）削除
         if ( -e $dir ) {
             print "Delete directory $dir\n";
             File::Path::rmtree ($dir);

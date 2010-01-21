@@ -300,7 +300,9 @@ sub qstat {
 sub inventory_write {
     my ($jobname, $stat) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat);
-    # print "$cmdline\n";
+    if ( $xcropt::options{verbose} >= 2 ) {
+        print "$cmdline\n";
+    }
     system ($cmdline);
     ## Use the following when $watch_thread is a Coro.
     # {

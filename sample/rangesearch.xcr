@@ -1,4 +1,4 @@
-use base qw(bulk limit core);
+use base qw(limit core);
 &limit::initialize(10);
 
 %template = (
@@ -16,21 +16,21 @@ use base qw(bulk limit core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [20..22] # i.e., $ qsub ./fib 20 > out
+		 'arg0@' => [20..22], # i.e., $ qsub ./fib 20 > out
 #                                            $ qsub ./fib 21 > out
 #                                            $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0@' => [20,21]
- 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
+# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
-my @bulkedjobs = &bulk::bulk(@jobs);
-&submit(@bulkedjobs);
-#&submit(@jobs);
+# my @bulkedjobs = &bulk::bulk(@jobs);
+# &submit(@bulkedjobs);
+&submit(@jobs);
 our $hoge : shared = 'HOGE';
 &addperiodic('&user::foo($user::hoge);');
 #&addperiodic('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
-#&sync(@jobs);
-&sync(@bulkedjobs);
+&sync(@jobs);
+# &sync(@bulkedjobs);
 
 sub foo {
     print STDOUT "$_[0]\n";
