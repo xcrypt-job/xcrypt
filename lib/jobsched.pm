@@ -825,18 +825,18 @@ sub getjobids {
     return @jobids;
 }
 
-sub invoke_periodic {
-    $periodic_thread = Coro::async_pool {
-       while (1) {
-# ユーザ定義の定期的実行文字列
-           foreach my $i (keys(%periodicfuns)) {
-               Coro::AnyEvent::sleep $periodicfuns{"$i"};
-               eval "$i"
-           }
-           Coro::AnyEvent::sleep 0.1;
-        }
-   };
-}
+# sub invoke_periodic {
+#     $periodic_thread = Coro::async_pool {
+#        while (1) {
+# # ユーザ定義の定期的実行文字列
+#            foreach my $i (keys(%periodicfuns)) {
+#                Coro::AnyEvent::sleep $periodicfuns{"$i"};
+#                eval "$i"
+#            }
+#            Coro::AnyEvent::sleep 0.1;
+#         }
+#    };
+# }
 
 sub invoke_abort_check {
     # print "invoke_abort_check.\n";
