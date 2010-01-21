@@ -41,10 +41,6 @@ sub start {
     }
 }
 
-
-
-
-
 # 以下はjobsched.pmのコピーを改変したもの．
 # TODO: モジュール化してコードの重複をなくす．
 sub qsub {

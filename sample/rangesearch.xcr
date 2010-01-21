@@ -1,5 +1,4 @@
 use base qw(core);
-#&limit::initialize(10);
 
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
@@ -16,29 +15,21 @@ use base qw(core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [20..22], # i.e., $ qsub ./fib 20 > out
-#                                            $ qsub ./fib 21 > out
-#                                            $ qsub ./fib 22 > out
+#		 'arg0@' => [20..22], # i.e., $ qsub ./fib 20 > out
+#                                             $ qsub ./fib 21 > out
+#                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0@' => [20,21]
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
-#my @bulkedjobs = &bulk::bulk(@jobs);
-#&submit(@bulkedjobs);
-# my @bulkedjobs = &bulk::bulk(@jobs);
-# &submit(@bulkedjobs);
 &submit(@jobs);
 
 &addperiodic('print "fuga\n";');
+$hoge = 'hoge';
 sub foo {
-    print STDOUT "hoge\n";
+    print STDOUT "hage\n";
+    print STDOUT "$hoge\n";
 }
-&addperiodic(foo,3);
-
-#our $hoge : shared = 'HOGE';
-#&addperiodic('&user::foo($user::hoge);');
-#&addperiodic('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
+&addperiodic(foo,3); # bug!
 &sync(@jobs);
-#&sync(@bulkedjobs);
-# &sync(@bulkedjobs);
 

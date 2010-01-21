@@ -21,5 +21,3 @@ use base qw(successor core);
     );
 
 &prepare_submit_sync(%parent);
-
-

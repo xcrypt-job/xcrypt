@@ -323,14 +323,17 @@ sub submit {
             $self->start();
             ## Waiting for the job "done"
             &jobsched::wait_job_done($self->{id});
-            until ((-e "$self->{id}/$self->{stdofile}")
-                   && (-e "$self->{id}/$self->{stdefile}")) {
-                cede;
-            }
             ## after()
-            $self->EVERY::LAST::after();
-            &jobsched::inventory_write ($self->{id}, 'finished');
-        } $job;
+	    my $status = &jobsched::get_job_status($self->{'id'});
+	    if ($status eq 'done') {
+		until ((-e "$self->{id}/$self->{stdofile}")
+		       && (-e "$self->{id}/$self->{stdefile}")) {
+		    Coro::AnyEvent::sleep 0.1;
+		}
+		$self->EVERY::LAST::after();
+		&jobsched::inventory_write ($self->{id}, 'finished');
+	    }
+	} $job;
         # push (@coros, $job_coro);
         $job->{thread} = $job_coro;
     }

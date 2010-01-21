@@ -10,6 +10,7 @@ use builtin;
 our $del_extra_jobs = 0;
 
 my $interval_check_done_or_ignored = 3;
+my $inf = (2 ** 31) - 1;
 sub n_section_method {
     my %arg = @_;
     my $num = $arg{'partition'};
@@ -74,6 +75,10 @@ sub n_section_method {
 	}
 	($x_left, $y_left, $x_right, $y_right)
 	    = &across_zero($x_left, $y_left, $x_right, $y_right, @jobs);
+	print $x_left, "\n";
+print $y_left, "\n";
+print $x_right, "\n";
+print $y_right, "\n";
 	if (abs($y_left) < abs($y_right)) {
 	    $x = $x_left;
 	    $y = $y_left;
@@ -92,15 +97,17 @@ sub across_zero {
     my $y_right = shift;
     my @jobs = @_;
     foreach my $i (@jobs) {
-	if ($y_left * ($i->{'y'}) < 0) {
-	    if ($i->{'x'} < $x_right) {
-		$x_right = $i->{'x'};
-		$y_right = $i->{'y'};
-	    }
-	} else {
-	    if ($x_left < $i->{'x'}) {
-		$x_left = $i->{'x'};
-		$y_left = $i->{'y'};
+	unless ($i->{'y'} eq '') {
+	    if ($y_left * ($i->{'y'}) < 0) {
+		if ($i->{'x'} < $x_right) {
+		    $x_right = $i->{'x'};
+		    $y_right = $i->{'y'};
+		}
+	    } else {
+		if ($x_left < $i->{'x'}) {
+		    $x_left = $i->{'x'};
+		    $y_left = $i->{'y'};
+		}
 	    }
 	}
     }
