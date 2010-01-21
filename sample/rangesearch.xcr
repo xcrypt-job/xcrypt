@@ -1,5 +1,5 @@
-use base qw(limit core);
-&limit::initialize(10);
+use base qw(core);
+#&limit::initialize(10);
 
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
@@ -23,13 +23,18 @@ use base qw(limit core);
 #		 'RANGE0' => [0..2], 'arg0@' => [20,21]
 # 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
+#my @bulkedjobs = &bulk::bulk(@jobs);
+#&submit(@bulkedjobs);
 # my @bulkedjobs = &bulk::bulk(@jobs);
 # &submit(@bulkedjobs);
 &submit(@jobs);
-our $hoge : shared = 'HOGE';
-&addperiodic('&user::foo($user::hoge);');
+#our $hoge : shared = 'HOGE';
+#&addperiodic('&user::foo($user::hoge);');
+#our $hoge : shared = 'HOGE';
+#&addperiodic('&user::foo($user::hoge);');
 #&addperiodic('print &builtin::getelapsedtime("job6_5_nil_7"), "\n";', 3);
 &sync(@jobs);
+#&sync(@bulkedjobs);
 # &sync(@bulkedjobs);
 
 sub foo {
