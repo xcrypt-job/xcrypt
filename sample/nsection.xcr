@@ -2,7 +2,7 @@ use base qw(n_section_method core);
 use Data_Generation;
 use Data_Extraction;
 
-$n_section_method::del_extra_jobs = 1;
+$n_section_method::del_extra_jobs = 0;
 
 %job = (
     'id' => 'job0',
@@ -27,11 +27,8 @@ $n_section_method::del_extra_jobs = 1;
     });
 # 5-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
-#    %job, 'partition' => 12, 'epsilon' => 0.01,
-    %job, 'partition' => 3, 'epsilon' => 0.01,
-#    'x_left'  => -1,  'x_right' => 10,
-    'x_left'  => -1,  'x_right' => 1,
-#    'y_left'  => 0.5, 'y_right' => -5
-    'y_left'  => 0.5, 'y_right' => -0.5
+    %job, 'partition' => 12, 'epsilon' => 0.01,
+    'x_left'  => -1,  'x_right' => 10,
+    'y_left'  => 0.5, 'y_right' => -5
     );
 print 'The value is ' . $y . ' when x = ' . $x . ".\n";

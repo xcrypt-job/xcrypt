@@ -3,10 +3,14 @@ use base qw(limit dry core);
 &addkeys('added0', 'added1');
 $separator_nocheck = 0;
 $separator = '-';
-&limit::initialize(10);
+&limit::initialize(2);
 
 my @jobs = &prepare(
     'id' => 'job2',
+    'exe' => 'echo',
+    'arg0@' => '$R0',
+    'queue' => 'gh10034',
+    'group' => 'gh10034',
     ':dry' => 0,
     'RANGE0' => [0..3],
     ':auto0' => '0',
@@ -23,3 +27,5 @@ foreach my $i (0..3) {
     }
 }
 
+&submit(@jobs);
+&sync(@jobs);

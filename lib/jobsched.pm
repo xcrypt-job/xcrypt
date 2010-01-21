@@ -479,7 +479,7 @@ sub invoke_watch_by_socket {
                                                Proto => 'tcp',
                                                ReuseAddr => 1);
     unless ($listen_socket) {
-        die "Cant' bind : $@\n";
+        die "Can't bind : $@\n";
     }
     $watch_thread = threads->new (sub {
         my $socket;
