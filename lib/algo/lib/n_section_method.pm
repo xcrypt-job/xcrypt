@@ -1,14 +1,13 @@
 package n_section_method;
 
+use Coro;
+use Coro::AnyEvent;
 use jobsched;
 use builtin;
-use threads;
-use threads::shared;
 
 &addkeys('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
 our $del_extra_jobs = 0;
-our %result : shared;
 
 my $interval_check_done_or_ignored = 3;
 sub n_section_method {
@@ -25,7 +24,7 @@ sub n_section_method {
     my $count = -1;
     do {
 	$count++;
-	%result = ();
+#	%result = ();
 	$seg = ($x_right - $x_left) / $num;
 	my @jobs;
 	foreach my $i (1..($num-1)) {
@@ -41,17 +40,18 @@ sub n_section_method {
 	if ($del_extra_jobs == 1) {
 	    my $flag = 0;
 	    until ($flag == 1) {
-		sleep $interval_check_done_or_ignored;
+#		sleep $interval_check_done_or_ignored;
+                Coro::AnyEvent::sleep $interval_check_done_or_ignored;
 		foreach my $j (@jobs) {
 		    my $jx = $j->{'x'};
 		    my $jid = $j->{'id'};
 		    my $status = &jobsched::get_job_status($jid);
-		    if ($status eq 'done' && ($done_or_ignored{"$jid"} == 0)) {
+		    if (($status eq 'done' || $status eq 'finished') && ($done_or_ignored{"$jid"} == 0)) {
 			&sync($j);
 			$done_or_ignored{"$jid"} = 1;
 			foreach my $k (@jobs) {
 			    my $kid = $k->{'id'};
-			    if (0 < $result{"$jx"} * $inc_or_dec * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
+			    if (0 < ($j->{'y'}) * $inc_or_dec * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
 				if ($kid) {
 				    system("xcryptdel $kid");
 #				    &jobsched::qdel($jobid);
@@ -72,11 +72,8 @@ sub n_section_method {
 	} else {
 	    &sync(@jobs);
 	}
-#	foreach(%result) {
-#	    print $_, "\n";
-#	}
 	($x_left, $y_left, $x_right, $y_right)
-	    = &across_zero($x_left, $y_left, $x_right, $y_right, %result);
+	    = &across_zero($x_left, $y_left, $x_right, $y_right, @jobs);
 	if (abs($y_left) < abs($y_right)) {
 	    $x = $x_left;
 	    $y = $y_left;
@@ -93,17 +90,17 @@ sub across_zero {
     my $y_left = shift;
     my $x_right = shift;
     my $y_right = shift;
-    my %arg = @_;
-    foreach my $i (keys(%arg)) {
-	if ($y_left * $arg{"$i"} < 0) {
-	    if ($i < $x_right) {
-		$x_right = $i;
-		$y_right = $arg{"$i"};
+    my @jobs = @_;
+    foreach my $i (@jobs) {
+	if ($y_left * ($i->{'y'}) < 0) {
+	    if ($i->{'x'} < $x_right) {
+		$x_right = $i->{'x'};
+		$y_right = $i->{'y'};
 	    }
 	} else {
-	    if ($x_left < $i) {
-		$x_left = $i;
-		$y_left = $arg{"$i"};
+	    if ($x_left < $i->{'x'}) {
+		$x_left = $i->{'x'};
+		$y_left = $i->{'y'};
 	    }
 	}
     }
