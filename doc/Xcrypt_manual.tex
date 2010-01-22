@@ -203,13 +203,17 @@ For example, it is enough to type
 \begin{screen}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
-when you use Bourne shell.
-\texttt{XCRJOBSCHED}\footnote{\texttt{NQS}, \texttt{hNQS},
-\texttt{SGE}, and \texttt{tSGE} are available.  In addition, sh-mode
-is supported (by being set to \texttt{sh}) for environments
-without any job scheduler.  In that case, jobs are dealt with as
-processes in OS.} should be set to a job scheduler.  \texttt{PERL5LIB}
-should be set to \texttt{\$XCRYPT/lib} and \texttt{\$XCRYPT/lib/algo/lib}.
+when you use Bourne shell.  In addition, execute the following:
+\begin{screen}
+\texttt{\$ cd \$XCRYPT; source source-me.sh}\\
+\texttt{\$ cd \$XCRYPT/cpan; ./do-install.sh}
+\end{screen}
+
+If necessary, \texttt{XCRJOBSCHED}\footnote{\texttt{NQS},
+\texttt{hNQS}, \texttt{SGE}, \texttt{tSGE}, and \texttt{sh} are
+available.  In the case of \texttt{sh}, jobs are dealt with as
+processes in OS.  The default is \texttt{sh}} should be set to an
+appropriate job scheduler.
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
