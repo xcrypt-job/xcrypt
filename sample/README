@@ -1,20 +1,13 @@
+OK
 rangesearch.xcr
-OK
-
 refinement.xcr
-OK
-
 killall.xcr
-OK
+algocompare.xcr
+geneticalgo.xcr
+nsection.xcr
 
 customize.xcr
 OK except limit
-
-algocompare.xcr
-OK
-
-bulkjobs.xcr
-OK, but invwrite-sock.log in not bulk4 but job6_2
 
 dependency.xcr
 bug! job11 and job12 are done and finished twice.
@@ -23,17 +16,7 @@ do-xcrypt.xcr
 Can't bind : IO::Socket::INET: Address already in use
 Can't perl /home/abet/xcrypt/sample/rangesearch.xcr.pl
 
-geneticalgo.xcr
-OK
-
-nsection.xcr
-OK
-
+not yet
 lu-eval
-not yet
-
 tcell-eval
-not yet
-
 DC
-not yet
