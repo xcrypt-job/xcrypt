@@ -27,15 +27,14 @@ sub after {
     if ($self->{'successors'}) {
 	my @objs;
 	foreach (@{$self->{'successors'}}) {
-	    print "hoge\n";
 	    no strict 'refs';
 	    my $foo = 'user::' . $_;
 	    my %bar = %$foo;
 	    delete $bar{'successors'};
 	    my @job = &prepare(%bar);
-	    &submit(@job);
 	    push(@objs, $job[0]);
 	}
+	&submit(@objs);
 	&sync(@objs);
     }
 }

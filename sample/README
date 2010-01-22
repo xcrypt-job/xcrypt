@@ -1,16 +1,14 @@
 OK
+algocompare.xcr
+dependency.xcr
+geneticalgo.xcr
+killall.xcr
+nsection.xcr
 rangesearch.xcr
 refinement.xcr
-killall.xcr
-algocompare.xcr
-geneticalgo.xcr
-nsection.xcr
 
 customize.xcr
 OK except limit
-
-dependency.xcr
-bug! job11 and job12 are done and finished twice.
 
 do-xcrypt.xcr
 Can't bind : IO::Socket::INET: Address already in use
