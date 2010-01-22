@@ -36,22 +36,22 @@ none).
 
 \section{Overview}
 
-In using a high-performance computer, we usually commit job-processing
+In using a high-performance computer, we usually commit job processing
 to a job scheduler.  At this time, we often go through the following
-procedure:
+procedures:
 \begin{itemize}
-\item to create a script in its writing style depending on what the
-      job scheduler is,
+\item to create a script in its writing style depending on the
+      job scheduler,
 \item to pass the script to the job scheduler, and
-\item to extract data from its result, to create another script from
-      the data, and to pass it to the job scheduler.
+\item to extract data from its result, create another script from
+      the data, and pass it to the job scheduler.
 \end{itemize}
 
-However, such a procedure requires manual intervention cost.  It
+However, such procedures require manual intervention cost.  It
 therefore seems better to remove manual intervention in mid-processing
 by using an appropriate script language.  Xcrypt is a script language
 for job parallelization.  We can deal with jobs as objects (called
-\textit{job objects})in Xcrypt and manipulate the jobs as well as
+\textit{job objects}) in Xcrypt and manipulate the jobs as well as
 objects in an object-oriented language.  Xcrypt provides some
 functions and modules for facilitating job generation, submission,
 syncronization, etc.  Xcrypt makes it easy to write scripts to process
@@ -68,8 +68,8 @@ later version, and Perl/Tk 8.4 for GUI.
 \def\defjobdefhash{Template}
 \def\operation{Procedure}
 
-Xcrypt is a script language, an extension of Perl.  Xcrypt provides
-some functions and modules (not in Perl) which supports how to deal
+Xcrypt is a script language, and an extension of Perl.  Xcrypt provides
+some functions and modules (not in Perl) which support how to deal
 with \textit{jobs}.
 
 An Xcrypt script consists of descriptions of
@@ -97,10 +97,10 @@ use base qw(\textit{mymodule} core);
 \end{boxnote}
 \vspace{\baselineskip}
 \noindent
-Every module is used in order.  In Chapter~\ref{chapmodule}, modules
-are explained in detail.
+Every module should be used in order.
+The details of the modules are described in Chapter~\ref{chapmodule}.
 
-Ordinal modules are used as follows,
+Commonly-used modules can be loaded as follows,
 \begin{boxnote}
 \begin{verbatim}
 use builtin;
@@ -110,8 +110,8 @@ use builtin;
 \noindent
 similarly to how to use modules in Perl.
 
-Some modules define variables.  In order to use such variables, it is
-enough to write e.g.,
+Some modules define variables.
+In order to use such variables, it is enough to write e.g.,
 \begin{boxnote}
 \begin{verbatim}
 $separator = '-';
@@ -144,7 +144,8 @@ detail.
 
 \section{\operation}
 
-Procedure (usually manually done) are written in Xcrypt (and Perl).
+Procedures of job processing are described in Xcrypt (and Perl)
+instead of manually carried out.
 Xcrypt's functions are decribed in Chapter~\ref{chapfun}.
 
 \section{Example}\label{secscriptexample}
@@ -200,19 +201,19 @@ Any job transits to \textit{states} as follows,
 \section{Execution}
 
 Set the following environment variables appropriately.
-\texttt{XCRYPT} is set to the directory (e.g.,
-\texttt{/usr/share/xcrypt}) in which Xcrypt is installed.  For
-example, it is enough to type
+\texttt{XCRYPT} should be set to the installation directory of Xcrypt
+(e.g., \texttt{/usr/share/xcrypt}).
+For example, it is enough to type
 \begin{screen}
 \texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
 \end{screen}
 when you use Bourne shell.
 \texttt{XCRJOBSCHED}\footnote{\texttt{NQS}, \texttt{hNQS},
 \texttt{SGE}, and \texttt{tSGE} are available.  In addition, sh-mode
-is also available (by being set to \texttt{sh}) for environments
+is supported (by being set to \texttt{sh}) for environments
 without any job scheduler.  In that case, jobs are dealt with as
-processes in OS.} is set to a job scheduler.  \texttt{PERL5LIB} is set
-to \texttt{\$XCRYPT/lib} and \texttt{\$XCRYPT/lib/algo/lib}.
+processes in OS.} should be set to a job scheduler.  \texttt{PERL5LIB}
+should be set to \texttt{\$XCRYPT/lib} and \texttt{\$XCRYPT/lib/algo/lib}.
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
@@ -228,11 +229,12 @@ Finally, execute Xcrypt with the script:
 
 \section{Product}\label{sec:created}
 
-Xcrypt creates the following in the working directory just/after then.
+Xcrypt creates the following in the working directory
+during and after its execution.
 
 \subsection*{directory}
 
-is created each job (called a \textit{job working directory}).  It is
+is created for each job (called a \textit{job working directory}).  It is
 named by the value of the job hash's key \texttt{id}.  Job-processing
 is done in the job working directory.
 
@@ -296,21 +298,22 @@ $separator = '-';
 \end{boxnote}
 \vspace{\baselineskip}
 
-Any word of ASCII printable characters except
+Any word composed of ASCII printable characters except
 \begin{center}
 \verb*+@ "$%&'/:;<=>?[\]`{|}+        % " for highlight
 \end{center}
 is available.
 
-This module also makes the variable $\texttt{\$separator\_nocheck}$ to
-be available in Xcrypt scripts.  When the value of
-$\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips to check
-\texttt{\$separator} for availability.  The default is $0$.
+This module also makes the variable $\texttt{\$separator\_nocheck}$,
+which becomes available in Xcrypt scripts.  When the value of
+$\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips a check of
+whether \texttt{\$separator} consists of only available characters or not.
+The default is $0$.
 
 \section{\texttt{limit}}
 
-This module limits the number of jobs to be submitted.  In order to
-limit the number of jobs to $10$, for example, it is enough to
+This module limits the number of jobs submitted simultaneously.
+In order to limit the number of jobs to $10$, for example, it is enough to
 write as follows,
 \begin{boxnote}
 \begin{verbatim}
@@ -320,7 +323,7 @@ write as follows,
 
 \section{\texttt{successor}}
 
-This module provides how to write dependency of jobs declaratively.
+This module indicates job objects which can be defined declaratively.
 For example, in order to define job objects of the name \texttt{\%x,
 \%y}, write:
 \begin{boxnote}
@@ -351,11 +354,11 @@ Plan-Do-Check-Action (PDCA) サイクルを容易に実現する関数を提供する．ジョ
 \section{\texttt{n\_section\_method}}
 
 This module provides \textit{n}-section method, a root-finding
-algorithm of the only difference from bisection
+algorithm. The only difference from bisection
 method\footnote{\texttt{http://en.wikipedia.org/wiki/Bisection\_method/}}
 is the number of sections.
 
-The values \texttt{partition} and \texttt{epsilon}, denote
+The values \texttt{partition} and \texttt{epsilon} denote
     a partition number and an error, respectively.  An interval is
     expressed by \texttt{x\_left} and \texttt{x\_right}.  The values
     \texttt{y\_left} and \texttt{y\_right} are values on \texttt{x\_left}
@@ -383,7 +386,7 @@ exectution).  Description in a template
 \end{verbatim}
 \end{boxnote}
 \noindent
-makes any job (derived from this hash) to process in dry mode.
+makes any job (derived from this hash) to be processed in dry mode.
 
 \if0
 また，
@@ -452,7 +455,7 @@ Its value denotes a command.  The command is executed as follows,
 \begin{screen}
 \texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
 \end{screen}
-with \texttt{arg}\textit{i} as explained below.
+with \texttt{arg}\textit{i} explained below.
 
 \section{\texttt{arg}\textit{i}}
 
@@ -469,22 +472,22 @@ job working directory.
 
 \section{\texttt{copiedfile}\textit{i}}
 
-A file of the name its value is copied in the job working directory.
+The indicated file is copied to the job working directory.
 
 \section{\texttt{copieddir}\textit{i}}
 
-All files in the directory of the name its value are copied in the job
-working directory.
+All files in the indicated directory are copied
+in the job working directory.
 
 \section{\texttt{stdofile}}
 
-The standard output is stored in a file of the name its value.  The
-default is \texttt{stdout}.
+The standard output is stored in the indicated file.
+The default is \texttt{stdout}.
 
 \section{\texttt{stdefile}}
 
-The standard error is stored in a file of the name its value.  The
-default is \texttt{stderr}.
+The standard error is stored in the indicated file.
+The default is \texttt{stderr}.
 
 \section{\texttt{queue}}
 
@@ -567,7 +570,7 @@ push(@jobs, \{'id' => '\textit{myjob_1}', 'exe' => '\textit{./myexe}', 'arg0' =>
 \end{boxnote}
 \vspace{\baselineskip}
 
-Declarative description is as follows,
+Declarative description is also available as follows,
 \begin{boxnote}
 \begin{alltt}
 %template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'arg0@' => [10,20]);
@@ -585,7 +588,7 @@ prepare(%template, 'arg0@' => [10,20]);
 \end{boxnote}
 \vspace{\baselineskip}
 
-Various job objects can be generated by using
+Multiple job objects with various parameter values can be generated by using
 \texttt{RANGE}\textit{i}s.  For example,
 \begin{boxnote}
 \begin{verbatim}
@@ -651,9 +654,9 @@ push(@jobs, $job3[0]);
 
 \section{\texttt{submit}}\label{sec:submit}
 
-This function takes an array of job objects, passes the jobs
+This function takes an array of job objects and passes the jobs
 (corresponding to the job objects) to a job scheduler.  Its return
-value is no change (the array of job objects).
+value is also the array of job objects.
 
 \subsubsection{\format}
 \begin{boxnote}
@@ -673,7 +676,7 @@ submit(@jobs);
 \end{boxnote}
 \vspace{\baselineskip}
 It is possible to define job references without using
-\texttt{prepare} (though not to be recommended).
+\texttt{prepare} (although not recommended).
 \begin{boxnote}
 \begin{alltt}
 submit({'id' => '\textit{myjob_0}', 'exe' => '\textit{./myexe}', 'arg0' => '10'},
@@ -683,8 +686,8 @@ submit({'id' => '\textit{myjob_0}', 'exe' => '\textit{./myexe}', 'arg0' => '10'}
 
 \section{\texttt{sync}}
 
-This function takes an array of job objects, syncs the job objects.
-Its return value is no change (the array of job objects).
+This function takes an array of job objects and synchronizes the job objects.
+Its return value is also the array of job objects.
 
 \subsubsection{\format}
 
@@ -697,8 +700,8 @@ sync(\textit{@myjobs});
 
 \subsubsection{\example}
 
-Typically, this function takes \texttt{prepare} (the same as
-\texttt{submit}).
+Typically, this function takes a return value of \texttt{prepare}
+(same as \texttt{submit}).
 \begin{boxnote}
 \begin{alltt}
 @jobs = prepare('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'arg0@' => [10,20]);
@@ -723,9 +726,8 @@ addkeys(@\textit{words});
 
 \section{\texttt{addperiodic}}
 
-This function takes a Xcrypt's script code (written as
-\textit{mystring}) and an integer $i$, and evaluates it each the $i$
-seconds.
+This function takes an Xcrypt's script code (denoted as
+\textit{mystring}) and an integer $i$, and evaluates it each $i$ seconds.
 
 \subsubsection{\format}
 
