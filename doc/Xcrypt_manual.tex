@@ -196,24 +196,19 @@ Any job transits to \textit{states} as follows,
 
 \section{Execution}
 
-Set the following environment variables appropriately.
-\texttt{XCRYPT} should be set to the installation directory of Xcrypt
-(e.g., \texttt{/usr/share/xcrypt}).
-For example, it is enough to type
+Edit \texttt{xcrypt/source-me.sh} in order to set some environment
+variables where \texttt{XCRJOBSCHED}\footnote{\texttt{SGE},
+\texttt{TSUKUBA}, \texttt{TOKYO}, \texttt{KYOTO}, and \texttt{sh} are
+available.  In the case of \texttt{sh}, jobs are dealt with as
+processes in OS.  The default is \texttt{sh}} should be set to your
+job scheduler, and
 \begin{screen}
-\texttt{\$ XCRYPT=/usr/share/xcrypt; export XCRYPT}
+\texttt{\$ source source-me.sh}
 \end{screen}
-when you use Bourne shell.  In addition, execute the following:
+In addition, continue the following installation procedure:
 \begin{screen}
-\texttt{\$ cd \$XCRYPT; source source-me.sh}\\
 \texttt{\$ cd \$XCRYPT/cpan; ./do-install.sh}
 \end{screen}
-
-If necessary, \texttt{XCRJOBSCHED}\footnote{\texttt{NQS},
-\texttt{hNQS}, \texttt{SGE}, \texttt{tSGE}, and \texttt{sh} are
-available.  In the case of \texttt{sh}, jobs are dealt with as
-processes in OS.  The default is \texttt{sh}} should be set to an
-appropriate job scheduler.
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}

@@ -6,10 +6,12 @@ use base qw(core);
     'arg0' => '44',
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
-    'queue' => 'gh10034',          #
+    'queue' => 'gh10034',
+#    'queue' => 'S004' # for TOKYO
     'cpu' => '1',
-    'group' => 'gh10034'
-#    'option' => '#% -T 30', # for tsukuba
+    'group' => 'gh10034' # for KYOTO
+#    'group' => 'ESCIENCE' # for TSUKUBA
+#    'option' => '#% -T 30', # for TSUKUBA
 );
 
 @jobs = &prepare(%template,

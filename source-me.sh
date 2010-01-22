@@ -1,4 +1,5 @@
-#export XCRYPT=/path/to/xcrypt
+export XCRYPT=$HOME/xcrypt
+export PATH=$XCRYPT/bin:$PATH
 export XCRJOBSCHED="sh"
 export PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$PERL5LIB
 export XCR_CPAN_BASE=$XCRYPT/lib/cpan
