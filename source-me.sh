@@ -1,6 +1,6 @@
 #export XCRYPT=/path/to/xcrypt
 export XCRJOBSCHED="sh"
-export PERL5LIB=$XCRYPT/lib:$PERL5LIB
+export PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$PERL5LIB
 export XCR_CPAN_BASE=$XCRYPT/lib/cpan
 for i in usr usr/local usr/local/share; do
   for j in lib lib64 perl; do

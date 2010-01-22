@@ -22,10 +22,8 @@ $n_section_method::del_extra_jobs = 0;
 		      $tmp2->ED('L/E');
 		      my @output = $tmp2->ER();
 		      $_[0]->{'y'} = $output[0];
-#		      my $tmp3 = $_[0]->{'x'};
-#		      $n_section_method::result{"$tmp3"} = $output[0];
     });
-# 5-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
+# 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
     %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
