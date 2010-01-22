@@ -5,7 +5,7 @@ use File::Spec;
 use builtin;
 use Data_Extraction;
 use Data_Generation;
-use Recursive qw(fcopy dircopy rcopy);
+use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use NEXT;
 use base qw(Exporter);
 our @EXPORT = qw(backward_difference_loop);
