@@ -17,7 +17,6 @@ $n_section_method::del_extra_jobs = 0;
 		      $input->KR("param", $_[0]->{'x'});
 		      $input->do(); },
     'after'  => sub { my $tmp1 = "$ENV{'PWD'}/".$_[0]->{'id'}."/output.dat";
-		      sleep(5);
 		      my $tmp2 = EF("file:$tmp1");
 		      $tmp2->ED('L/E');
 		      my @output = $tmp2->ER();

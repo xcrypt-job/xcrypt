@@ -1,5 +1,5 @@
 # Config file for Tokyo Hitachi NQS
-$jsconfig::jobsched_config{"hNQS"} = {
+$jsconfig::jobsched_config{"TOKYO"} = {
     qsub_command => "/opt/hitachi/nqs/bin/qsub",
     qdel_command => "/opt/hitachi/nqs/bin/qdel",
     qstat_command => "/opt/hitachi/nqs/bin/qstat",

@@ -1,5 +1,5 @@
 # Config file for Tsukuba SGE
-$jsconfig::jobsched_config{"tSGE"} = {
+$jsconfig::jobsched_config{"TSUKUBA"} = {
     qsub_command => "/opt/sge/local/bin/qsub2",
     qdel_command => "/opt/sge/local/bin/qdel",
     qstat_command => "/opt/sge/bin/lx24-amd64/qstat",
