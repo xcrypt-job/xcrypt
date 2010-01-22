@@ -40,7 +40,7 @@ sub before
 				push(@jobs, &builtin::prepare(%{$child}));
 			}
 #			my @results = &builtin::submit_sync(@jobs);
-	# 自前でsubmit
+	# submit by myself
 	my @objs;
 	foreach my $job (@jobs) {
 	    &jobsched::inventory_write($job->{'id'}, 'prepared');
@@ -48,7 +48,7 @@ sub before
 	    &user::start($job);
 	}
 	push(@objs, @jobs);
-    # 自前でafter
+    # after by myself
     foreach my $job (@objs) {
 	&jobsched::wait_job_done ($job->{'id'});
 #		my $stat = &jobsched::get_job_status($job->{'id'});
@@ -62,7 +62,7 @@ sub before
 	&jobsched::inventory_write($job->{'id'}, "finished");
 #		}
     }
-    # 自前でsync
+    # sync by myself
     my @results = &sync(@objs);
 
 			&{$self->{mergeFunc}}($self->{id}."/".$self->{ofname}, @results);

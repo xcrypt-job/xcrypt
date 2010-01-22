@@ -24,7 +24,7 @@ my $REQUEST_TMPFILE = $REQUESTFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
 
 my $LOCK_INTERVAL = 0.1; my $LOCK_INTERVAL_MAX = 3;
-my $LOCK_RETRY = 0;   # 0 Ç»ÇÁñ≥êßå¿
+my $LOCK_RETRY = 0;   # no limit if 0
 my $FAIL_RETRY_INTERVAL = 0.1; my $FAIL_RETRY_INTERVAL_MAX = 5;
 my $ACK_INTERVAL = 0.1;
 
@@ -34,7 +34,7 @@ my $RETRY_P = 1;
 sub get_lockdir {
     my ($lockdir, $interval, $interval_max, $retry) = @_;
     while (!mkdir($lockdir, 0755)) {
-        # $retryÇÕ0à»â∫Ç»ÇÁñ≥êßå¿
+        # no limit if $retry = 0
         if (--$retry == 0) {
             print $LOG "$JOBNAME\[$STATUS\]: Failed to get lockdir.\n";
             cleanup();

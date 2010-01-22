@@ -31,7 +31,6 @@ sub start {
     my $self = shift;
     my $dir = $self->{id};
 
-    # 前回done, finishedになったジョブならとばす．
     my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
@@ -41,8 +40,7 @@ sub start {
     }
 }
 
-# 以下はjobsched.pmのコピーを改変したもの．
-# TODO: モジュール化してコードの重複をなくす．
+# copy of jobsched.pm.  TODO: modulize and remove duplication.
 sub qsub {
     my $self = shift;
 
@@ -55,7 +53,7 @@ my $jobsched = $ENV{'XCRJOBSCHED'};
 ### Inventory
 my $inventory_host = qx/hostname/;
 chomp $inventory_host;
-my $inventory_port = $xcropt::options{port};           # インベントリ通知待ち受けポート．0ならNFS経由(unstable!)
+my $inventory_port = $xcropt::options{port};
 my $inventory_path=$xcropt::options{inventory_path};
 my $reqids_file=File::Spec->catfile($inventory_path, '.request_ids');
 
@@ -80,7 +78,7 @@ unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
     my $scriptfile = File::Spec->catfile($dir, $jobsched . '.sh');
     open (SCRIPT, ">$scriptfile");
     print SCRIPT "#!/bin/sh\n";
-    # NQS も SGE も，オプション中の環境変数を展開しないので注意！
+    # Note that neither NQS or SGE expand environment vars in option!
     if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_preamble} ) {
         foreach (@{$jsconfig::jobsched_config{$jobsched}{jobscript_preamble}}) {
             print SCRIPT $_ . "\n";
@@ -162,7 +160,7 @@ my $dir = $subself->{id};
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $subself->{"arg$i"}); }
     my $cmd = $subself->{exe} . ' ' . join(' ', @args);
     print SCRIPT "$cmd\n";
-    # 正常終了でなければ "aborted" を書き込むべき？
+    # "aborted" if not normal?
 
     # Set job's status "done"
 #    print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
@@ -190,7 +188,7 @@ print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
         die "qsub_command is not defined in $jobsched.pm";
     }
     if (common::cmd_executable ($qsub_command)) {
-        # ここでqsubコマンド実行
+        # qsub
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
         my $req_id;

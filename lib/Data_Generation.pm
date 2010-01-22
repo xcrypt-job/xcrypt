@@ -1,5 +1,5 @@
 ############################################
-# ƒƒ“ü—Íƒf[ƒ^¶¬„„                   #
+# ¡ã¡ãÆşÎÏ¥Ç¡¼¥¿À¸À®¡ä¡ä                   #
 # Copyright FUJITSU LIMITED 2009           #
 # Ver=0.2 2009/12/22                       #
 ############################################
@@ -12,17 +12,17 @@ use File::Spec;
 use File::Basename;
 use Cwd;
 
-#------------< •Ï”‚Ì’è‹` >------------
-my $args = undef;                                                     # ƒA[ƒMƒ…ƒƒ“ƒgî•ñ
-my $Before = undef;                                                   # ƒIƒuƒWƒFƒNƒg–¼
+#------------< ÊÑ¿ô¤ÎÄêµÁ >------------
+my $args = undef;                                                     # ¥¢¡¼¥®¥å¥á¥ó¥È¾ğÊó
+my $Before = undef;                                                   # ¥ª¥Ö¥¸¥§¥¯¥ÈÌ¾
 
 #------------------------------------------------------------------------------#
-#   ƒƒ CF(’uŠ·‚¦ƒtƒ@ƒCƒ‹’è‹`ƒRƒ}ƒ“ƒh)‚Ì’è‹` „„                             #
+#   ¡ã¡ã CF(ÃÖ´¹¤¨¥Õ¥¡¥¤¥ëÄêµÁ¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä                             #
 #------------------------------------------------------------------------------#
 sub CF{
     ############################################
-    # $_[0] = —Œ`ƒtƒ@ƒCƒ‹–¼                   #
-    # $_[1] = ¶¬ƒtƒHƒ‹ƒ_–¼                   #
+    # $_[0] = ¿÷·Á¥Õ¥¡¥¤¥ëÌ¾                   #
+    # $_[1] = À¸À®¥Õ¥©¥ë¥ÀÌ¾                   #
     ############################################
     my $this = (caller 1)[3];
     $this =~ s/.*:://;
@@ -35,36 +35,36 @@ sub CF{
     my @value_datas       = ();
     my $value_options_all = ();
     
-    # ƒIƒuƒWƒFƒNƒg’è‹`
-    my $Job = {"this"              =>$this,                                    # ŒÄo‚µƒTƒuƒ‹[ƒ`ƒ“–¼
-               "infile"            =>$infile,                                  # —Œ`ƒtƒ@ƒCƒ‹–¼
-               "outfile"           =>$outfile,                                 # ¶¬ƒtƒ@ƒCƒ‹–¼
-               "replace"           =>$replace,                                 # ’uŠ·‚¦”z—ñ—v‘f”
-               "key_names"         =>\@key_names,                              # •Ï”–¼w’è’uŠ·‚¦—p‚Ì•Ï”–¼i”z—ñj
-               "line_nos"          =>\@line_nos,                               # s”Ô†w’è’uŠ·‚¦—p‚Ìs”Ô†i”z—ñj
-               "line_cols"         =>\@line_cols,                              # s”Ô†w’è’uŠ·‚¦—p‚Ì•¶š—ñ”Ô†i”z—ñj
-               "value_datas"       =>\@value_datas,                            # ’uŠ·‚¦•¶š—ñi”z—ñj
-               "value_options_all" =>$value_options_all};                      # •¶š—ñ•\¦‘®i‘S‘Ìj
+    # ¥ª¥Ö¥¸¥§¥¯¥ÈÄêµÁ
+    my $Job = {"this"              =>$this,                                    # ¸Æ½Ğ¤·¥µ¥Ö¥ë¡¼¥Á¥óÌ¾
+               "infile"            =>$infile,                                  # ¿÷·Á¥Õ¥¡¥¤¥ëÌ¾
+               "outfile"           =>$outfile,                                 # À¸À®¥Õ¥¡¥¤¥ëÌ¾
+               "replace"           =>$replace,                                 # ÃÖ´¹¤¨ÇÛÎóÍ×ÁÇ¿ô
+               "key_names"         =>\@key_names,                              # ÊÑ¿ôÌ¾»ØÄêÃÖ´¹¤¨ÍÑ¤ÎÊÑ¿ôÌ¾¡ÊÇÛÎó¡Ë
+               "line_nos"          =>\@line_nos,                               # ¹ÔÈÖ¹æ»ØÄêÃÖ´¹¤¨ÍÑ¤Î¹ÔÈÖ¹æ¡ÊÇÛÎó¡Ë
+               "line_cols"         =>\@line_cols,                              # ¹ÔÈÖ¹æ»ØÄêÃÖ´¹¤¨ÍÑ¤ÎÊ¸»úÎóÈÖ¹æ¡ÊÇÛÎó¡Ë
+               "value_datas"       =>\@value_datas,                            # ÃÖ´¹¤¨Ê¸»úÎó¡ÊÇÛÎó¡Ë
+               "value_options_all" =>$value_options_all};                      # Ê¸»úÎóÉ½¼¨½ñ¼°¡ÊÁ´ÂÎ¡Ë
     bless $Job;
     return $Job;
 }
 #------------------------------------------------------------------------------#
-#   ƒƒ KR(•Ï”–¼w’èƒRƒ}ƒ“ƒh)‚Ì’è‹` „„                                     #
+#   ¡ã¡ã KR(ÊÑ¿ôÌ¾»ØÄê¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä                                     #
 #------------------------------------------------------------------------------#
 sub KR{
     ############################################
-    # $_[0] = ƒIƒuƒWƒFƒNƒg                     #
-    # $_[1] = •Ï”–¼                           #
-    # $_[2] = ’uŠ·‚¦•¶š—ñ                     #
-    # $_[3] = •¶š—ñ•\¦‘®                   #
+    # $_[0] = ¥ª¥Ö¥¸¥§¥¯¥È                     #
+    # $_[1] = ÊÑ¿ôÌ¾                           #
+    # $_[2] = ÃÖ´¹¤¨Ê¸»úÎó                     #
+    # $_[3] = Ê¸»úÎóÉ½¼¨½ñ¼°                   #
     ############################################
-    # •Ï”–¼ƒ`ƒFƒbƒN
+    # ÊÑ¿ôÌ¾¥Á¥§¥Ã¥¯
     if ($_[1] !~ /^[a-zA-Z]/) {
         print STDERR "There is not the top of the variable name in the alphabet \($_[1]\)\n";
         exit 99;
     }
     
-    # ”z—ñ‚ÉŠi”[
+    # ÇÛÎó¤Ë³ÊÇ¼
     $_[0]->{replace}++;
     my @key_names = @{$_[0]->{key_names}};
     $key_names[$_[0]->{replace}] = $_[1];
@@ -74,28 +74,28 @@ sub KR{
     @{$_[0]->{value_datas}} = @value_datas;
 }
 #------------------------------------------------------------------------------#
-#   ƒƒ LR(sE•¶š—ñ”Ô†(‚”Ô–Ú)w’èƒRƒ}ƒ“ƒh)‚Ì’è‹` „„                     #
+#   ¡ã¡ã LR(¹Ô¡¦Ê¸»úÎóÈÖ¹æ(£îÈÖÌÜ)»ØÄê¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä                     #
 #------------------------------------------------------------------------------#
 sub LR{
     ############################################
-    # $_[0] = ƒIƒuƒWƒFƒNƒg                     #
-    # $_[1] = s”Ô†                           #
-    # $_[2] = •¶š—ñ”Ô†                       #
-    # $_[3] = ’uŠ·‚¦•¶š—ñ                     #
-    # $_[4] = •¶š—ñ•\¦‘®                   #
+    # $_[0] = ¥ª¥Ö¥¸¥§¥¯¥È                     #
+    # $_[1] = ¹ÔÈÖ¹æ                           #
+    # $_[2] = Ê¸»úÎóÈÖ¹æ                       #
+    # $_[3] = ÃÖ´¹¤¨Ê¸»úÎó                     #
+    # $_[4] = Ê¸»úÎóÉ½¼¨½ñ¼°                   #
     ############################################
-    # s”Ô†ƒ`ƒFƒbƒN
+    # ¹ÔÈÖ¹æ¥Á¥§¥Ã¥¯
     if ($_[1] !~ /\d/ or $_[1] == 0) {
         print STDERR "Line number is not a number \($_[1]\)\n";
         exit 99;
     }
-    # •¶š—ñ”Ô†ƒ`ƒFƒbƒN
+    # Ê¸»úÎóÈÖ¹æ¥Á¥§¥Ã¥¯
     if ($_[2] !~ /\d/ or $_[2] == 0) {
         print STDERR "Character string number is not a number \($_[2]\)\n";
         exit 99;
     }
     
-    # ”z—ñ‚ÉŠi”[
+    # ÇÛÎó¤Ë³ÊÇ¼
     $_[0]->{replace}++;
     my @line_nos = @{$_[0]->{line_nos}};
     $line_nos[$_[0]->{replace}] = $_[1];
@@ -108,67 +108,67 @@ sub LR{
     @{$_[0]->{value_datas}} = @value_datas;
 }
 #------------------------------------------------------------------------------#
-#   ƒƒ CO(ƒx[ƒX•¶š—ñ•\¦‘®w’èƒRƒ}ƒ“ƒh)‚Ì’è‹` „„                       #
+#   ¡ã¡ã CO(¥Ù¡¼¥¹Ê¸»úÎóÉ½¼¨½ñ¼°»ØÄê¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä                       #
 #------------------------------------------------------------------------------#
 sub CO{
     ############################################
-    # $_[0] = ƒIƒuƒWƒFƒNƒg                     #
-    # $_[1] = •¶š—ñ•\¦‘®                   #
+    # $_[0] = ¥ª¥Ö¥¸¥§¥¯¥È                     #
+    # $_[1] = Ê¸»úÎóÉ½¼¨½ñ¼°                   #
     ############################################
     $_[0]->{value_option_all} = $_[1];
 }
 #------------------------------------------------------------------------------#
-#   ƒƒ do(’uŠ·‚¦w¦ƒRƒ}ƒ“ƒh)‚Ì’è‹` „„                                     #
+#   ¡ã¡ã do(ÃÖ´¹¤¨»Ø¼¨¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä                                     #
 #------------------------------------------------------------------------------#
 sub do{
     ############################################
-    # ˆø”‚È‚µ                                 #
+    # °ú¿ô¤Ê¤·                                 #
     ############################################
     my @key_names     = @{$_[0]->{key_names}};
     my @line_nos      = @{$_[0]->{line_nos}};
     my @line_cols     = @{$_[0]->{line_cols}};
     my @value_datas   = @{$_[0]->{value_datas}};
     
-    # —Œ`ƒtƒ@ƒCƒ‹OPEN
+    # ¿÷·Á¥Õ¥¡¥¤¥ëOPEN
     if (!-e "$_[0]->{infile}") {
-        # “ü—Íƒtƒ@ƒCƒ‹–³‚µ
+        # ÆşÎÏ¥Õ¥¡¥¤¥ëÌµ¤·
         print STDERR "Input file($_[0]->{infile}) not found\n";
         exit 99;
     } elsif (!-r "$_[0]->{infile}") {
-        # “ü—Íƒtƒ@ƒCƒ‹‚É“Ç‚İŒ ŒÀ–³‚µ
+        # ÆşÎÏ¥Õ¥¡¥¤¥ë¤ËÆÉ¹ş¤ß¸¢¸ÂÌµ¤·
         print STDERR "Input file($_[0]->{infile}) is not read authority\n";
         exit 99;
     } elsif (!open (BASE_FILE, "< $_[0]->{infile}")) {
-        # “ü—Íƒtƒ@ƒCƒ‹OPENƒGƒ‰[
+        # ÆşÎÏ¥Õ¥¡¥¤¥ëOPEN¥¨¥é¡¼
         print STDERR "Input file($_[0]->{infile}) cannot open file\n";
         exit 99;
     }
-    # —Œ`ƒtƒ@ƒCƒ‹‚Ì‹¤—pƒƒbƒN
+    # ¿÷·Á¥Õ¥¡¥¤¥ë¤Î¶¦ÍÑ¥í¥Ã¥¯
     flock(BASE_FILE, 1);
     
-    # ¶¬ƒtƒ@ƒCƒ‹OPEN
+    # À¸À®¥Õ¥¡¥¤¥ëOPEN
     my $outfile = File::Spec->catfile("$_[0]->{outfile}", (basename($_[0]->{infile})));
     if (!-d "$_[0]->{outfile}") {
-        # o—ÍƒfƒBƒŒƒNƒgƒŠ–³‚µ
+        # ½ĞÎÏ¥Ç¥£¥ì¥¯¥È¥êÌµ¤·
         print STDERR "Output file directory($_[0]->{outfile}) not found\n";
         exit 99;
     } elsif (!-w "$_[0]->{outfile}") {
-        # o—ÍƒfƒBƒŒƒNƒgƒŠ‚É‘‚İŒ ŒÀ–³‚µ
+        # ½ĞÎÏ¥Ç¥£¥ì¥¯¥È¥ê¤Ë½ñ¹ş¤ß¸¢¸ÂÌµ¤·
         print STDERR "Output file directory($_[0]->{outfile}) is not write authority\n";
         exit 99;
     } elsif (-e "$outfile" and !-w "$outfile") {
-        # o—Íƒtƒ@ƒCƒ‹‚É‘‚İŒ ŒÀ–³‚µ
+        # ½ĞÎÏ¥Õ¥¡¥¤¥ë¤Ë½ñ¹ş¤ß¸¢¸ÂÌµ¤·
         print STDERR "Output file($outfile) is not write authority\n";
         exit 99;
     } elsif (!open (CREATE_FILE, "+> $outfile")) {
-        # o—Íƒtƒ@ƒCƒ‹OPENƒGƒ‰[
+        # ½ĞÎÏ¥Õ¥¡¥¤¥ëOPEN¥¨¥é¡¼
         print STDERR "Output file($outfile) cannot open file\n";
         exit 99;
     }
-    # ¶¬ƒtƒ@ƒCƒ‹‚Ì”r‘¼ƒƒbƒN
+    # À¸À®¥Õ¥¡¥¤¥ë¤ÎÇÓÂ¾¥í¥Ã¥¯
     flock(CREATE_FILE, 2);
     
-    # —Œ`ƒf[ƒ^‚ğ‚Ps’PˆÊ‚É“ü—Í
+    # ¿÷·Á¥Ç¡¼¥¿¤ò£±¹ÔÃ±°Ì¤ËÆşÎÏ
     my $line_cnt      = 0;
     my $replace_data  = undef;
     my $outfile_data  = '';
@@ -179,15 +179,15 @@ sub do{
         if ((substr $line, -1) eq "\n") {
             chomp $replace_data;
         }
-        # sƒf[ƒ^‚É‘Î‚µ‚Ä’uŠ·‚¦‚ğs‚¤
+        # ¹Ô¥Ç¡¼¥¿¤ËÂĞ¤·¤ÆÃÖ´¹¤¨¤ò¹Ô¤¦
         for (my $index1=0 ; $index1 <= $_[0]->{replace}; $index1++) {
             my @outfile_datas1 = ();
             my @outfile_datas2 = ();
             
-            # ’uŠ·‚¦ˆ—‚Ì”»’f
+            # ÃÖ´¹¤¨½èÍı¤ÎÈ½ÃÇ
             if ($line_cnt == $line_nos[$index1]) {
-                # ƒsw’è‚É‚æ‚é’uŠ·‚¦„
-                # ƒXƒy[ƒXAƒ^ƒuA‰üs‹æØ‚è‚Åƒf[ƒ^•ªŠ„
+                # ¡ã¹Ô»ØÄê¤Ë¤è¤ëÃÖ´¹¤¨¡ä
+                # ¥¹¥Ú¡¼¥¹¡¢¥¿¥Ö¡¢²ş¹Ô¶èÀÚ¤ê¤Ç¥Ç¡¼¥¿Ê¬³ä
                 @outfile_datas1 = split /\s+\,*\s*|\,+\s*/, $replace_data;
                 if ($outfile_datas1[($line_cols[$index1] - 1)] eq '') {
                     print STDERR "Replace Data Not Found(Line=$line_nos[$index1] colum=$line_cols[$index1])\n";
@@ -195,7 +195,7 @@ sub do{
                 }
                 my $outfile_datas1_su = @outfile_datas1;
                 
-                # ƒ^[ƒQƒbƒg•¶š—ñ‚Åƒf[ƒ^•ªŠ„
+                # ¥¿¡¼¥²¥Ã¥ÈÊ¸»úÎó¤Ç¥Ç¡¼¥¿Ê¬³ä
                 my $outfile_datas2_first = undef;
                 my $outfile_datas2_last  = undef;
                 if ($line_cols[$index1] eq 1) {
@@ -212,11 +212,11 @@ sub do{
                     $outfile_datas2_last  = '';
                     $outfile_datas2[2] = "\n";
                 }
-                # •¶š—ñ’uŠ·‚¦
+                # Ê¸»úÎóÃÖ´¹¤¨
                 $replace_data = $outfile_datas2[0].$outfile_datas2_first.$value_datas[$index1].$outfile_datas2_last.$outfile_datas2[2];
             } elsif ($key_names[$index1] ne '') {
-                # ƒ•Ï”w’è‚É‚æ‚é’uŠ·‚¦„
-                # •Ï”–¼‚Åƒf[ƒ^•ªŠ„
+                # ¡ãÊÑ¿ô»ØÄê¤Ë¤è¤ëÃÖ´¹¤¨¡ä
+                # ÊÑ¿ôÌ¾¤Ç¥Ç¡¼¥¿Ê¬³ä
                 my $set_name = '';
                 my @key_datas = split /([\(\)\:])/, $key_names[$index1];
                 if ("$key_datas[0]" ne "$key_names[$index1]") {
@@ -236,22 +236,22 @@ sub do{
                 }
                 @outfile_datas1 = split /(${set_name}\s+=\s*|${set_name}=\s*)/, "$replace_data", 2;
                 
-                # •¶š—ñ’uŠ·‚¦
+                # Ê¸»úÎóÃÖ´¹¤¨
                 if ($outfile_datas1[0] ne $replace_data and ($outfile_datas1[0] eq '' or (substr $outfile_datas1[0], -1) eq ' ' or (substr $outfile_datas1[0], -1) eq ',')) {
-                    # iŠY“–•Ï”–¼‚ ‚èj
-                    # •¶š’è”‚©ƒ`ƒFƒbƒN
+                    # ¡Ê³ºÅöÊÑ¿ôÌ¾¤¢¤ê¡Ë
+                    # Ê¸»úÄê¿ô¤«¥Á¥§¥Ã¥¯
                     if ($outfile_datas1[2] =~ /^[\"\']/) {
-                        # iƒNƒH[ƒg‚ ‚èj
+                        # ¡Ê¥¯¥©¡¼¥È¤¢¤ê¡Ë
                         $outfile_quote = substr $outfile_datas1[2], 0, 1;
                         $outfile_data = substr $outfile_datas1[2], 1;
                         chomp $outfile_data;
                         @outfile_datas2 = split /($outfile_quote\s|$outfile_quote\,)/, "$outfile_data", 2;
                         $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$outfile_quote.$value_datas[$index1].$outfile_quote;
                     } else {
-                        # iƒNƒH[ƒg‚È‚µj
+                        # ¡Ê¥¯¥©¡¼¥È¤Ê¤·¡Ë
                         @outfile_datas2 = split /(,|\s)/, "$outfile_datas1[2]", 2;
                         if ($value_datas[$index1] =~ /^\((.*)\)$/) {
-                            # iƒJƒbƒR‚ ‚è(•¡‘f”)j
+                            # ¡Ê¥«¥Ã¥³¤¢¤ê(Ê£ÁÇ¿ô)¡Ë
                             my @outfile_datas3 = split /(\s+\,*\s*|\,+\s*)/, $1;
                             $outfile_data = $outfile_datas1[0].$outfile_datas1[1].'(';
                             for (my $index2=0; $index2 <= $#outfile_datas3; $index2++) {
@@ -267,7 +267,7 @@ sub do{
                             }
                             $outfile_data .= ')';
                         } else {
-                            # iƒJƒbƒR‚È‚µ(À”A’P¸“xÀ”A”{¸“xÀ”A8ƒoƒCƒg®”)j
+                            # ¡Ê¥«¥Ã¥³¤Ê¤·(¼Â¿ô¡¢Ã±ÀºÅÙ¼Â¿ô¡¢ÇÜÀºÅÙ¼Â¿ô¡¢8¥Ğ¥¤¥ÈÀ°¿ô)¡Ë
                             if ($value_datas[$index1] =~ /^[\+-]*\d+\.*\d*[DdEeQq\+-_]*\d*$|^[\+-]*\.\d*[DdEeQq\+-_]*\d*$/) {
                                 $outfile_data = $outfile_datas1[0].$outfile_datas1[1].$value_datas[$index1];
                             } else {
@@ -287,7 +287,7 @@ sub do{
             $replace_data .= "\n";
         }
         
-        # —Œ`ƒf[ƒ^‚É‘‚©‚ê‚½•Ï”‚Ì•]‰¿
+        # ¿÷·Á¥Ç¡¼¥¿¤Ë½ñ¤«¤ì¤¿ÊÑ¿ô¤ÎÉ¾²Á
         $outfile_data = &Value_Evaluation("$replace_data", "$_[0]->{value_option_all}");
         print CREATE_FILE "$outfile_data";
     }
@@ -295,18 +295,18 @@ sub do{
     close(BASE_FILE);
 }
 #------------------------------------------------------------------------------#
-#   ƒƒ Value_Evaluation(’uŠ·‚¦•¶š—ñ‚Ì•]‰¿ƒRƒ}ƒ“ƒh)‚Ì’è‹` „„               #
+#   ¡ã¡ã Value_Evaluation(ÃÖ´¹¤¨Ê¸»úÎó¤ÎÉ¾²Á¥³¥Ş¥ó¥É)¤ÎÄêµÁ ¡ä¡ä               #
 #------------------------------------------------------------------------------#
 sub Value_Evaluation{
     ############################################
-    # $_[0] = ’li’uŠ·‚¦•¶š—ñ or —Œ`ƒf[ƒ^j #
-    # $_[1] = •¶š—ñ•\¦‘®                   #
+    # $_[0] = ÃÍ¡ÊÃÖ´¹¤¨Ê¸»úÎó or ¿÷·Á¥Ç¡¼¥¿¡Ë #
+    # $_[1] = Ê¸»úÎóÉ½¼¨½ñ¼°                   #
     ############################################
     my $in_value  = undef;
     my $in_option = $_[1];
     my $out_value = '';
     
-    # ƒOƒ[ƒoƒ‹•Ï”•\‹L‚É•ÏX
+    # ¥°¥í¡¼¥Ğ¥ëÊÑ¿ôÉ½µ­¤ËÊÑ¹¹
     my @in_values = ();
     $in_values[1] = $_[0];
     do {
@@ -347,7 +347,7 @@ sub Value_Evaluation{
         }
     } while ($in_values[1] ne '');
     
-    # ’uŠ·‚¦•¶š—ñ‚Ì•]‰¿
+    # ÃÖ´¹¤¨Ê¸»úÎó¤ÎÉ¾²Á
     @in_values = ();
     $in_values[1] = $in_value;
     $in_value = undef;

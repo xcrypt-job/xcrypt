@@ -1,4 +1,4 @@
-package simple_convergence;
+package convergence;
 
 use strict;
 use File::Spec;

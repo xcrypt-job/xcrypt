@@ -1,4 +1,4 @@
-use base qw(simple_convergence core);
+use base qw(convergence core);
 
 %template = (
     'id' => 'job7',
@@ -7,7 +7,7 @@ use base qw(simple_convergence core);
     'linkedfile0' => 'common/minushalf.pl',
     'queue' => 'gh10034',
     'group' => 'gh10034',
-# possible to use the following by simple_convergence.pm
+# possible to use the following by convergence.pm
     'initialvalue' => '128',
     'isConvergent' => '30',
     'inputfile' => 'common/template.dat',
@@ -16,4 +16,4 @@ use base qw(simple_convergence core);
     'extractrules' => [['C/1', 'L/E'], ['L/1']]
 );
 
-&simple_convergence::backward_difference_loop(%template);
+&convergence::backward_difference_loop(%template);

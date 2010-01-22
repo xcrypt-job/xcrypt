@@ -3,15 +3,13 @@ use base qw(core);
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
-    'arg0' => '50',
+    'arg0' => '55',
     'arg1' => '> out',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',          #
     'cpu' => '1',
-#
     'group' => 'gh10034'
 #    'option' => '#% -T 30', # for tsukuba
-#    'group' => 'ESCIENCE'   # for tsukuba
 );
 
 @jobs = &prepare(%template,
@@ -20,16 +18,14 @@ use base qw(core);
 #                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0@' => [20,21]
-# 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
+#		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
 &submit(@jobs);
 
-&addperiodic('print "fuga\n";');
+&addperiodic('print "hogehoge\n";');
 $hoge = 'hoge';
 sub foo {
-    print STDOUT "hage\n";
     print STDOUT "$hoge\n";
 }
-&addperiodic(foo,3); # bug!
+&addperiodic(\&foo, 3);
 &sync(@jobs);
-

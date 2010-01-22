@@ -70,7 +70,7 @@ sub command {
 	if (($stat eq 'active'   ) ||
 	    ($stat eq 'prepared' ) ||
 	    ($stat eq 'submitted')) {
-# 何をする？
+# what to do?
 	} elsif (($stat eq 'done'    ) ||
 		 ($stat eq 'finished') ||
 		 ($stat eq 'aborted' )) {
