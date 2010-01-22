@@ -55,7 +55,7 @@ for job parallelization.  We can deal with jobs as objects (called
 \textit{job objects}) in Xcrypt and manipulate the jobs as well as
 objects in an object-oriented language.  Xcrypt provides some
 functions and modules for facilitating job generation, submission,
-syncronization, etc.  Xcrypt makes it easy to write scripts to process
+synchronization, etc.  Xcrypt makes it easy to write scripts to process
 job, and supports users to process jobs easily.
 
 \section{Environment}
@@ -65,22 +65,18 @@ later version, and Perl/Tk 8.4 for GUI.
 
 \chapter{Script}
 
-\def\usemodule{Module}
-\def\defjobdefhash{Template}
-\def\operation{Procedure}
-
 Xcrypt is a script language, and an extension of Perl.  Xcrypt provides
 some functions and modules (not in Perl) which support how to deal
 with \textit{jobs}.
 
 An Xcrypt script consists of descriptions of
 \begin{enumerate}
- \item \usemodule,
- \item \defjobdefhash, and
- \item \operation.
+ \item module,
+ \item template, and
+ \item procedure.
 \end{enumerate}
 
-\section{\usemodule}
+\section{Module}
 
 Modules for job objects are used as follows,
 \begin{boxnote}
@@ -119,7 +115,7 @@ $separator = '-';
 \end{verbatim}
 \end{boxnote}
 
-\section{\defjobdefhash}
+\section{Template}
 
 Xcrypt's templates are implemented as Perl's hashes.  For example,
 \begin{boxnote}
@@ -143,11 +139,11 @@ Xcrypt's templates are implemented as Perl's hashes.  For example,
 Keys in templates are described in Chapter~\ref{chapjobdefhash} in
 detail.
 
-\section{\operation}
+\section{Procedure}
 
 Procedures of job processing are described in Xcrypt (and Perl)
 instead of manually carried out.
-Xcrypt's functions are decribed in Chapter~\ref{chapfun}.
+Xcrypt's functions are described in Chapter~\ref{chapfun}.
 
 \section{Example}\label{secscriptexample}
 
@@ -220,7 +216,7 @@ Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
 \texttt{\$ cd \$HOME/wd}
 \end{screen}
-and write an Xcrpyt script (e.g., \texttt{sample.xcr}).  See
+and write an Xcrypt script (e.g., \texttt{sample.xcr}).  See
 Section~\ref{secscriptexample} in order to know how to write.
 
 Finally, execute Xcrypt with the script:
@@ -281,7 +277,7 @@ In this chapter, we introduce some modules available in Xcrypt scripts.
 \section{\texttt{core}}
 
 This module is the Xcrypt core module, and required to be read in
-order to use anything paricular to Xcrypt.
+order to use anything particular to Xcrypt.
 
 It creates a directory of the name
 \begin{center}
@@ -378,7 +374,7 @@ The values \texttt{partition} and \texttt{epsilon} denote
 \section{\texttt{dry}}
 
 This module provides job-processing in dry mode (skipping any command
-exectution).  Description in a template
+execution).  Description in a template
 \begin{boxnote}
 \begin{verbatim}
 ...
@@ -835,7 +831,7 @@ sub another_method
   \item 追加するインスタンス変数の定義：ジョブクラスに新たに追加したい
     インスタンス変数の名前を\|addkeys|関数により定義する．ここで定義し
     たインスタンス変数は，ジョブオブジェクトの属性として，Xcryptスクリプトや
-    モジュール内のメソッドから\|$job->{my_instance_menber}| %$
+    モジュール内のメソッドから\|$job->{my_instance_member}| %$
     などとしてアクセスできる．また，Xcryptユーザがジョブ定義ハッシュの記述時に，\\
     \|  |\|%template = {| \ldots \|, my_instance_menber=>|{\it value}\|,| \ldots \|}|\\
     のようにして値を設定することもできる．
