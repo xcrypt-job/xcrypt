@@ -95,7 +95,7 @@ sub addperiodic {
     my $sub_or_str = $_[0];
     my $slp = $_[1];
     unless ($slp) { $slp = 10; }
-    if ( ref $_[0] eq 'code' ) {
+    if ( ref($_[0]) eq 'CODE' ) {
         $new_coro = Coro::async_pool {
             while (1) {
                 Coro::AnyEvent::sleep $slp;
