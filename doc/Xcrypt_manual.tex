@@ -812,8 +812,8 @@ In the following, we introduce components of scripts.
 	 \end{center}
   \item Definition of methods: is defined in the usual way, i.e.,
 	methods added and extended in modules are defined as top-level
-	functions in packeages.  However, note that some methods of
-	paricular names have special meanings as explained in the next
+	functions in packages.  However, note that some methods of
+	particular names have special meanings as explained in the next
 	section.
 \end{enumerate}
 
@@ -825,7 +825,7 @@ Xcrypt gives special meanings to the following class methods.
 
 The method \texttt{new} is a class method, the so-called
 \textit{constructor}.  The method \|new| in the most specialized class
-(the left-most module declared on the scirpt header) is called.
+(the left-most module declared on the script header) is called.
 
 The method \|new| takes the following as arguments:
 \begin{enumerate}
@@ -869,7 +869,7 @@ classes.  Each method returns a boolean value.  When some
 
 The methods \texttt{before}s are applied to a job object when all the
 methods \texttt{before\_isready}s applied to the job object return
-true.  Its argument is a referece to the job object.  The order of calling
+true.  Its argument is a reference to the job object.  The order of calling
 \texttt{before}s is the one from children classes to parents
 classes.  Return values of the methods are abandoned.
 
@@ -877,8 +877,8 @@ classes.  Return values of the methods are abandoned.
 
 The methods \texttt{start}s are applied to a job object after
 \texttt{before}s to the job objects are applied.  Its argument is a
-reference ot the job object.  The method \|start| in the most
-specialized class (the left-most module declared on the scirpt header)
+reference of the job object.  The method \|start| in the most
+specialized class (the left-most module declared on the script header)
 is called.
 
 In the body of a method, the method \|new| in the parent class is
@@ -909,7 +909,7 @@ In Xcrypt, a completion notice of a job submitted by the method
 
 The methods \texttt{before}s are applied to a job object when all the
 methods \texttt{after\_isready}s applied to the job object return
-true.  Its argument is a referece to the job object.  The order of
+true.  Its argument is a reference to the job object.  The order of
 calling \texttt{after}s is the one from parents classes to children
 classes.  Return values of the methods are abandoned.
 
@@ -924,11 +924,11 @@ at each job object.  Xcrypt guarantee the following concurrency:
 	\texttt{after\_isready}s, \texttt{after}s
        method is called in concurrent with Xcrypt main thread,
   \item
-    at most one method is simultanenously called in
+    at most one method is simultaneously called in
 	\texttt{before\_isready}s, \texttt{before}s, and
 	\texttt{start}s,
   \item
-    at most one method is simultanenously called in
+    at most one method is simultaneously called in
 	\texttt{after\_isready}s and \texttt{after}s,
   \item
        just after any \texttt{before\_isready} of a job object returns
