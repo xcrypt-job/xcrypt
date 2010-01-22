@@ -320,9 +320,7 @@ sub inventory_write_cmdline {
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else { 
-        my $file = File::Spec->catfile($inventory_path, $jobname);
-        my $jobspec = "\"spec: $jobname\"";
-        return "$write_command $file \"$stat\" $jobspec";
+        return "$write_command $LOCKDIR $REQUESTFILE $ACKFILE $jobname $stat";
     }
 }
 
