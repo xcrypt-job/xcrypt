@@ -10,7 +10,7 @@ use NEXT;
 use base qw(Exporter);
 our @EXPORT = qw(backward_difference_loop);
 
-&addkeys('initialvalue', 'isConvergent',
+&add_key('initialvalue', 'isConvergent',
 	 'inputfile', 'sweepname',
 	 'outputfile', 'extractrules');
 

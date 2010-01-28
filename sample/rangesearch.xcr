@@ -24,10 +24,10 @@ use base qw(core);
     );
 &submit(@jobs);
 
-&addperiodic('print "hogehoge\n";');
+&repeat('print "hogehoge\n";');
 $hoge = 'hoge';
 sub foo {
     print STDOUT "$hoge\n";
 }
-&addperiodic(\&foo, 3);
+&repeat(\&foo, 3);
 &sync(@jobs);

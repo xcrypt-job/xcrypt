@@ -672,7 +672,7 @@ sync(@jobs);
 \end{alltt}
 \end{boxnote}
 
-\section{\texttt{addkeys}}
+\section{\texttt{add\_key}}
 
 This function takes an array of words and makes it available as keys in job
 definition hashes.
@@ -681,12 +681,12 @@ definition hashes.
 
 \begin{boxnote}
 \begin{alltt}
-addkeys(@\textit{words});
+add_key(@\textit{words});
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
 
-\section{\texttt{addperiodic}}
+\section{\texttt{repeat}}
 
 This function takes an Xcrypt's script code (denoted as
 \textit{mystring}) and an integer $i$, and evaluates it each $i$ seconds.
@@ -695,7 +695,7 @@ This function takes an Xcrypt's script code (denoted as
 
 \begin{boxnote}
 \begin{alltt}
-addperiodic(\textit{mystring}, \textit{i});
+repeat(\textit{mystring}, \textit{i});
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
@@ -750,7 +750,7 @@ package {\it mymodule};
 use strict;
 use ...;
 
-&addkeys('my_instance_member', ...);
+&add_key('my_instance_member', ...);
 
 my $my_class_member;
 
@@ -793,7 +793,7 @@ In the following, we introduce components of scripts.
   \item Use of Perl modules: is done in the usual way, i.e., by using
 	\|use|.
   \item Addition of instance variables: is done by the function
-	\|addkeys|.  The added instance variables are accessed as
+	\|add_key|.  The added instance variables are accessed as
 	properties of job objects by writing, e.g.,
 	\begin{center}
 	 \|$job->{my_instance_member}|
