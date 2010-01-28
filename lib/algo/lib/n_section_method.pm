@@ -5,7 +5,7 @@ use Coro::AnyEvent;
 use jobsched;
 use builtin;
 
-&addkeys('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
+&add_key('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
 our $del_extra_jobs = 0;
 

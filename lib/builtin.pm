@@ -18,7 +18,7 @@ use Cwd;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
-addkeys addperiodic getelapsedtime
+add_key repeat getelapsedtime
 );
 
 my $nilchar = 'nil';
@@ -90,7 +90,7 @@ sub check_and_alert_elapsed {
 
 my $default_period = 10;
 my $periodic_threads = ();
-sub addperiodic {
+sub repeat {
     my $new_coro = undef;
     my $sub_or_str = $_[0];
     my $slp = $_[1];
@@ -110,7 +110,7 @@ sub addperiodic {
             }
         };
     } else {
-        warn "addperiodic accepts code or eval-string.";
+        warn '&repeat accepts code or eval-string.';
     }
     if ($new_coro) {
         push (@periodic_threads, $new_coro);
@@ -125,7 +125,7 @@ sub addperiodic {
     return $new_coro;
 }
 
-sub addkeys {
+sub add_key {
     my $exist = 0;
     foreach my $i (@_) {
         foreach my $j ((@usablekeys::allkeys, 'id')) {
@@ -226,7 +226,7 @@ sub generate {
         }
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)) {
-                print STDERR "Warning: $key doesn't work.  Use :$key or &addkeys(\'$key\').\n";
+                print STDERR "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
         }

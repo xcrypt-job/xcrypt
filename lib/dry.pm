@@ -4,7 +4,7 @@ use strict;
 use NEXT;
 use builtin;
 
-&addkeys('dry');
+&add_key('dry');
 
 sub new {
     my $class = shift;

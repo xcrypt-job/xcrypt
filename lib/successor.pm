@@ -4,7 +4,7 @@ use strict;
 use NEXT;
 use builtin;
 
-&addkeys('successors');
+&add_key('successors');
 
 my $slp = 1;
 sub new {

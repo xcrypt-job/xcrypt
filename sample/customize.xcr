@@ -1,6 +1,6 @@
 use base qw(limit dry core);
 
-&addkeys('added0', 'added1');
+&add_key('added0', 'added1');
 $separator_nocheck = 0;
 $separator = '-';
 &limit::initialize(2);

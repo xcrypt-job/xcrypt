@@ -4,7 +4,7 @@ use strict;
 use NEXT;
 use builtin;
 
-&addkeys('ofname', 'mergeFunc','divideFunc','canDivideFunc');
+&add_key('ofname', 'mergeFunc','divideFunc','canDivideFunc');
 
 sub new
 {
