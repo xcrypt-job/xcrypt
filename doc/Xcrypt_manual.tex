@@ -388,20 +388,21 @@ The following is a sample script:
 %myjob = (
     'id'          => 'job10',
     'linkedfile0' => 'getchildren',
-    'linkedfile1' => 'komadoku',
-    'linkedfile2' => 'kuraidori',
-    'linkedfile3' => 'ikiataribattari',
+    'linkedfile1' => 'strategy1',
+    'linkedfile2' => 'strategy2',
+    'linkedfile3' => 'strategy3',
     'arg0'        => '9',               # depth of lookahead
     'arg1'        => '0',               # position
     'arg2'        => 'getchildren'      # get next positions
 );
 
-&prepare_submit_sync(%myjob, 'arg3@' => ['komadoku', 'kuraidori', 'ikiataribattari']);
+&prepare_submit_sync(%myjob,
+                     'arg3@' => ['strategy1', 'strategy2', 'strategy3']);
 \end{verbatim}
 \end{boxnote}
 \noindent
-where \texttt{komadoku}, \texttt{kuraidori}, and
-\texttt{ikiataribattari} are static functions.
+where \texttt{strategy1}, \texttt{strategy2}, and
+\texttt{strategy3} are static functions.
 
 \chapter{Template}\label{chapjobdefhash}
 
