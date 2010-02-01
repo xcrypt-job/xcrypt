@@ -217,6 +217,7 @@ sub generate {
         }
     }
 
+=comment
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@usablekeys::allkeys, 'id') {
@@ -226,12 +227,13 @@ sub generate {
         }
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)) {
-                print STDERR "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
+                print "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
         }
         $exist = 0;
     }
+=cut
     return user->new(\%job);
 }
 
@@ -383,10 +385,27 @@ sub prepare {
     my %job = @_;
 
     &addusercustomizablecoremembers(%job);
+=comment
     foreach my $key (keys(%job)) {
         unless (&belong($key, 'id', @usablekeys::allkeys)) {
             delete($job{"$key"});
         }
+    }
+=cut
+    foreach my $key (keys(%job)) {
+        my $exist = 0;
+        foreach my $ukey (@usablekeys::allkeys, 'id') {
+            if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
+                $exist = 1;
+            }
+        }
+        if ($exist == 0) {
+            unless (($key =~ /\ARANGE[0-9]+\Z/)) {
+                print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
+                delete $job{"$key"};
+            }
+        }
+        $exist = 0;
     }
 
     my $existOfRANGE = 0;
