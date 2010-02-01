@@ -140,8 +140,8 @@ sub add_key {
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /@\Z/) {
-            die "Can't use $i as key since $i has @ at its tail.\n";
+        } elsif ($i =~ /"$expandingchar"\Z/) {
+            die "Can't use $i as key since $i has $expandingchar at its tail.\n";
         } else {
             push(@usablekeys::allkeys, $i);
         }
@@ -170,7 +170,7 @@ sub addusercustomizablecoremembers {
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
-            if ($key =~ /@\Z/) {
+            if ($key =~ /"$expandingchar"\Z/) {
                 $/ = $user::expandingchar;
                 chomp $key;
                 push(@usablekeys::allkeys, $key);
