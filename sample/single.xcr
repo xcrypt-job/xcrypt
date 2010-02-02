@@ -10,7 +10,6 @@ use base qw (core);
              'copiedfile1@' => '"input$R0"',
              'queue' => 'ghxxxxx',  # modify for your system
              'group' => 'ghxxxxx',  # modify for your system
-             'option' => '# @$-g gh10034',
              );
 @job = prepare (%template);
 submit(@job);

@@ -26,5 +26,5 @@ echo "Start installation."
 for i in $LIBS
 do
   echo ">>> installing $i <<<"
-  (cd $i && perl Makefile.PL && make DESTDIR=$XCR_CPAN_BASE install)
+  (cd $i && perl Makefile.PL LIB=$XCR_CPAN_BASE && make INSTALLSITEMAN3DIR=none install)
 done
