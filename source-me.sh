@@ -1,12 +1,9 @@
-export XCRYPT=$HOME/xcrypt
+if [ "x$XCRYPT" = "x" ]; then
+    export XCRYPT=$HOME/xcrypt
+fi
+if [ "x$XCRJOBSCHED" = "x" ]; then
+    export XCRJOBSCHED="sh"
+fi
 export PATH=$XCRYPT/bin:$PATH
-export XCRJOBSCHED="sh"
-export PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$PERL5LIB
-export XCR_CPAN_BASE=$XCRYPT/lib/cpan
-for i in usr usr/local usr/local/share; do
-  for j in lib lib64 perl; do
-      for k in perl5 perl5/site_perl 5.10.0; do
-          export PERL5LIB=$XCR_CPAN_BASE/$i/$j/$k:$PERL5LIB
-      done
-  done
-done
+XCR_CPAN=$XCRYPT/lib/cpan
+export PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCR_CPAN:$PERL5LIB
