@@ -143,7 +143,7 @@ sub make_job_script {
     # stderr & stdout
     apply_push_if_valid_arg (\@contents, \&any_to_string_nl,
                              $cfg{jobscript_stdout}, $self->workdir_member_file('stdofile'));
-    apply_push_if_valid_arg (\@contents, \&any_to_string_nl, $cfg{jobscript_stderr},
+    apply_push_if_valid_arg (\@contents, \&any_to_string_nl,
                              $cfg{jobscript_stderr}, $self->workdir_member_file('stdefile'));
     # computing resources
     apply_push_if_valid_arg (\@contents, \&any_to_string_nl, $cfg{jobscript_proc}, $self->{proc});
