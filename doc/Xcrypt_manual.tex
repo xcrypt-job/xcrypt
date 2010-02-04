@@ -20,9 +20,9 @@
 \maketitle
 \tableofcontents
 
-\paragraph{Requirement}
+\paragraph{Requirement.}
 
-Xcrypt requires
+Xcrypt requires the following outer modules:
 \begin{itemize}
 \item Marc Lehmann's Coro (where conftest.c is not contained), EV,
 \item Joshua Nathaniel Pritikin's Event, and
@@ -914,8 +914,7 @@ true.  Its argument is a reference to the job object.  The order of
 calling \texttt{after}s is the one from parents classes to children
 classes.  Return values of the methods are abandoned.
 
-\paragraph{Remark on Concurrency of \texttt{before\_isready},
-    \texttt{before}, \texttt{start}, \texttt{after\_isready}, \texttt{after}.}
+\paragraph{Remark on Concurrency of \texttt{before\_isready}, \texttt{before}, \texttt{start}, \texttt{after\_isready}, and \texttt{after}.}
 Each method is called in concurrently with Xcrypt main thread.
 However, it is not necessary that each method is concurrently called
 at each job object.  Xcrypt guarantee the following concurrency:
