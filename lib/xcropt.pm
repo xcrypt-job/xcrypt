@@ -13,6 +13,7 @@ our %options =
   (
    'localhost' => $localhost,
    'port' => 9999,               # インベントリ通知待ち受けポート．0ならNFS経由
+   'scheduler' => $ENV{'XCRJOBSCHED'}, # Default job scheduler
    'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
    'inventory_path' => File::Spec->catfile(Cwd::getcwd(), 'inv_watch'),
                                  # ジョブの履歴や，port==0では通信用ファイルを書き込むディレクトリ
@@ -26,6 +27,7 @@ GetOptions
    'localhost=s',
    'port=i',
    'abort_check_interval=i',
+   'scheduler=s',
    'inventory_path=s',
    'verbose=i',
    'stack_size=i',
