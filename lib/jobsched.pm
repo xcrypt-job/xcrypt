@@ -29,7 +29,7 @@ use jsconfig;
 ##################################################
 
 my $current_directory=Cwd::getcwd();
-my $jobsched = $ENV{'XCRJOBSCHED'};
+my $Scheduler = $xcropt::options{scheduler};
 
 ### Inventory
 my $inventory_host = $xcropt::options{localhost};
@@ -87,148 +87,48 @@ our $periodic_thread=undef;
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
 
-##################################################
-sub any_to_string {
-    my ($arraysep, $x, @args) = @_;
-    my $r = ref ($x);
-    if ( $r eq '' ) {             # $x is a scalar
-        return $x . join(' ', @args);
-    } elsif ( $r eq 'ARRAY' ) {   # $arraysep works only here
-        return join ($arraysep, @$x) . $arraysep . join($arraysep, @args);
-    } elsif ( $r eq 'CODE' ) {
-        return &$x(@args);
-    } elsif ( $r eq 'SCALAR' ) {  # $x is *a reference to* a scalar
-        return $$x . join(' ', @args);
-    } else {
-        die "any_to_string: Unexpected reference $r";
-    }
-}
-sub any_to_string_nl  { any_to_string ("\n", @_); }
-sub any_to_string_spc { any_to_string (" ", @_); }
 
 ##################################################
-# ジョブスクリプトを生成し，必要なwriteを行った後，ジョブ投入
-# ジョブスケジューラによって吐くものが違う
+# Submit a job specified by a jop object ($self) by executing "qsub"
+# after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-    my $job_name = $self->{id};
-    my $dir = $self->{id};
-
-    ### <-- Create job script file <--
-    ## Preamble
-    my $scriptfile = File::Spec->catfile($dir, $jobsched . '.sh');
-    open (SCRIPT, ">$scriptfile");
-    print SCRIPT "#!/bin/sh\n";
-    # NQS も SGE も，オプション中の環境変数を展開しないので注意！
-    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_preamble} ) {
-        foreach (@{$jsconfig::jobsched_config{$jobsched}{jobscript_preamble}}) {
-            print SCRIPT $_ . "\n";
-        }
-    }
-
-    ## Options
-    # queue
-    my $queue = $self->{queue};
-    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_queue} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_queue}, $queue) . "\n";
-    }
-    # stderr & stdout
-    my $stdofile;
-    $stdofile = File::Spec->catfile($dir, $self->{stdofile} ? $self->{stdofile} : 'stdout');
-    if ( -e $stdofile) { unlink $stdofile; }
-    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_stdout} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_stdout}, $ENV{'PWD'}.'/'.$stdofile) . "\n";
-    }
-    my $stdefile;
-    $stdefile = File::Spec->catfile($dir, $self->{stdefile} ? $self->{stdefile} : 'stderr');
-    if ( -e $stdefile) { unlink $stdefile; }
-    if ( defined $jsconfig::jobsched_config{$jobsched}{jobscript_stderr} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_stderr}, $ENV{'PWD'}.'/'.$stdefile) . "\n";
-    }
-    # computing resources
-    my $proc = $self->{proc};
-    if ( $proc ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_proc} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_proc}, $proc) . "\n";
-    }
-    my $cpu = $self->{cpu};
-    if ( $cpu ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_cpu} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_cpu}, $cpu) . "\n";
-    }
-    my $memory = $self->{memory};
-    if ( $memory ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_memory} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_memory}, $memory) . "\n";
-    }
-    my $stack = $self->{stack};
-    if ( $stack ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_stack} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_stack}, $stack) . "\n";
-    }
-    # verbosity
-    my $verbose = $self->{verbose};
-    if ( $verbose ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_verbose} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_verbose}) . "\n";
-    }
-    my $verbose_node = $self->{verbose_node};
-    if ( $verbose_node ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_verbose_node} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_verbose_node}) . "\n";
-    }
-    # other options
-    # computing resources
-    my $group = $self->{group};
-    if ( $group ne '' && defined $jsconfig::jobsched_config{$jobsched}{jobscript_group} ) {
-        print SCRIPT any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_group}, $group) . "\n";
-    }
-    my $option = $self->{option};
-    print SCRIPT "$option\n";
-
-    ## Job script body
-    # print SCRIPT "PATH=$ENV{'PATH'}\n";
-    # print SCRIPT "set -x\n";
-    # Chdir to the job's working directory
-    my $wkdir_str = defined ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
-        ? any_to_string_nl ($jsconfig::jobsched_config{$jobsched}{jobscript_workdir})
-        : $ENV{'PWD'};
-    print SCRIPT "cd " . File::Spec->catfile ($wkdir_str, $dir) . "\n";
-    # Set the job's status to "running"
-    print SCRIPT inventory_write_cmdline($job_name, "running") . " || exit 1\n";
-    # Execute the program
-    my @args = ();
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
-    my $cmd = $self->{exe} . ' ' . join(' ', @args);
-    print SCRIPT "$cmd\n";
-    # Set the job's status to "done" (should set to "aborted" when failed?)
-    print SCRIPT inventory_write_cmdline($job_name, "done") . " || exit 1\n";
-    close (SCRIPT);
-    ### --> Create job script file -->
-
-    ### <-- Create qsub options <--
-    my $qsub_options = '';
-    # stderr & stdout
-    if ( defined $jsconfig::jobsched_config{$jobsched}{qsub_stdout_option} ) {
-        $qsub_options .= " ". any_to_string_spc ($jsconfig::jobsched_config{$jobsched}{qsub_stdout_option}, $stdofile);
-    }
-    if ( defined $jsconfig::jobsched_config{$jobsched}{qsub_stderr_option} ) {
-        $qsub_options .= " ". any_to_string_spc ($jsconfig::jobsched_config{$jobsched}{qsub_stderr_option}, $stdefile);
-    }
-    ### --> Create qsub options -->
+    
+    # Create JobScript & qsub options
+    $self->make_job_script();
+    $self->update_job_script_file();
+    $self->make_qsub_options();    
+    
+    my $jobname = $self->{id};
+    my $dir = $jobname;
+    my $sched = $self->{job_scheduler};
+    my $scriptfile = $self->workdir_member_file('job_script_file');
+    my $qsub_options = join(' ', @{$self->{qsub_options}});
+    my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
     # Set job's status "submitted"
-    inventory_write ($job_name, "submitted");
+    inventory_write ($jobname, "submitted");
 
-    my $qsub_command = $jsconfig::jobsched_config{$jobsched}{qsub_command};
-    unless ( defined $qsub_command ) {
-        die "qsub_command is not defined in $jobsched.pm";
-    }
+    my $qsub_command = $cfg{qsub_command};
+    unless ( defined $qsub_command )
+    { die "qsub_command is not defined in $sched.pm"; }
+    unless ( -e $scriptfile )
+    { die "Can't find a job script file \"$scriptfile\""; }
     if (common::cmd_executable ($qsub_command)) {
-        # ここでqsubコマンド実行
+        # Execute qsub comand
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
-        my @qsub_output = qx/$qsub_command $qsub_options $scriptfile/;
-        my $req_id;
+        my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        if ($xcropt::options{verbose} >= 2) 
+        { print "$cmdline\n"; }
+        my @qsub_output = qx/$cmdline/;
+        if ( @qsub_output == 0 ) { die "qsub command failed."; }
         # Get request ID from qsub's output
-        if ( defined ($jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output}) ) {
-            unless ( ref $jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output} eq 'CODE' ) {
-                die "Error in $jobsched.pm: extract_req_id_from_qsub_output must be a function";
+        my $req_id;
+        if ( defined ($cfg{extract_req_id_from_qsub_output}) ) {
+            unless ( ref $cfg{extract_req_id_from_qsub_output} eq 'CODE' ) {
+                die "Error in $sched.pm: extract_req_id_from_qsub_output must be a function";
             }
-            $req_id = &{$jsconfig::jobsched_config{$jobsched}{extract_req_id_from_qsub_output}} (@qsub_output);
+            $req_id = &{$cfg{extract_req_id_from_qsub_output}} (@qsub_output);
         } else { # default extractor
             $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
         }
@@ -243,7 +143,7 @@ sub qsub {
         close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-        inventory_write ($job_name, "queued");
+        inventory_write ($jobname, "queued");
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -274,15 +174,15 @@ sub qdel {
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
-    my $qstat_command = $jsconfig::jobsched_config{$jobsched}{qstat_command};
+    my $qstat_command = $jsconfig::jobsched_config{$Scheduler}{qstat_command};
     unless ( defined $qstat_command ) {
-        die "qstat_command is not defined in $jobsched.pm";
+        die "qstat_command is not defined in $Scheduler.pm";
     }
-    my $qstat_extractor = $jsconfig::jobsched_config{$jobsched}{extract_req_ids_from_qstat_output};
+    my $qstat_extractor = $jsconfig::jobsched_config{$Scheduler}{extract_req_ids_from_qstat_output};
     unless ( defined $qstat_extractor ) {
-        die "extract_req_ids_from_qstat_output is not defined in $jobsched.pm";
+        die "extract_req_ids_from_qstat_output is not defined in $Scheduler.pm";
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-        die "Error in $jobsched.pm: extract_req_ids_from_qstat_output must be a function.";
+        die "Error in $Scheduler.pm: extract_req_ids_from_qstat_output must be a function.";
     }
     my $command_string = any_to_string_spc ($qstat_command);
     unless (common::cmd_executable ($command_string)) {
