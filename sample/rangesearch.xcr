@@ -26,8 +26,5 @@ use base qw(core);
 
 &repeat('print "hogehoge\n";');
 $hoge = 'hoge';
-sub foo {
-    print STDOUT "$hoge\n";
-}
-&repeat(\&foo, 3);
+&repeat(sub {print STDOUT "$hoge\n";}, 3);
 &sync(@jobs);

@@ -4,6 +4,7 @@ use Coro;
 use Coro::AnyEvent;
 use jobsched;
 use builtin;
+use autodel;
 
 &add_key('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
@@ -50,16 +51,16 @@ sub n_section_method {
 		    if (($status eq 'done' || $status eq 'finished') && ($done_or_ignored{"$jid"} == 0)) {
 			&sync($j);
 			$done_or_ignored{"$jid"} = 1;
-			foreach my $k (@jobs) {
+
+			&autodel::del(sub {
+			    my $k = shift;
 			    my $kid = $k->{'id'};
-			    if (0 < ($j->{'y'}) * $inc_or_dec * ($k->{'x'} - $j->{'x'}) && ($done_or_ignored{"$kid"} == 0)) {
-				if ($kid) {
-				    system("xcryptdel $kid");
-#				    &jobsched::qdel($jobid);
-				    $done_or_ignored{"$kid"} = 1;
-				}
-			    }
-			}
+			    return (0 < ($j->{'y'}) * $inc_or_dec * ($k->{'x'} - $j->{'x'})) && ($done_or_ignored{"$kid"} == 0);
+				      }, sub {
+					  my $k = shift;
+					  my $kid = $k->{'id'};
+					  $done_or_ignored{"$kid"} = 1;
+				      }, @jobs);
 		    }
 		}
 		$flag = 1;
