@@ -17,8 +17,8 @@ sub new {
 
     # stderr & stdout
     set_member_if_empty ($self, 'stdofile', 'stdout');
-    set_member_if_empty ($self, 'stdefile', 'stderr'); 
-    
+    set_member_if_empty ($self, 'stdefile', 'stderr');
+
     # Check if the job ID is not empty
     my $jobname= $self->{id};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
@@ -30,7 +30,7 @@ sub new {
     set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
     set_member_if_empty ($self, 'job_script_file', $self->{job_scheduler}.'.sh');
     set_member_if_empty ($self, 'qsub_options', []);
-    
+
     # Load the inventory file to recover the job's status after the previous execution
     &jobsched::load_inventory ($jobname);
     my $last_stat = &jobsched::get_job_status ($jobname);
@@ -169,10 +169,15 @@ sub make_job_script {
     # Set the job's status to "running"
     push (@contents, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
     # Execute the program
-    my @args = ();
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$i"}); }
-    my $cmd = $self->{exe} . ' ' . join(' ', @args);
-    push (@contents, $cmd);
+#    foreach (0..$user::maxargetc) {
+    foreach my $j (0..$user::maxargetc) {
+	if ($self->{"exe$j"}) {
+	    my @args = ();
+	    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$j".'_'."$i"}); }
+	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
+	    push (@contents, $cmd);
+	}
+    }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     push (@contents, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
 

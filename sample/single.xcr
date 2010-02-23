@@ -2,7 +2,7 @@
 use base qw (core);
 
 %template = (
-             'id' => 'example', 
+             'id' => 'example',
              'exe' => './a.out',
              'arg0' => "input",
              'arg1' => "output",

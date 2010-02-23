@@ -130,6 +130,7 @@ sub add_key {
     foreach my $i (@_) {
         foreach my $j ((@usablekeys::allkeys, 'id')) {
             if (($i eq $j)
+                || ($i =~ /\Aexe[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*/)
                 || ($i =~ /\Alinkedfile[0-9]*/)
                 || ($i =~ /\Acopiedfile[0-9]*/)
@@ -161,12 +162,18 @@ sub rm_tailnis {
 
 sub addusercustomizablecoremembers {
     my %job = @_;
-    my @premembers = ('arg', 'linkedfile', 'copiedfile', 'copieddir');
+    my @premembers = ('exe', 'linkedfile', 'copiedfile', 'copieddir');
     for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
             push(@usablekeys::allkeys, "$name");
         }
+    }
+    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	for ( my $j = 0; $j <= $user::maxargetc; $j++ ) {
+            my $name = 'arg' . $i . '_' . $j;
+            push(@usablekeys::allkeys, "$name");
+	}
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
