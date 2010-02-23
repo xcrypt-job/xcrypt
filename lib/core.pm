@@ -169,11 +169,14 @@ sub make_job_script {
     # Set the job's status to "running"
     push (@contents, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
     # Execute the program
-#    foreach (0..$user::maxargetc) {
     foreach my $j (0..$user::maxargetc) {
 	if ($self->{"exe$j"}) {
 	    my @args = ();
-	    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) { push(@args, $self->{"arg$j".'_'."$i"}); }
+	    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+		if ($self->{"arg$j".'_'."$i"}) {
+		    push(@args, $self->{"arg$j".'_'."$i"});
+		}
+	    }
 	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
 	    push (@contents, $cmd);
 	}
