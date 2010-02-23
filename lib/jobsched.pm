@@ -93,12 +93,12 @@ select(STDERR); $|=1; select(STDOUT);
 # after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-    
+
     # Create JobScript & qsub options
     $self->make_job_script();
     $self->update_job_script_file();
-    $self->make_qsub_options();    
-    
+    $self->make_qsub_options();
+
     my $jobname = $self->{id};
     my $dir = $jobname;
     my $sched = $self->{job_scheduler};
