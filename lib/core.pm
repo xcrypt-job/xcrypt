@@ -177,7 +177,19 @@ sub make_job_script {
 		    push(@args, $self->{"arg$j".'_'."$i"});
 		}
 	    }
-	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
+	    my $com = '';
+	    if ($self->{'remoteshell'}) {
+		$com = $self->{'remoteshell'};
+	    }
+	    my $user = '';
+	    if ($self->{'username'}) {
+		$user = $self->{'username'} . '@';
+	    }
+	    my $host = '';
+	    if ($self->{'hostname'}) {
+		$host = $self->{'hostname'};
+	    }
+	    my $cmd = "$com $user$host " . $self->{"exe$j"} . ' ' . join(' ', @args);
 	    push (@contents, $cmd);
 	}
     }
