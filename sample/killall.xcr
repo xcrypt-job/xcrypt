@@ -3,14 +3,14 @@ use Data_Extraction;
 
 %template = (
     'id' => 'job4',
-    'queue' => 'gh10034',
-    'group' => 'gh10034'
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034'
     );
 
 &prepare_submit_sync(
     %template,
     'RANGE0' => [0..7],
-    'exe@' => '"sleep $R0; echo $R0;"',
+    'exe0@' => '"sleep $R0; echo $R0;"',
     'after' => sub { if (&good($_[0])) { system("xcryptdel --all"); }},
     );
 
