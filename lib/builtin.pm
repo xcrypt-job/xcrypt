@@ -335,8 +335,8 @@ sub submit {
             ## after()
 	    my $status = &jobsched::get_job_status($self->{'id'});
 	    if ($status eq 'done') {
-		until ((-e "$self->{id}/$self->{stdofile}")
-		       && (-e "$self->{id}/$self->{stdefile}")) {
+		until ((-e "$self->{id}/$self->{JS_stdout}")
+		       && (-e "$self->{id}/$self->{JS_stderr}")) {
 		    Coro::AnyEvent::sleep 0.1;
 		}
 		$self->EVERY::LAST::after();
@@ -407,7 +407,9 @@ sub prepare {
             }
         }
         if ($exist == 0) {
-            unless (($key =~ /\ARANGE[0-9]+\Z/)) {
+            unless (($key =~ /\ARANGE[0-9]+\Z/)
+                    || ($key =~ /^JS_/))        # for jobscheduler options
+            {        
                 print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }

@@ -8,10 +8,10 @@ $jsconfig::jobsched_config{"KYOTO"} = {
     qdel_command => "/usr/bin/qdel -K",
     qstat_command => "/thin/local/bin/qstat",
     # standard options
-    jobscript_preamble => ['#!bin/sh'];
-    jobscript_workdir => sub { File::Spec->catfile('$QSUB_WORKDIR',$_[0]->{id}); }
-    jobscript_option_stdout => workdir_file_option ('# @$-o '),
-    jobscript_option_stderr => workdir_file_option ('# @$-e '),
+    jobscript_preamble => ['#!bin/sh'],
+    jobscript_workdir => sub { File::Spec->catfile('$QSUB_WORKDIR',$_[0]->{id}); },
+    jobscript_option_stdout => workdir_file_option ('# @$-o ', 'stdout'),
+    jobscript_option_stderr => workdir_file_option ('# @$-e ', 'stderr'),
     jobscript_option_merge_output => boolean_option ('# @$-eo'),
     jobscript_option_node => '# @$-lP ',
     jobscript_option_cpu => '# @$-lp ',

@@ -20,6 +20,6 @@ sub boolean_option {
     sub {
         my $self = shift;
         my $mb_name = shift;
-        return $self->workdir_file_member($mb_name) ? ($opt_string) : ();
+        return $self->{$mb_name} ? ($opt_string) : ();
     }
 }

@@ -16,8 +16,8 @@ sub new {
     my $self = shift;
 
     # stderr & stdout
-    set_member_if_empty ($self, 'stdofile', 'stdout');
-    set_member_if_empty ($self, 'stdefile', 'stderr');
+    set_member_if_empty ($self, 'JS_stdout', 'stdout');
+    set_member_if_empty ($self, 'JS_stderr', 'stderr');
 
     # Check if the job ID is not empty
     my $jobname= $self->{id};

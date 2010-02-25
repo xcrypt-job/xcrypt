@@ -9,6 +9,7 @@ unless ( -e File::Spec->catfile ($jobsched_config_dir, $ENV{'XCRJOBSCHED'} . ".p
     die "No config file for $ENV{'XCRJOBSCHED'} ($ENV{'XCRJOBSCHED'}.pm) in $jobsched_config_dir";
 }
 foreach ( glob (File::Spec->catfile ($jobsched_config_dir, "*" . ".pm")) ) {
+    # print "loading config file $_\n";
     do $_;
 }
 
