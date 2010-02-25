@@ -8,20 +8,21 @@ my %job_fib =
      'RANGE2' => [44,50],     # fib's param
      'RANGE3' => ["fib-lw"],  #, "fib-gcc"], # implementations
      'RANGE4' => [1..3],     # # of trials
-     'exe' => './tcell-batch-thin',
-     'cpu@' => sub { 16; }, #sub { $_[0]; },
-     'proc@' => sub { $_[1]; },
-     'arg0@' => sub {"./$_[3]";},
-     'arg1@' => sub { $_[0]; },
-     'arg2@' => sub { $_[1]; },
-     'arg3@' => sub {"\"1 $_[2]\"" },
-     'arg4' => '`hostname`',
+     'exe0' => './tcell-batch-thin',
+     'JS_cpu@' => sub { 16; }, #sub { $_[0]; },
+     'JS_node@' => sub { $_[1]; },
+     'arg0_0@' => sub {"./$_[3]";},
+     'arg0_1@' => sub { $_[0]; },
+     'arg0_2@' => sub { $_[1]; },
+     'arg0_3@' => sub {"\"1 $_[2]\"" },
+     'arg0_4' => '`hostname`',
      'copiedfile0@' => sub { $_[3]; },
      'copiedfile1' => 'tcpcon',
      'copiedfile2' => 'tcell-batch-thin',
      'copiedfile3' => 'tcell-plexec.sh',
-     'queue' => 'gh10034',
-     'option' => '# @$-g gh10034' . "\n" . '# @$-cp 00:03:00'
+     'JS_queue' => 'gh10034',
+     'JS_group' => 'gh10034',
+     'JS_limit_time' => 180,
      );
 
 # Nqueens
@@ -29,7 +30,7 @@ my %job_nq = %job_fib;
 $job_nq{id} = 'job_nq';
 $job_nq{RANGE2} = [16];
 $job_nq{RANGE3} = ["nq-lw"];
-$job_nq{arg3s} = sub {"\"0 $_[2] -1\""};
+$job_nq{arg0_3@} = sub {"\"0 $_[2] -1\""};
 # delete $job_nq{option};
 # $job_nq{options} = sub {
 #     if ( $_[2] == 17 ) {
@@ -44,28 +45,28 @@ my %job_pen = %job_fib;
 $job_pen{id} = 'job_pen';
 $job_pen{RANGE2} = [14];
 $job_pen{RANGE3} = ["pen6x17-lw"];
-$job_pen{arg3s} = sub {"\"1 $_[2]\""};
+$job_pen{arg0_3@} = sub {"\"1 $_[2]\""};
 
 # LU decomposition
 my %job_lu = %job_fib;
 $job_lu{id} = 'job_lu';
 $job_lu{RANGE2} = [2000];
 $job_lu{RANGE3} = ["lu-lw"];
-$job_lu{arg3s} = sub {"\"0 0 $_[2] 2 0\""};
+$job_lu{arg0_3@} = sub {"\"0 0 $_[2] 2 0\""};
 
 # Comp
 my %job_cmp = %job_fib;
 $job_cmp{id} = 'job_cmp';
 $job_cmp{RANGE2} = [60000];
 $job_cmp{RANGE3} = ["cmp-lw"];
-$job_cmp{arg3s} = sub {"\"0 $_[2] -1\""};
+$job_cmp{arg0_3@} = sub {"\"0 $_[2] -1\""};
 
 # grav
 my %job_grav = %job_fib;
 $job_grav{id} = 'job_grav';
 $job_grav{RANGE2} = [400];
 $job_grav{RANGE3} = ["grav-lw"];
-$job_grav{arg3s} = sub {"\"1 -$_[2] -$_[2] -$_[2] $_[2] $_[2] $_[2] 25 25 25\""};
+$job_grav{arg0_3@} = sub {"\"1 -$_[2] -$_[2] -$_[2] $_[2] $_[2] $_[2] 25 25 25\""};
 
 my @jobs = ();
 

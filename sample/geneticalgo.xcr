@@ -4,16 +4,16 @@ use Data_Generation;
 
 %template = (
     'id' => 'job3',
-    'arg1' => '5',                 # length of string
-    'arg2' => 'onePointCrossover', # how to crossover
-    'arg3' => 'equivalence',       # probability of choice
-    'queue' => 'gh10034',
-    'group' => 'gh10034'
+    'arg0_1' => '5',                 # length of string
+    'arg0_2' => 'onePointCrossover', # how to crossover
+    'arg0_3' => 'equivalence',       # probability of choice
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034'
 );
 
 @jobs = &prepare(%template,
-		 'arg0' => '100', # number of generation
-		 'arg4@' => ['12345 54321 abcde edcba',
+		 'arg0_0' => '100', # number of generation
+		 'arg0_4@' => ['12345 54321 abcde edcba',
 			     '00000 11111 22222 33333 44444']);
 &submit_sync(@jobs);
 

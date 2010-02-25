@@ -6,10 +6,10 @@ my $XCRFILE=File::Spec->rel2abs("rangesearch.xcr");
 
 &prepare_submit_sync (
     'id' => 'job14',
-    'exe' => "PATH=$ENV{PATH} XCRYPT=$ENV{XCRYPT} PERL5LIB=$ENV{PERL5LIB} XCRJOBSCHED=$ENV{XCRJOBSCHED} xcrypt",
-    'arg0' => $XCRFILE,
-    'queue' => 'gh10034',
-    'group' => 'gh10034',
+    'exe0' => "PATH=$ENV{PATH} XCRYPT=$ENV{XCRYPT} PERL5LIB=$ENV{PERL5LIB} XCRJOBSCHED=$ENV{XCRJOBSCHED} xcrypt",
+    'arg0_0' => $XCRFILE,
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034',
     # rangesearch.xcr requires the following
     'copiedfile0' => 'common/fib'
 );

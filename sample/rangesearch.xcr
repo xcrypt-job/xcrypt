@@ -9,21 +9,21 @@ use base qw(core);
     'arg1_0' => '43',
     'arg1_1' => '> out1',             # i.e., $ ./fib 50 > out
     'linkedfile0' => 'common/fib', # where exe-file exists
-    'queue' => 'gh10034',
-#    'queue' => 'S004' # for TOKYO
-    'cpu' => '1',
-    'group' => 'gh10034' # for KYOTO
-#    'group' => 'ESCIENCE' # for TSUKUBA
-#    'option' => '#% -T 30', # for TSUKUBA
+    'JS_queue' => 'gh10034',
+#    'JS_queue' => 'S004' # for TOKYO
+    'JS_cpu' => '1',
+    'JS_group' => 'gh10034' # for KYOTO
+#    'JS_group' => 'ESCIENCE' # for TSUKUBA
+#    'JS_limit_time => 30, # for TSUKUBA
 );
 
 @jobs = &prepare(%template,
-#		 'arg0@' => [20..22], # i.e., $ qsub ./fib 20 > out
+#		 'arg0_0@' => [20..22], # i.e., $ qsub ./fib 20 > out
 #                                             $ qsub ./fib 21 > out
 #                                             $ qsub ./fib 22 > out
-#		 'RANGE0' => [0..2], 'arg0@' => [20..22]
-#		 'RANGE0' => [0..2], 'arg0@' => [20,21]
-#		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
+#		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
+#		 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
+#		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0_0@' => '$R0 + 20 + $R2;'
     );
 &submit(@jobs);
 

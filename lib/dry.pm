@@ -20,18 +20,17 @@ sub start {
 sub before {
     my $self = shift;
     if ($self->{'dry'} == 1) {
-	$self->{'exe'} = '';
 	for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	    my $arg = 'arg' . $i;
-	    $self->{$arg} = '';
-	}
+            $self->{"exe$i"} = '';
+            for ( my $j = 0; $j <= $user::maxargetc; $j++ ) {
+                my $arg = "arg$i_$j";
+                $self->{$arg} = '';
+            }
+        }
     }
-    # $self->NEXT::before();
 }
 
 sub after {
-  # my $self = shift;
-  # $self->NEXT::after();
 }
 
 1;

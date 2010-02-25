@@ -2,11 +2,11 @@ use base qw(convergence core);
 
 %template = (
     'id' => 'job7',
-    'exe' => './minushalf.pl',
-    'arg0' => 'template.dat',
+    'exe0' => './minushalf.pl',
+    'arg0_0' => 'template.dat',
     'linkedfile0' => 'common/minushalf.pl',
-    'queue' => 'gh10034',
-    'group' => 'gh10034',
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034',
 # possible to use the following by convergence.pm
     'initialvalue' => '128',
     'isConvergent' => '30',

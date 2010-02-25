@@ -2,16 +2,16 @@ use base qw(core);
 
 %template = (
     'id' => 'job1',
-    'exe' => 'time',
+    'exe0' => 'time',
     'linkedfile0' => 'common/minimax',
     'linkedfile1' => 'common/alphabeta',
 #    'linkedfile2' => 'common/inversetree',
-#    'arg0' => './minimax',      # algorithm
-#    'arg1' => '3',              # depth of lookahead
-    'arg2' => '0',               # position
-#    'arg3' => 'tree1',          # static evaluation
-    'queue' => 'gh10034',
-    'group' => 'gh10034'
+#    'arg0_0' => './minimax',      # algorithm
+#    'arg0_1' => '3',              # depth of lookahead
+    'arg0_2' => '0',               # position
+#    'arg0_3' => 'tree1',          # static evaluation
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034'
 );
 
 &prepare_submit_sync(%template,

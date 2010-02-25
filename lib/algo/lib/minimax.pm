@@ -8,7 +8,7 @@ use File::Path;
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    $self->{exe} = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'bin', 'minimax');
+    $self->{exe0} = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'bin', 'minimax');
     return bless $self, $class;
 }
 

@@ -27,7 +27,7 @@ sub before
 	print "\tbefore DC\n";
 	
 	#if( &{$self->{canDivideFunc}}($self) )
-	if( $self->{arg0} > 10 )
+	if( $self->{arg0_0} > 10 )
 	{
 		#{
 		#	no strict "refs";
@@ -66,7 +66,7 @@ sub before
     my @results = &sync(@objs);
 
 			&{$self->{mergeFunc}}($self->{id}."/".$self->{ofname}, @results);
-			$self->{exe} = "echo hoge";
+			$self->{exe0} = "echo hoge";
 		#}
 	}
 #	$self->NEXT::before();

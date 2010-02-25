@@ -3,13 +3,13 @@ use base qw (core);
 
 %template = (
              'id' => 'example',
-             'exe' => './a.out',
-             'arg0' => "input",
-             'arg1' => "output",
+             'exe0' => './a.out',
+             'arg0_0' => "input",
+             'arg0_1' => "output",
              'copiedfile0' => 'a.out',
              'copiedfile1@' => '"input$R0"',
-             'queue' => 'ghxxxxx',  # modify for your system
-             'group' => 'ghxxxxx',  # modify for your system
+             'JS_queue' => 'ghxxxxx',  # modify for your system
+             'JS_group' => 'ghxxxxx',  # modify for your system
              );
 @job = prepare (%template);
 submit(@job);
