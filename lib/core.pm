@@ -198,28 +198,8 @@ sub make_jobscript_body {
 		    push(@args, $self->{"arg$j".'_'."$i"});
 		}
 	    }
-<<<<<<< /home0/t/t51876/work/xcrypt/lib/core.pm.orig
-	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
-	    push (@contents, $cmd);
-||||||| /tmp/core.pm~base.mP3Tdx
-	    my $com = '';
-	    if ($self->{'remoteshell'}) {
-		$com = $self->{'remoteshell'};
-	    }
-	    my $user = '';
-	    if ($self->{'username'}) {
-		$user = $self->{'username'} . '@';
-	    }
-	    my $host = '';
-	    if ($self->{'hostname'}) {
-		$host = $self->{'hostname'};
-	    }
-	    my $cmd = "$com $user$host " . $self->{"exe$j"} . ' ' . join(' ', @args);
-	    push (@contents, $cmd);
-=======
 	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
 	    push (@body, $cmd);
->>>>>>> /tmp/core.pm~other.3A0BnP
 	}
     }
     # Set the job's status to "done" (should set to "aborted" when failed?)
