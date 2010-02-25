@@ -117,8 +117,8 @@ sub qsub {
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub comand
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
-	my $cmdline = "$qsub_command $qsub_options $scriptfile";
-        if ($xcropt::options{verbose} >= 2)
+        my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        if ($xcropt::options{verbose} >= 2) 
         { print "$cmdline\n"; }
         my @qsub_output = qx/$cmdline/;
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
@@ -173,17 +173,7 @@ sub qdel {
 }
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
-sub qstats {
-    my %hosts_ids;
-    foreach my $user_host (@user::user_hosts) {
-	my @ids = qstat($user_host);
-	$hosts_ids{"$user_host"} = \@ids;
-    }
-    return %hosts_ids;
-}
-
 sub qstat {
-    my $user_host = shift;
     my $qstat_command = $jsconfig::jobsched_config{$Scheduler}{qstat_command};
     unless ( defined $qstat_command ) {
         die "qstat_command is not defined in $Scheduler.pm";
@@ -194,8 +184,7 @@ sub qstat {
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
         die "Error in $Scheduler.pm: extract_req_ids_from_qstat_output must be a function.";
     }
-#    my $command_string = any_to_string_spc ("ssh $user_host "."$qstat_command");
-    my $command_string = any_to_string_spc ("$qstat_command");
+    my $command_string = any_to_string_spc ($qstat_command);
     unless (common::cmd_executable ($command_string)) {
         warn "$command_string not executable";
         return ();
@@ -703,21 +692,16 @@ sub check_and_write_aborted {
         }
         print "check_and_write_aborted:\n";
         # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
-#        my @ids = qstat();
-        my %host_ids = qstats();
-	foreach my $host (keys(%host_ids)) {
-	    my $tmp = $host_ids{"$host"};
-	    my @ids = @$tmp;
-	    foreach (@ids) {
-		my $jobname = $unchecked{$_};
-		delete ($unchecked{$_});
-		# ここでsignaledのチェックもする．
-		if ($jobname && is_signaled_job($jobname)) {
-		    delete_signaled_job($jobname);
-		    qdel ($jobname);
-		}
-	    }
-	}
+        my @ids = qstat();
+        foreach (@ids) {
+            my $jobname = $unchecked{$_};
+            delete ($unchecked{$_});
+            # ここでsignaledのチェックもする．
+            if ($jobname && is_signaled_job($jobname)) {
+                delete_signaled_job($jobname);
+                qdel ($jobname);
+            }
+        }
     }
     # %uncheckedに残っているジョブを"aborted"にする．
     foreach my $req_id ( keys %unchecked ) {

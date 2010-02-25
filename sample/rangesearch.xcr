@@ -1,21 +1,14 @@
 use base qw(core);
 
-#@user_hosts = (' ', 'abet@super.para.media.kyoto-u.ac.jp');
-#@user_hosts = ('localhost');
-@user_hosts = ('abet@super.para.media.kyoto-u.ac.jp');
-
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
-    'remoteshell' => 'ssh',
-#    'username' => 'foo',
-    'hostname' => 'super.para.media.kyoto-u.ac.jp',
     'exe0' => './fib',
-#    'exe1' => './fib',
-    'arg0_0' => '45',
+    'exe1' => './fib',
+    'arg0_0' => '42',
     'arg0_1' => '> out0',             # i.e., $ ./fib 50 > out
-#    'arg1_0' => '48',
-#    'arg1_1' => '> out1',             # i.e., $ ./fib 50 > out
-    'linkedfile0' => 'common/fib', # at the place which exe-file exists
+    'arg1_0' => '43',
+    'arg1_1' => '> out1',             # i.e., $ ./fib 50 > out
+    'linkedfile0' => 'common/fib', # where exe-file exists
     'queue' => 'gh10034',
 #    'queue' => 'S004' # for TOKYO
     'cpu' => '1',
