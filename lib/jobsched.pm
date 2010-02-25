@@ -93,18 +93,21 @@ select(STDERR); $|=1; select(STDOUT);
 # after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-
-    # Create JobScript & qsub options
-    $self->make_job_script();
-    $self->update_job_script_file();
-    $self->make_qsub_options();
-
-    my $jobname = $self->{id};
-    my $dir = $jobname;
     my $sched = $self->{job_scheduler};
-    my $scriptfile = $self->workdir_member_file('job_script_file');
-    my $qsub_options = join(' ', @{$self->{qsub_options}});
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
+                
+    # Create JobScript & qsub options
+    $self->make_jobscript();
+    $self->make_qsub_options();
+    if (defined $cfg{modify}) {
+        &{$cfg{modify}} ($self);
+    }
+    $self->update_jobscript_file();
+    
+    my $jobname = $self->{id};
+    my $wkdir = $self->{workdir};
+    my $scriptfile = $self->workdir_member_file('jobscript_file');
+    my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
     inventory_write ($jobname, "submitted");
@@ -134,12 +137,12 @@ sub qsub {
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
-        my $idfile = File::Spec->catfile($dir, 'request_id');
+        my $idfile = File::Spec->catfile($wkdir, 'request_id');
         open (REQUESTID, ">> $idfile");
         print REQUESTID $req_id;
         close (REQUESTID);
         open (REQUESTIDS, ">> $reqids_file");
-        print REQUESTIDS $req_id . ' ' . $dir . ' ';
+        print REQUESTIDS $req_id . ' ' . $wkdir . ' ';
         close (REQUESTIDS);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"

@@ -1,7 +1,7 @@
 package common;
 
 use base qw(Exporter);
-our @EXPORT = qw(set_member_if_empty get_jobids cmd_executable wait_file exec_async
+our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
                  any_to_string any_to_string_nl any_to_string_spc);
 
 use strict;
@@ -9,6 +9,17 @@ use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
 
+##
+sub mkarray ($) {
+    my $x = shift;
+    if ( ref($x) eq 'ARRAY' ) {
+        return $x;
+    } elsif ( $x ) {
+        return [$x];
+    } else {
+        return [];   
+    }
+}
 
 ##
 sub set_member_if_empty ($$$) {
