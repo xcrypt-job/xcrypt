@@ -54,7 +54,7 @@ sub new {
         }
         mkdir $self->{workdir} , 0755;
 
-        for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+        for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             if ($self->{"copieddir$i"}) {
                 my $copied = $self->{"copieddir$i"};
                 opendir(DIR, $copied);
@@ -190,10 +190,10 @@ sub make_jobscript_body {
     # Set the job's status to "running"
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
     # Execute the program
-    foreach my $j (0..$user::maxargetc) {
+    foreach my $j (0..$user::max_exe_etc) {
 	if ($self->{"exe$j"}) {
 	    my @args = ();
-	    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+	    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
 		if ($self->{"arg$j".'_'."$i"}) {
 		    push(@args, $self->{"arg$j".'_'."$i"});
 		}
