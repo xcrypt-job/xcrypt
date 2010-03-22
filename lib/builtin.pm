@@ -163,14 +163,14 @@ sub rm_tailnis {
 sub addusercustomizablecoremembers {
     my %job = @_;
     my @premembers = ('exe', 'linkedfile', 'copiedfile', 'copieddir');
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
+    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
             push(@usablekeys::allkeys, "$name");
         }
     }
-    for ( my $i = 0; $i <= $user::maxargetc; $i++ ) {
-	for ( my $j = 0; $j <= $user::maxargetc; $j++ ) {
+    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
+	for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
             my $name = 'arg' . $i . '_' . $j;
             push(@usablekeys::allkeys, "$name");
 	}
@@ -391,6 +391,15 @@ sub belong {
 sub prepare {
     my %job = @_;
 
+    # aliases
+    if ($job{'exe'}) {
+	$job{'exe0'} = $job{'exe'};
+    }
+    foreach my $i (0..$user::max_arg) {
+	if ($job{"arg$i"}) {
+	    $job{"arg0_$i"} = $job{"arg$i"};
+	}
+    }
     &addusercustomizablecoremembers(%job);
 =comment
     foreach my $key (keys(%job)) {
