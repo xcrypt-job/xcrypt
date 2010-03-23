@@ -18,6 +18,7 @@ use Coro;
 use Coro::Signal;
 use Coro::AnyEvent;
 use AnyEvent::Socket;
+use Time::HiRes;
 # use Coro::Socket;
 
 use common;
@@ -319,7 +320,10 @@ sub invoke_watch_by_file {
     $watch_thread = threads->new( sub {
         my $interval = 0.1;
         while (1) {
-            common::wait_file ($REQUESTFILE, $interval);
+            # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
+            # common::wait_file ($REQUESTFILE, $interval);
+            until ( -e $REQUESTFILE ) { Time::HiRes::sleep ($interval); }
+            # 
             open (my $CLIENT_IN, '<', $REQUESTFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
