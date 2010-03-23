@@ -114,17 +114,23 @@ sub qsub {
     inventory_write ($jobname, "submitted");
 
     my $qsub_command = $cfg{qsub_command};
+    if (defined $xcropt::options{remotehost}) {
+	my $rhost = $xcropt::options{remotehost};
+	$qsub_command = "rsh $rhost $qsub_command";
+    }
     unless ( defined $qsub_command )
     { die "qsub_command is not defined in $sched.pm"; }
     unless ( -e $scriptfile )
     { die "Can't find a job script file \"$scriptfile\""; }
     if (common::cmd_executable ($qsub_command)) {
-        # Execute qsub comand
+        # Execute qsub command
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my $cmdline = "$qsub_command $qsub_options $scriptfile";
-        if ($xcropt::options{verbose} >= 2) 
+        if ($xcropt::options{verbose} >= 2)
         { print "$cmdline\n"; }
-        my @qsub_output = qx/$cmdline/;
+        print "$cmdline\n";
+
+	my @qsub_output = qx/$cmdline/;
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
         # Get request ID from qsub's output
         my $req_id;
@@ -223,7 +229,7 @@ sub inventory_write_cmdline {
     status_name_to_level ($stat); # Valid status name?
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
-    } else { 
+    } else {
         return "$write_command $LOCKDIR $REQUESTFILE $ACKFILE $jobname $stat";
     }
 }
