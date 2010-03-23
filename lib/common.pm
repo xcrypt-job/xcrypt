@@ -57,6 +57,8 @@ sub cmd_executable ($) {
 sub wait_file {
     my ($path, $interval) = @_;
     until ( -e $path ) { Coro::AnyEvent::sleep ($interval); }
+# my $code = qx/test -f $path && echo 1/;
+# until ($code) {;}
 }
 
 ##

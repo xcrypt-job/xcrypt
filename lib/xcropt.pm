@@ -11,6 +11,7 @@ chomp $localhost;
 
 our %options =
   (
+   'remotehost' => undef,
    'localhost' => $localhost,
    'port' => 9999,               # インベントリ通知待ち受けポート．0ならNFS経由
    'scheduler' => $ENV{'XCRJOBSCHED'}, # Default job scheduler
@@ -24,6 +25,7 @@ our %options =
 
 GetOptions
   (\%options,
+   'remotehost=s',
    'localhost=s',
    'port=i',
    'abort_check_interval=i',
