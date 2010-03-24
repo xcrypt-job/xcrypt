@@ -52,12 +52,7 @@ sub release_lockdir {
         print $LOG "$JOBNAME\[$STATUS\]: release_lockdir called, but $_[0] not exists.\n";
     } else {
         until ($succ) {
-	    if (defined $xcropt::options{remotehost}) {
-		my $rhost = $xcropt::options{remotehost};
-		$succ = qx/rsh $rhost test -d $_[0] && rsh $rhost rmdir $_[0]/;
-	    } else {
-		$succ = rmdir ($_[0]);
-	    }
+	    $succ = rmdir ($_[0]);
         }
         print $LOG "$JOBNAME\[$STATUS\]: Successfully released lockdir.\n";
     }
