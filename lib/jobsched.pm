@@ -50,8 +50,17 @@ my $REQUESTFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inve
 my $ACKFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_ack'));
 my $REQUEST_TMPFILE = $REQUESTFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
-rmdir $LOCKDIR;
-unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
+if (defined $xcropt::options{remotehost}) {
+    my $rhost = $xcropt::options{remotehost};
+    qx/rsh $rhost rmdir $LOCKDIR/;
+    qx/rsh $rhost rm -f $REQUEST_TMPFILE/;
+    qx/rsh $rhost rm -f $REQUESTFILE/;
+    qx/rsh $rhost rm -f $ACK_TMPFILE/;
+    qx/rsh $rhost rm -f $ACKFILE/;
+} else {
+    rmdir $LOCKDIR;
+    unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
+}
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread=undef; # used in bin/xcrypt
@@ -185,6 +194,11 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my $qstat_command = $jsconfig::jobsched_config{$Scheduler}{qstat_command};
+    if (defined $xcropt::options{remotehost}) {
+	my $rhost = $xcropt::options{remotehost};
+	$qstat_command = "rsh $rhost $qstat_command";
+    }
+
     unless ( defined $qstat_command ) {
         die "qstat_command is not defined in $Scheduler.pm";
     }
@@ -301,16 +315,24 @@ sub handle_inventory {
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
     if ( !(-d $inventory_path) ) {
-        mkdir $inventory_path or
-        die "Can't make $inventory_path: $!.\n";
+	if (defined $xcropt::options{remotehost}) {
+	    my $rhost = $xcropt::options{remotehost};
+	    qx/rsh $rhost mkdir $inventory_path/;
+	}
+	mkdir $inventory_path or die "Can't make $inventory_path: $!.\n";
     }
+=comment
     foreach (".tmp", ".lock") {
         my $newdir = File::Spec->catfile($inventory_path, $_);
         if ( !(-d $newdir) ) {
-            mkdir $newdir or
-                die "Can't make $newdir: $!.\n";
-        }
+	    if (defined $xcropt::options{remotehost}) {
+		my $rhost = $xcropt::options{remotehost};
+		qx/rsh $rhost mkdir $newdir/;
+	    }
+	    mkdir $newdir or die "Can't make $newdir: $!.\n";
+	}
     }
+=cut
     # 起動
     if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
@@ -328,8 +350,22 @@ sub invoke_watch_by_file {
         while (1) {
             # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
             # common::wait_file ($REQUESTFILE, $interval);
-            until ( -e $REQUESTFILE ) { Time::HiRes::sleep ($interval); }
-            # 
+	    if (defined $xcropt::options{remotehost}) {
+		my $rhost = $xcropt::options{remotehost};
+		my $code = 0;
+		until ($code) {
+		    $code = qx/rsh $rhost test -f $REQUESTFILE && echo 1/;
+		    Time::HiRes::sleep ($interval);
+		}
+	    } else {
+		until ( -e $REQUESTFILE ) { Time::HiRes::sleep ($interval); }
+	    }
+            #
+	    if (defined $xcropt::options{remotehost}) {
+		my $rhost = $xcropt::options{remotehost};
+		my $tmp = 'abet@'. "$rhost" .":". "$REQUESTFILE";
+#		qx/rcp $tmp $REQUESTFILE/;
+	    }
             open (my $CLIENT_IN, '<', $REQUESTFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -351,7 +387,14 @@ sub invoke_watch_by_file {
                 }
             }
             close ($CLIENT_IN);
-            unlink $REQUESTFILE;
+
+            #
+	    if (defined $xcropt::options{remotehost}) {
+		my $rhost = $xcropt::options{remotehost};
+		qx/rsh $rhost rm -f $REQUESTFILE/;
+	    } else {
+		unlink $REQUESTFILE;
+	    }
             ###
             my $CLIENT_OUT = undef;
             until ($CLIENT_OUT) {
@@ -442,13 +485,29 @@ sub invoke_watch_by_socket {
 sub load_inventory {
     my ($jobname) = @_;
     my $invfile = File::Spec->catfile($inventory_path, $jobname);
-    if ( -e $invfile ) {
-        open ( IN, "< $invfile" )
-            or warn "Can't open $invfile: $!\n";
-        while (<IN>) {
-            handle_inventory ($_);
-        }
-        close (IN);
+
+    if (defined $xcropt::options{remotehost}) {
+	my $rhost = $xcropt::options{remotehost};
+	my $code = qx/rsh $rhost test -f $invfile && echo 1/;
+	if ($code) {
+	    my $tmp = 'abet@' . "$rhost" .":". "$invfile";
+	    qx/rcp $tmp $invfile/;
+	    open ( IN, "< $invfile" )
+		or warn "Can't open $invfile: $!\n";
+	    while (<IN>) {
+		handle_inventory ($_);
+	    }
+	    close (IN);
+	}
+    } else {
+	if ( -e $invfile ) {
+	    open ( IN, "< $invfile" )
+		or warn "Can't open $invfile: $!\n";
+	    while (<IN>) {
+		handle_inventory ($_);
+	    }
+	    close (IN);
+	}
     }
 }
 

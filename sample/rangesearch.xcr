@@ -5,9 +5,9 @@ use base qw(core);
     'exe0' => './fib',
     'exe1' => './fib',
     'arg0_0' => '40',
-    'arg0_1' => '> out0',             # i.e., $ ./fib 50 > out
+    'arg0_1' => '> out0',
     'arg1_0' => '41',
-    'arg1_1' => '> out1',             # i.e., $ ./fib 50 > out
+    'arg1_1' => '> out1',
     'linkedfile0' => 'common/fib', # where exe-file exists
     'JS_queue' => 'gh10034',
 #    'JS_queue' => 'S004' # for TOKYO
@@ -26,7 +26,6 @@ use base qw(core);
 #		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0_0@' => '$R0 + 20 + $R2;'
     );
 &submit(@jobs);
-
 &repeat('print "hogehoge\n";');
 $hoge = 'hoge';
 &repeat(sub {print STDOUT "$hoge\n";}, 3);
