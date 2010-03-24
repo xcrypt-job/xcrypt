@@ -52,6 +52,7 @@ sub release_lockdir {
         print $LOG "$JOBNAME\[$STATUS\]: release_lockdir called, but $_[0] not exists.\n";
     } else {
         until ($succ) {
+	    print "foo\n";
 	    $succ = rmdir ($_[0]);
         }
         print $LOG "$JOBNAME\[$STATUS\]: Successfully released lockdir.\n";
