@@ -14,6 +14,7 @@ use jobsched;
 use xcropt;
 use usablekeys;
 use Cwd;
+use common;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
@@ -335,9 +336,20 @@ sub submit {
             ## after()
 	    my $status = &jobsched::get_job_status($self->{'id'});
 	    if ($status eq 'done') {
-		until ((-e "$self->{id}/$self->{JS_stdout}")
-		       && (-e "$self->{id}/$self->{JS_stderr}")) {
-		    Coro::AnyEvent::sleep 0.1;
+		if (defined $xcropt::options{remotehost}) {
+		    my $flag0 = 0;
+		    my $flag1 = 0;
+		    until ($flag0 && $flag1) {
+			Coro::AnyEvent::sleep 0.1;
+			$flag0 = &common::exists_at("$ENV{'XCRYPT'}/sample/$self->{id}/$self->{JS_stdout}", $xcropt::options{remotehost});
+			$flag1 = &common::exists_at("$ENV{'XCRYPT'}/sample/$self->{id}/$self->{JS_stderr}", $xcropt::options{remotehost});
+			print "foo\n";
+		    }
+		} else {
+		    until ((-e "$self->{id}/$self->{JS_stdout}")
+			   && (-e "$self->{id}/$self->{JS_stderr}")) {
+			Coro::AnyEvent::sleep 0.1;
+		    }
 		}
 		$self->EVERY::LAST::after();
 		&jobsched::inventory_write ($self->{id}, 'finished');
