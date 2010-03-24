@@ -53,13 +53,11 @@ sub new {
             File::Path::rmtree ($self->{workdir});
         }
 	if (defined $xcropt::options{remotehost}) {
-	    mkdir $self->{workdir} , 0755;
 	    my $rhost = $xcropt::options{remotehost};
 	    my $dir = $self->{workdir};
 	    qx/rsh $rhost mkdir $dir/;
-	} else {
-	    mkdir $self->{workdir} , 0755;
 	}
+	mkdir $self->{workdir} , 0755;
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             if ($self->{"copieddir$i"}) {
@@ -88,11 +86,11 @@ sub new {
                 my $file1 = $self->{"linkedfile$i"};
                 my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
 		if ( -e $file1 ) {
-		    symlink($file2, $link);
 		    if (defined $xcropt::options{remotehost}) {
 			my $rhost = $xcropt::options{remotehost};
 			qx/rsh $rhost ln -s $file2 $link/;
 		    }
+		    symlink($file2, $link);
 		} else {
 		    warn "Can't link to $file1";
 		}
