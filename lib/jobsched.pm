@@ -231,7 +231,6 @@ sub inventory_write {
 	my $rhost = $xcropt::options{remotehost};
 print "rsh $rhost $cmdline\n";
 	system("rsh $rhost $cmdline");
-	    print "ga\n";
     } else {
 	system ($cmdline);
     }
