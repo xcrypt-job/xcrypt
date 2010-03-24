@@ -33,7 +33,6 @@ my $RETRY_P = 1;
 ##################################################
 sub get_lockdir {
     my ($lockdir, $interval, $interval_max, $retry) = @_;
-=comment
     while (!mkdir($lockdir, 0755)) {
         # no limit if $retry = 0
         if (--$retry == 0) {
@@ -45,7 +44,6 @@ sub get_lockdir {
         Time::HiRes::sleep ($interval);
         if (($interval*=2) > $interval_max) { $interval = $interval_max*(1-rand(0.5)); }
     }
-=cut
     print $LOG "$JOBNAME\[$STATUS\]: Successfully got lockdir.\n";
 }
 sub release_lockdir {
@@ -54,6 +52,7 @@ sub release_lockdir {
         print $LOG "$JOBNAME\[$STATUS\]: release_lockdir called, but $_[0] not exists.\n";
     } else {
         until ($succ) {
+	    qx/foofoo/;
 	    $succ = rmdir ($_[0]);
         }
         print $LOG "$JOBNAME\[$STATUS\]: Successfully released lockdir.\n";
