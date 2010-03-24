@@ -50,7 +50,6 @@ my $REQFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventor
 my $ACKFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_ack'));
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
-=comment
 if (defined $xcropt::options{remotehost}) {
     my $rhost = $xcropt::options{remotehost};
     qx/rsh $rhost test -d $LOCKDIR && rsh $rhost rmdir $LOCKDIR/;
@@ -59,10 +58,9 @@ if (defined $xcropt::options{remotehost}) {
     qx/rsh $rhost rm -f $ACK_TMPFILE/;
     qx/rsh $rhost rm -f $ACKFILE/;
 } else {
-=cut
     rmdir $LOCKDIR;
     unlink $REQ_TMPFILE, $REQFILE, $ACK_TMPFILE, $ACKFILE;
-#}
+}
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread=undef; # used in bin/xcrypt
