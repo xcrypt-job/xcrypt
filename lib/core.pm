@@ -47,6 +47,7 @@ sub new {
     } else {
         # Otherwise, make the job 'active'
         &jobsched::inventory_write ($jobname, "active");
+	    print "ha\n";
         # If the working directory already exists, delete it
         if ( -e $self->{workdir} ) {
             print "Delete directory $self->{workdir}\n";
