@@ -2,7 +2,7 @@ package common;
 
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
-                 any_to_string any_to_string_nl any_to_string_spc);
+                 any_to_string any_to_string_nl any_to_string_spc exists_at);
 
 use strict;
 use Cwd;
@@ -91,4 +91,12 @@ sub any_to_string ($@) {
 sub any_to_string_nl  (@) { any_to_string ("\n", @_); }
 sub any_to_string_spc (@) { any_to_string (" ", @_); }
 
+sub exists_at {
+    my ($file, $rhost) = @_;
+    my $flag = qx/rsh $rhost test -f $file && echo 1;/;
+    chomp($flag);
+    return $flag;
+}
+
 1;
+

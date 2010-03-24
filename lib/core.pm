@@ -89,8 +89,9 @@ sub new {
 		    if (defined $xcropt::options{remotehost}) {
 			my $rhost = $xcropt::options{remotehost};
 			qx/rsh $rhost ln -s $file2 $link/;
+		    } else {
+			symlink($file2, $link);
 		    }
-		    symlink($file2, $link);
 		} else {
 		    warn "Can't link to $file1";
 		}
@@ -228,8 +229,8 @@ sub update_jobscript_file {
     if (defined $xcropt::options{remotehost}) {
 	my $rhost = $xcropt::options{remotehost};
 	qx/rcp $file $rhost:$file/;
+	unlink $file;
     }
-
 }
 
 # Make qsub options and set them to $self->{qsub_options}

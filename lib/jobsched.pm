@@ -46,21 +46,23 @@ if ($inventory_port > 0) {
 }
 # for inventory_write_file
 my $LOCKDIR = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_lock'));
-my $REQUESTFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_req'));
+my $REQFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_req'));
 my $ACKFILE = File::Spec->rel2abs(File::Spec->catfile($inventory_path, 'inventory_ack'));
-my $REQUEST_TMPFILE = $REQUESTFILE . '.tmp';
+my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
+=comment
 if (defined $xcropt::options{remotehost}) {
     my $rhost = $xcropt::options{remotehost};
     qx/rsh $rhost test -d $LOCKDIR && rsh $rhost rmdir $LOCKDIR/;
-    qx/rsh $rhost rm -f $REQUEST_TMPFILE/;
-    qx/rsh $rhost rm -f $REQUESTFILE/;
+    qx/rsh $rhost rm -f $REQ_TMPFILE/;
+    qx/rsh $rhost rm -f $REQFILE/;
     qx/rsh $rhost rm -f $ACK_TMPFILE/;
     qx/rsh $rhost rm -f $ACKFILE/;
 } else {
+=cut
     rmdir $LOCKDIR;
-    unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
-}
+    unlink $REQ_TMPFILE, $REQFILE, $ACK_TMPFILE, $ACKFILE;
+#}
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread=undef; # used in bin/xcrypt
@@ -129,15 +131,20 @@ sub qsub {
     }
     unless ( defined $qsub_command )
     { die "qsub_command is not defined in $sched.pm"; }
-    unless ( -e $scriptfile )
-    { die "Can't find a job script file \"$scriptfile\""; }
+    if (defined $xcropt::options{remotehost}) {
+	my $flag = exists_at($scriptfile, $xcropt::options{remotehost});
+	unless ($flag) {
+	    die "Can't find a job script file \"$scriptfile\"";
+	}
+    } else { unless ( -e $scriptfile ) {
+	die "Can't find a job script file \"$scriptfile\""; }
+    }
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub command
         # print STDERR "$qsub_command $qsub_options $scriptfile\n";
         my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2)
         { print "$cmdline\n"; }
-        print "$cmdline\n";
 
 	my @qsub_output = qx/$cmdline/;
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
@@ -154,12 +161,17 @@ sub qsub {
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
         my $idfile = File::Spec->catfile($wkdir, 'request_id');
-        open (REQUESTID, ">> $idfile");
-        print REQUESTID $req_id;
-        close (REQUESTID);
-        open (REQUESTIDS, ">> $reqids_file");
-        print REQUESTIDS $req_id . ' ' . $wkdir . ' ';
-        close (REQUESTIDS);
+        open (my $requestid, '>>', $idfile);
+        print $requestid "$req_id";
+	if (defined $xcropt::options{remotehost}) {
+	    my $rhost = $xcropt::options{remotehost};
+	    qx/rcp $idfile $rhost:$idfile/;
+	    unlink $idfile;
+	}
+        close ($requestid);
+        open (my $requestids, '>>',  $reqids_file);
+        print $requestids "$req_id" . ' ' . $wkdir . ' ';
+        close ($requestids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
         inventory_write ($jobname, "queued");
@@ -227,9 +239,8 @@ sub inventory_write {
     if ( $xcropt::options{verbose} >= 2 ) {
         print "$cmdline\n";
     }
-    if (defined $xcropt::options{remotehost}) {
+    if (defined $xcropt::options{'remotehost'}) {
 	my $rhost = $xcropt::options{remotehost};
-print "rsh $rhost $cmdline\n";
 	system("rsh $rhost $cmdline");
     } else {
 	system ($cmdline);
@@ -250,7 +261,7 @@ sub inventory_write_cmdline {
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
-        return "$write_command $LOCKDIR $REQUESTFILE $ACKFILE $jobname $stat";
+        return "$write_command $LOCKDIR $REQFILE $ACKFILE $jobname $stat";
     }
 }
 
@@ -327,18 +338,6 @@ sub invoke_watch {
 	}
 	mkdir $inventory_path or die "Can't make $inventory_path: $!.\n";
     }
-=comment
-    foreach (".tmp", ".lock") {
-        my $newdir = File::Spec->catfile($inventory_path, $_);
-        if ( !(-d $newdir) ) {
-	    if (defined $xcropt::options{remotehost}) {
-		my $rhost = $xcropt::options{remotehost};
-		qx/rsh $rhost mkdir $newdir/;
-	    }
-	    mkdir $newdir or die "Can't make $newdir: $!.\n";
-	}
-    }
-=cut
     # 起動
     if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
@@ -354,25 +353,25 @@ sub invoke_watch_by_file {
     $watch_thread = threads->new( sub {
         my $interval = 0.1;
         while (1) {
-            # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
-            # common::wait_file ($REQUESTFILE, $interval);
-	    if (defined $xcropt::options{remotehost}) {
-		my $rhost = $xcropt::options{remotehost};
-		my $code = 0;
-		until ($code) {
-		    $code = qx/rsh $rhost test -f $REQUESTFILE && echo 1/;
+	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
+	    # common::wait_file ($REQFILE, $interval);
+	    if (defined $xcropt::options{'remotehost'}) {
+		my $flag;
+		until ($flag) {
 		    Time::HiRes::sleep ($interval);
+		    $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
 		}
 	    } else {
-		until ( -e $REQUESTFILE ) { Time::HiRes::sleep ($interval); }
+		until ( -e $REQFILE ) { Time::HiRes::sleep ($interval); }
 	    }
-            #
 	    if (defined $xcropt::options{remotehost}) {
-		my $rhost = $xcropt::options{remotehost};
-		my $tmp = 'abet@'. "$rhost" .":". "$REQUESTFILE";
-#		qx/rcp $tmp $REQUESTFILE/;
+		my $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
+		if($flag) {
+		    my $rhost = $xcropt::options{remotehost};
+		    qx/rcp $rhost:$REQFILE $REQFILE/;
+		}
 	    }
-            open (my $CLIENT_IN, '<', $REQUESTFILE) || next;
+            open (my $CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
             # クライアントからのメッセージは
@@ -393,14 +392,6 @@ sub invoke_watch_by_file {
                 }
             }
             close ($CLIENT_IN);
-
-            #
-	    if (defined $xcropt::options{remotehost}) {
-		my $rhost = $xcropt::options{remotehost};
-		qx/rsh $rhost rm -f $REQUESTFILE/;
-	    } else {
-		unlink $REQUESTFILE;
-	    }
             ###
             my $CLIENT_OUT = undef;
             until ($CLIENT_OUT) {
@@ -424,7 +415,19 @@ sub invoke_watch_by_file {
                 # print STDERR "sent :failed\n";
             }
             close ($CLIENT_OUT);
-            rename $ACK_TMPFILE, $ACKFILE;
+
+	    if (defined $xcropt::options{remotehost}) {
+		my $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
+		if($flag) {
+		    my $rhost = $xcropt::options{remotehost};
+		    qx/rsh $rhost rm -f $REQFILE/;
+		    my $tmp = "$rhost" . ":" . "$ACKFILE";
+		    qx/rcp $ACK_TMPFILE $tmp/;
+		    unlink $ACK_TMPFILE;
+		}
+	    }
+	    unlink $REQFILE;
+	    rename $ACK_TMPFILE, $ACKFILE;
         }
         # close (INVWATCH_LOG);
     });
@@ -492,9 +495,11 @@ sub load_inventory {
     my ($jobname) = @_;
     my $invfile = File::Spec->catfile($inventory_path, $jobname);
 
+=comment
     if (defined $xcropt::options{remotehost}) {
 	my $rhost = $xcropt::options{remotehost};
 	my $code = qx/rsh $rhost test -f $invfile && echo 1/;
+	chomp($code);
 	if ($code) {
 	    my $tmp = 'abet@' . "$rhost" .":". "$invfile";
 	    qx/rcp $tmp $invfile/;
@@ -506,6 +511,7 @@ sub load_inventory {
 	    close (IN);
 	}
     } else {
+=cut
 	if ( -e $invfile ) {
 	    open ( IN, "< $invfile" )
 		or warn "Can't open $invfile: $!\n";
@@ -514,7 +520,7 @@ sub load_inventory {
 	    }
 	    close (IN);
 	}
-    }
+#    }
 }
 
 
