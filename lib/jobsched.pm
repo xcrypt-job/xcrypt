@@ -52,7 +52,7 @@ my $REQUEST_TMPFILE = $REQUESTFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
 if (defined $xcropt::options{remotehost}) {
     my $rhost = $xcropt::options{remotehost};
-    qx/rsh $rhost rmdir $LOCKDIR/;
+    qx/rsh $rhost test -d $LOCKDIR && rsh $rhost rmdir $LOCKDIR/;
     qx/rsh $rhost rm -f $REQUEST_TMPFILE/;
     qx/rsh $rhost rm -f $REQUESTFILE/;
     qx/rsh $rhost rm -f $ACK_TMPFILE/;
@@ -105,7 +105,7 @@ sub qsub {
     my $self = shift;
     my $sched = $self->{job_scheduler};
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
-                
+
     # Create JobScript & qsub options
     $self->make_jobscript();
     $self->make_qsub_options();
@@ -113,7 +113,7 @@ sub qsub {
         &{$cfg{modify}} ($self);
     }
     $self->update_jobscript_file();
-    
+
     my $jobname = $self->{id};
     my $wkdir = $self->{workdir};
     my $scriptfile = $self->workdir_member_file('jobscript_file');
@@ -227,7 +227,14 @@ sub inventory_write {
     if ( $xcropt::options{verbose} >= 2 ) {
         print "$cmdline\n";
     }
-    system ($cmdline);
+    if (defined $xcropt::options{remotehost}) {
+	my $rhost = $xcropt::options{remotehost};
+print "rsh $rhost $cmdline\n";
+	system("rsh $rhost $cmdline");
+	    print "ga\n";
+    } else {
+	system ($cmdline);
+    }
     ## Use the following when $watch_thread is a Coro.
     # {
     #     my $pid = common::exec_async ($cmdline);
