@@ -115,7 +115,6 @@ sub qsub {
     $self->update_jobscript_file();
 
     my $jobname = $self->{id};
-    my $wkdir = $self->{workdir};
     my $scriptfile = $self->workdir_member_file('jobscript_file');
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
@@ -157,7 +156,7 @@ sub qsub {
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
-        my $idfile = File::Spec->catfile($wkdir, 'request_id');
+        my $idfile = File::Spec->catfile($self->{workdir}, 'request_id');
         open (my $requestid, '>>', $idfile);
         print $requestid "$req_id";
 	if (defined $xcropt::options{remotehost}) {
@@ -167,7 +166,7 @@ sub qsub {
 	}
         close ($requestid);
         open (my $requestids, '>>',  $reqids_file);
-        print $requestids "$req_id" . ' ' . $wkdir . ' ';
+        print $requestids "$req_id" . ' ' . $self->{workdir} . ' ';
         close ($requestids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"

@@ -340,8 +340,8 @@ sub submit {
 		my $flag1 = 0;
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &common::xcr_e("$ENV{'PWD'}/$self->{id}/$self->{JS_stdout}");
-		    $flag1 = &common::xcr_e("$ENV{'PWD'}/$self->{id}/$self->{JS_stderr}");
+		    $flag0 = &common::xcr_e("$self->{workdir}/$self->{JS_stdout}");
+		    $flag1 = &common::xcr_e("$self->{workdir}/$self->{JS_stderr}");
 		    }
 	    }
 	    $self->EVERY::LAST::after();
