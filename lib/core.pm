@@ -20,16 +20,16 @@ sub new {
     set_member_if_empty ($self, 'JS_stderr', 'stderr');
 
     # Check if the job ID is not empty
-    my $jobname= $self->{id};
+    my $jobname= $self->{'id'};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
     # Absolute path of the working directory
-    $self->{workdir} = File::Spec->rel2abs ($jobname);
+    $self->{'workdir'} = File::Spec->rel2abs ($jobname);
 
     # Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
-    set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
+    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{'scheduler'});
+    set_member_if_empty ($self, 'jobscript_file', $self->{'job_scheduler'}.'.sh');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
@@ -48,16 +48,11 @@ sub new {
         # Otherwise, make the job 'active'
         &jobsched::inventory_write ($jobname, "active");
         # If the working directory already exists, delete it
-        if ( -e $self->{workdir} ) {
+        if ( -e $self->{'workdir'} ) {
             print "Delete directory $self->{workdir}\n";
-            File::Path::rmtree ($self->{workdir});
+            File::Path::rmtree ($self->{'workdir'});
         }
-	if (defined $xcropt::options{remotehost}) {
-	    my $rhost = $xcropt::options{remotehost};
-	    my $dir = $self->{workdir};
-	    qx/rsh $rhost mkdir $dir/;
-	}
-	mkdir $self->{workdir} , 0755;
+	&common::xcr_mkdir($self->{'workdir'});
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             if ($self->{"copieddir$i"}) {
@@ -86,12 +81,7 @@ sub new {
                 my $file1 = $self->{"linkedfile$i"};
                 my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
 		if ( -e $file1 ) {
-		    if (defined $xcropt::options{remotehost}) {
-			my $rhost = $xcropt::options{remotehost};
-			qx/rsh $rhost ln -s $file2 $link/;
-		    } else {
-			symlink($file2, $link);
-		    }
+		    &common::xcr_symlink($file2, $link);
 		} else {
 		    warn "Can't link to $file1";
 		}

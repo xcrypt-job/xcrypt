@@ -124,13 +124,12 @@ sub qsub {
 
     my $qsub_command = $cfg{qsub_command};
     if (defined $xcropt::options{remotehost}) {
-	my $rhost = $xcropt::options{remotehost};
-	$qsub_command = "rsh $rhost $qsub_command";
+	$qsub_command = "rsh $xcropt::options{remotehost} $qsub_command";
     }
     unless ( defined $qsub_command )
     { die "qsub_command is not defined in $sched.pm"; }
     if (defined $xcropt::options{remotehost}) {
-	my $flag = exists_at($scriptfile, $xcropt::options{remotehost});
+	my $flag = &common::xcr_e($scriptfile);
 	unless ($flag) {
 	    die "Can't find a job script file \"$scriptfile\"";
 	}
@@ -237,12 +236,7 @@ sub inventory_write {
     if ( $xcropt::options{verbose} >= 2 ) {
         print "$cmdline\n";
     }
-    if (defined $xcropt::options{'remotehost'}) {
-	my $rhost = $xcropt::options{remotehost};
-	system("rsh $rhost $cmdline");
-    } else {
-	system ($cmdline);
-    }
+    &common::xcr_system("$cmdline");
     ## Use the following when $watch_thread is a Coro.
     # {
     #     my $pid = common::exec_async ($cmdline);
@@ -353,17 +347,14 @@ sub invoke_watch_by_file {
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
-	    if (defined $xcropt::options{'remotehost'}) {
-		my $flag;
-		until ($flag) {
-		    Time::HiRes::sleep ($interval);
-		    $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
-		}
-	    } else {
-		until ( -e $REQFILE ) { Time::HiRes::sleep ($interval); }
+	    my $flag;
+	    until ($flag) {
+		Time::HiRes::sleep ($interval);
+		$flag = &common::xcr_e($REQFILE);
 	    }
+
 	    if (defined $xcropt::options{remotehost}) {
-		my $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
+		my $flag = &common::xcr_e($REQFILE);
 		if($flag) {
 		    my $rhost = $xcropt::options{remotehost};
 		    qx/rcp $rhost:$REQFILE $REQFILE/;
@@ -414,8 +405,8 @@ sub invoke_watch_by_file {
             }
             close ($CLIENT_OUT);
 
-	    if (defined $xcropt::options{remotehost}) {
-		my $flag = exists_at($REQFILE, $xcropt::options{'remotehost'});
+	    if (defined $xcropt::options{'remotehost'}) {
+		my $flag = &common::xcr_e($REQFILE);
 		if($flag) {
 		    my $rhost = $xcropt::options{remotehost};
 		    qx/rsh $rhost rm -f $REQFILE/;
@@ -492,35 +483,15 @@ sub invoke_watch_by_socket {
 sub load_inventory {
     my ($jobname) = @_;
     my $invfile = File::Spec->catfile($inventory_path, $jobname);
-
-=comment
-    if (defined $xcropt::options{remotehost}) {
-	my $rhost = $xcropt::options{remotehost};
-	my $code = qx/rsh $rhost test -f $invfile && echo 1/;
-	chomp($code);
-	if ($code) {
-	    my $tmp = 'abet@' . "$rhost" .":". "$invfile";
-	    qx/rcp $tmp $invfile/;
-	    open ( IN, "< $invfile" )
-		or warn "Can't open $invfile: $!\n";
-	    while (<IN>) {
-		handle_inventory ($_);
-	    }
-	    close (IN);
+    if ( -e $invfile ) {
+	open ( IN, "< $invfile" )
+	    or warn "Can't open $invfile: $!\n";
+	while (<IN>) {
+	    handle_inventory ($_);
 	}
-    } else {
-=cut
-	if ( -e $invfile ) {
-	    open ( IN, "< $invfile" )
-		or warn "Can't open $invfile: $!\n";
-	    while (<IN>) {
-		handle_inventory ($_);
-	    }
-	    close (IN);
-	}
-#    }
+	close (IN);
+    }
 }
-
 
 ##############################
 # ジョブ名→request_id
