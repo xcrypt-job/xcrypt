@@ -37,22 +37,23 @@ sub new {
     my $last_stat = &jobsched::get_job_status ($jobname);
     if ( jobsched::is_signaled_job ($jobname) ) {
         # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-        &jobsched::inventory_write ($jobname, "aborted");
+        &jobsched::inventory_write ($jobname, "aborted", $self->{'workdir'});
         jobsched::delete_signaled_job ($jobname);
     } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
         # Skip if the job is 'done' or 'finished'
         if ( $last_stat eq 'finished' ) {
-            &jobsched::inventory_write ($jobname, "done");
+            &jobsched::inventory_write ($jobname, "done", $self->{'workdir'});
         }
     } else {
-        # Otherwise, make the job 'active'
-        &jobsched::inventory_write ($jobname, "active");
         # If the working directory already exists, delete it
         if ( -e $self->{'workdir'} ) {
             print "Delete directory $self->{workdir}\n";
             File::Path::rmtree ($self->{'workdir'});
         }
 	&common::xcr_mkdir($self->{'workdir'});
+        # Otherwise, make the job 'active'
+        &jobsched::inventory_write ($jobname, "active", $self->{'workdir'});
+#        &jobsched::inventory_write ($jobname, "active");
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             if ($self->{"copieddir$i"}) {
