@@ -309,12 +309,12 @@ sub submit {
         unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
             # xcryptdelされていたら状態をabortedにして処理をとばす
             if (jobsched::is_signaled_job($job->{id})) {
-                &jobsched::inventory_write ($jobname, "aborted");
+                &jobsched::inventory_write ($jobname, "aborted", $job->{'workdir'});
                 jobsched::delete_signaled_job ($jobname);
                 push (@coros, undef);
                 next;
             } else {
-                &jobsched::inventory_write($job->{id}, 'prepared');
+                &jobsched::inventory_write($job->{id}, 'prepared', $job->{'workdir'});
             }
         }
         # ジョブスレッドを立ち上げる
@@ -345,7 +345,8 @@ sub submit {
 		    }
 	    }
 	    $self->EVERY::LAST::after();
-	    &jobsched::inventory_write ($self->{'id'}, 'finished');
+#	    &jobsched::inventory_write ($self->{'id'}, 'finished');
+	    &jobsched::inventory_write ($self->{'id'}, 'finished', $self->{'workdir'});
 	} $job;
         # push (@coros, $job_coro);
         $job->{thread} = $job_coro;

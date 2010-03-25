@@ -119,7 +119,7 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    inventory_write ($jobname, "submitted");
+    inventory_write ($jobname, "submitted", $self->{'workdir'});
 
     my $qsub_command = $cfg{qsub_command};
     if (defined $xcropt::options{remotehost}) {
@@ -170,7 +170,7 @@ sub qsub {
         close ($requestids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-        inventory_write ($jobname, "queued");
+        inventory_write ($jobname, "queued", $self->{'workdir'});
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -230,12 +230,16 @@ sub qstat {
 ##############################
 # Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
-    my ($jobname, $stat) = @_;
+    my ($jobname, $stat, $dir) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat);
     if ( $xcropt::options{verbose} >= 2 ) {
         print "$cmdline\n";
     }
-    &common::xcr_system("$cmdline");
+    if ($dir) {
+	&common::xcr_chdir_system($dir, "$cmdline");
+    } else {
+	&common::xcr_system("$cmdline");
+    }
     ## Use the following when $watch_thread is a Coro.
     # {
     #     my $pid = common::exec_async ($cmdline);
@@ -760,6 +764,7 @@ sub check_and_write_aborted {
         if ( exists $running_jobs{$req_id} ) {
             print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
             inventory_write ($unchecked{$req_id}, "aborted");
+	    # ここだけジョブオブジェクトでなくジョブ名しか持っていないので，ログをジョブディレクトリに作成できない（ローカル実行なら作業ディレクトリ，リモート実行ならホームディレクトリに作成される．）
         }
     }
 }
