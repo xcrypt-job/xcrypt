@@ -2,7 +2,7 @@ package common;
 
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
-                 any_to_string any_to_string_nl any_to_string_spc exists_at);
+                 any_to_string any_to_string_nl any_to_string_spc xcr_e xcr_mkdir xcr_symlink xcr_system);
 
 use strict;
 use Cwd;
@@ -91,11 +91,43 @@ sub any_to_string ($@) {
 sub any_to_string_nl  (@) { any_to_string ("\n", @_); }
 sub any_to_string_spc (@) { any_to_string (" ", @_); }
 
-sub exists_at {
-    my ($file, $rhost) = @_;
-    my $flag = qx/rsh $rhost test -f $file && echo 1;/;
-    chomp($flag);
+sub xcr_e {
+    my ($file) = @_;
+    my $flag = 0;
+    if (defined $xcropt::options{'remotehost'}) {
+	my $rhost = $xcropt::options{'remotehost'};
+	$flag = qx/rsh $rhost test -f $file && echo 1;/;
+	chomp($flag);
+    } else {
+	if (-e $file) { $flag = 1; }
+    }
     return $flag;
+}
+
+sub xcr_mkdir {
+    my ($dir) = @_;
+    if (defined $xcropt::options{'remotehost'}) {
+	qx/rsh $xcropt::options{'remotehost'} mkdir $dir/;
+    }
+    mkdir $dir, 0755;
+}
+
+sub xcr_symlink {
+    my ($file, $link) = @_;
+    if (defined $xcropt::options{'remotehost'}) {
+	qx/rsh $xcropt::options{remotehost} ln -s $file $link/;
+    } else {
+	symlink($file, $link);
+    }
+}
+
+sub xcr_system {
+    my ($cmd) = @_;
+    if (defined $xcropt::options{'remotehost'}) {
+	system("rsh $xcropt::options{remotehost} $cmd");
+    } else {
+	system("$cmd");
+    }
 }
 
 1;

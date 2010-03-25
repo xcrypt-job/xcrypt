@@ -336,24 +336,16 @@ sub submit {
             ## after()
 	    my $status = &jobsched::get_job_status($self->{'id'});
 	    if ($status eq 'done') {
-		if (defined $xcropt::options{remotehost}) {
-		    my $flag0 = 0;
-		    my $flag1 = 0;
-		    until ($flag0 && $flag1) {
-			Coro::AnyEvent::sleep 0.1;
-			$flag0 = &common::exists_at("$ENV{'XCRYPT'}/sample/$self->{id}/$self->{JS_stdout}", $xcropt::options{remotehost});
-			$flag1 = &common::exists_at("$ENV{'XCRYPT'}/sample/$self->{id}/$self->{JS_stderr}", $xcropt::options{remotehost});
-			print "foo\n";
+		my $flag0 = 0;
+		my $flag1 = 0;
+		until ($flag0 && $flag1) {
+		    Coro::AnyEvent::sleep 0.1;
+		    $flag0 = &common::xcr_e("$ENV{'PWD'}/$self->{id}/$self->{JS_stdout}");
+		    $flag1 = &common::xcr_e("$ENV{'PWD'}/$self->{id}/$self->{JS_stderr}");
 		    }
-		} else {
-		    until ((-e "$self->{id}/$self->{JS_stdout}")
-			   && (-e "$self->{id}/$self->{JS_stderr}")) {
-			Coro::AnyEvent::sleep 0.1;
-		    }
-		}
-		$self->EVERY::LAST::after();
-		&jobsched::inventory_write ($self->{id}, 'finished');
 	    }
+	    $self->EVERY::LAST::after();
+	    &jobsched::inventory_write ($self->{'id'}, 'finished');
 	} $job;
         # push (@coros, $job_coro);
         $job->{thread} = $job_coro;
