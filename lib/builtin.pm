@@ -301,20 +301,19 @@ sub MIN {
 sub submit {
     my @array = @_;
     # my @coros = ();
-    foreach my $job (@array) {
-        my $jobname = $job->{id};
-        my $stat = &jobsched::get_job_status($jobname);
+    foreach my $self (@array) {
+        my $stat = &jobsched::get_job_status($self->{'id'});
         # submit対象のジョブ状態を 'prepared' にする．
         # ただし，すでに done, finished, abortedなら無視
         unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
             # xcryptdelされていたら状態をabortedにして処理をとばす
-            if (jobsched::is_signaled_job($job->{id})) {
-                &jobsched::inventory_write ($jobname, "aborted", $job->{'workdir'});
-                jobsched::delete_signaled_job ($jobname);
+            if (jobsched::is_signaled_job($self->{id})) {
+                &jobsched::inventory_write($self->{'id'}, "aborted");
+                jobsched::delete_signaled_job ($self->{'id'});
                 push (@coros, undef);
                 next;
             } else {
-                &jobsched::inventory_write($job->{id}, 'prepared', $job->{'workdir'});
+		&jobsched::inventory_write($self->{'id'}, 'prepared');
             }
         }
         # ジョブスレッドを立ち上げる
@@ -332,7 +331,7 @@ sub submit {
             $self->EVERY::before();
             $self->start();
             ## Waiting for the job "done"
-            &jobsched::wait_job_done($self->{id});
+            &jobsched::wait_job_done($self->{'id'});
             ## after()
 	    my $status = &jobsched::get_job_status($self->{'id'});
 	    if ($status eq 'done') {
@@ -340,16 +339,15 @@ sub submit {
 		my $flag1 = 0;
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &common::xcr_e("$self->{workdir}/$self->{JS_stdout}");
-		    $flag1 = &common::xcr_e("$self->{workdir}/$self->{JS_stderr}");
+		    $flag0 = &common::xcr_e("$self->{id}/$self->{JS_stdout}");
+		    $flag1 = &common::xcr_e("$self->{id}/$self->{JS_stderr}");
 		    }
 	    }
 	    $self->EVERY::LAST::after();
-#	    &jobsched::inventory_write ($self->{'id'}, 'finished');
-	    &jobsched::inventory_write ($self->{'id'}, 'finished', $self->{'workdir'});
-	} $job;
+	    &jobsched::inventory_write ($self->{'id'}, 'finished');
+	} $self;
         # push (@coros, $job_coro);
-        $job->{thread} = $job_coro;
+        $self->{thread} = $job_coro;
     }
     return @array;
 }
@@ -360,7 +358,7 @@ sub sync {
         if ( $xcropt::options{verbose} >= 1 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
-        $_->{thread}->join;
+        $_->{'thread'}->join;
         if ( $xcropt::options{verbose} >= 1 ) {
             print "$_->{id} finished.\n";
         }

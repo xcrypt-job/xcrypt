@@ -56,4 +56,3 @@ close(USER);
 chmod 0755, $xcrplfile or die "Can't chmod $xcrplfile\n";
 my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
 unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
-
