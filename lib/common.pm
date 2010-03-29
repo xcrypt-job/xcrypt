@@ -2,7 +2,7 @@ package common;
 
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
-                 any_to_string any_to_string_nl any_to_string_spc xcr_e xcr_mkdir xcr_symlink xcr_chdir_system xcr_system);
+                 any_to_string any_to_string_nl any_to_string_spc xcr_e xcr_mkdir xcr_symlink xcr_qx);
 
 use strict;
 use Cwd;
@@ -47,7 +47,11 @@ sub get_jobids {
 sub cmd_executable ($) {
     my ($cmd) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    qx/which $cmd0[0]/;
+    if (defined $xcropt::options{'rhost'}) {
+	qx/rsh $xcropt::options{'rhost'} which $cmd0[0]/;
+    } else {
+	qx/which $cmd0[0]/;
+    }
     my $ex_code = $? >> 8;
     # print "$? $ex_code ";
     return ($ex_code==0)? 1 : 0;
@@ -94,9 +98,9 @@ sub any_to_string_spc (@) { any_to_string (" ", @_); }
 sub xcr_e {
     my ($file) = @_;
     my $flag = 0;
-    if (defined $xcropt::options{'remotehost'}) {
-	my $rhost = $xcropt::options{'remotehost'};
-	$flag = qx/rsh $rhost test -f $file && echo 1;/;
+    if (defined $xcropt::options{'rhost'}) {
+	my $fullpath = File::Spec->catfile($xcropt::options{'rwd'}, $file);
+	$flag = qx/rsh $xcropt::options{'rhost'} test -f $fullpath && echo 1;/;
 	chomp($flag);
     } else {
 	if (-e $file) { $flag = 1; }
@@ -106,37 +110,36 @@ sub xcr_e {
 
 sub xcr_mkdir {
     my ($dir) = @_;
-    if (defined $xcropt::options{'remotehost'}) {
-	qx/rsh $xcropt::options{'remotehost'} mkdir $dir/;
+    if (defined $xcropt::options{'rhost'}) {
+	my $rdir = File::Spec->catfile($xcropt::options{'rwd'}, $dir);
+	qx/rsh $xcropt::options{'rhost'} mkdir $rdir/;
     }
     mkdir $dir, 0755;
 }
 
 sub xcr_symlink {
     my ($file, $link) = @_;
-    if (defined $xcropt::options{'remotehost'}) {
-	qx/rsh $xcropt::options{remotehost} ln -s $file $link/;
+    if (defined $xcropt::options{'rhost'}) {
+	qx/rsh $xcropt::options{'rhost'} ln -s $file $link/;
     } else {
 	symlink($file, $link);
     }
 }
 
-sub xcr_chdir_system {
-    my ($dir, $cmd) = @_;
-    if (defined $xcropt::options{'remotehost'}) {
-	my $tmp = "cd $dir" . '; ' . "$cmd";
-	system("rsh $xcropt::options{remotehost} \"$tmp\"");
+sub xcr_qx {
+    my ($cmd, $dir) = @_;
+    my @ret;
+    if (defined $xcropt::options{'rhost'}) {
+	if ($dir) {
+	    my $tmp = "cd " . File::Spec->catfile($xcropt::options{'rwd'}, $dir) . '; ' . "$cmd";
+	    @ret = qx/rsh $xcropt::options{rhost} \"$tmp\"/;
+	}
     } else {
-	system("cd $dir; $cmd");
-    }
-}
-
-sub xcr_system {
-    my ($cmd) = @_;
-    if (defined $xcropt::options{'remotehost'}) {
-	system("rsh $xcropt::options{remotehost} $cmd");
-    } else {
-	system("$cmd");
+	if ($dir) {
+	    @ret = qx/cd $dir; $cmd/;
+	} else {
+	    @ret = qx/$cmd/;
+	}
     }
 }
 

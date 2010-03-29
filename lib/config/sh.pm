@@ -7,7 +7,7 @@ $jsconfig::jobsched_config{"sh"} = {
     qdel_command => "kill -9",
     qstat_command => "ps",
     # standard options
-    jobscript_preamble => ['#/bin/sh'],
+    jobscript_preamble => ['#!/bin/sh'],
     qsub_option_stdout => workdir_file_option('-o ', 'stdout'),
     qsub_option_stderr => workdir_file_option('-e ', 'stderr'),
     extract_req_id_from_qsub_output => sub {
