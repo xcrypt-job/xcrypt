@@ -24,13 +24,13 @@ sub before {
 
 sub after {
     my $self = shift;
-    if ($self->{'successors'}) {
+    if ($self->{successors}) {
 	my @objs;
-	foreach (@{$self->{'successors'}}) {
+	foreach (@{$self->{successors}}) {
 	    no strict 'refs';
 	    my $foo = 'user::' . $_;
 	    my %bar = %$foo;
-	    delete $bar{'successors'};
+	    delete $bar{successors};
 	    my @job = &prepare(%bar);
 	    push(@objs, $job[0]);
 	}

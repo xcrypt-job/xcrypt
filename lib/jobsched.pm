@@ -30,14 +30,14 @@ use jsconfig;
 ##################################################
 
 ### Inventory
-my $inventory_host = $xcropt::options{'localhost'};
-my $inventory_port = $xcropt::options{'port'}; # インベントリ通知待ち受けポート．0ならNFS経由
-my $inventory_path = $xcropt::options{'inventory_path'};
+my $inventory_host = $xcropt::options{localhost};
+my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
+my $inventory_path = $xcropt::options{inventory_path};
 my $reqids_file = File::Spec->catfile($inventory_path, 'request_ids');
 
 my $write_command = undef;
-if (defined $xcropt::options{'rhost'}) {
-    my $rxcrypt = qx/rsh $xcropt::options{'rhost'} 'echo \$XCRYPT'/;
+if (defined $xcropt::options{rhost}) {
+    my $rxcrypt = qx/rsh $xcropt::options{rhost} 'echo \$XCRYPT'/;
     chomp($rxcrypt);
     if ($rxcrypt eq '') { die "Set the environment varialble \$XCRYPT at the remote host\n"; }
     if ($inventory_port > 0) {
@@ -47,9 +47,9 @@ if (defined $xcropt::options{'rhost'}) {
     }
 } else {
     if ($inventory_port > 0) {
-	$write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_sock.pl');
+	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', 'inventory_write_sock.pl');
     } else {
-	$write_command=File::Spec->catfile($ENV{'XCRYPT'}, 'bin', 'inventory_write_file.pl');
+	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', 'inventory_write_file.pl');
     }
 }
 # for inventory_write_file
@@ -58,13 +58,13 @@ my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
-if (defined $xcropt::options{'rhost'}) {
-    my $rhost = $xcropt::options{'rhost'};
-    my $fp_lock   = File::Spec->catfile($xcropt::options{'rwd'}, $LOCKDIR);
-    my $fp_req    = File::Spec->catfile($xcropt::options{'rwd'}, $REQFILE);
-    my $fp_ack    = File::Spec->catfile($xcropt::options{'rwd'}, $ACKFILE);
-    my $fp_reqtmp = File::Spec->catfile($xcropt::options{'rwd'}, $REQ_TMPFILE);
-    my $fp_acktmp = File::Spec->catfile($xcropt::options{'rwd'}, $ACK_TMPFILE);
+if (defined $xcropt::options{rhost}) {
+    my $rhost = $xcropt::options{rhost};
+    my $fp_lock   = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
+    my $fp_req    = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
+    my $fp_ack    = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
+    my $fp_reqtmp = File::Spec->catfile($xcropt::options{rwd}, $REQ_TMPFILE);
+    my $fp_acktmp = File::Spec->catfile($xcropt::options{rwd}, $ACK_TMPFILE);
     qx/rsh $rhost test -d $fp_lock && rsh $rhost rmdir $fp_lock/;
     qx/rsh $rhost rm -f $fp_req/;
     qx/rsh $rhost rm -f $fp_ack/;
@@ -115,29 +115,29 @@ select(STDERR); $|=1; select(STDOUT);
 # after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-    my $sched = $self->{'job_scheduler'};
+    my $sched = $self->{job_scheduler};
     unless (defined $jsconfig::jobsched_config{$sched}) { die "Set the environment varialble \$XCRJOBSCHED\n" ; }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
     # Create JobScript & qsub options
     $self->make_jobscript();
     $self->make_qsub_options();
-    if (defined $cfg{'modify'}) {
-        &{$cfg{'modify'}} ($self);
+    if (defined $cfg{modify}) {
+        &{$cfg{modify}} ($self);
     }
     $self->update_jobscript_file();
 
     my $scriptfile = $self->workdir_member_file('jobscript_file');
-    my $qsub_options = join(' ', @{$self->{'qsub_options'}});
+    my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    &inventory_write($self->{'id'}, 'submitted');
+    &inventory_write($self->{id}, 'submitted');
 
-    my $qsub_command = $cfg{'qsub_command'};
+    my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command )
     { die "qsub_command is not defined in $sched.pm"; }
-    if (defined $xcropt::options{'rhost'}) {
-	my $file = File::Spec->catfile($self->{'id'}, basename($scriptfile));
+    if (defined $xcropt::options{rhost}) {
+	my $file = File::Spec->catfile($self->{id}, basename($scriptfile));
 	my $flag = &common::xcr_e($file);
 	unless ($flag) {
 	    die "Can't find a job script file \"$file\"";
@@ -148,9 +148,9 @@ sub qsub {
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub command
 	my $cmdline;
-	if (defined $xcropt::options{'rhost'}) {
+	if (defined $xcropt::options{rhost}) {
 	    my $base = basename($scriptfile);
-	    my $fullpath = File::Spec->catfile($xcropt::options{'rwd'}, $self->{'id'}, $base);
+	    my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $base);
 	    $cmdline = "$qsub_command $qsub_options $fullpath";
 	} else {
 	    $cmdline = "$qsub_command $qsub_options $scriptfile";
@@ -159,7 +159,7 @@ sub qsub {
         { print "$cmdline\n"; }
 
 #	my @qsub_output = qx/$cmdline/;
-	my @qsub_output = &common::xcr_qx("$cmdline", $self->{'id'});
+	my @qsub_output = &common::xcr_qx("$cmdline", $self->{id});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
         # Get request ID from qsub's output
         my $req_id;
@@ -176,9 +176,9 @@ sub qsub {
         my $idfile = File::Spec->catfile($self->{workdir}, 'request_id');
         open (my $requestid, '>>', $idfile);
         print $requestid "$req_id";
-	if (defined $xcropt::options{'rhost'}) {
-	    my $file = File::Spec->catfile($xcropt::options{'rwd'}, $self->{'id'}, basename($idfile));
-	    my $rhost = $xcropt::options{'rhost'};
+	if (defined $xcropt::options{rhost}) {
+	    my $file = File::Spec->catfile($xcropt::options{rwd}, $self->{id}, basename($idfile));
+	    my $rhost = $xcropt::options{rhost};
 	    qx/rcp $idfile $rhost:$file/;
 	    unlink $idfile;
 	}
@@ -188,7 +188,7 @@ sub qsub {
         close ($requestids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-	&inventory_write($self->{'id'}, "queued");
+	&inventory_write($self->{id}, "queued");
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -199,9 +199,9 @@ sub qsub {
 sub qdel {
     my ($jobname) = @_;
     # qdelコマンドをconfigから獲得
-    my $qdel_command = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qdel_command};
+    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
     unless ( defined $qdel_command ) {
-        die "qdel_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
+        die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
     }
     # jobname -> request id
     my $req_id = get_job_request_id ($jobname);
@@ -219,20 +219,20 @@ sub qdel {
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
-    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{'scheduler'}}{qstat_command};
-    if (defined $xcropt::options{'rhost'}) {
-	my $rhost = $xcropt::options{'rhost'};
+    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
+    if (defined $xcropt::options{rhost}) {
+	my $rhost = $xcropt::options{rhost};
 	$qstat_command = "rsh $rhost $qstat_command";
     }
 
     unless ( defined $qstat_command ) {
-        die "qstat_command is not defined in $xcropt::options{'scheduler'}.pm";
+        die "qstat_command is not defined in $xcropt::options{scheduler}.pm";
     }
-    my $qstat_extractor = $jsconfig::jobsched_config{$xcropt::options{'scheduler'}}{extract_req_ids_from_qstat_output};
+    my $qstat_extractor = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{extract_req_ids_from_qstat_output};
     unless ( defined $qstat_extractor ) {
-        die "extract_req_ids_from_qstat_output is not defined in $xcropt::options{'scheduler'}.pm";
+        die "extract_req_ids_from_qstat_output is not defined in $xcropt::options{scheduler}.pm";
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-        die "Error in $xcropt::options{'scheduler'}.pm: extract_req_ids_from_qstat_output must be a function.";
+        die "Error in $xcropt::options{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
     }
     my $command_string = any_to_string_spc ($qstat_command);
     unless (common::cmd_executable ($command_string)) {
@@ -270,10 +270,10 @@ sub inventory_write_cmdline {
 	print "$write_command $inventory_host $inventory_port $jobname $stat\n";
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
-	if (defined $xcropt::options{'rhost'}) {
-	    my $dir = File::Spec->catfile($xcropt::options{'rwd'}, $LOCKDIR);
-	    my $req = File::Spec->catfile($xcropt::options{'rwd'}, $REQFILE);
-	    my $ack = File::Spec->catfile($xcropt::options{'rwd'}, $ACKFILE);
+	if (defined $xcropt::options{rhost}) {
+	    my $dir = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
+	    my $req = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
+	    my $ack = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
 	    return "$write_command $dir $req $ack $jobname $stat";
 	} else {
 	    my $dir = File::Spec->catfile(Cwd::getcwd(), $LOCKDIR);
@@ -376,11 +376,11 @@ sub invoke_watch_by_file {
 		$flag = &common::xcr_e($REQFILE);
 	    }
 
-	    if (defined $xcropt::options{'rhost'}) {
+	    if (defined $xcropt::options{rhost}) {
 		my $flag = &common::xcr_e($REQFILE);
 		if($flag) {
-		    my $rhost = $xcropt::options{'rhost'};
-		    my $fullpath = File::Spec->catfile($xcropt::options{'rwd'},  $REQFILE);
+		    my $rhost = $xcropt::options{rhost};
+		    my $fullpath = File::Spec->catfile($xcropt::options{rwd},  $REQFILE);
 		    qx/rcp $rhost:$fullpath $REQFILE/;
 		}
 	    }
@@ -429,13 +429,13 @@ sub invoke_watch_by_file {
             }
             close ($CLIENT_OUT);
 
-	    if (defined $xcropt::options{'rhost'}) {
+	    if (defined $xcropt::options{rhost}) {
 		my $flag = &common::xcr_e($REQFILE);
 		if($flag) {
-		    my $rhost = $xcropt::options{'rhost'};
-		    my $req = File::Spec->catfile($xcropt::options{'rwd'}, $REQFILE);
+		    my $rhost = $xcropt::options{rhost};
+		    my $req = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
 		    qx/rsh $rhost rm -f $req/;
-		    my $ack = File::Spec->catfile($xcropt::options{'rwd'}, $ACKFILE);
+		    my $ack = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
 		    my $tmp = "$rhost" . ":" . "$ack";
 		    qx/rcp $ACK_TMPFILE $tmp/;
 		    unlink $ACK_TMPFILE;

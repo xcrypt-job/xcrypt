@@ -34,3 +34,5 @@ sub boolean_option {
         return $self->{$mb_name} ? ($opt_string) : ();
     }
 }
+
+1;

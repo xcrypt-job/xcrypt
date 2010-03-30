@@ -47,8 +47,8 @@ sub get_jobids {
 sub cmd_executable ($) {
     my ($cmd) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if (defined $xcropt::options{'rhost'}) {
-	qx/rsh $xcropt::options{'rhost'} which $cmd0[0]/;
+    if (defined $xcropt::options{rhost}) {
+	qx/rsh $xcropt::options{rhost} which $cmd0[0]/;
     } else {
 	qx/which $cmd0[0]/;
     }
@@ -98,9 +98,9 @@ sub any_to_string_spc (@) { any_to_string (" ", @_); }
 sub xcr_e {
     my ($file) = @_;
     my $flag = 0;
-    if (defined $xcropt::options{'rhost'}) {
-	my $fullpath = File::Spec->catfile($xcropt::options{'rwd'}, $file);
-	$flag = qx/rsh $xcropt::options{'rhost'} test -f $fullpath && echo 1;/;
+    if (defined $xcropt::options{rhost}) {
+	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+	$flag = qx/rsh $xcropt::options{rhost} test -f $fullpath && echo 1;/;
 	chomp($flag);
     } else {
 	if (-e $file) { $flag = 1; }
@@ -110,17 +110,17 @@ sub xcr_e {
 
 sub xcr_mkdir {
     my ($dir) = @_;
-    if (defined $xcropt::options{'rhost'}) {
-	my $rdir = File::Spec->catfile($xcropt::options{'rwd'}, $dir);
-	qx/rsh $xcropt::options{'rhost'} mkdir $rdir/;
+    if (defined $xcropt::options{rhost}) {
+	my $rdir = File::Spec->catfile($xcropt::options{rwd}, $dir);
+	qx/rsh $xcropt::options{rhost} mkdir $rdir/;
     }
     mkdir $dir, 0755;
 }
 
 sub xcr_symlink {
     my ($file, $link) = @_;
-    if (defined $xcropt::options{'rhost'}) {
-	qx/rsh $xcropt::options{'rhost'} ln -s $file $link/;
+    if (defined $xcropt::options{rhost}) {
+	qx/rsh $xcropt::options{rhost} ln -s $file $link/;
     } else {
 	symlink($file, $link);
     }
@@ -129,9 +129,9 @@ sub xcr_symlink {
 sub xcr_qx {
     my ($cmd, $dir) = @_;
     my @ret;
-    if (defined $xcropt::options{'rhost'}) {
+    if (defined $xcropt::options{rhost}) {
 	if ($dir) {
-	    my $tmp = "cd " . File::Spec->catfile($xcropt::options{'rwd'}, $dir) . '; ' . "$cmd";
+	    my $tmp = "cd " . File::Spec->catfile($xcropt::options{rwd}, $dir) . '; ' . "$cmd";
 	    @ret = qx/rsh $xcropt::options{rhost} \"$tmp\"/;
 	}
     } else {

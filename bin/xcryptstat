@@ -14,19 +14,19 @@ foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
     }
 }
 
-my $qstat_command = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{qstat_command};
+my $qstat_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qstat_command};
 unless ( defined $qstat_command ) {
-    die "qstat_command is not defined in $ENV{'XCRJOBSCHED'}.pm";
+    die "qstat_command is not defined in $ENV{XCRJOBSCHED}.pm";
 }
 unless (&common::cmd_executable ($qstat_command)) {
     die "$qstat_command not executable";
 }
 
-my $qstat_extractor = $jsconfig::jobsched_config{$ENV{'XCRJOBSCHED'}}{extract_req_ids_from_qstat_output};
+my $qstat_extractor = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{extract_req_ids_from_qstat_output};
 unless ( defined $qstat_extractor ) {
-    die "extract_req_ids_from_qstat_output is not defined in $ENV{'XCRJOBSCHED'}.pm";
+    die "extract_req_ids_from_qstat_output is not defined in $ENV{XCRJOBSCHED}.pm";
 } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-    die "Error in $ENV{'XCRJOBSCHED'}.pm: extract_req_ids_from_qstat_output must be a function.";
+    die "Error in $ENV{XCRJOBSCHED}.pm: extract_req_ids_from_qstat_output must be a function.";
 }
 
 my $current_directory=Cwd::getcwd();

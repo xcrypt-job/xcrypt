@@ -15,7 +15,7 @@ our %bulk = ();
 sub initialize {
     if ( $_[0] =~ /^CODE\(/ ) {
         ### user function bulk ###
-        $bulk{'user_bulk'} = $_[0];
+        $bulk{user_bulk} = $_[0];
     } else {
         ### designated unit bulk ###
         %bulk = @_;
@@ -40,9 +40,9 @@ sub bulk {
     if ( %bulk == () ) {
         ### All jobs bulk ###
         my %frame            = %{$jobs[0]};
-        $frame{'id'}         = "$id";
-        $frame{'exe'}        = '';
-        $frame{'bulkedjobs'} = \@jobs;
+        $frame{id}         = "$id";
+        $frame{exe}        = '';
+        $frame{bulkedjobs} = \@jobs;
         my $bulk_job = user->new(\%frame);
         return ($bulk_job);
     } elsif ( exists $bulk{user_bulk} ) {
@@ -78,10 +78,10 @@ sub bulk {
             } else {
                 # register bulk job
                 $bulk_cnt++;
-                $frame{'id'}         = "${id}_${bulk_cnt}";
-                $frame{'exe'}        = '';
+                $frame{id}         = "${id}_${bulk_cnt}";
+                $frame{exe}        = '';
                 my @bulk_job_tmp     = @bulk_job;
-                $frame{'bulkedjobs'} = \@bulk_job_tmp;
+                $frame{bulkedjobs} = \@bulk_job_tmp;
                 my %frame_tmp        = %frame;
                 push (@bulk_jobs, (user->new(\%frame_tmp)));
                 # initial setting
@@ -95,10 +95,10 @@ sub bulk {
             if ( ((exists $bulk{max_num}) and $bulk{max_num} <= $job_cnt) or $i >= $jobs_max ) {
                 # register bulk job
                 $bulk_cnt++;
-                $frame{'id'}         = "${id}_${bulk_cnt}";
-                $frame{'exe'}        = '';
+                $frame{id}         = "${id}_${bulk_cnt}";
+                $frame{exe}        = '';
                 my @bulk_job_tmp     = @bulk_job;
-                $frame{'bulkedjobs'} = \@bulk_job_tmp;
+                $frame{bulkedjobs} = \@bulk_job_tmp;
                 my %frame_tmp        = %frame;
                 push (@bulk_jobs, (user->new(\%frame_tmp)));
                 # initial setting
@@ -145,13 +145,13 @@ sub qsub {
     unlink $REQUEST_TMPFILE, $REQUESTFILE, $ACK_TMPFILE, $ACKFILE;
     # print job script file
     $self = &jobsched::print_job_scriptfile ($self);
-    foreach my $subself (@{$self->{'bulkedjobs'}}) {
-        &jobsched::inventory_write($subself->{'id'}, 'prepared');
+    foreach my $subself (@{$self->{bulkedjobs}}) {
+        &jobsched::inventory_write($subself->{id}, 'prepared');
         &jobsched::print_job_scriptfile ($subself);
     }
     # Set job's status "submitted"
     &jobsched::inventory_write ($self->{id}, "submitted");
-    foreach my $subself (@{$self->{'bulkedjobs'}}) {
+    foreach my $subself (@{$self->{bulkedjobs}}) {
         &jobsched::inventory_write ($subself->{id}, "submitted");
     }
     # qsub job script file
