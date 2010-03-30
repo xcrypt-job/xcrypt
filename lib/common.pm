@@ -2,7 +2,8 @@ package common;
 
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
-                 any_to_string any_to_string_nl any_to_string_spc xcr_e xcr_mkdir xcr_symlink xcr_qx);
+                 any_to_string any_to_string_nl any_to_string_spc write_string_array
+                 xcr_e xcr_mkdir xcr_symlink xcr_qx);
 
 use strict;
 use Cwd;
@@ -94,7 +95,17 @@ sub any_to_string ($@) {
 }
 sub any_to_string_nl  (@) { any_to_string ("\n", @_); }
 sub any_to_string_spc (@) { any_to_string (" ", @_); }
+##
+sub write_string_array {
+    my $file = shift;
+    open (my $out, '>', $file);
+    foreach (@_) {
+        print $out "$_\n";
+    }
+    close ($out);
+}
 
+##
 sub xcr_e {
     my ($file) = @_;
     my $flag = 0;

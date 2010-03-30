@@ -7,7 +7,7 @@ use base qw (core);
              'arg0_0' => "input",
              'arg0_1' => "output",
              'copiedfile0' => 'a.out',
-             'copiedfile1@' => '"input$R0"',
+             'copiedfile1@' => '"input"',
              'JS_queue' => 'ghxxxxx',  # modify for your system
              'JS_group' => 'ghxxxxx',  # modify for your system
              );
