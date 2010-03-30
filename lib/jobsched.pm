@@ -66,10 +66,7 @@ if (defined $xcropt::options{rhost}) {
     my $fp_reqtmp = File::Spec->catfile($xcropt::options{rwd}, $REQ_TMPFILE);
     my $fp_acktmp = File::Spec->catfile($xcropt::options{rwd}, $ACK_TMPFILE);
     qx/rsh $rhost test -d $fp_lock && rsh $rhost rmdir $fp_lock/;
-    qx/rsh $rhost rm -f $fp_req/;
-    qx/rsh $rhost rm -f $fp_ack/;
-    qx/rsh $rhost rm -f $fp_reqtmp/;
-    qx/rsh $rhost rm -f $fp_acktmp/;
+    qx/rsh $rhost rm -f $fp_req; rsh $rhost rm -f $fp_ack; rsh $rhost rm -f $fp_reqtmp; rsh $rhost rm -f $fp_acktmp/;
 } else {
     rmdir $LOCKDIR;
     unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
@@ -145,7 +142,6 @@ sub qsub {
     } else { unless ( -e $scriptfile ) {
 	die "Can't find a job script file \"$scriptfile\""; }
     }
-    print $qsub_command, "\n";
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub command
 	my $cmdline;
@@ -268,7 +264,6 @@ sub inventory_write_cmdline {
     my ($jobname, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
     if ( $inventory_port > 0 ) {
-	print "$write_command $inventory_host $inventory_port $jobname $stat\n";
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
 	if (defined $xcropt::options{rhost}) {
