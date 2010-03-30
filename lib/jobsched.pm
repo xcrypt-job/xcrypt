@@ -267,6 +267,7 @@ sub inventory_write_cmdline {
     my ($jobname, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
     if ( $inventory_port > 0 ) {
+	print "$write_command $inventory_host $inventory_port $jobname $stat\n";
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
 	if (defined $xcropt::options{'rhost'}) {
