@@ -145,6 +145,7 @@ sub qsub {
     } else { unless ( -e $scriptfile ) {
 	die "Can't find a job script file \"$scriptfile\""; }
     }
+    print $qsub_command, "\n";
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub command
 	my $cmdline;
