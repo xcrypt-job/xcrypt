@@ -127,6 +127,16 @@ sub workdir_file {
 #    }
 }
 
+sub workdir_file_tmp {
+    my $self = shift;
+    my $basename = shift;
+    if (defined $xcropt::options{rhost}) {
+	return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
+    } else {
+	return File::Spec->catfile($self->{workdir}, $basename);
+    }
+}
+
 sub rworkdir_file {
     my $self = shift;
     my $basename = shift;
