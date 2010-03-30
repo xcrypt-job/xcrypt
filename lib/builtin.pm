@@ -199,7 +199,7 @@ sub generate {
         }
     }
     my @ranges = &rm_tailnis(@_);
-    $job{'id'} = join($user::separator, ($job{'id'}, @ranges));
+    $job{id} = join($user::separator, ($job{id}, @ranges));
     &addusercustomizablecoremembers(%job);
     foreach (@usablekeys::allkeys) {
         my $members = "$_" . $user::expandingchar;
@@ -302,18 +302,18 @@ sub submit {
     my @array = @_;
     # my @coros = ();
     foreach my $self (@array) {
-        my $stat = &jobsched::get_job_status($self->{'id'});
+        my $stat = &jobsched::get_job_status($self->{id});
         # submit対象のジョブ状態を 'prepared' にする．
         # ただし，すでに done, finished, abortedなら無視
         unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
             # xcryptdelされていたら状態をabortedにして処理をとばす
             if (jobsched::is_signaled_job($self->{id})) {
-                &jobsched::inventory_write($self->{'id'}, "aborted");
-                jobsched::delete_signaled_job ($self->{'id'});
+                &jobsched::inventory_write($self->{id}, "aborted");
+                jobsched::delete_signaled_job ($self->{id});
                 push (@coros, undef);
                 next;
             } else {
-		&jobsched::inventory_write($self->{'id'}, 'prepared');
+		&jobsched::inventory_write($self->{id}, 'prepared');
             }
         }
         # ジョブスレッドを立ち上げる
@@ -331,9 +331,9 @@ sub submit {
             $self->EVERY::before();
             $self->start();
             ## Waiting for the job "done"
-            &jobsched::wait_job_done($self->{'id'});
+            &jobsched::wait_job_done($self->{id});
             ## after()
-	    my $status = &jobsched::get_job_status($self->{'id'});
+	    my $status = &jobsched::get_job_status($self->{id});
 	    if ($status eq 'done') {
 		my $flag0 = 0;
 		my $flag1 = 0;
@@ -344,7 +344,7 @@ sub submit {
 		    }
 	    }
 	    $self->EVERY::LAST::after();
-	    &jobsched::inventory_write ($self->{'id'}, 'finished');
+	    &jobsched::inventory_write ($self->{id}, 'finished');
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
@@ -358,7 +358,7 @@ sub sync {
         if ( $xcropt::options{verbose} >= 1 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
-        $_->{'thread'}->join;
+        $_->{thread}->join;
         if ( $xcropt::options{verbose} >= 1 ) {
             print "$_->{id} finished.\n";
         }
@@ -395,8 +395,8 @@ sub prepare {
     my %job = @_;
 
     # aliases
-    if ($job{'exe'}) {
-	$job{'exe0'} = $job{'exe'};
+    if ($job{exe}) {
+	$job{exe0} = $job{exe};
     }
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i"}) {

@@ -19,7 +19,7 @@ sub start {
 
 sub before {
     my $self = shift;
-    if ($self->{'dry'} == 1) {
+    if ($self->{dry} == 1) {
 	for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             $self->{"exe$i"} = '';
             for ( my $j = 0; $j <= $user::max_arg; $j++ ) {

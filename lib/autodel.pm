@@ -5,7 +5,7 @@ sub del {
     my $after = shift;
     my @jobs = @_;
     foreach my $l (@jobs) {
-	my $lid = $l->{'id'};
+	my $lid = $l->{id};
 	if (&{$cond}($l)) {
 	    if ($lid) {
 		system("xcryptdel $lid");

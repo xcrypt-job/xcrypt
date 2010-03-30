@@ -15,7 +15,7 @@ our %options =
      'rwd' => undef,
      'localhost' => $localhost,
      'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
-#     'scheduler' => $ENV{'XCRJOBSCHED'}, # Default job scheduler
+#     'scheduler' => $ENV{XCRJOBSCHED}, # Default job scheduler
      'scheduler' => undef, # 実行時に与えられなければデフォルト値を設定するという実装に変更した
      'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
 #     'inventory_path' => File::Spec->catfile(Cwd::getcwd(), 'inv_watch'),
@@ -40,13 +40,13 @@ GetOptions
      # define other command-line options...
     );
 
-unless (defined $xcropt::options{'scheduler'}) {
-    if (defined $xcropt::options{'rhost'}) {
-	my $rxcrjsch = qx/rsh $xcropt::options{'rhost'} 'echo \$XCRJOBSCHED'/;
+unless (defined $xcropt::options{scheduler}) {
+    if (defined $xcropt::options{rhost}) {
+	my $rxcrjsch = qx/rsh $xcropt::options{rhost} 'echo \$XCRJOBSCHED'/;
 	chomp($rxcrjsch);
-	$xcropt::options{'scheduler'} = $rxcrjsch;
+	$xcropt::options{scheduler} = $rxcrjsch;
     } else {
-	$xcropt::options{'scheduler'} = $ENV{'XCRJOBSCHED'};
+	$xcropt::options{scheduler} = $ENV{XCRJOBSCHED};
     }
 }
 

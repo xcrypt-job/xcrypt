@@ -20,16 +20,16 @@ sub new {
     set_member_if_empty ($self, 'JS_stderr', 'stderr');
 
     # Check if the job ID is not empty
-    my $jobname= $self->{'id'};
+    my $jobname= $self->{id};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
     # Absolute path of the working directory
-    $self->{'workdir'} = File::Spec->rel2abs($jobname);
+    $self->{workdir} = File::Spec->rel2abs($jobname);
 
     # Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{'scheduler'});
-    set_member_if_empty ($self, 'jobscript_file', $self->{'job_scheduler'}.'.sh');
+    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
+    set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
@@ -46,15 +46,15 @@ sub new {
         }
     } else {
         # If the working directory already exists, delete it
-        if ( -e $self->{'workdir'} ) {
+        if ( -e $self->{workdir} ) {
             print "Delete directory $self->{workdir}\n";
-            File::Path::rmtree ($self->{'workdir'});
+            File::Path::rmtree ($self->{workdir});
         }
-	if (defined $xcropt::options{'rhost'}) {
-	    my $ex = &common::xcr_e($self->{'id'});
+	if (defined $xcropt::options{rhost}) {
+	    my $ex = &common::xcr_e($self->{id});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
-		File::Path::rmtree($self->{'id'});
+		File::Path::rmtree($self->{id});
 	    }
 	}
 	&common::xcr_mkdir($jobname);
@@ -85,11 +85,11 @@ sub new {
             if ($self->{"linkedfile$i"}) {
                 my $prelink = File::Spec->catfile(basename($self->{"linkedfile$i"}));
 		my $link;
-		if (defined $xcropt::options{'rhost'}) {
-		    $link = File::Spec->catfile($xcropt::options{'rwd'}, $jobname, $prelink);
+		if (defined $xcropt::options{rhost}) {
+		    $link = File::Spec->catfile($xcropt::options{rwd}, $jobname, $prelink);
 
 		} else {
-		    $link = File::Spec->catfile($self->{'workdir'}, $prelink);
+		    $link = File::Spec->catfile($self->{workdir}, $prelink);
 		}
                 my $file1 = $self->{"linkedfile$i"};
                 my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
@@ -107,12 +107,12 @@ sub new {
 sub start {
     my $self = shift;
     # Skip if the job is done or finished in the previous execution
-    my $stat = &jobsched::get_job_status($self->{'id'});
+    my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
         # print "$self->{id}: calling qsub.\n";
-        $self->{'request_id'} = &jobsched::qsub($self);
+        $self->{request_id} = &jobsched::qsub($self);
         # print "$self->{id}: qsub finished.\n";
     }
 }
@@ -120,17 +120,17 @@ sub start {
 sub workdir_file {
     my $self = shift;
     my $basename = shift;
-#    if (defined $xcropt::options{'rhost'}) {
-#	return File::Spec->catfile($xcropt::options{'rwd'}, $self->{'id'}, $basename);
+#    if (defined $xcropt::options{rhost}) {
+#	return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
 #    } else {
-	return File::Spec->catfile($self->{'workdir'}, $basename);
+	return File::Spec->catfile($self->{workdir}, $basename);
 #    }
 }
 
 sub rworkdir_file {
     my $self = shift;
     my $basename = shift;
-    return File::Spec->catfile($xcropt::options{'rwd'}, $self->{'id'}, $basename);
+    return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
 }
 
 sub workdir_member_file {
@@ -239,10 +239,10 @@ sub update_jobscript_file {
         print $script_out "$_\n";
     }
     close ($script_out);
-    if (defined $xcropt::options{'rhost'}) {
-	my $rhost = $xcropt::options{'rhost'};
+    if (defined $xcropt::options{rhost}) {
+	my $rhost = $xcropt::options{rhost};
 	my $base = basename($file);
-	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{'rwd'}, $self->{'id'}, $base);
+	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $base);
 	qx/rcp $file $target/;
 	unlink $file;
     }
@@ -252,7 +252,7 @@ sub update_jobscript_file {
 sub make_qsub_options {
     my $self = shift;
     my @contents = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{'job_scheduler'}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{job_scheduler}}};
     foreach my $k (keys %cfg) {
         if ( $k =~ /^qsub_option_(.*)/ ) {
             my $v = $cfg{$k};
