@@ -10,6 +10,7 @@ use base qw (core);
              'copiedfile1@' => '"input/num40"',
              'JS_queue' => 'ghxxxxx',  # modify for your system
              'JS_group' => 'ghxxxxx',  # modify for your system
+             'before_in_job' => 'print $self->{JS_queue}. "\n";',
              'after_in_job' => 'print $self->{id}. "\n";',
              );
 @job = prepare (%template);

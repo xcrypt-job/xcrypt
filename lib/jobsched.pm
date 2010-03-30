@@ -125,6 +125,7 @@ sub qsub {
     if (defined $cfg{modify}) {
         &{$cfg{modify}} ($self);
     }
+    $self->make_before_in_job_script();
     $self->make_after_in_job_script();
     $self->update_all_script_files();
 
