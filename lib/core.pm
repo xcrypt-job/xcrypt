@@ -31,6 +31,7 @@ sub new {
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
     set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
+    set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
@@ -224,6 +225,8 @@ sub make_jobscript_body {
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
+    # Do before_in_job
+    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
     foreach my $j (0..$user::max_exe_etc) {
 	if ($self->{"exe$j"}) {
@@ -238,12 +241,19 @@ sub make_jobscript_body {
 	}
     }
     # Do after_in_job
-    if ( $self->{after_in_job} ) {
-        push (@body, "perl $self->{after_in_job_file}");
-    }
+    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
     $self->{jobscript_body} = \@body;
+}
+
+# Create a perl script file for before_in_job
+sub make_before_in_job_script {
+    my $self = shift;
+    my @body = ();
+    push (@body, Data::Dumper->Dump([$self],['self']));
+    push (@body, $self->{before_in_job});
+    $self->{before_in_job_script} = \@body;
 }
 
 # Create a perl script file for after_in_job
@@ -278,6 +288,12 @@ sub update_jobscript_file {
                                @{$self->{jobscript_header}},@{$self->{jobscript_body}});
 }
 
+# Make/Update a perl script file for before_in_job
+sub update_before_in_job_file {
+    my $self = shift;
+    $self->update_script_file ($self->{before_in_job_file}, @{$self->{before_in_job_script}});
+}
+
 # Make/Update a perl script file for after_in_job
 sub update_after_in_job_file {
     my $self = shift;
@@ -288,6 +304,7 @@ sub update_after_in_job_file {
 sub update_all_script_files {
     my $self = shift;
     $self->update_jobscript_file();
+    $self->update_before_in_job_file();
     $self->update_after_in_job_file();
 }
 
