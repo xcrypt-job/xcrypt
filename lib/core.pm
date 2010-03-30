@@ -5,6 +5,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 use File::Path;
 use File::Basename;
+use Data::Dumper;
 
 use jobsched;
 use jsconfig;
@@ -30,6 +31,8 @@ sub new {
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
     set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
+    set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
+    set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
@@ -222,6 +225,8 @@ sub make_jobscript_body {
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
+    # Do before_in_job
+    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
     foreach my $j (0..$user::max_exe_etc) {
 	if ($self->{"exe$j"}) {
@@ -235,27 +240,72 @@ sub make_jobscript_body {
 	    push (@body, $cmd);
 	}
     }
+    # Do after_in_job
+    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
     $self->{jobscript_body} = \@body;
 }
 
-# Make a jobscript file of $self->{jobscript_header} and $self->{jobscript_body}
-sub update_jobscript_file {
+# Create a perl script file for before_in_job
+sub make_before_in_job_script {
     my $self = shift;
-    my $file = $self->workdir_member_file('jobscript_file');
-    open (my $script_out, '>', $file);
-    foreach (@{$self->{jobscript_header}},@{$self->{jobscript_body}}) {
-        print $script_out "$_\n";
-    }
-    close ($script_out);
+    my @body = ();
+    push (@body, Data::Dumper->Dump([$self],['self']));
+    push (@body, $self->{before_in_job});
+    $self->{before_in_job_script} = \@body;
+}
+
+# Create a perl script file for after_in_job
+sub make_after_in_job_script {
+    my $self = shift;
+    my @body = ();
+    push (@body, Data::Dumper->Dump([$self],['self']));
+    push (@body, $self->{after_in_job});
+    $self->{after_in_job_script} = \@body;
+}
+
+# Make/Update script file
+# args: $self, $scriptfile_basename, @string_array (script contents)
+sub update_script_file {
+    my $self = shift;
+    my $file_base = shift;
+    my $file = $self->workdir_file($file_base);
+    write_string_array ($file, @_);
     if (defined $xcropt::options{rhost}) {
 	my $rhost = $xcropt::options{rhost};
 	my $base = basename($file);
 	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $base);
 	qx/rcp $file $target/;
 	unlink $file;
-    }
+    }    
+}
+
+# Make/Update a jobscript file of $self->{jobscript_header} and $self->{jobscript_body}
+sub update_jobscript_file {
+    my $self = shift;
+    $self->update_script_file ($self->{jobscript_file},
+                               @{$self->{jobscript_header}},@{$self->{jobscript_body}});
+}
+
+# Make/Update a perl script file for before_in_job
+sub update_before_in_job_file {
+    my $self = shift;
+    $self->update_script_file ($self->{before_in_job_file}, @{$self->{before_in_job_script}});
+}
+
+# Make/Update a perl script file for after_in_job
+sub update_after_in_job_file {
+    my $self = shift;
+    $self->update_script_file ($self->{after_in_job_file}, @{$self->{after_in_job_script}});
+}
+
+# Make/Update all job-related script files
+sub update_all_script_files {
+    my $self = shift;
+    $self->update_jobscript_file();
+    $self->update_before_in_job_file();
+    $self->update_after_in_job_file();
 }
 
 # Make qsub options and set them to $self->{qsub_options}
