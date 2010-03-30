@@ -13,6 +13,7 @@ our %options =
     (
      'rhost' => undef,
      'rwd' => undef,
+     'localhost' => $localhost,
      'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
 #     'scheduler' => $ENV{'XCRJOBSCHED'}, # Default job scheduler
      'scheduler' => undef, # 実行時に与えられなければデフォルト値を設定するという実装に変更した
