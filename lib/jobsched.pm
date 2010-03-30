@@ -125,7 +125,8 @@ sub qsub {
     if (defined $cfg{modify}) {
         &{$cfg{modify}} ($self);
     }
-    $self->update_jobscript_file();
+    $self->make_after_in_job_script();
+    $self->update_all_script_files();
 
     my $scriptfile = $self->workdir_member_file('jobscript_file');
     my $qsub_options = join(' ', @{$self->{qsub_options}});

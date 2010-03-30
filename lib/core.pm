@@ -250,7 +250,7 @@ sub make_jobscript_body {
 sub make_after_in_job_script {
     my $self = shift;
     my @body = ();
-    push (@body, "my $self = " Data::Dump->Dumper($self));
+    push (@body, Data::Dumper->Dump([$self],['self']));
     push (@body, $self->{after_in_job});
     $self->{after_in_job_script} = \@body;
 }
@@ -260,7 +260,7 @@ sub make_after_in_job_script {
 sub update_script_file {
     my $self = shift;
     my $file_base = shift;
-    my $file = $self->workdir_file{$file_base};
+    my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
     if (defined $xcropt::options{rhost}) {
 	my $rhost = $xcropt::options{rhost};
