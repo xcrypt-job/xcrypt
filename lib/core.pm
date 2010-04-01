@@ -79,27 +79,22 @@ sub new {
 
             if ($self->{"copiedfile$i"}) {
                 my $copied = $self->{"copiedfile$i"};
-		if ( -e $copied ) {
-		    fcopy($copied, $self->{workdir});
+		my $ex = &common::xcr_e($copied);
+		if ($ex) {
+		    xcr_copy($copied, $self->{'id'});
 		} else {
 		    warn "Can't copy $copied\n";
 		}
             }
             if ($self->{"linkedfile$i"}) {
-                my $prelink = File::Spec->catfile(basename($self->{"linkedfile$i"}));
-		my $link;
-		if (defined $xcropt::options{rhost}) {
-		    $link = File::Spec->catfile($xcropt::options{rwd}, $jobname, $prelink);
-
+                my $file = $self->{"linkedfile$i"};
+		my $ex = &common::xcr_e($file);
+		if ($ex) {
+		    &common::xcr_symlink($self->{'id'},
+					 File::Spec->catfile('..', $file),
+					 File::Spec->catfile(basename($file)));
 		} else {
-		    $link = File::Spec->catfile($self->{workdir}, $prelink);
-		}
-                my $file1 = $self->{"linkedfile$i"};
-                my $file2 = File::Spec->catfile('..', $self->{"linkedfile$i"});
-		if ( -e $file1 ) {
-		    &common::xcr_symlink($file2, $link);
-		} else {
-		    warn "Can't link to $file1";
+		    warn "Can't link to $file";
 		}
             }
         }
