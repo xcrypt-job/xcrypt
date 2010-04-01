@@ -31,7 +31,7 @@ unless ( defined $qstat_extractor ) {
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
+my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
 my @qstat_out = qx/$qstat_command/;
 my @ids = &$qstat_extractor (@qstat_out);
 foreach my $req_id (@ids) {

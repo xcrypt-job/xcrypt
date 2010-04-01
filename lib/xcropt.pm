@@ -11,6 +11,7 @@ chomp $localhost;
 
 our %options =
     (
+     'tmp' => '.tmp',
      'rhost' => undef,
      'rwd' => undef,
      'localhost' => $localhost,
@@ -28,6 +29,7 @@ our %options =
 
 GetOptions
     (\%options,
+     'tmp=s',
      'rhost=s',
      'rwd=s',
      'localhost=s',

@@ -1,10 +1,12 @@
 package common;
 
 use base qw(Exporter);
-our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
-                 any_to_string any_to_string_nl any_to_string_spc write_string_array
-                 xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_qx);
+our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file
+exec_async
+any_to_string any_to_string_nl any_to_string_spc write_string_array
+xcr_d xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_rename xcr_unlink xcr_qx xcr_open xcr_close);
 
+use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use strict;
 use Cwd;
 use File::Spec;
@@ -29,10 +31,12 @@ sub set_member_if_empty ($$$) {
 }
 
 ##
+# used in bin/xcryptgui only
+=comment
 sub get_jobids {
     my $current_directory=Cwd::getcwd();
     my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-    my $idfiles = File::Spec->catfile($inventory_path, '.request_ids');
+    my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
     open(JOBIDS, "< $idfiles");
     my %reqid_jobids = split(' ', <JOBIDS>);
     my %count;
@@ -43,7 +47,7 @@ sub get_jobids {
 
     return @jobids;
 }
-
+=cut
 ##
 sub cmd_executable ($) {
     my ($cmd) = @_;
@@ -106,6 +110,19 @@ sub write_string_array {
 }
 
 ##
+sub xcr_d {
+    my ($dir) = @_;
+    my $flag = 0;
+    if (defined $xcropt::options{rhost}) {
+	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $dir);
+	$flag = qx/rsh $xcropt::options{rhost} test -d $fullpath && echo 1;/;
+	chomp($flag);
+    } else {
+	if (-d $dir) { $flag = 1; }
+    }
+    return $flag;
+}
+
 sub xcr_e {
     my ($file) = @_;
     my $flag = 0;
@@ -124,8 +141,21 @@ sub xcr_mkdir {
     if (defined $xcropt::options{rhost}) {
 	my $rdir = File::Spec->catfile($xcropt::options{rwd}, $dir);
 	qx/rsh $xcropt::options{rhost} mkdir $rdir/;
+    } else {
+	mkdir $dir, 0755;
     }
-    mkdir $dir, 0755;
+}
+
+sub xcr_rename {
+    my ($source, $target) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $tmp_source = File::Spec->catfile($xcropt::options{tmp}, $source);
+	my $tmp_target = File::Spec->catfile($xcropt::options{rwd}, $target);
+	qx/rsh $xcropt::options{rhost} cp -f $tmp_source $tmp_target/;
+	unlink $tmp_target;
+    } else {
+	rename $source, $target;
+    }
 }
 
 sub xcr_copy {
@@ -136,6 +166,20 @@ sub xcr_copy {
 	qx/rsh $xcropt::options{rhost} cp -f $tmp_copied $tmp_dir/;
     } else {
 	fcopy($copied, $dir);
+    }
+}
+
+sub xcr_unlink {
+    my ($file) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $flag = &xcr_e($file);
+	if ($flag) {
+	    my $rhost = $xcropt::options{rhost};
+	    my $tmp = File::Spec->catfile($xcropt::options{rwd}, $file);
+	    qx/rsh $rhost rm -f $tmp/;
+	}
+    } else {
+	unlink $file;
     }
 }
 
@@ -156,6 +200,8 @@ sub xcr_qx {
 	if ($dir) {
 	    my $tmp = "cd " . File::Spec->catfile($xcropt::options{rwd}, $dir) . '; ' . "$cmd";
 	    @ret = qx/rsh $xcropt::options{rhost} \"$tmp\"/;
+	} else {
+	    @ret = qx/rsh $xcropt::options{rhost} $cmd/;
 	}
     } else {
 	if ($dir) {
@@ -164,6 +210,33 @@ sub xcr_qx {
 	    @ret = qx/$cmd/;
 	}
     }
+}
+
+sub xcr_open {
+    my ($fh, $mode, $file) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $rhost = $xcropt::options{rhost};
+	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+	my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+	$file = $tmp_root_dir_file;
+	if ($mode eq '<'){
+	    qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
+	}
+    }
+    open($fh, $mode, $file);
+}
+
+sub xcr_close {
+    my ($fh, $mode, $file) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $rhost = $xcropt::options{rhost};
+	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+	my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+	if ($mode eq '>') {
+	    qx/rcp $tmp_root_dir_file $rhost:$fullpath /;
+	}
+    }
+#    close($fh);
 }
 
 1;

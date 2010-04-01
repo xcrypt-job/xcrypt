@@ -24,7 +24,8 @@ sub new {
     my $jobname= $self->{id};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
     # Absolute path of the working directory
-    $self->{workdir} = File::Spec->rel2abs($jobname);
+#    $self->{workdir} = File::Spec->rel2abs($jobname);
+    $self->{workdir} = $jobname;
 
     # Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
@@ -118,27 +119,18 @@ sub start {
 sub workdir_file {
     my $self = shift;
     my $basename = shift;
-#    if (defined $xcropt::options{rhost}) {
-#	return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
-#    } else {
-	return File::Spec->catfile($self->{workdir}, $basename);
-#    }
+    return File::Spec->catfile($self->{id}, $basename);
 }
 
-sub workdir_file_tmp {
+sub remote_workdir_file {
     my $self = shift;
     my $basename = shift;
-    if (defined $xcropt::options{rhost}) {
-	return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
+    if (defined $xcropt::options{rwd}) {
+	return File::Spec->catfile($xcropt::options{rwd},
+				   $self->{id}, $basename);
     } else {
-	return File::Spec->catfile($self->{workdir}, $basename);
+	die "Give an argument of -rwd\n";
     }
-}
-
-sub rworkdir_file {
-    my $self = shift;
-    my $basename = shift;
-    return File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $basename);
 }
 
 sub workdir_member_file {
