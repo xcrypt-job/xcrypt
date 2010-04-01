@@ -35,41 +35,44 @@ my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0
 my $inventory_path = $xcropt::options{inventory_path};
 my $reqids_file = File::Spec->catfile($inventory_path, 'request_ids');
 
+my $tmp_root_dir = $xcropt::options{tmp};
+mkdir $tmp_root_dir, 0755;
+
 my $write_command = undef;
-if (defined $xcropt::options{rhost}) {
-    my $rxcrypt = qx/rsh $xcropt::options{rhost} 'echo \$XCRYPT'/;
-    chomp($rxcrypt);
-    if ($rxcrypt eq '') { die "Set the environment varialble \$XCRYPT at the remote host\n"; }
-    if ($inventory_port > 0) {
-	$write_command=File::Spec->catfile($rxcrypt, 'bin', 'inventory_write_sock.pl');
-    } else {
-	$write_command=File::Spec->catfile($rxcrypt, 'bin', 'inventory_write_file.pl');
-    }
+my $sock_or_file = undef;
+if ($inventory_port > 0) {
+    $sock_or_file = 'inventory_write_sock.pl';
 } else {
-    if ($inventory_port > 0) {
-	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', 'inventory_write_sock.pl');
-    } else {
-	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', 'inventory_write_file.pl');
+    $sock_or_file = 'inventory_write_file.pl';
+}
+if (defined $xcropt::options{rhost}) {
+    my $remote_xcrypt = qx/rsh $xcropt::options{rhost} 'echo \$XCRYPT'/;
+    chomp($remote_xcrypt);
+    if ($remote_xcrypt eq '') {
+	die "Set the environment varialble \$XCRYPT at the remote host\n";
     }
+    $write_command=File::Spec->catfile($remote_xcrypt, 'bin', $sock_or_file);
+} else {
+    $write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
 }
 # for inventory_write_file
-my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
+my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 if (defined $xcropt::options{rhost}) {
     my $rhost = $xcropt::options{rhost};
-    my $fp_lock   = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
     my $fp_req    = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
     my $fp_ack    = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
     my $fp_reqtmp = File::Spec->catfile($xcropt::options{rwd}, $REQ_TMPFILE);
     my $fp_acktmp = File::Spec->catfile($xcropt::options{rwd}, $ACK_TMPFILE);
-    qx/rsh $rhost test -d $fp_lock && rsh $rhost rmdir $fp_lock/;
+    my $fp_lock   = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
     qx/rsh $rhost rm -f $fp_req; rsh $rhost rm -f $fp_ack; rsh $rhost rm -f $fp_reqtmp; rsh $rhost rm -f $fp_acktmp/;
+    qx/rsh $rhost test -d $fp_lock && rsh $rhost rmdir $fp_lock/;
 } else {
-    rmdir $LOCKDIR;
     unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
+    rmdir $LOCKDIR;
 }
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
@@ -101,8 +104,6 @@ my $abort_check_interval = $xcropt::options{abort_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
 our $periodic_thread=undef; # accessed from bin/xcrypt
 
-our $periodic_thread=undef;
-
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
@@ -113,7 +114,9 @@ select(STDERR); $|=1; select(STDOUT);
 sub qsub {
     my $self = shift;
     my $sched = $self->{job_scheduler};
-    unless (defined $jsconfig::jobsched_config{$sched}) { die "Set the environment varialble \$XCRJOBSCHED\n" ; }
+    unless (defined $jsconfig::jobsched_config{$sched}) {
+	die "Set the environment varialble \$XCRJOBSCHED\n" ;
+    }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
     # Create JobScript & qsub options
@@ -133,33 +136,23 @@ sub qsub {
     &inventory_write($self->{id}, 'submitted');
 
     my $qsub_command = $cfg{qsub_command};
-    unless ( defined $qsub_command )
-    { die "qsub_command is not defined in $sched.pm"; }
-    if (defined $xcropt::options{rhost}) {
-	my $file = File::Spec->catfile($self->{id}, basename($scriptfile));
-	my $flag = &common::xcr_e($file);
-	unless ($flag) {
-	    die "Can't find a job script file \"$file\"";
-	}
-    } else { unless ( -e $scriptfile ) {
-	die "Can't find a job script file \"$scriptfile\""; }
+    unless ( defined $qsub_command ) {
+	die "qsub_command is not defined in $sched.pm";
     }
+    my $flag = &common::xcr_e($scriptfile);
+    unless ($flag) {
+	die "Can't find a job script file \"$scriptfile\"";
+    }
+
     if (common::cmd_executable ($qsub_command)) {
         # Execute qsub command
-	my $cmdline;
-	if (defined $xcropt::options{rhost}) {
-	    my $base = basename($scriptfile);
-	    my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $base);
-	    $cmdline = "$qsub_command $qsub_options $fullpath";
-	} else {
-	    $cmdline = "$qsub_command $qsub_options $scriptfile";
-	}
-        if ($xcropt::options{verbose} >= 2)
-        { print "$cmdline\n"; }
+	my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-#	my @qsub_output = qx/$cmdline/;
-	my @qsub_output = &common::xcr_qx("$cmdline", $self->{id});
+#	my @qsub_output = &common::xcr_qx("$cmdline", $self->{id});
+	my @qsub_output = &common::xcr_qx("$cmdline");
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
+
         # Get request ID from qsub's output
         my $req_id;
         if ( defined ($cfg{extract_req_id_from_qsub_output}) ) {
@@ -172,18 +165,8 @@ sub qsub {
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
-        my $idfile = File::Spec->catfile($self->{workdir}, 'request_id');
-        open (my $requestid, '>>', $idfile);
-        print $requestid "$req_id";
-	if (defined $xcropt::options{rhost}) {
-	    my $file = File::Spec->catfile($xcropt::options{rwd}, $self->{id}, basename($idfile));
-	    my $rhost = $xcropt::options{rhost};
-	    qx/rcp $idfile $rhost:$file/;
-	    unlink $idfile;
-	}
-        close ($requestid);
         open (my $requestids, '>>',  $reqids_file);
-        print $requestids "$req_id" . ' ' . $self->{workdir} . ' ';
+        print $requestids "$req_id" . ' ' . $self->{id} . ' ';
         close ($requestids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
@@ -195,6 +178,7 @@ sub qsub {
 }
 
 # qdelコマンドを実行して指定されたjobnameのジョブを殺す
+# リモート実行未対応
 sub qdel {
     my ($jobname) = @_;
     # qdelコマンドをconfigから獲得
@@ -217,6 +201,7 @@ sub qdel {
 }
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
+# リモート実行未対応
 sub qstat {
     my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
     if (defined $xcropt::options{rhost}) {
@@ -348,7 +333,12 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    if ( !(-d $inventory_path) ) {
+    my $tmp_root_dir_inventory_path = File::Spec->catfile($tmp_root_dir, $inventory_path);
+    if ( !(-d $tmp_root_dir_inventory_path) ) {
+	mkdir $tmp_root_dir_inventory_path, 0755 or die "Can't mkdir $tmp_root_dir_inventory_path\n";
+    }
+    my $flag = &common::xcr_d($inventory_path);
+    unless ( $flag ) {
 	&common::xcr_mkdir($inventory_path) or die "Can't make $inventory_path: $!.\n";
     }
     # 起動
@@ -374,15 +364,21 @@ sub invoke_watch_by_file {
 		$flag = &common::xcr_e($REQFILE);
 	    }
 
+	    my $CLIENT_IN;
+#
+#	    &common::xcr_open($CLIENT_IN, '<', $REQFILE) || next;
+	    my ($fh, $mode, $file) = ($CLIENT_IN, '<', $REQFILE);
 	    if (defined $xcropt::options{rhost}) {
-		my $flag = &common::xcr_e($REQFILE);
-		if($flag) {
-		    my $rhost = $xcropt::options{rhost};
-		    my $fullpath = File::Spec->catfile($xcropt::options{rwd},  $REQFILE);
-		    qx/rcp $rhost:$fullpath $REQFILE/;
+		my $rhost = $xcropt::options{rhost};
+		my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+		my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+		$file = $tmp_root_dir_file;
+		if ($mode eq '<'){
+		    qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
 		}
 	    }
-            open (my $CLIENT_IN, '<', $REQFILE) || next;
+	    #open($fh, $mode, $file);
+	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
             # クライアントからのメッセージは
@@ -402,11 +398,25 @@ sub invoke_watch_by_file {
                     $handle_inventory_ret = handle_inventory ($_, 1);
                 }
             }
-            close ($CLIENT_IN);
+#            &common::xcr_close($CLIENT_IN, '<', $REQFILE);
+            close($CLIENT_IN);
             ###
             my $CLIENT_OUT = undef;
             until ($CLIENT_OUT) {
-                open ($CLIENT_OUT, '>', $ACK_TMPFILE);
+#
+#                &common::xcr_open($CLIENT_OUT, '>', $ACK_TMPFILE);
+		my ($fh, $mode, $file) = ($CLIENT_OUT, '>', $ACK_TMPFILE);
+		if (defined $xcropt::options{rhost}) {
+		    my $rhost = $xcropt::options{rhost};
+		    my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+		    my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+		    $file = $tmp_root_dir_file;
+		    if ($mode eq '<'){
+			qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
+		    }
+		}
+#		open($fh, $mode, $file);
+                open($CLIENT_OUT, '>', $ACK_TMPFILE);
                 unless ($CLIENT_OUT) {
                     warn ("Failed to make ackfile $ACK_TMPFILE");
                     sleep $slp;
@@ -414,36 +424,35 @@ sub invoke_watch_by_file {
             }
             if ($handle_inventory_ret >= 0) {
                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
-                open ( my $SAVE, ">> $inv_save") or die "Failed to write inventory_file $inv_save";
+                my $inv_save = File::Spec->catfile($tmp_root_dir, $inventory_path, $last_jobname);
+		my $SAVE;
+#xcr_open
+                open($SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save";
                 print $SAVE $inv_text;
-                close ($SAVE);
+                close($SAVE);
+		&common::xcr_copy($inv_save, $inventory_path);
                 print $CLIENT_OUT ":ack\n";
-                # print STDERR "sent :ack\n";
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
-                # print STDERR "sent :failed\n";
             }
-            close ($CLIENT_OUT);
-
+#            &common::xcr_close
+	    my ($fh, $mode, $file) = ($CLIENT_OUT, '>', $ACK_TMPFILE);
 	    if (defined $xcropt::options{rhost}) {
-		my $flag = &common::xcr_e($REQFILE);
-		if($flag) {
-		    my $rhost = $xcropt::options{rhost};
-		    my $req = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
-		    qx/rsh $rhost rm -f $req/;
-		    my $ack = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
-		    my $tmp = "$rhost" . ":" . "$ack";
-		    qx/rcp $ACK_TMPFILE $tmp/;
-		    unlink $ACK_TMPFILE;
+		my $rhost = $xcropt::options{rhost};
+		my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
+		my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+		if ($mode eq '>') {
+		    qx/rcp $tmp_root_dir_file $rhost:$fullpath /;
 		}
 	    }
-	    unlink $REQFILE;
-	    rename $ACK_TMPFILE, $ACKFILE;
+            close($CLIENT_OUT);
+
+	    &common::xcr_rename($ACK_TMPFILE, $ACKFILE);
+	    &common::xcr_unlink($REQFILE);
         }
         # close (INVWATCH_LOG);
-    });
+				  });
     $watch_thread->detach();
 }
 
@@ -504,6 +513,7 @@ sub invoke_watch_by_socket {
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
+# リモート実行未対応
 sub load_inventory {
     my ($jobname) = @_;
     my $invfile = File::Spec->catfile($inventory_path, $jobname);
@@ -788,17 +798,6 @@ sub check_and_write_aborted {
 	    # ここだけジョブオブジェクトでなくジョブ名しか持っていないので，ログをジョブディレクトリに作成できない（ローカル実行なら作業ディレクトリ，リモート実行ならホームディレクトリに作成される．）
         }
     }
-}
-
-sub getjobids {
-    open( JOBIDS, "< $_[0]" );
-    my %reqid_jobids = split(' ', <JOBIDS>);
-    my %count;
-    my @vals = values(%reqid_jobids);
-    @vals = grep(!$count{$_}++, @vals);
-    my @jobids = sort @vals;
-    close( JOBIDS );
-    return @jobids;
 }
 
 # sub invoke_periodic {

@@ -11,7 +11,7 @@ sub workdir_file_option_tmp {
         my $self = shift;
         my $mb_name = shift;
         my $file = $self->{$mb_name} || $default;
-        return $file?($prefix . $self->workdir_file_tmp($file)):();
+        return $file?($prefix . $self->workdir_file($file)):();
     }
 }
 
