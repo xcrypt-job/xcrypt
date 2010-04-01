@@ -3,7 +3,7 @@ package common;
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file exec_async
                  any_to_string any_to_string_nl any_to_string_spc write_string_array
-                 xcr_e xcr_mkdir xcr_symlink xcr_qx);
+                 xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_qx);
 
 use strict;
 use Cwd;
@@ -128,12 +128,24 @@ sub xcr_mkdir {
     mkdir $dir, 0755;
 }
 
-sub xcr_symlink {
-    my ($file, $link) = @_;
+sub xcr_copy {
+    my ($copied, $dir) = @_;
     if (defined $xcropt::options{rhost}) {
-	qx/rsh $xcropt::options{rhost} ln -s $file $link/;
+	my $tmp_copied = File::Spec->catfile($xcropt::options{rwd}, $copied);
+	my $tmp_dir = File::Spec->catfile($xcropt::options{rwd}, $dir);
+	qx/rsh $xcropt::options{rhost} cp -f $tmp_copied $tmp_dir/;
     } else {
-	symlink($file, $link);
+	fcopy($copied, $dir);
+    }
+}
+
+sub xcr_symlink {
+    my ($dir, $file, $link) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $tmp = File::Spec->catfile($xcropt::options{rwd}, $dir, $link);
+	qx/rsh $xcropt::options{rhost} ln -s $file $tmp/;
+    } else {
+	symlink($file, File::Spec->catfile($dir, $link));
     }
 }
 
