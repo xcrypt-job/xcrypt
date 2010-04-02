@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids cmd_executable wait_file
 exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_d xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_rename xcr_unlink xcr_qx xcr_open xcr_close);
+xcr_d xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_rcp xcr_rename xcr_unlink xcr_qx xcr_open xcr_close xcr_pull xcr_push);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use strict;
@@ -141,8 +141,6 @@ sub xcr_mkdir {
     if (defined $xcropt::options{rhost}) {
 	my $rdir = File::Spec->catfile($xcropt::options{rwd}, $dir);
 	qx/rsh $xcropt::options{rhost} mkdir $rdir/;
-    } else {
-	mkdir $dir, 0755;
     }
 }
 
@@ -164,6 +162,18 @@ sub xcr_copy {
 	my $tmp_copied = File::Spec->catfile($xcropt::options{rwd}, $copied);
 	my $tmp_dir = File::Spec->catfile($xcropt::options{rwd}, $dir);
 	qx/rsh $xcropt::options{rhost} cp -f $tmp_copied $tmp_dir/;
+    } else {
+	fcopy($copied, $dir);
+    }
+}
+
+sub xcr_rcp {
+    my ($copied, $dir) = @_;
+    if (defined $xcropt::options{rhost}) {
+	my $tmp_copied = $copied;
+	my $tmp_dir = File::Spec->catfile($xcropt::options{rwd}, $dir);
+	my $tmp = $xcropt::options{rhost} .':'. $tmp_dir;
+	qx/rcp $tmp_copied $tmp/;
     } else {
 	fcopy($copied, $dir);
     }
@@ -217,10 +227,10 @@ sub xcr_open {
     if (defined $xcropt::options{rhost}) {
 	my $rhost = $xcropt::options{rhost};
 	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
-	my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-	$file = $tmp_root_dir_file;
+	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+	$file = $tmpdir_file;
 	if ($mode eq '<'){
-	    qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
+	    qx/rcp $rhost:$fullpath $tmpdir_file/;
 	}
     }
     open($fh, $mode, $file);
@@ -231,12 +241,32 @@ sub xcr_close {
     if (defined $xcropt::options{rhost}) {
 	my $rhost = $xcropt::options{rhost};
 	my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
-	my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
 	if ($mode eq '>') {
-	    qx/rcp $tmp_root_dir_file $rhost:$fullpath /;
+	    qx/rcp $tmpdir_file $rhost:$fullpath /;
 	}
     }
 #    close($fh);
+}
+
+sub xcr_pull {
+    my ($file) = @_;
+    my $rhost = $xcropt::options{rhost};
+    my $remote = File::Spec->catfile($xcropt::options{rwd}, $file);
+    my $tmp = File::Spec->catfile($xcropt::options{tmp}, $file);
+    qx/rcp $rhost:$remote $tmp/;
+    qx/rsh $rhost rm -f $remote/;
+    rename $tmp, $file;
+}
+
+sub xcr_push {
+    my ($file) = @_;
+    my $rhost = $xcropt::options{rhost};
+    my $remote = File::Spec->catfile($xcropt::options{rwd}, $file);
+    my $tmp = File::Spec->catfile($xcropt::options{tmp}, $file);
+    rename $file, $tmp;
+    unlink $file;
+    qx/rcp $tmp $rhost:$remote/;
 }
 
 1;

@@ -62,6 +62,7 @@ sub new {
 	    }
 	}
 	&common::xcr_mkdir($jobname);
+	mkdir $jobname, 0755;
         # Otherwise, make the job 'active'
 	&jobsched::inventory_write ($jobname, "active");
 
@@ -209,8 +210,14 @@ sub make_jobscript_body {
             warn "Error in config file $self->{job_scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
+    if (defined $xcropt::options{rhost}) {
+	$wkdir_str = File::Spec->catfile($xcropt::options{rwd}, $wkdir_str);
+    } else {
+	$wkdir_str = File::Spec->rel2abs($wkdir_str);
+    }
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
+    push (@body, "sleep 6"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
