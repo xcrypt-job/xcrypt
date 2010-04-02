@@ -6,8 +6,8 @@ use base qw (core);
              'exe0' => './fib-file',
              'arg0_0' => "num40",
              'arg0_1' => "output",
-             'copiedfile0' => 'common/fib-file',
-             'copiedfile1@' => '"input/num40"',
+             'copiedfile0' => 'bin/fib-file',
+             'copiedfile1@' => '"dat/num40"',
              'JS_queue' => 'ghxxxxx',  # modify for your system
              'JS_group' => 'ghxxxxx',  # modify for your system
              'before_in_job' => 'print $self->{JS_queue}. "\n";',

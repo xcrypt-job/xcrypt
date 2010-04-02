@@ -67,6 +67,7 @@ sub new {
 	&jobsched::inventory_write ($jobname, "active");
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
+	    # リモート実行未対応
             if ($self->{"copieddir$i"}) {
                 my $copied = $self->{"copieddir$i"};
                 opendir(DIR, $copied);
@@ -121,17 +122,6 @@ sub workdir_file {
     my $self = shift;
     my $basename = shift;
     return File::Spec->catfile($self->{id}, $basename);
-}
-
-sub remote_workdir_file {
-    my $self = shift;
-    my $basename = shift;
-    if (defined $xcropt::options{rwd}) {
-	return File::Spec->catfile($xcropt::options{rwd},
-				   $self->{id}, $basename);
-    } else {
-	die "Give an argument of -rwd\n";
-    }
 }
 
 sub workdir_member_file {
