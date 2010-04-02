@@ -150,7 +150,6 @@ sub qsub {
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
 	my @qsub_output = &common::xcr_qx("$cmdline", '.');
-#	my @qsub_output = &common::xcr_qx("$cmdline");
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output

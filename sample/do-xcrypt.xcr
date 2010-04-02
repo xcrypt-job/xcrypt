@@ -11,5 +11,5 @@ my $XCRFILE=File::Spec->rel2abs("rangesearch.xcr");
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     # rangesearch.xcr requires the following
-    'copiedfile0' => 'common/fib'
+    'copiedfile0' => 'bin/fib'
 );

@@ -3,9 +3,9 @@ use base qw(core);
 %template = (
     'id' => 'job1',
     'exe0' => 'time',
-    'linkedfile0' => 'common/minimax',
-    'linkedfile1' => 'common/alphabeta',
-#    'linkedfile2' => 'common/inversetree',
+    'linkedfile0' => 'bin/minimax',
+    'linkedfile1' => 'bin/alphabeta',
+#    'linkedfile2' => 'bin/inversetree',
 #    'arg0_0' => './minimax',      # algorithm
 #    'arg0_1' => '3',              # depth of lookahead
     'arg0_2' => '0',               # position

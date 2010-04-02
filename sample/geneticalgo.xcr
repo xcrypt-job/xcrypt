@@ -25,7 +25,7 @@ foreach (@jobs) {
     my @param = $datum->ER();
 
     # use Data_Generation
-    my $gen = CF("$ENV{'XCRYPT'}/sample/common/template.dat",
+    my $gen = CF("$ENV{'XCRYPT'}/sample/dat/template.dat",
 		 "$ENV{'XCRYPT'}/sample/$_->{id}/");
     $gen->KR('param', "$param[0]");
     $gen->do();

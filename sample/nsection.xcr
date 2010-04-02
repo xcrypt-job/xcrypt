@@ -8,12 +8,12 @@ $n_section_method::del_extra_jobs = 1;
     'id' => 'job0',
     'exe0' => './minushalf.pl',
     'arg0_0' => 'template.dat',
-    'linkedfile0' => 'common/minushalf.pl',
+    'linkedfile0' => 'bin/minushalf.pl',
     'JS_group' => 'gh10034',
     'JS_queue' => 'gh10034',
 # Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
     'before' => sub {
-	my $input = CF("$ENV{'PWD'}/common/template.dat",
+	my $input = CF("$ENV{'PWD'}/dat/template.dat",
 		       "$ENV{'PWD'}/" . $_[0]->{'id'});
 	$input->KR("param", $_[0]->{'x'});
 	$input->do();

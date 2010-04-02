@@ -4,13 +4,13 @@ use base qw(convergence core);
     'id' => 'job7',
     'exe0' => './minushalf.pl',
     'arg0_0' => 'template.dat',
-    'linkedfile0' => 'common/minushalf.pl',
+    'linkedfile0' => 'bin/minushalf.pl',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
 # possible to use the following by convergence.pm
     'initialvalue' => '128',
     'isConvergent' => '30',
-    'inputfile' => 'common/template.dat',
+    'inputfile' => 'dat/template.dat',
     'sweepname' => 'param',
     'outputfile' => 'output.dat',
     'extractrules' => [['C/1', 'L/E'], ['L/1']]
