@@ -55,13 +55,13 @@ sub new {
             File::Path::rmtree ($self->{workdir});
         }
 	if (defined $xcropt::options{rhost}) {
-	    my $ex = &common::xcr_e($self->{id});
+	    my $ex = &xcr_d($self->{id});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
 		File::Path::rmtree($self->{id});
 	    }
 	}
-	&common::xcr_mkdir($jobname);
+	&xcr_mkdir($jobname);
 	mkdir $jobname, 0755;
         # Otherwise, make the job 'active'
 	&jobsched::inventory_write ($jobname, "active");
@@ -82,7 +82,7 @@ sub new {
 
             if ($self->{"copiedfile$i"}) {
                 my $copied = $self->{"copiedfile$i"};
-		my $ex = &common::xcr_e($copied);
+		my $ex = &xcr_e($copied);
 		if ($ex) {
 		    xcr_copy($copied, $self->{'id'});
 		} else {
@@ -91,11 +91,11 @@ sub new {
             }
             if ($self->{"linkedfile$i"}) {
                 my $file = $self->{"linkedfile$i"};
-		my $ex = &common::xcr_e($file);
+		my $ex = &xcr_e($file);
 		if ($ex) {
-		    &common::xcr_symlink($self->{'id'},
-					 File::Spec->catfile('..', $file),
-					 File::Spec->catfile(basename($file)));
+		    &xcr_symlink($self->{'id'},
+				 File::Spec->catfile('..', $file),
+				 File::Spec->catfile(basename($file)));
 		} else {
 		    warn "Can't link to $file";
 		}
@@ -257,12 +257,14 @@ sub update_script_file {
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
     if (defined $xcropt::options{rhost}) {
+	&xcr_push($file);
+    }
+=comment
 	my $rhost = $xcropt::options{rhost};
-	my $base = basename($file);
-	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{rwd}, $self->{id}, $base);
+	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{rwd}, $file);
 	qx/rcp $file $target/;
 	unlink $file;
-    }    
+=cut
 }
 
 # Make/Update a jobscript file of $self->{jobscript_header} and $self->{jobscript_body}

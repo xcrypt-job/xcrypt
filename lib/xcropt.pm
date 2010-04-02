@@ -11,7 +11,8 @@ chomp $localhost;
 
 our %options =
     (
-     'tmp' => '.tmp',
+     'rsh' => 'ssh',
+     'rcp' => 'scp',
      'rhost' => undef,
      'rwd' => undef,
      'localhost' => $localhost,
@@ -29,7 +30,9 @@ our %options =
 
 GetOptions
     (\%options,
-     'tmp=s',
+     'shared',
+     'rsh=s',
+     'rcp=s',
      'rhost=s',
      'rwd=s',
      'localhost=s',
@@ -44,7 +47,7 @@ GetOptions
 
 unless (defined $xcropt::options{scheduler}) {
     if (defined $xcropt::options{rhost}) {
-	my $rxcrjsch = qx/rsh $xcropt::options{rhost} 'echo \$XCRJOBSCHED'/;
+	my $rxcrjsch = qx/$xcropt::options{rsh} $xcropt::options{rhost} 'echo \$XCRJOBSCHED'/;
 	chomp($rxcrjsch);
 	$xcropt::options{scheduler} = $rxcrjsch;
     } else {

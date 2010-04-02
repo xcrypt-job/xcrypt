@@ -26,7 +26,7 @@ use xcropt;
 use jsconfig;
 # use Thread::Semaphore;
 
-
+my $rsh_command = $xcropt::options{rsh};
 ##################################################
 
 ### Inventory
@@ -34,9 +34,6 @@ my $inventory_host = $xcropt::options{localhost};
 my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
 my $inventory_path = $xcropt::options{inventory_path};
 my $reqids_file = File::Spec->catfile($inventory_path, 'request_ids');
-
-my $tmpdir = $xcropt::options{tmp};
-mkdir $tmpdir, 0755;
 
 my $write_command = undef;
 my $sock_or_file;
@@ -46,7 +43,7 @@ if ($inventory_port > 0) {
     $sock_or_file = 'inventory_write_file.pl';
 }
 if (defined $xcropt::options{rhost}) {
-    my $remote_xcrypt = qx/rsh $xcropt::options{rhost} 'echo \$XCRYPT'/;
+    my $remote_xcrypt = qx/$rsh_command $xcropt::options{rhost} 'echo \$XCRYPT'/;
     chomp($remote_xcrypt);
     if ($remote_xcrypt eq '') {
 	die "Set the environment varialble \$XCRYPT at the remote host\n";
@@ -68,15 +65,15 @@ if (defined $xcropt::options{rhost}) {
     my $fp_reqtmp = File::Spec->catfile($xcropt::options{rwd}, $REQ_TMPFILE);
     my $fp_acktmp = File::Spec->catfile($xcropt::options{rwd}, $ACK_TMPFILE);
     my $fp_lock   = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
-    qx/rsh $rhost rm -f $fp_req; rsh $rhost rm -f $fp_ack; rsh $rhost rm -f $fp_reqtmp; rsh $rhost rm -f $fp_acktmp/;
-    qx/rsh $rhost test -d $fp_lock && rsh $rhost rmdir $fp_lock/;
+    qx/$rsh_command $rhost rm -f $fp_req; $rsh_command $rhost rm -f $fp_ack; $rsh_command $rhost rm -f $fp_reqtmp; $rsh_command $rhost rm -f $fp_acktmp/;
+    qx/$rsh_command $rhost test -d $fp_lock && $rsh_command $rhost rmdir $fp_lock/;
 } else {
     unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
     rmdir $LOCKDIR;
 }
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
-our $watch_thread=undef; # used in bin/xcrypt
+our $watch_thread = undef; # used in bin/xcrypt
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -139,7 +136,7 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &common::xcr_e($scriptfile);
+    my $flag = &xcr_e($scriptfile);
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
@@ -149,7 +146,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &common::xcr_qx("$cmdline", '.');
+	my @qsub_output = &xcr_qx("$cmdline", '.');
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
@@ -164,12 +161,12 @@ sub qsub {
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
-        open (my $requestids, '>>',  $reqids_file);
-        print $requestids "$req_id" . ' ' . $self->{id} . ' ';
-        close ($requestids);
+        open (my $request_ids, '>>',  $reqids_file);
+        print $request_ids "$req_id $self->{id} ";
+        close ($request_ids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-	&inventory_write($self->{id}, "queued");
+	&inventory_write($self->{id}, 'queued');
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -204,7 +201,7 @@ sub qstat {
     my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
     if (defined $xcropt::options{rhost}) {
 	my $rhost = $xcropt::options{rhost};
-	$qstat_command = "rsh $rhost $qstat_command";
+	$qstat_command = "$rsh_command $rhost $qstat_command";
     }
 
     unless ( defined $qstat_command ) {
@@ -233,7 +230,7 @@ sub inventory_write {
     my ($jobname, $stat) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &common::xcr_qx("$cmdline", $jobname);
+    &xcr_qx("$cmdline", $jobname);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -331,14 +328,8 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    my $tmpdir_inventory_path = File::Spec->catfile($tmpdir, $inventory_path);
-    if ( !(-d $tmpdir_inventory_path) ) {
-	mkdir $tmpdir_inventory_path, 0755 or die "Can't mkdir $tmpdir_inventory_path\n";
-    }
-    my $flag = &common::xcr_d($inventory_path);
-    unless ( $flag ) {
-	&common::xcr_mkdir($inventory_path)
-    }
+    my $flag = &xcr_d($inventory_path);
+    unless ( $flag ) { &xcr_mkdir($inventory_path) }
     mkdir $inventory_path, 0755;
     # 起動
     if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
@@ -360,13 +351,11 @@ sub invoke_watch_by_file {
 	    my $flag;
 	    until ($flag) {
 		Time::HiRes::sleep ($interval);
-		$flag = &common::xcr_e($REQFILE);
+		$flag = &xcr_e($REQFILE);
 	    }
 
 	    my $CLIENT_IN;
-	    if (defined $xcropt::options{rhost}) {
-		&common::xcr_pull($REQFILE);
-	    }
+	    if (defined $xcropt::options{rhost}) { &xcr_pull($REQFILE); }
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -406,9 +395,7 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		if (defined $xcropt::options{rhost}) {
-		    &common::xcr_push($ACKFILE);
-		}
+		if (defined $xcropt::options{rhost}) { &xcr_push($ACKFILE); }
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
@@ -478,7 +465,6 @@ sub invoke_watch_by_socket {
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
-# リモート実行未対応
 sub load_inventory {
     my ($jobname) = @_;
     my $invfile = File::Spec->catfile($inventory_path, $jobname);
