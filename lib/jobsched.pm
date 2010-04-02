@@ -35,11 +35,11 @@ my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0
 my $inventory_path = $xcropt::options{inventory_path};
 my $reqids_file = File::Spec->catfile($inventory_path, 'request_ids');
 
-my $tmp_root_dir = $xcropt::options{tmp};
-mkdir $tmp_root_dir, 0755;
+my $tmpdir = $xcropt::options{tmp};
+mkdir $tmpdir, 0755;
 
 my $write_command = undef;
-my $sock_or_file = undef;
+my $sock_or_file;
 if ($inventory_port > 0) {
     $sock_or_file = 'inventory_write_sock.pl';
 } else {
@@ -149,8 +149,8 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-#	my @qsub_output = &common::xcr_qx("$cmdline", $self->{id});
-	my @qsub_output = &common::xcr_qx("$cmdline");
+	my @qsub_output = &common::xcr_qx("$cmdline", '.');
+#	my @qsub_output = &common::xcr_qx("$cmdline");
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
@@ -201,7 +201,6 @@ sub qdel {
 }
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
-# リモート実行未対応
 sub qstat {
     my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
     if (defined $xcropt::options{rhost}) {
@@ -333,14 +332,15 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    my $tmp_root_dir_inventory_path = File::Spec->catfile($tmp_root_dir, $inventory_path);
-    if ( !(-d $tmp_root_dir_inventory_path) ) {
-	mkdir $tmp_root_dir_inventory_path, 0755 or die "Can't mkdir $tmp_root_dir_inventory_path\n";
+    my $tmpdir_inventory_path = File::Spec->catfile($tmpdir, $inventory_path);
+    if ( !(-d $tmpdir_inventory_path) ) {
+	mkdir $tmpdir_inventory_path, 0755 or die "Can't mkdir $tmpdir_inventory_path\n";
     }
     my $flag = &common::xcr_d($inventory_path);
     unless ( $flag ) {
-	&common::xcr_mkdir($inventory_path) or die "Can't make $inventory_path: $!.\n";
+	&common::xcr_mkdir($inventory_path)
     }
+    mkdir $inventory_path, 0755;
     # 起動
     if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
@@ -365,19 +365,9 @@ sub invoke_watch_by_file {
 	    }
 
 	    my $CLIENT_IN;
-#
-#	    &common::xcr_open($CLIENT_IN, '<', $REQFILE) || next;
-	    my ($fh, $mode, $file) = ($CLIENT_IN, '<', $REQFILE);
 	    if (defined $xcropt::options{rhost}) {
-		my $rhost = $xcropt::options{rhost};
-		my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
-		my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-		$file = $tmp_root_dir_file;
-		if ($mode eq '<'){
-		    qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
-		}
+		&common::xcr_pull($REQFILE);
 	    }
-	    #open($fh, $mode, $file);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -398,58 +388,34 @@ sub invoke_watch_by_file {
                     $handle_inventory_ret = handle_inventory ($_, 1);
                 }
             }
-#            &common::xcr_close($CLIENT_IN, '<', $REQFILE);
             close($CLIENT_IN);
             ###
             my $CLIENT_OUT = undef;
             until ($CLIENT_OUT) {
-#
-#                &common::xcr_open($CLIENT_OUT, '>', $ACK_TMPFILE);
-		my ($fh, $mode, $file) = ($CLIENT_OUT, '>', $ACK_TMPFILE);
-		if (defined $xcropt::options{rhost}) {
-		    my $rhost = $xcropt::options{rhost};
-		    my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
-		    my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-		    $file = $tmp_root_dir_file;
-		    if ($mode eq '<'){
-			qx/rcp $rhost:$fullpath $tmp_root_dir_file/;
-		    }
-		}
-#		open($fh, $mode, $file);
                 open($CLIENT_OUT, '>', $ACK_TMPFILE);
-                unless ($CLIENT_OUT) {
-                    warn ("Failed to make ackfile $ACK_TMPFILE");
+		unless ($CLIENT_OUT) {
+		    warn ("Failed to make ackfile $ACK_TMPFILE");
                     sleep $slp;
                 }
-            }
+	    }
             if ($handle_inventory_ret >= 0) {
                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($tmp_root_dir, $inventory_path, $last_jobname);
-		my $SAVE;
-#xcr_open
-                open($SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save";
+                my $inv_save = File::Spec->catfile($inventory_path,
+						   $last_jobname);
+                open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
                 print $SAVE $inv_text;
                 close($SAVE);
-		&common::xcr_copy($inv_save, $inventory_path);
                 print $CLIENT_OUT ":ack\n";
+		rename $ACK_TMPFILE, $ACKFILE;
+		if (defined $xcropt::options{rhost}) {
+		    &common::xcr_push($ACKFILE);
+		}
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
             }
-#            &common::xcr_close
-	    my ($fh, $mode, $file) = ($CLIENT_OUT, '>', $ACK_TMPFILE);
-	    if (defined $xcropt::options{rhost}) {
-		my $rhost = $xcropt::options{rhost};
-		my $fullpath = File::Spec->catfile($xcropt::options{rwd}, $file);
-		my $tmp_root_dir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-		if ($mode eq '>') {
-		    qx/rcp $tmp_root_dir_file $rhost:$fullpath /;
-		}
-	    }
-            close($CLIENT_OUT);
-
-	    &common::xcr_rename($ACK_TMPFILE, $ACKFILE);
-	    &common::xcr_unlink($REQFILE);
+	    close($CLIENT_OUT);
+	    unlink($REQFILE);
         }
         # close (INVWATCH_LOG);
 				  });
