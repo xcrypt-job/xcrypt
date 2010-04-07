@@ -42,8 +42,8 @@ if ($inventory_port > 0) {
 } else {
     $sock_or_file = 'inventory_write_file.pl';
 }
-if (defined $xcropt::options{rhost}) {
-    my $remote_xcrypt = qx/$rsh_command $xcropt::options{rhost} 'echo \$XCRYPT'/;
+unless (@{$xcropt::options{rhost}} == ()) {
+    my $remote_xcrypt = qx/$rsh_command ${$xcropt::options{rhost}}[0] 'echo \$XCRYPT'/;
     chomp($remote_xcrypt);
     if ($remote_xcrypt eq '') {
 	die "Set the environment varialble \$XCRYPT at the remote host\n";
@@ -58,15 +58,14 @@ my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
-if (defined $xcropt::options{rhost}) {
-    my $rhost = $xcropt::options{rhost};
+unless (@{$xcropt::options{rhost}} == ()) {
     my $fp_req    = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
     my $fp_ack    = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
     my $fp_reqtmp = File::Spec->catfile($xcropt::options{rwd}, $REQ_TMPFILE);
     my $fp_acktmp = File::Spec->catfile($xcropt::options{rwd}, $ACK_TMPFILE);
     my $fp_lock   = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
-    qx/$rsh_command $rhost rm -f $fp_req; $rsh_command $rhost rm -f $fp_ack; $rsh_command $rhost rm -f $fp_reqtmp; $rsh_command $rhost rm -f $fp_acktmp/;
-    qx/$rsh_command $rhost test -d $fp_lock && $rsh_command $rhost rmdir $fp_lock/;
+    qx/$rsh_command ${$xcropt::options{rhost}}[0] rm -f $fp_req; $rsh_command ${$xcropt::options{rhost}}[0] rm -f $fp_ack; $rsh_command ${$xcropt::options{rhost}}[0] rm -f $fp_reqtmp; $rsh_command ${$xcropt::options{rhost}}[0] rm -f $fp_acktmp/;
+    qx/$rsh_command ${$xcropt::options{rhost}}[0] test -d $fp_lock && $rsh_command ${$xcropt::options{rhost}}[0] rmdir $fp_lock/;
 } else {
     unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
     rmdir $LOCKDIR;
@@ -199,9 +198,8 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    if (defined $xcropt::options{rhost}) {
-	my $rhost = $xcropt::options{rhost};
-	$qstat_command = "$rsh_command $rhost $qstat_command";
+    unless (@{$xcropt::options{rhost}} == ()) {
+	$qstat_command = "$rsh_command ${$xcropt::options{rhost}}[0] $qstat_command";
     }
 
     unless ( defined $qstat_command ) {
@@ -248,7 +246,7 @@ sub inventory_write_cmdline {
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
-	if (defined $xcropt::options{rhost}) {
+	unless (@{$xcropt::options{rhost}} == ()) {
 	    my $dir = File::Spec->catfile($xcropt::options{rwd}, $LOCKDIR);
 	    my $req = File::Spec->catfile($xcropt::options{rwd}, $REQFILE);
 	    my $ack = File::Spec->catfile($xcropt::options{rwd}, $ACKFILE);
@@ -355,7 +353,7 @@ sub invoke_watch_by_file {
 	    }
 
 	    my $CLIENT_IN;
-	    if (defined $xcropt::options{rhost}) { &xcr_pull($REQFILE); }
+	    unless (@{$xcropt::options{rhost}} == ()) { &xcr_pull($REQFILE); }
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -395,7 +393,7 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		if (defined $xcropt::options{rhost}) { &xcr_push($ACKFILE); }
+		unless (@{$xcropt::options{rhost}} == ()) { &xcr_push($ACKFILE); }
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
