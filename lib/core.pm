@@ -12,6 +12,8 @@ use jsconfig;
 use xcropt;
 use common;
 
+my @rhosts = @{$xcropt::options{rhost}};
+my @rwds = @{$xcropt::options{rwd}};
 sub new {
     my $class = shift;
     my $self = shift;
@@ -54,7 +56,7 @@ sub new {
             print "Delete directory $self->{workdir}\n";
             File::Path::rmtree ($self->{workdir});
         }
-	unless (@{$xcropt::options{rhost}} == ()) {
+	unless (@rhosts == ()) {
 	    my $ex = &xcr_d($self->{id});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
@@ -200,8 +202,8 @@ sub make_jobscript_body {
             warn "Error in config file $self->{job_scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-    unless (@{$xcropt::options{rhost}} == ()) {
-	$wkdir_str = File::Spec->catfile($xcropt::options{rwd}, $wkdir_str);
+    unless (@rhosts == ()) {
+	$wkdir_str = File::Spec->catfile($rwds[0], $wkdir_str);
     } else {
 	$wkdir_str = File::Spec->rel2abs($wkdir_str);
     }
@@ -256,7 +258,7 @@ sub update_script_file {
     my $file_base = shift;
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
-    unless (@{$xcropt::options{rhost}} == ()) {
+    unless (@rhosts == ()) {
 	&xcr_push($file);
     }
 }
