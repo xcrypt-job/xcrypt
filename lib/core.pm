@@ -54,7 +54,7 @@ sub new {
             print "Delete directory $self->{workdir}\n";
             File::Path::rmtree ($self->{workdir});
         }
-	if (defined $xcropt::options{rhost}) {
+	unless (@{$xcropt::options{rhost}} == ()) {
 	    my $ex = &xcr_d($self->{id});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
@@ -200,7 +200,7 @@ sub make_jobscript_body {
             warn "Error in config file $self->{job_scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-    if (defined $xcropt::options{rhost}) {
+    unless (@{$xcropt::options{rhost}} == ()) {
 	$wkdir_str = File::Spec->catfile($xcropt::options{rwd}, $wkdir_str);
     } else {
 	$wkdir_str = File::Spec->rel2abs($wkdir_str);
@@ -256,15 +256,9 @@ sub update_script_file {
     my $file_base = shift;
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
-    if (defined $xcropt::options{rhost}) {
+    unless (@{$xcropt::options{rhost}} == ()) {
 	&xcr_push($file);
     }
-=comment
-	my $rhost = $xcropt::options{rhost};
-	my $target = $rhost .':'. File::Spec->catfile($xcropt::options{rwd}, $file);
-	qx/rcp $file $target/;
-	unlink $file;
-=cut
 }
 
 # Make/Update a jobscript file of $self->{jobscript_header} and $self->{jobscript_body}
