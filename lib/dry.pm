@@ -23,7 +23,7 @@ sub before {
 	for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
             $self->{"exe$i"} = '';
             for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
-                my $arg = "arg$i_$j";
+                my $arg = "arg$i" . '_' . "$j";
                 $self->{$arg} = '';
             }
         }

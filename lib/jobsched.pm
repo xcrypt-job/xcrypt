@@ -29,7 +29,6 @@ use jsconfig;
 my $rsh_command = $xcropt::options{rsh};
 my @rhosts = @{$xcropt::options{rhost}};
 my @rwds = @{$xcropt::options{rwd}};
-my @rscheds = @{$xcropt::options{rscheduler}};
 ##################################################
 
 ### Inventory
@@ -748,6 +747,7 @@ sub check_and_write_aborted {
             print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
             inventory_write ($unchecked{$req_id}, "aborted");
 	    # ここだけジョブオブジェクトでなくジョブ名しか持っていないので，ログをジョブディレクトリに作成できない（ローカル実行なら作業ディレクトリ，リモート実行ならホームディレクトリに作成される．）
+	    # ここだけジョブオブジェクトでなくジョブ名しか持っていないので，リモート実行時にどのサイトで実行されているかを知ることができず，複数サイトにおける監視ができないので，その結果，複数サイトリモート実行ができていない．
         }
     }
 }
