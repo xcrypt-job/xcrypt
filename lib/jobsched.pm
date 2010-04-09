@@ -137,7 +137,7 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &xcr_e($scriptfile);
+    my $flag = &xcr_exist('-f', $scriptfile, $self->{rhost}, $self->{rwd});
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
@@ -147,7 +147,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.');
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{rhost}, $self->{rwd});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
@@ -230,7 +230,7 @@ sub inventory_write {
     my ($jobname, $stat) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_qx("$cmdline", $jobname);
+    &xcr_qx("$cmdline", $jobname, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -328,9 +328,10 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    my $flag = &xcr_d($inventory_path);
-    unless ( $flag ) { &xcr_mkdir($inventory_path) }
-    mkdir $inventory_path, 0755;
+    &xcr_mkdir($inventory_path, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
+    unless (-d "$inventory_path") {
+	mkdir $inventory_path, 0755;
+    }
     # 起動
     if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
@@ -351,11 +352,11 @@ sub invoke_watch_by_file {
 	    my $flag;
 	    until ($flag) {
 		Time::HiRes::sleep ($interval);
-		$flag = &xcr_e($REQFILE);
+		$flag = &xcr_exist('-f', $REQFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
 	    }
 
 	    my $CLIENT_IN;
-	    unless (@rhosts == ()) { &xcr_pull($REQFILE); }
+	    &xcr_pull($REQFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -395,7 +396,7 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		unless (@rhosts == ()) { &xcr_push($ACKFILE); }
+		&xcr_push($ACKFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
