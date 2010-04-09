@@ -15,8 +15,18 @@ use Coro::AnyEvent;
 
 my $rsh_command = $xcropt::options{rsh};
 my $rcp_command = $xcropt::options{rcp};
-my @rhosts = @{$xcropt::options{rhost}};
-my @rwds = @{$xcropt::options{rwd}};
+my @rhosts;
+if (ref $xcropt::options{rhost} eq 'ARRAY') {
+    @rhosts = @{$xcropt::options{rhost}};
+} else {
+    @rhosts = ();
+}
+my @rwds;
+if (ref $xcropt::options{rhost} eq 'ARRAY') {
+    @rwds = @{$xcropt::options{rwd}};
+} else {
+    @rwds = ();
+}
 ##
 sub mkarray ($) {
     my $x = shift;

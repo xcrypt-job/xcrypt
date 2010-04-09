@@ -12,7 +12,6 @@ use Data::Dumper;
 
 use jobsched;
 use xcropt;
-use usablekeys;
 use Cwd;
 use common;
 
@@ -21,6 +20,9 @@ our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
 add_key repeat getelapsedtime
 );
+
+# id, exe, arg, linkedfile, copiedfile, and copieddir are built-in.
+our @allkeys = ('before', 'before_in_job', 'after_in_job', 'after');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
@@ -129,7 +131,7 @@ sub repeat {
 sub add_key {
     my $exist = 0;
     foreach my $i (@_) {
-        foreach my $j ((@usablekeys::allkeys, 'id')) {
+        foreach my $j ((@allkeys, 'id')) {
             if (($i eq $j)
                 || ($i =~ /\Aexe[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*/)
@@ -145,7 +147,7 @@ sub add_key {
         } elsif ($i =~ /"$expandingchar"\Z/) {
             die "Can't use $i as key since $i has $expandingchar at its tail.\n";
         } else {
-            push(@usablekeys::allkeys, $i);
+            push(@allkeys, $i);
         }
         $exist = 0;
     }
@@ -167,13 +169,13 @@ sub addusercustomizablecoremembers {
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
-            push(@usablekeys::allkeys, "$name");
+            push(@allkeys, "$name");
         }
     }
     for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
 	for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
             my $name = 'arg' . $i . '_' . $j;
-            push(@usablekeys::allkeys, "$name");
+            push(@allkeys, "$name");
 	}
     }
     foreach my $key (keys(%job)) {
@@ -181,9 +183,9 @@ sub addusercustomizablecoremembers {
             if ($key =~ /"$expandingchar"\Z/) {
                 $/ = $user::expandingchar;
                 chomp $key;
-                push(@usablekeys::allkeys, $key);
+                push(@allkeys, $key);
             } else {
-                push(@usablekeys::allkeys, $key);
+                push(@allkeys, $key);
             }
         }
     }
@@ -201,7 +203,7 @@ sub generate {
     my @ranges = &rm_tailnis(@_);
     $job{id} = join($user::separator, ($job{id}, @ranges));
     &addusercustomizablecoremembers(%job);
-    foreach (@usablekeys::allkeys) {
+    foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($job{"$members"}) ) {
             # 「ジョブ定義ハッシュ@」の値がスカラである時
@@ -228,7 +230,7 @@ sub generate {
 =comment
     foreach my $key (keys(%job)) {
         my $exist = 0;
-        foreach my $ukey (@usablekeys::allkeys, 'id') {
+        foreach my $ukey (@allkeys, 'id') {
             if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
                 $exist = 1;
             }
@@ -267,7 +269,7 @@ sub MAX {
     my $num = 0;
 
     &addusercustomizablecoremembers(%job);
-    foreach (@usablekeys::allkeys) {
+    foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($_[0]{"$members"}) ) {
             if (ref($_[0]{"$members"}) eq 'ARRAY') {
@@ -284,7 +286,7 @@ sub MIN {
     my $num = 0;
 
     &addusercustomizablecoremembers(%job);
-    foreach (@usablekeys::allkeys) {
+    foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($_[0]{"$members"}) ) {
             if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
@@ -406,14 +408,14 @@ sub prepare {
     &addusercustomizablecoremembers(%job);
 =comment
     foreach my $key (keys(%job)) {
-        unless (&belong($key, 'id', @usablekeys::allkeys)) {
+        unless (&belong($key, 'id', @allkeys)) {
             delete($job{"$key"});
         }
     }
 =cut
     foreach my $key (keys(%job)) {
         my $exist = 0;
-        foreach my $ukey (@usablekeys::allkeys, 'id') {
+        foreach my $ukey (@allkeys, 'id') {
             if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
                 $exist = 1;
             }

@@ -12,8 +12,6 @@ use jsconfig;
 use xcropt;
 use common;
 
-my @rhosts = @{$xcropt::options{rhost}};
-my @rwds = @{$xcropt::options{rwd}};
 sub new {
     my $class = shift;
     my $self = shift;
@@ -30,6 +28,10 @@ sub new {
     $self->{workdir} = $jobname;
 
     # Job script related members
+    set_member_if_empty ($self, 'rhost', ${$xcropt::options{rhost}}[0]);
+    set_member_if_empty ($self, 'rwd', ${$xcropt::options{rwd}}[0]);
+    set_member_if_empty ($self, 'rsched', ${$xcropt::options{rsched}}[0]);
+
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
@@ -56,7 +58,7 @@ sub new {
             print "Delete directory $self->{workdir}\n";
             File::Path::rmtree ($self->{workdir});
         }
-	unless (@rhosts == ()) {
+	unless ($self->{rhost} eq '') {
 	    my $ex = &xcr_d($self->{id});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
@@ -202,8 +204,8 @@ sub make_jobscript_body {
             warn "Error in config file $self->{job_scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-    unless (@rhosts == ()) {
-	$wkdir_str = File::Spec->catfile($rwds[0], $wkdir_str);
+    unless ($self->{rhost} eq '') {
+	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
     } else {
 	$wkdir_str = File::Spec->rel2abs($wkdir_str);
     }
@@ -258,7 +260,7 @@ sub update_script_file {
     my $file_base = shift;
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
-    unless (@rhosts == ()) {
+    unless ($self->{rhost} eq '') {
 	&xcr_push($file);
     }
 }

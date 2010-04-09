@@ -11,7 +11,7 @@ chomp $localhost;
 
 my @rhosts = ();
 my @rwds = ();
-my @rschedulers = ();
+my @rscheds = ();
 
 our %options =
     (
@@ -19,11 +19,11 @@ our %options =
      'rcp' => 'scp',
      'rhost' => \@rhosts,
      'rwd' => \@rwds,
+     'rsched' => \@rscheds,
      'localhost' => $localhost,
      'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
 #     'scheduler' => $ENV{XCRJOBSCHED}, # Default job scheduler
      'scheduler' => undef, # 実行時に与えられなければ*計算*ホストの環境変数の値を設定するという実装に変更した
-     'rscheduler' => \@rschedulers,
      'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
 #     'inventory_path' => File::Spec->catfile(Cwd::getcwd(), 'inv_watch'),
      'inventory_path' => 'inv_watch', # ローカルとリモートとで同じ名前で別のフルパスにしたかったので相対パスで指定するようにした
@@ -40,11 +40,11 @@ GetOptions
      'rcp=s',
      'rhost=s',
      'rwd=s',
+     'rsched=s',
      'localhost=s',
      'port=i',
      'abort_check_interval=i',
      'scheduler=s',
-     'rscheduler=s',
      'inventory_path=s',
      'verbose=i',
      'stack_size=i',

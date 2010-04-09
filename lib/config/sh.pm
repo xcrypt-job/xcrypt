@@ -8,9 +8,9 @@ $jsconfig::jobsched_config{"sh"} = {
     qstat_command => "ps",
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
-    jobscript_workdir => sub { $_[0]->{id}; }, # relpath ver
-    qsub_option_stdout => workdir_file_option('-o ', 'stdout'), # relpath ver
-    qsub_option_stderr => workdir_file_option('-e ', 'stderr'), # relpath ver
+    jobscript_workdir => sub { $_[0]->{id}; },
+    qsub_option_stdout => workdir_file_option('-o ', 'stdout'),
+    qsub_option_stderr => workdir_file_option('-e ', 'stderr'),
     extract_req_id_from_qsub_output => sub {
         my (@lines) = @_;
         if ($lines[0] =~ /([0-9]*)/) {
