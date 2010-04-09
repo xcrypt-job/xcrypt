@@ -341,8 +341,12 @@ sub submit {
 		my $flag1 = 0;
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &common::xcr_e("$self->{id}/$self->{JS_stdout}");
-		    $flag1 = &common::xcr_e("$self->{id}/$self->{JS_stderr}");
+		    $flag0 = &common::xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
+					    $self->{rhost},
+					    $self->{rwd});
+		    $flag1 = &common::xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					    $self->{rhost},
+					    $self->{rwd});
 		    }
 	    }
 	    $self->EVERY::LAST::after();

@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_d xcr_e xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_pull xcr_push);
+xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_pull xcr_push);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -125,25 +125,12 @@ sub write_string_array {
 }
 
 ##
-sub xcr_d {
-    my ($dir) = @_;
+sub xcr_exist {
+    my ($type, $file, $rhost, $rwd) = @_;
     my $flag = 0;
-    unless (@rhosts == ()) {
-	my $fullpath = File::Spec->catfile($rwds[0], $dir);
-	$flag = qx/$rsh_command $rhosts[0] test -d $fullpath && echo 1;/;
-	chomp($flag);
-    } else {
-	if (-d $dir) { $flag = 1; }
-    }
-    return $flag;
-}
-
-sub xcr_e {
-    my ($file) = @_;
-    my $flag = 0;
-    unless (@rhosts == ()) {
-	my $fullpath = File::Spec->catfile($rwds[0], $file);
-	$flag = qx/$rsh_command $rhosts[0] test -f $fullpath && echo 1;/;
+    unless ($rhost eq '') {
+	my $fullpath = File::Spec->catfile($rwd, $file);
+	$flag = qx/$rsh_command $rhost test $type $fullpath && echo 1;/;
 	chomp($flag);
     } else {
 	if (-e $file) { $flag = 1; }
@@ -152,20 +139,23 @@ sub xcr_e {
 }
 
 sub xcr_mkdir {
-    my ($dir) = @_;
-    unless (@rhosts == ()) {
-	my $rdir = File::Spec->catfile($rwds[0], $dir);
-	qx/$rsh_command $rhosts[0] mkdir $rdir/;
+    my ($dir, $rhost, $rwd) = @_;
+    my $flag = &xcr_exist('-d', $dir, $rhost, $rwd);
+    unless ($flag) {
+	unless ($rhost eq '') {
+	    my $rdir = File::Spec->catfile($rwd, $dir);
+	    qx/$rsh_command $rhost mkdir $rdir/;
+	}
     }
 }
 
 sub xcr_unlink {
-    my ($file) = @_;
-    unless (@rhosts == ()) {
-	my $flag = &xcr_e($file);
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq '') {
+	my $flag = &xcr_exist('-f', $file, $rhost, $rwd);
 	if ($flag) {
-	    my $tmp = File::Spec->catfile($rwds[0], $file);
-	    qx/$rsh_command $rhosts[0] rm -f $tmp/;
+	    my $tmp = File::Spec->catfile($rwd, $file);
+	    qx/$rsh_command $rhost rm -f $tmp/;
 	}
     } else {
 	unlink $file;
@@ -173,79 +163,85 @@ sub xcr_unlink {
 }
 
 sub xcr_symlink {
-    my ($dir, $file, $link) = @_;
-    unless (@rhosts == ()) {
-	my $tmp = File::Spec->catfile($rwds[0], $dir, $link);
-	qx/$rsh_command $rhosts[0] ln -s $file $tmp/;
+    my ($dir, $file, $link, $rhost, $rwd) = @_;
+    my $ex0 = &xcr_exist('-f', $file, $rhost, $rwd);
+    my $ex1 = &xcr_exist('-h', $link, $rhost, $rwd);
+    unless ($rhost eq '') {
+	if ($ex0 && !$ex1) {
+	    unless ($ex1) {
+		my $tmp = File::Spec->catfile($rwd, $dir, $link);
+		my $file1 = File::Spec->catfile('..', $file);
+		qx/$rsh_command $rhost ln -s $file1 $tmp/;
+	    }
+	} else {
+	    print "$ex0 $ex1\n";
+	    warn "Can't link to $file";
+	}
     } else {
-	symlink($file, File::Spec->catfile($dir, $link));
+	if ($ex0 && !$ex1) {
+		symlink($file, File::Spec->catfile($dir, $link));
+	} else {
+	    warn "Can't link to $file";
+	}
     }
 }
 
 sub xcr_qx {
-    my ($cmd, $dir) = @_;
+    my ($cmd, $dir, $rhost, $rwd) = @_;
     my @ret;
-    unless (@rhosts == ()) {
-	if ($dir) {
-	    my $tmp = "cd " . File::Spec->catfile($rwds[0], $dir) . "; $cmd";
-	    @ret = qx/$rsh_command $rhosts[0] \"$tmp\"/;
-	} else {
-	    @ret = qx/$rsh_command $rhosts[0] $cmd/;
-	}
+    unless ($rhost eq '') {
+	my $tmp = "cd " . File::Spec->catfile($rwd, $dir) . "; $cmd";
+	@ret = qx/$rsh_command $rhost \"$tmp\"/;
     } else {
-	if ($dir) {
-	    @ret = qx/cd $dir; $cmd/;
-	} else {
-	    @ret = qx/$cmd/;
-	}
+	@ret = qx/cd $dir; $cmd/;
     }
 }
 
-=comment
-sub xcr_open {
-    my ($fh, $mode, $file) = @_;
-    if (defined $xcropt::options{rhost}) {
-	my $rhost = $xcropt::options{rhost};
-	my $fullpath = File::Spec->catfile($rwds[0], $file);
-	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-	$file = $tmpdir_file;
-	if ($mode eq '<'){
-	    qx/$rcp_command $rhost:$fullpath $tmpdir_file/;
-	}
-    }
-    open($fh, $mode, $file);
-}
-
-sub xcr_close {
-    my ($fh, $mode, $file) = @_;
-    if (defined $xcropt::options{rhost}) {
-	my $rhost = $xcropt::options{rhost};
-	my $fullpath = File::Spec->catfile($rwds[0], $file);
-	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
-	if ($mode eq '>') {
-	    qx/$rcp_command $tmpdir_file $rhost:$fullpath /;
-	}
-    }
-#    close($fh);
-}
-=cut
+# sub xcr_open {
+#     my ($fh, $mode, $file) = @_;
+#     if (defined $xcropt::options{rhost}) {
+# 	my $rhost = $xcropt::options{rhost};
+# 	my $fullpath = File::Spec->catfile($rwds[0], $file);
+# 	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+# 	$file = $tmpdir_file;
+# 	if ($mode eq '<'){
+# 	    qx/$rcp_command $rhost:$fullpath $tmpdir_file/;
+# 	}
+#     }
+#     open($fh, $mode, $file);
+# }
+#
+# sub xcr_close {
+#     my ($fh, $mode, $file) = @_;
+#     if (defined $xcropt::options{rhost}) {
+# 	my $rhost = $xcropt::options{rhost};
+# 	my $fullpath = File::Spec->catfile($rwds[0], $file);
+# 	my $tmpdir_file = File::Spec->catfile($xcropt::options{tmp}, $file);
+# 	if ($mode eq '>') {
+# 	    qx/$rcp_command $tmpdir_file $rhost:$fullpath /;
+# 	}
+#     }
+#     close($fh);
+# }
 
 sub xcr_pull {
-    my ($file) = @_;
-    unless ($xcropt::options{shared}) {
-	my $remote = File::Spec->catfile($rwds[0], $file);
-	qx/$rcp_command $rhosts[0]:$remote $file/;
-	qx/$rsh_command $rhosts[0] rm -f $remote/;
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq '') {
+	unless ($xcropt::options{shared}) {
+	    my $remote = File::Spec->catfile($rwd, $file);
+	    qx/$rcp_command $rhost:$remote $file/;
+	    qx/$rsh_command $rhost rm -f $remote/;
+	}
     }
 }
 
 sub xcr_copy {
-    my ($copied, $dir) = @_;
-    unless (@rhosts == ()) {
+    my ($copied, $dir, $rhost, $rwd) = @_;
+    unless ($rhost eq '') {
 	unless ($xcropt::options{shared}) {
-	    my $fp_copied = File::Spec->catfile($rwds[0], $copied);
-	    my $fp_dir = File::Spec->catfile($rwds[0], $dir);
-	    qx/$rsh_command $rhosts[0] cp -f $fp_copied $fp_dir/;
+	    my $fp_copied = File::Spec->catfile($rwd, $copied);
+	    my $fp_dir = File::Spec->catfile($rwd, $dir);
+	    qx/$rsh_command $rhost cp -f $fp_copied $fp_dir/;
 	}
     } else {
 	fcopy($copied, $dir);
@@ -253,11 +249,13 @@ sub xcr_copy {
 }
 
 sub xcr_push {
-    my ($file) = @_;
-    unless ($xcropt::options{shared}) {
-	my $remote = File::Spec->catfile($rwds[0], $file);
-	qx/$rcp_command $file $rhosts[0]:$remote/;
-	unlink $file;
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq '') {
+	unless ($xcropt::options{shared}) {
+	    my $remote = File::Spec->catfile($rwd, $file);
+	    qx/$rcp_command $file $rhost:$remote/;
+	    unlink $file;
+	}
     }
 }
 

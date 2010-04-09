@@ -59,14 +59,16 @@ sub new {
             File::Path::rmtree ($self->{workdir});
         }
 	unless ($self->{rhost} eq '') {
-	    my $ex = &xcr_d($self->{id});
+	    my $ex = &xcr_exist('-d', $self->{id}, $self->{rhost}, $self->{rwd});
 	    if ($ex) {
 		print "Delete directory $self->{id}\n";
 		File::Path::rmtree($self->{id});
 	    }
 	}
-	&xcr_mkdir($jobname);
-	mkdir $jobname, 0755;
+	&xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
+	unless (-d "$jobname") {
+	    mkdir $jobname, 0755;
+	}
         # Otherwise, make the job 'active'
 	&jobsched::inventory_write ($jobname, "active");
 
@@ -86,23 +88,20 @@ sub new {
 
             if ($self->{"copiedfile$i"}) {
                 my $copied = $self->{"copiedfile$i"};
-		my $ex = &xcr_e($copied);
+		my $ex = &xcr_exist('-f', $copied, $self->{rhost});
 		if ($ex) {
-		    xcr_copy($copied, $self->{'id'});
+		    &xcr_copy($copied, $self->{'id'}, $self->{rhost}, $self->{rwd});
 		} else {
 		    warn "Can't copy $copied\n";
 		}
             }
             if ($self->{"linkedfile$i"}) {
                 my $file = $self->{"linkedfile$i"};
-		my $ex = &xcr_e($file);
-		if ($ex) {
-		    &xcr_symlink($self->{'id'},
-				 File::Spec->catfile('..', $file),
-				 File::Spec->catfile(basename($file)));
-		} else {
-		    warn "Can't link to $file";
-		}
+		&xcr_symlink($self->{id},
+			     File::Spec->catfile($file),
+			     File::Spec->catfile(basename($file)),
+			     $self->{rhost},
+			     $self->{rwd});
             }
         }
     }
@@ -261,7 +260,7 @@ sub update_script_file {
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&xcr_push($file);
+	&xcr_push($file, $self->{rhost}, $self->{rwd});
     }
 }
 
