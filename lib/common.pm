@@ -170,7 +170,7 @@ sub xcr_symlink {
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
 		my $tmp = File::Spec->catfile($rwd, $dir, $link);
-		my $file1 = File::Spec->catfile('..', $file);
+		my $file1 = File::Spec->catfile($rwd, $dir, $file);
 		qx/$rsh_command $rhost ln -s $file1 $tmp/;
 	    }
 	} else {
@@ -179,7 +179,7 @@ sub xcr_symlink {
 	}
     } else {
 	if ($ex0 && !$ex1) {
-		symlink($file, File::Spec->catfile($dir, $link));
+		symlink(File::Spec->rel2abs($file), File::Spec->catfile($dir, $link));
 	} else {
 	    warn "Can't link to $file";
 	}
