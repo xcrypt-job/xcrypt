@@ -70,7 +70,7 @@ unless (@rhosts == ()) {
 our $watch_thread = undef; # used in bin/xcrypt
 
 my %hosts_schedulers_for_qstat : shared = ();
-my @hosts_wds_for_qstat : shared = ();
+my %hosts_wds_for_qstat : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -216,7 +216,7 @@ sub entry_site_and_scheduler_for_qstat {
 sub entry_site_and_wd_for_qstat {
     my ($host, $wd) = @_;
 #    if () {
-    push(@hosts_wds_for_qstat, $host, $wd);
+    $hosts_wds_for_qstat{$host} = $wd;
 #    }
 }
 # qstatコマンドを実行して表示されたrequest IDの列を返す
@@ -231,13 +231,13 @@ sub qstat {
 	    $qstat_command = "$rsh_command $_ $qstat_command";
 	}
     unless ( defined $qstat_command ) {
-        die "qstat_command is not defined in $xcropt::options{scheduler}.pm";
+        die "qstat_command is not defined in $hosts_schedulers_for_qstat{$_}.pm";
     }
     my $qstat_extractor = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{extract_req_ids_from_qstat_output};
     unless ( defined $qstat_extractor ) {
-        die "extract_req_ids_from_qstat_output is not defined in $xcropt::options{scheduler}.pm";
+        die "extract_req_ids_from_qstat_output is not defined in $hosts_schedulers_for_qstat{$_}.pm";
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-        die "Error in $xcropt::options{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
+        die "Error in $hosts_schedulers_for_qstat{$_}.pm: extract_req_ids_from_qstat_output must be a function.";
     }
     my $command_string = any_to_string_spc ($qstat_command);
     unless (common::cmd_executable ($command_string)) {
@@ -392,14 +392,19 @@ sub invoke_watch_by_file {
 	    my $flag;
 	    my $host;
 	    my $wd;
+	    my $count = 0;
 	    until ($flag) {
+		my @tmp = %hosts_wds_for_qstat;
 		Time::HiRes::sleep ($interval);
-		$host = shift(@hosts_wds_for_qstat);
-		$wd = shift(@hosts_wds_for_qstat);
-		push(@hosts_wds_for_qstat, $host);
-		push(@hosts_wds_for_qstat, $wd);
+		$host = $tmp[$count];
+		$wd = $tmp[$count+1];
 print $host, "\n";
 		$flag = &xcr_exist('-f', $REQFILE, $host, $wd);
+		if ($count + 2 < $#tmp) {
+		    $count = $count + 2;
+		} else {
+		    $count = 0;
+		}
 	    }
 
 	    my $CLIENT_IN;

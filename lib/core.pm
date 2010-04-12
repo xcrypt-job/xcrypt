@@ -42,6 +42,7 @@ sub new {
 	&jobsched::entry_site_and_wd_for_qstat ($self->{rhost}, $self->{rwd});
     } else {
 	&jobsched::entry_site_and_scheduler_for_qstat ('localhost', $self->{job_scheduler});
+	&jobsched::entry_site_and_wd_for_qstat ('localhost', $self->{job_scheduler});
     }
     &jobsched::load_inventory ($jobname);
     my $last_stat = &jobsched::get_job_status ($jobname);
