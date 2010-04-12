@@ -76,6 +76,8 @@ unless (@rhosts == ()) {
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread = undef; # used in bin/xcrypt
 
+my %hosts_schedulers_for_qstat : shared = ();
+
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
 # ジョブ名→ジョブの状態
@@ -197,13 +199,26 @@ sub qdel {
     }
 }
 
+sub entry_site_and_scheduler_for_qstat {
+    my ($host, $sched) = @_;
+#    if () {
+    $hosts_schedulers_for_qstat{$host} = $sched;
+#    }
+}
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
-    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    unless (@rhosts == ()) {
-	$qstat_command = "$rsh_command $rhosts[0] $qstat_command";
+    my @ids;
+#    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
+    foreach(%hosts_schedulers_for_qstat){
+	print $_, "\n";
     }
-
+    foreach (keys %hosts_schedulers_for_qstat) {
+	my $qstat_command = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{qstat_command};
+	if ($_ eq 'localhost') {
+	    $qstat_command = "$qstat_command";
+	} else {
+	    $qstat_command = "$rsh_command $_ $qstat_command";
+	}
     unless ( defined $qstat_command ) {
         die "qstat_command is not defined in $xcropt::options{scheduler}.pm";
     }
@@ -218,9 +233,12 @@ sub qstat {
         warn "$command_string not executable";
         return ();
     }
+
     # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
     my @qstat_out = qx/$command_string/;
-    my @ids = &$qstat_extractor(@qstat_out);
+    my @tmp_ids = &$qstat_extractor(@qstat_out);
+    push(@ids, @tmp_ids);
+    }
     return @ids;
 }
 
