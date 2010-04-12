@@ -70,7 +70,7 @@ unless (@rhosts == ()) {
 our $watch_thread = undef; # used in bin/xcrypt
 
 my %hosts_schedulers_for_qstat : shared = ();
-my %hosts_wds_for_qstat : shared = ();
+my @hosts_wds_for_qstat : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -216,7 +216,7 @@ sub entry_site_and_scheduler_for_qstat {
 sub entry_site_and_wd_for_qstat {
     my ($host, $wd) = @_;
 #    if () {
-    $hosts_wds_for_qstat{$host} = $wd;
+    push(@hosts_wds_for_qstat, $host, $wd);
 #    }
 }
 # qstatコマンドを実行して表示されたrequest IDの列を返す
@@ -389,16 +389,21 @@ sub invoke_watch_by_file {
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
-	    foreach my $host (keys(%hosts_wds_for_qstat)) {
-print $host, "\n";
 	    my $flag;
+	    my $host;
+	    my $wd;
 	    until ($flag) {
 		Time::HiRes::sleep ($interval);
-		$flag = &xcr_exist('-f', $REQFILE, $host, $hosts_wds_for_qstat{$host});
+		$host = shift(@hosts_wds_for_qstat);
+		$wd = shift(@hosts_wds_for_qstat);
+		push(@hosts_wds_for_qstat, $host);
+		push(@hosts_wds_for_qstat, $wd);
+print $host, "\n";
+		$flag = &xcr_exist('-f', $REQFILE, $host, $wd);
 	    }
 
 	    my $CLIENT_IN;
-	    &xcr_pull($REQFILE, $host, $hosts_wds_for_qstat{$host});
+	    &xcr_pull($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -438,14 +443,14 @@ print $host, "\n";
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_push($ACKFILE, $host, $hosts_wds_for_qstat{$host});
+		&xcr_push($ACKFILE, $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
             }
 	    close($CLIENT_OUT);
 	    unlink($REQFILE);
-	    }
+
         }
         # close (INVWATCH_LOG);
 				  });
