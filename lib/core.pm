@@ -34,19 +34,18 @@ sub new {
 
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    unless (@{$xcropt::options{rhost}} == ()) {
-	my $rxcrjsch = qx/$xcropt::options{rsh} ${$xcropt::options{rhost}}[0] 'echo \$XCRJOBSCHED'/;
-	chomp($rxcrjsch);
-	set_member_if_empty ($self, 'job_scheduler', $rxcrjsch);
-    } else {
-	set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
-    }
+    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
     set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
+    if (defined $self->{rhost}) {
+	&jobsched::entry_site_and_scheduler_for_qstat ($self->{rhost}, $self->{job_scheduler});
+    } else {
+	&jobsched::entry_site_and_scheduler_for_qstat ('localhost', $self->{job_scheduler});
+    }
     &jobsched::load_inventory ($jobname);
     my $last_stat = &jobsched::get_job_status ($jobname);
     if ( jobsched::is_signaled_job ($jobname) ) {
