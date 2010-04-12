@@ -34,7 +34,13 @@ sub new {
 
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
+    unless (@{$xcropt::options{rhost}} == ()) {
+	my $rxcrjsch = qx/$xcropt::options{rsh} ${$xcropt::options{rhost}}[0] 'echo \$XCRJOBSCHED'/;
+	chomp($rxcrjsch);
+	set_member_if_empty ($self, 'job_scheduler', $rxcrjsch);
+    } else {
+	set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
+    }
     set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
