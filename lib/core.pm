@@ -43,6 +43,7 @@ sub new {
     # Load the inventory file to recover the job's status after the previous execution
     if (defined $self->{rhost}) {
 	&jobsched::entry_site_and_scheduler_for_qstat ($self->{rhost}, $self->{job_scheduler});
+	&jobsched::entry_site_and_wd_for_qstat ($self->{rhost}, $self->{rwd});
     } else {
 	&jobsched::entry_site_and_scheduler_for_qstat ('localhost', $self->{job_scheduler});
     }
@@ -55,7 +56,11 @@ sub new {
     } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
         # Skip if the job is 'done' or 'finished'
         if ( $last_stat eq 'finished' ) {
-	    &jobsched::inventory_write ($jobname, "done",);
+	    if (defined $self->{rhost}) {
+		&jobsched::inventory_write ($jobname, "done", $self->{rhost}, $self->{rwd});
+	    } else {
+		&jobsched::inventory_write ($jobname, "done",);
+	    }
         }
     } else {
         # If the working directory already exists, delete it
@@ -70,12 +75,17 @@ sub new {
 		File::Path::rmtree($self->{id});
 	    }
 	}
+	&xcr_mkdir($xcropt::options{inventory_path}, $self->{rhost}, $self->{rwd});
 	&xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
 	unless (-d "$jobname") {
 	    mkdir $jobname, 0755;
 	}
         # Otherwise, make the job 'active'
-	&jobsched::inventory_write ($jobname, "active");
+	if (defined $self->{rhost}) {
+	    &jobsched::inventory_write ($jobname, "active", $self->{rhost}, $self->{rwd});
+	} else {
+	    &jobsched::inventory_write ($jobname, "active");
+	}
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
 	    # リモート実行未対応
@@ -216,7 +226,11 @@ sub make_jobscript_body {
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
     push (@body, "sleep 6"); # running が早すぎて queued がなかなか勝てないため
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
+    if (defined $self->{rhost}) {
+	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
+    } else {
+	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
+    }
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -235,7 +249,11 @@ sub make_jobscript_body {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
+    if (defined $self->{rhost}) {
+	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
+    } else {
+	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
+    }
     $self->{jobscript_body} = \@body;
 }
 
