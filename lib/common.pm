@@ -64,11 +64,11 @@ sub get_jobids {
 }
 =cut
 ##
-sub cmd_executable ($) {
-    my ($cmd) = @_;
+sub cmd_executable {
+    my ($cmd, $host) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    unless (@rhosts == ()) {
-	qx/$rsh_command $rhosts[0] which $cmd0[0]/;
+    if ($host) {
+	qx/$rsh_command $host which $cmd0[0]/;
     } else {
 	qx/which $cmd0[0]/;
     }

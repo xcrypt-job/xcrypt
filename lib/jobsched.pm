@@ -27,7 +27,7 @@ use jsconfig;
 # use Thread::Semaphore;
 
 my $rsh_command = $xcropt::options{rsh};
-my @rhosts = @{$xcropt::options{rhost}};
+my @rwds = @{$xcropt::options{rhost}};
 my @rwds = @{$xcropt::options{rwd}};
 ##################################################
 
@@ -44,22 +44,14 @@ if ($inventory_port > 0) {
 } else {
     $sock_or_file = 'inventory_write_file.pl';
 }
-unless (@rhosts == ()) {
-    my $remote_xcrypt = qx/$rsh_command $rhosts[0] 'echo \$XCRYPT'/;
-    chomp($remote_xcrypt);
-    if ($remote_xcrypt eq '') {
-	die "Set the environment varialble \$XCRYPT at the remote host\n";
-    }
-    $write_command=File::Spec->catfile($remote_xcrypt, 'bin', $sock_or_file);
-} else {
-    $write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
-}
+
 # for inventory_write_file
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
+=comment
 unless (@rhosts == ()) {
     my $fp_req    = File::Spec->catfile($rwds[0], $REQFILE);
     my $fp_ack    = File::Spec->catfile($rwds[0], $ACKFILE);
@@ -69,14 +61,16 @@ unless (@rhosts == ()) {
     qx/$rsh_command $rhosts[0] rm -f $fp_req; $rsh_command $rhosts[0] rm -f $fp_ack; $rsh_command $rhosts[0] rm -f $fp_reqtmp; $rsh_command $rhosts[0] rm -f $fp_acktmp/;
     qx/$rsh_command $rhosts[0] test -d $fp_lock && $rsh_command $rhosts[0] rmdir $fp_lock/;
 } else {
+=cut
     unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
     rmdir $LOCKDIR;
-}
+#}
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread = undef; # used in bin/xcrypt
 
 my %hosts_schedulers_for_qstat : shared = ();
+my %hosts_wds_for_qstat : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -133,7 +127,11 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    &inventory_write($self->{id}, 'submitted');
+    if (defined $self->{rhost}) {
+	&inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
+    } else {
+	&inventory_write($self->{id}, 'submitted');
+    }
 
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
@@ -144,7 +142,13 @@ sub qsub {
 	die "Can't find a job script file \"$scriptfile\"";
     }
 
-    if (common::cmd_executable ($qsub_command)) {
+    my $flag;
+    if ($self->{rhost}) {
+	$flag = common::cmd_executable ($qsub_command, $self->{rhost});
+    } else {
+	$flag = common::cmd_executable ($qsub_command);
+    }
+    if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
@@ -169,7 +173,11 @@ sub qsub {
         close ($request_ids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-	&inventory_write($self->{id}, 'queued');
+	if (defined $self->{rhost}) {
+	    &inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
+	} else {
+	    &inventory_write($self->{id}, 'queued');
+	}
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -205,13 +213,16 @@ sub entry_site_and_scheduler_for_qstat {
     $hosts_schedulers_for_qstat{$host} = $sched;
 #    }
 }
+sub entry_site_and_wd_for_qstat {
+    my ($host, $wd) = @_;
+#    if () {
+    $hosts_wds_for_qstat{$host} = $wd;
+#    }
+}
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
 #    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    foreach(%hosts_schedulers_for_qstat){
-	print $_, "\n";
-    }
     foreach (keys %hosts_schedulers_for_qstat) {
 	my $qstat_command = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{qstat_command};
 	if ($_ eq 'localhost') {
@@ -245,10 +256,10 @@ sub qstat {
 ##############################
 # Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
-    my ($jobname, $stat) = @_;
-    my $cmdline = inventory_write_cmdline($jobname, $stat);
+    my ($jobname, $stat, $host, $wd) = @_;
+    my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_qx("$cmdline", $jobname, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
+    &xcr_qx("$cmdline", $jobname, $host, $wd);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -261,15 +272,27 @@ sub inventory_write {
     # }
 }
 sub inventory_write_cmdline {
-    my ($jobname, $stat) = @_;
+    my ($jobname, $stat, $host, $wd) = @_;
     status_name_to_level ($stat); # Valid status name?
+
+if ($host) {
+    my $remote_xcrypt = qx/$rsh_command $host 'echo \$XCRYPT'/;
+    chomp($remote_xcrypt);
+    if ($remote_xcrypt eq '') {
+	die "Set the environment varialble \$XCRYPT at the remote host\n";
+    }
+    $write_command=File::Spec->catfile($remote_xcrypt, 'bin', $sock_or_file);
+} else {
+    $write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
+}
+
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
     } else {
-	unless (@rhosts == ()) {
-	    my $dir = File::Spec->catfile($rwds[0], $LOCKDIR);
-	    my $req = File::Spec->catfile($rwds[0], $REQFILE);
-	    my $ack = File::Spec->catfile($rwds[0], $ACKFILE);
+	if ($host) {
+	    my $dir = File::Spec->catfile($wd, $LOCKDIR);
+	    my $req = File::Spec->catfile($wd, $REQFILE);
+	    my $ack = File::Spec->catfile($wd, $ACKFILE);
 	    return "$write_command $dir $req $ack $jobname $stat";
 	} else {
 	    my $dir = File::Spec->catfile(Cwd::getcwd(), $LOCKDIR);
@@ -346,7 +369,6 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    &xcr_mkdir($inventory_path, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
     unless (-d "$inventory_path") {
 	mkdir $inventory_path, 0755;
     }
@@ -367,14 +389,15 @@ sub invoke_watch_by_file {
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
+	    foreach my $host (keys(%hosts_wds_for_qstat)) {
 	    my $flag;
 	    until ($flag) {
 		Time::HiRes::sleep ($interval);
-		$flag = &xcr_exist('-f', $REQFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
+		$flag = &xcr_exist('-f', $REQFILE, $host, $hosts_wds_for_qstat{$host});
 	    }
 
 	    my $CLIENT_IN;
-	    &xcr_pull($REQFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
+	    &xcr_pull($REQFILE, $host, $hosts_wds_for_qstat{$host});
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -414,13 +437,14 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_push($ACKFILE, ${$xcropt::options{rhost}}[0], ${$xcropt::options{rwd}}[0]);
+		&xcr_push($ACKFILE, $host, $hosts_wds_for_qstat{$host});
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
             }
 	    close($CLIENT_OUT);
 	    unlink($REQFILE);
+	    }
         }
         # close (INVWATCH_LOG);
 				  });

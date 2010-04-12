@@ -1,5 +1,6 @@
 use base qw(core);
 
+add_key('rhost', 'rwd', 'job_scheduler');
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe0' => './fib',
@@ -18,12 +19,15 @@ use base qw(core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0_0@' => [20..22], # i.e., $ qsub ./fib 20 > out
+#		 'arg0_0@' => [20..22], # i.e., $ qsub ./fib 20 > out
 #                                             $ qsub ./fib 21 > out
 #                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
 #		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0_0@' => '$R0 + 20 + $R2;'
+'rhost' => 'abet@super.para.media.kyoto-u.ac.jp',
+'rwd' => '/home/spara/abet/xcrypt/sample',
+'job_scheduler' => 'muramasa',
     );
 &submit(@jobs);
 #&repeat('print "hogehoge\n";');

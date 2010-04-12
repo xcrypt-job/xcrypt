@@ -315,7 +315,11 @@ sub submit {
                 push (@coros, undef);
                 next;
             } else {
-		&jobsched::inventory_write($self->{id}, 'prepared');
+		if (defined $self->{rhost}) {
+		    &jobsched::inventory_write($self->{id}, 'prepared', $self->{rhost}, $self->{rwd});
+		} else {
+		    &jobsched::inventory_write($self->{id}, 'prepared');
+		}
             }
         }
         # ジョブスレッドを立ち上げる
@@ -350,7 +354,11 @@ sub submit {
 		    }
 	    }
 	    $self->EVERY::LAST::after();
-	    &jobsched::inventory_write ($self->{id}, 'finished');
+	    if (defined $self->{rhost}) {
+		&jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
+	    } else {
+		&jobsched::inventory_write ($self->{id}, 'finished');
+	    }
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
