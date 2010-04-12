@@ -233,7 +233,7 @@ sub qstat {
     unless ( defined $qstat_command ) {
         die "qstat_command is not defined in $xcropt::options{scheduler}.pm";
     }
-    my $qstat_extractor = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{extract_req_ids_from_qstat_output};
+    my $qstat_extractor = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{extract_req_ids_from_qstat_output};
     unless ( defined $qstat_extractor ) {
         die "extract_req_ids_from_qstat_output is not defined in $xcropt::options{scheduler}.pm";
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
@@ -390,6 +390,7 @@ sub invoke_watch_by_file {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
 	    foreach my $host (keys(%hosts_wds_for_qstat)) {
+print $host, "\n";
 	    my $flag;
 	    until ($flag) {
 		Time::HiRes::sleep ($interval);

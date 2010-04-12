@@ -28,10 +28,6 @@ sub new {
     $self->{workdir} = $jobname;
 
     # Job script related members
-    set_member_if_empty ($self, 'rhost', ${$xcropt::options{rhost}}[0]);
-    set_member_if_empty ($self, 'rwd', ${$xcropt::options{rwd}}[0]);
-    set_member_if_empty ($self, 'rsched', ${$xcropt::options{rsched}}[0]);
-
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});

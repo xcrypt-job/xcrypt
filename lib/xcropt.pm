@@ -51,6 +51,7 @@ GetOptions
      # define other command-line options...
     );
 
+=comment
 unless (defined $xcropt::options{scheduler}) {
     unless (@{$xcropt::options{rhost}} == ()) {
 	my $rxcrjsch = qx/$xcropt::options{rsh} ${$xcropt::options{rhost}}[0] 'echo \$XCRJOBSCHED'/;
@@ -60,5 +61,6 @@ unless (defined $xcropt::options{scheduler}) {
 	$xcropt::options{scheduler} = $ENV{XCRJOBSCHED};
     }
 }
+=cut
 
 1;
