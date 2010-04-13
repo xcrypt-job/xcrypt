@@ -398,7 +398,6 @@ sub invoke_watch_by_file {
 		Time::HiRes::sleep ($interval);
 		$host = $tmp[$count];
 		$wd = $tmp[$count+1];
-print $host, "\n";
 		$flag = &xcr_exist('-f', $REQFILE, $host, $wd);
 		if ($count + 2 < $#tmp) {
 		    $count = $count + 2;

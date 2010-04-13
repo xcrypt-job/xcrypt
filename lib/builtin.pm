@@ -22,7 +22,7 @@ add_key repeat getelapsedtime
 );
 
 # id, exe, arg, linkedfile, copiedfile, and copieddir are built-in.
-our @allkeys = ('before', 'before_in_job', 'after_in_job', 'after');
+our @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'rhost', 'rwd', 'job_scheduler');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
