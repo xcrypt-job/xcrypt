@@ -131,7 +131,7 @@ sub xcr_mkdir {
     my ($dir, $rhost, $rwd) = @_;
     my $flag = &xcr_exist('-d', $dir, $rhost, $rwd);
     unless ($flag) {
-	unless ($rhost eq '') {
+	unless ($rhost eq 'localhost' || $rhost eq '') {
 	    my $rdir = File::Spec->catfile($rwd, $dir);
 	    qx/$rsh_command $rhost mkdir $rdir/;
 	}
@@ -140,7 +140,7 @@ sub xcr_mkdir {
 
 sub xcr_unlink {
     my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	my $flag = &xcr_exist('-f', $file, $rhost, $rwd);
 	if ($flag) {
 	    my $tmp = File::Spec->catfile($rwd, $file);
@@ -155,7 +155,7 @@ sub xcr_symlink {
     my ($dir, $file, $link, $rhost, $rwd) = @_;
     my $ex0 = &xcr_exist('-f', $file, $rhost, $rwd);
     my $ex1 = &xcr_exist('-h', $link, $rhost, $rwd);
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
 		my $tmp = File::Spec->catfile($rwd, $dir, $link);
@@ -178,7 +178,7 @@ sub xcr_symlink {
 sub xcr_qx {
     my ($cmd, $dir, $rhost, $rwd) = @_;
     my @ret;
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	my $tmp = "cd " . File::Spec->catfile($rwd, $dir) . "; $cmd";
 	@ret = qx/$rsh_command $rhost \"$tmp\"/;
     } else {
@@ -215,7 +215,7 @@ sub xcr_qx {
 
 sub xcr_pull {
     my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($rwd, $file);
 	    qx/$rcp_command $rhost:$remote $file/;
@@ -226,7 +226,7 @@ sub xcr_pull {
 
 sub xcr_copy {
     my ($copied, $dir, $rhost, $rwd) = @_;
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $fp_copied = File::Spec->catfile($rwd, $copied);
 	    my $fp_dir = File::Spec->catfile($rwd, $dir);
@@ -239,7 +239,7 @@ sub xcr_copy {
 
 sub xcr_push {
     my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq '') {
+    unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($rwd, $file);
 	    qx/$rcp_command $file $rhost:$remote/;
