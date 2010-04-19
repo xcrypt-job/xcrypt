@@ -102,7 +102,10 @@ sub new {
                 my $copied = $self->{"copiedfile$i"};
 		my $ex = &xcr_exist('-f', $copied, $self->{rhost});
 		if ($ex) {
-		    &xcr_copy($copied, $self->{'id'}, $self->{rhost}, $self->{rwd});
+		    &xcr_copy($copied,
+			      $self->{'id'},
+			      $self->{rhost},
+			      $self->{rwd});
 		} else {
 		    warn "Can't copy $copied\n";
 		}
