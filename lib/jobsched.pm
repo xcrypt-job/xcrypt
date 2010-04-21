@@ -27,7 +27,7 @@ use jsconfig;
 # use Thread::Semaphore;
 
 my $rsh_command = $xcropt::options{rsh};
-my @rwds = @{$xcropt::options{rhost}};
+my @rhosts = @{$xcropt::options{rhost}};
 my @rwds = @{$xcropt::options{rwd}};
 ##################################################
 
@@ -107,9 +107,9 @@ select(STDERR); $|=1; select(STDOUT);
 # after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-    my $sched = $self->{job_scheduler};
+    my $sched = $self->{scheduler};
     unless (defined $jsconfig::jobsched_config{$sched}) {
-	die "Set the environment varialble \$XCRJOBSCHED\n" ;
+	die "$sched.pm doesn't exist in lib/config" ;
     }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
@@ -207,13 +207,13 @@ sub qdel {
     }
 }
 
-sub entry_site_and_scheduler_for_qstat {
+sub entry_host_and_sched_for_qstat {
     my ($host, $sched) = @_;
 #    if () {
     $hosts_schedulers_for_qstat{$host} = $sched;
 #    }
 }
-sub entry_site_and_wd_for_qstat {
+sub entry_host_and_wd_for_qstat {
     my ($host, $wd) = @_;
 #    if () {
     $hosts_wds_for_qstat{$host} = $wd;

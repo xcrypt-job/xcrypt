@@ -16,6 +16,34 @@ sub new {
     my $class = shift;
     my $self = shift;
 
+    unless (@{$xcropt::options{rhost}} == ()) {
+	$self->{rhost} = ${$xcropt::options{rhost}}[0];
+    }
+    unless (@{$xcropt::options{rwd}} == ()) {
+	$self->{rwd} = ${$xcropt::options{rwd}}[0];
+    }
+    if ($xcropt::options{scheduler}) {
+	$self->{scheduler} = $xcropt::options{scheduler};
+    } else {
+	unless (defined $self->{scheduler}) {
+	    if (defined $self->{rhost}) {
+		my $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
+		chomp($rxcrjsch);
+		if ($rxcrjsch) {
+		    $self->{scheduler} = $rxcrjsch;
+		} else {
+		    die "Set the environment varialble \$XCRJOBSCHED at $self->{rhost}\n" ;
+		}
+	    } else {
+		if ($ENV{XCRJOBSCHED}) {
+		    $self->{scheduler} = $ENV{XCRJOBSCHED};
+		} else {
+		    die "Set the environment varialble \$XCRJOBSCHED\n" ;
+		}
+	    }
+	}
+    }
+
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', 'stdout');
     set_member_if_empty ($self, 'JS_stderr', 'stderr');
@@ -30,19 +58,19 @@ sub new {
     # Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'job_scheduler', $xcropt::options{scheduler});
-    set_member_if_empty ($self, 'jobscript_file', $self->{job_scheduler}.'.sh');
+    set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
+    set_member_if_empty ($self, 'jobscript_file', $self->{scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
     if (defined $self->{rhost}) {
-	&jobsched::entry_site_and_scheduler_for_qstat ($self->{rhost}, $self->{job_scheduler});
-	&jobsched::entry_site_and_wd_for_qstat ($self->{rhost}, $self->{rwd});
+	&jobsched::entry_host_and_sched_for_qstat ($self->{rhost}, $self->{scheduler});
+	&jobsched::entry_host_and_wd_for_qstat ($self->{rhost}, $self->{rwd});
     } else {
-	&jobsched::entry_site_and_scheduler_for_qstat ('localhost', $self->{job_scheduler});
-	&jobsched::entry_site_and_wd_for_qstat ('localhost', $self->{job_scheduler});
+	&jobsched::entry_host_and_sched_for_qstat ('localhost', $self->{scheduler});
+	&jobsched::entry_host_and_wd_for_qstat ('localhost', $self->{scheduler});
     }
     &jobsched::load_inventory ($jobname);
     my $last_stat = &jobsched::get_job_status ($jobname);
@@ -171,7 +199,7 @@ sub make_jobscript {
 sub make_jobscript_header {
     my $self = shift;
     my @header = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{job_scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
     ## preamble
     my $preamble = $cfg{jobscript_preamble};
     if ( ref($preamble) eq 'CODE' ) {
@@ -194,7 +222,7 @@ sub make_jobscript_header {
                 my @ret = &$v($self, $mb_name);
                 push (@header, @ret);
             } else {
-                warn "Error in config file $self->{job_scheduler}: $k is neither scalar nor CODE."
+                warn "Error in config file $self->{scheduler}: $k is neither scalar nor CODE."
             }
         }
     }
@@ -204,7 +232,7 @@ sub make_jobscript_header {
 sub make_jobscript_body {
     my $self = shift;
     my @body = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{job_scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
     ## Job script body
     # Chdir to the job's working directory
     my $wkdir_str = $self->{workdir};
@@ -215,7 +243,7 @@ sub make_jobscript_body {
         } elsif ( ref($js_wkdir) eq 'CODE' ) {
             $wkdir_str = &$js_wkdir($self);
         } else {
-            warn "Error in config file $self->{job_scheduler}: jobscript_workdir is neither scalar nor CODE."
+            warn "Error in config file $self->{scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
     unless ($self->{rhost} eq '') {
@@ -318,7 +346,7 @@ sub update_all_script_files {
 sub make_qsub_options {
     my $self = shift;
     my @contents = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{job_scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
     foreach my $k (keys %cfg) {
         if ( $k =~ /^qsub_option_(.*)/ ) {
             my $v = $cfg{$k};
@@ -333,7 +361,7 @@ sub make_qsub_options {
                 my @ret = &$v($self, $mb_name);
                 push (@contents, @ret);
             } else {
-                warn "Error in config file $self->{job_scheduler}: $k is neither scalar nor CODE."
+                warn "Error in config file $self->{scheduler}: $k is neither scalar nor CODE."
             }
         }
     }
