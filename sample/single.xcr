@@ -3,15 +3,15 @@ use base qw (core);
 
 %template = (
              'id' => 'job0',
-             'exe0' => './fib-file',
-             'arg0_0' => "num40",
-             'arg0_1' => "output",
+             'exe' => './fib-file',
+             'arg0' => "num40",
+             'arg1' => "output",
              'copiedfile0' => 'bin/fib-file',
              'copiedfile1@' => '"dat/num40"',
              'JS_queue' => 'ghxxxxx',  # modify for your system
              'JS_group' => 'ghxxxxx',  # modify for your system
-             'before_in_job' => 'print $self->{JS_queue}. "\n";',
-             'after_in_job' => 'print $self->{id}. "\n";',
+             'before_in_job' => 'print STDERR $self->{JS_queue}. "\n";',
+             'after_in_job' => 'print STDOUT $self->{id}. "\n";',
              );
 @job = prepare (%template);
 submit(@job);

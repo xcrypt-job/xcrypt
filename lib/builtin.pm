@@ -18,11 +18,11 @@ use common;
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
 prepare_submit_sync prepare_submit submit_sync
-add_key repeat getelapsedtime
+add_key repeat get_elapsed_time
 );
 
-# id, exe, arg, linkedfile, copiedfile, and copieddir are built-in.
-our @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'rhost', 'rwd', 'job_scheduler');
+# id, exe$i, arg$i_$j, linkedfile$i, copiedfile$i, and copieddir$i are built-in.
+our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'rhost', 'rwd', 'scheduler');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
@@ -33,7 +33,7 @@ my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $reqids_file=File::Spec->catfile($inventory_path, 'request_ids');
 my $time_running : shared = undef;
 my $time_done_now = undef;
-sub getelapsedtime {
+sub get_elapsed_time {
     unless ( -e $reqids_file ) { return; }
 
     my $inventoryfile = File::Spec->catfile ($inventory_path, "$_[0]");
@@ -163,7 +163,7 @@ sub rm_tailnis {
     }
 }
 
-sub addusercustomizablecoremembers {
+sub add_user_customizable_core_members {
     my %job = @_;
     my @premembers = ('exe', 'linkedfile', 'copiedfile', 'copieddir');
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
@@ -171,6 +171,10 @@ sub addusercustomizablecoremembers {
             my $name = $_ . $i;
             push(@allkeys, "$name");
         }
+    }
+    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
+            my $name = 'arg' . $i;
+            push(@allkeys, "$name");
     }
     for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
 	for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
@@ -202,7 +206,7 @@ sub generate {
     }
     my @ranges = &rm_tailnis(@_);
     $job{id} = join($user::separator, ($job{id}, @ranges));
-    &addusercustomizablecoremembers(%job);
+    &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($job{"$members"}) ) {
@@ -268,7 +272,7 @@ sub MAX {
     my %job = @_;
     my $num = 0;
 
-    &addusercustomizablecoremembers(%job);
+    &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($_[0]{"$members"}) ) {
@@ -285,7 +289,7 @@ sub MIN {
     my %job = @_;
     my $num = 0;
 
-    &addusercustomizablecoremembers(%job);
+    &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
         my $members = "$_" . $user::expandingchar;
         if ( exists($_[0]{"$members"}) ) {
@@ -316,7 +320,8 @@ sub submit {
                 next;
             } else {
 		if (defined $self->{rhost}) {
-		    &jobsched::inventory_write($self->{id}, 'prepared', $self->{rhost}, $self->{rwd});
+		    &jobsched::inventory_write($self->{id}, 'prepared',
+					       $self->{rhost}, $self->{rwd});
 		} else {
 		    &jobsched::inventory_write($self->{id}, 'prepared');
 		}
@@ -411,13 +416,15 @@ sub prepare {
     # aliases
     if ($job{exe}) {
 	$job{exe0} = $job{exe};
+#	delete($job{exe});
     }
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
+#	    delete($job{"arg$i"});
 	}
     }
-    &addusercustomizablecoremembers(%job);
+    &add_user_customizable_core_members(%job);
 =comment
     foreach my $key (keys(%job)) {
         unless (&belong($key, 'id', @allkeys)) {
@@ -435,7 +442,7 @@ sub prepare {
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
                     || ($key =~ /^JS_/))        # for jobscheduler options
-            {        
+            {
                 print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
