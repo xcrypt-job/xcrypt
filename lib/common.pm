@@ -154,7 +154,7 @@ sub xcr_unlink {
 sub xcr_symlink {
     my ($dir, $file, $link, $rhost, $rwd) = @_;
     my $ex0 = &xcr_exist('-f', $file, $rhost, $rwd);
-    my $ex1 = &xcr_exist('-h', $link, $rhost, $rwd);
+    my $ex1 = &xcr_exist('-h', File::Spec->catfile($dir, $link), $rhost, $rwd);
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
@@ -163,7 +163,6 @@ sub xcr_symlink {
 		qx/$rsh_command $rhost ln -s $file1 $tmp/;
 	    }
 	} else {
-	    print "$ex0 $ex1\n";
 	    warn "Can't link to $file";
 	}
     } else {

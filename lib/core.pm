@@ -51,8 +51,6 @@ sub new {
     # Check if the job ID is not empty
     my $jobname= $self->{id};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
-    # Absolute path of the working directory
-#    $self->{workdir} = File::Spec->rel2abs($jobname);
     $self->{workdir} = $jobname;
 
     # Job script related members
@@ -248,8 +246,6 @@ sub make_jobscript_body {
     }
     unless ($self->{rhost} eq '') {
 	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
-    } else {
-	$wkdir_str = File::Spec->rel2abs($wkdir_str);
     }
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
