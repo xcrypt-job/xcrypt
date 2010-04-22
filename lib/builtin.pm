@@ -314,8 +314,8 @@ sub submit {
         unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
             # xcryptdelされていたら状態をabortedにして処理をとばす
             if (jobsched::is_signaled_job($self->{id})) {
-                &jobsched::inventory_write($self->{id}, "aborted");
-                jobsched::delete_signaled_job ($self->{id});
+                &jobsched::inventory_write($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
+                &jobsched::delete_signaled_job($self->{id});
                 push (@coros, undef);
                 next;
             } else {

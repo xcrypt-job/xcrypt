@@ -4,7 +4,7 @@ use base qw(core);
     'id' => 'job6',                # easy job-id for user to understand
     'exe0' => './fib',
  #   'exe1' => './fib',
-    'arg0_0' => '40',
+    'arg0_0' => '50',
     'arg0_1' => '> out0',
     'linkedfile0' => 'bin/fib', # where exe-file exists
     'JS_queue' => 'gh10034',

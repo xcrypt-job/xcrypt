@@ -7,12 +7,6 @@ use File::Spec;
 use File::Basename;
 use Getopt::Long;
 
-foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
-    unless (defined $ENV{"$_"}) {
-	die "Set the environment varialble $_\n";
-    }
-}
-
 my $xcrfile = shift @ARGV;
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     die "The first argument should be an Xcrypt script.\n";

@@ -74,16 +74,12 @@ sub new {
     my $last_stat = &jobsched::get_job_status ($jobname);
     if ( jobsched::is_signaled_job ($jobname) ) {
         # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-        &jobsched::inventory_write ($jobname, "aborted");
-       jobsched::delete_signaled_job ($jobname);
+        &jobsched::inventory_write ($jobname, "aborted", $self->{rhost}, $self->{rwd});
+	&jobsched::delete_signaled_job ($jobname);
     } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
         # Skip if the job is 'done' or 'finished'
         if ( $last_stat eq 'finished' ) {
-	    if (defined $self->{rhost}) {
-		&jobsched::inventory_write ($jobname, "done", $self->{rhost}, $self->{rwd});
-	    } else {
-		&jobsched::inventory_write ($jobname, "done",);
-	    }
+	    &jobsched::inventory_write ($jobname, "done", $self->{rhost}, $self->{rwd});
         }
     } else {
         # If the working directory already exists, delete it
@@ -104,11 +100,7 @@ sub new {
 	    mkdir $jobname, 0755;
 	}
         # Otherwise, make the job 'active'
-	if (defined $self->{rhost}) {
-	    &jobsched::inventory_write ($jobname, "active", $self->{rhost}, $self->{rwd});
-	} else {
-	    &jobsched::inventory_write ($jobname, "active");
-	}
+	&jobsched::inventory_write ($jobname, "active", $self->{rhost}, $self->{rwd});
 
         for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
 	    # リモート実行未対応
@@ -128,10 +120,7 @@ sub new {
                 my $copied = $self->{"copiedfile$i"};
 		my $ex = &xcr_exist('-f', $copied, $self->{rhost});
 		if ($ex) {
-		    &xcr_copy($copied,
-			      $self->{'id'},
-			      $self->{rhost},
-			      $self->{rwd});
+		    &xcr_copy($copied, $self->{id}, $self->{rhost}, $self->{rwd});
 		} else {
 		    warn "Can't copy $copied\n";
 		}
@@ -141,8 +130,7 @@ sub new {
 		&xcr_symlink($self->{id},
 			     File::Spec->catfile($file),
 			     File::Spec->catfile(basename($file)),
-			     $self->{rhost},
-			     $self->{rwd});
+			     $self->{rhost}, $self->{rwd});
             }
         }
     }
@@ -250,11 +238,7 @@ sub make_jobscript_body {
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
     push (@body, "sleep 6"); # running が早すぎて queued がなかなか勝てないため
-    if (defined $self->{rhost}) {
-	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
-    } else {
-	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running'). " || exit 1");
-    }
+    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -273,11 +257,7 @@ sub make_jobscript_body {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    if (defined $self->{rhost}) {
-	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
-    } else {
-	push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done'). " || exit 1");
-    }
+    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
     $self->{jobscript_body} = \@body;
 }
 

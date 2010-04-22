@@ -127,11 +127,7 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    if (defined $self->{rhost}) {
-	&inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
-    } else {
-	&inventory_write($self->{id}, 'submitted');
-    }
+    &inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
 
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
@@ -173,11 +169,7 @@ sub qsub {
         close ($request_ids);
         set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-	if (defined $self->{rhost}) {
-	    &inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
-	} else {
-	    &inventory_write($self->{id}, 'queued');
-	}
+	&inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
         return $req_id;
     } else {
         die "$qsub_command is not executable";
@@ -275,16 +267,19 @@ sub inventory_write_cmdline {
     my ($jobname, $stat, $host, $wd) = @_;
     status_name_to_level ($stat); # Valid status name?
 
-if ($host) {
-    my $remote_xcrypt = qx/$rsh_command $host 'echo \$XCRYPT'/;
-    chomp($remote_xcrypt);
-    if ($remote_xcrypt eq '') {
-	die "Set the environment varialble \$XCRYPT at the remote host\n";
+    if ($host) {
+	my $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
+	chomp($prefix);
+	if ($prefix eq '') {
+	    die "Set the environment variable \$XCRYPT at $host\n";
+	}
+	$write_command=File::Spec->catfile($prefix, 'bin', $sock_or_file);
+    } else {
+	unless (defined $ENV{XCRYPT}) {
+	    die "Set the environment varialble \$XCRYPT\n";
+	}
+	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
     }
-    $write_command=File::Spec->catfile($remote_xcrypt, 'bin', $sock_or_file);
-} else {
-    $write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
-}
 
     if ( $inventory_port > 0 ) {
         return "$write_command $inventory_host $inventory_port $jobname $stat";
