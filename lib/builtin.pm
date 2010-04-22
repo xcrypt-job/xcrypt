@@ -357,12 +357,9 @@ sub submit {
 					    $self->{rhost},
 					    $self->{rwd});
 		    }
-	    }
+#	    }
 	    $self->EVERY::LAST::after();
-	    if (defined $self->{rhost}) {
-		&jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
-	    } else {
-		&jobsched::inventory_write ($self->{id}, 'finished');
+	    &jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
 	    }
 	} $self;
         # push (@coros, $job_coro);
@@ -381,6 +378,9 @@ sub sync {
         if ( $xcropt::options{verbose} >= 1 ) {
             print "$_->{id} finished.\n";
         }
+    }
+    foreach (@jobs) {
+	delete($jobsched::active_nosync_jobs{$_->{id}});
     }
     return @_;
 }

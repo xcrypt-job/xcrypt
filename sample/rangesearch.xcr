@@ -4,7 +4,7 @@ use base qw(core);
     'id' => 'job6',                # easy job-id for user to understand
     'exe0' => './fib',
  #   'exe1' => './fib',
-    'arg0_0' => '50',
+    'arg0_0' => '45',
     'arg0_1' => '> out0',
     'linkedfile0' => 'bin/fib', # where exe-file exists
     'JS_queue' => 'gh10034',
@@ -34,3 +34,4 @@ use base qw(core);
 $hoge = 'hoge';
 #&repeat(sub {print STDOUT "$hoge\n";}, 3);
 &sync(@jobs);
+

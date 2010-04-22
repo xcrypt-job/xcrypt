@@ -16,6 +16,8 @@ sub new {
     my $class = shift;
     my $self = shift;
 
+    $jobsched::active_nosync_jobs{$self->{id}} = $self;
+
     unless (@{$xcropt::options{rhost}} == ()) {
 	$self->{rhost} = ${$xcropt::options{rhost}}[0];
     }
@@ -140,6 +142,7 @@ sub new {
 sub start {
     my $self = shift;
     # Skip if the job is done or finished in the previous execution
+    # ↑ finished もというのは間違い？
     my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
