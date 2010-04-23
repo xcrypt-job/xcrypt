@@ -1,10 +1,12 @@
-use base qw(core);
+use base qw(limit core);
+
+&limit::initialize(1);
 
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe0' => './fib',
  #   'exe1' => './fib',
-    'arg0_0' => '45',
+    'arg0_0' => '40',
     'arg0_1' => '> out0',
     'linkedfile0' => 'bin/fib', # where exe-file exists
     'JS_queue' => 'gh10034',
@@ -16,7 +18,7 @@ use base qw(core);
 );
 
 @jobs = &prepare(%template,
-#		 'arg0_0@' => [40,41], # i.e., $ qsub ./fib 20 > out
+		 'arg0_0@' => [40,41,42], # i.e., $ qsub ./fib 20 > out
 #                                             $ qsub ./fib 21 > out
 #                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]

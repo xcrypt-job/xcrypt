@@ -30,12 +30,9 @@ my $before_after_slp = 1;
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $reqids_file=File::Spec->catfile($inventory_path, 'request_ids');
 my $time_running : shared = undef;
 my $time_done_now = undef;
 sub get_elapsed_time {
-    unless ( -e $reqids_file ) { return; }
-
     my $inventoryfile = File::Spec->catfile ($inventory_path, "$_[0]");
     $time_done_now = time();
     &update_running_and_done_now("$inventoryfile");
@@ -59,8 +56,7 @@ sub update_running_and_done_now {
 }
 
 sub check_and_alert_elapsed {
-    unless ( -e $reqids_file ) { return; }
-    my @jobids = &get_jobids($reqids_file);
+    my @jobids = keys(%jobsched::active_nosync_jobs);
 
     my $sum = 0;
     my %elapseds = ();

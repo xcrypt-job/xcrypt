@@ -148,7 +148,7 @@ sub start {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
         # print "$self->{id}: calling qsub.\n";
-        $self->{request_id} = &jobsched::qsub($self);
+        $self->{request_id} = &qsub($self);
         # print "$self->{id}: qsub finished.\n";
     }
 }
@@ -349,5 +349,76 @@ sub make_qsub_options {
 
 sub before {}
 sub after {}
+
+# Submit a job specified by a jop object ($self) by executing "qsub"
+# after creating a job script file and a string of command-line option.
+sub qsub {
+    my $self = shift;
+    my $sched = $self->{scheduler};
+    unless (defined $jsconfig::jobsched_config{$sched}) {
+	die "$sched.pm doesn't exist in lib/config" ;
+    }
+    my %cfg = %{$jsconfig::jobsched_config{$sched}};
+
+    # Create JobScript & qsub options
+    $self->make_jobscript();
+    $self->make_qsub_options();
+    if (defined $cfg{modify}) {
+        &{$cfg{modify}} ($self);
+    }
+    $self->make_before_in_job_script();
+    $self->make_after_in_job_script();
+    $self->update_all_script_files();
+
+    my $scriptfile = $self->workdir_member_file('jobscript_file');
+    my $qsub_options = join(' ', @{$self->{qsub_options}});
+
+    # Set job's status "submitted"
+    &jobsched::inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
+
+    my $qsub_command = $cfg{qsub_command};
+    unless ( defined $qsub_command ) {
+	die "qsub_command is not defined in $sched.pm";
+    }
+    my $flag = &xcr_exist('-f', $scriptfile, $self->{rhost}, $self->{rwd});
+    unless ($flag) {
+	die "Can't find a job script file \"$scriptfile\"";
+    }
+
+    my $flag;
+    if ($self->{rhost}) {
+	$flag = common::cmd_executable ($qsub_command, $self->{rhost});
+    } else {
+	$flag = common::cmd_executable ($qsub_command);
+    }
+    if ($flag) {
+        # Execute qsub command
+	my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
+
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{rhost}, $self->{rwd});
+        if ( @qsub_output == 0 ) { die "qsub command failed."; }
+
+        # Get request ID from qsub's output
+        my $req_id;
+        if ( defined ($cfg{extract_req_id_from_qsub_output}) ) {
+            unless ( ref $cfg{extract_req_id_from_qsub_output} eq 'CODE' ) {
+                die "Error in $sched.pm: extract_req_id_from_qsub_output must be a function";
+            }
+            $req_id = &{$cfg{extract_req_id_from_qsub_output}} (@qsub_output);
+        } else { # default extractor
+            $req_id = ($qsub_output[0] =~ /([0-9]+)/) ? $1 : -1;
+        }
+        if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
+        # Remember request ID
+	$self->{req_id} = $req_id;
+        &jobsched::set_job_request_id ($self->{id}, $req_id);
+        # Set job's status "queued"
+	&inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
+        return $req_id;
+    } else {
+        die "$qsub_command is not executable";
+    }
+}
 
 1;
