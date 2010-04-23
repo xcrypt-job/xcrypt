@@ -1,13 +1,11 @@
 use base qw(limit core);
 
-&limit::initialize(1);
-
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
-    'exe0' => './fib',
+    'exe' => './fib',
  #   'exe1' => './fib',
-    'arg0_0' => '40',
-    'arg0_1' => '> out0',
+    'arg0' => '40',
+    'arg1' => '> out0',
     'linkedfile0' => 'bin/fib', # where exe-file exists
     'JS_queue' => 'gh10034',
 #    'JS_queue' => 'S004' # for TOKYO
@@ -18,22 +16,22 @@ use base qw(limit core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0_0@' => [40,41,42], # i.e., $ qsub ./fib 20 > out
+		 'arg0@' => [40,41,42], # i.e., $ qsub ./fib 20 > out
 #                                             $ qsub ./fib 21 > out
 #                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
 #		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0_0@' => '$R0 + 20 + $R2;'
-#'rhost@' => ['abet@super.para.media.kyoto-u.ac.jp','abet@10.228.25.43'],
-#'rwd@' => ['/home/spara/abet/xcrypt/sample','/home/abet/xcrypt/sample'],
-#'scheduler@' => ['muramasa','sh']
+#'rhost@' => ['abet@super.para.media.kyoto-u.ac.jp'],
+#'rwd@' => ['/home/spara/abet/xcrypt/sample'],
+#'scheduler@' => ['muramasa']
 #'rhost' => 'abet@super.para.media.kyoto-u.ac.jp',
 #'rwd' => '/home/spara/abet/xcrypt/sample',
 #'scheduler' => 'muramasa'
     );
 &submit(@jobs);
 #&repeat('print "hogehoge\n";');
-$hoge = 'hoge';
+#$hoge = 'hoge';
 #&repeat(sub {print STDOUT "$hoge\n";}, 3);
 &sync(@jobs);
 

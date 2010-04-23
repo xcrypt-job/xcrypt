@@ -414,9 +414,19 @@ sub prepare {
 	$job{exe0} = $job{exe};
 #	delete($job{exe});
     }
+    if ($job{"exe$user::expandingchar"}) {
+	$job{"exe0$user::expandingchar"} = $job{"exe$user::expandingchar"};
+#	delete($job{exe});
+    }
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
+#	    delete($job{"arg$i"});
+	}
+    }
+    foreach my $i (0..$user::max_arg) {
+	if ($job{"arg$i$user::expandingchar"}) {
+	    $job{"arg0_$i$user::expandingchar"} = $job{"arg$i$user::expandingchar"};
 #	    delete($job{"arg$i"});
 	}
     }
