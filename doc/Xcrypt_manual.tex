@@ -763,7 +763,6 @@ sub new {
   return bless $self, $class;
 }
 
-sub before_isready { ... }
 sub before { ... }
 
 sub start
@@ -775,7 +774,6 @@ sub start
 }
 
 sub after { ... }
-sub after_isready { ... }
 
 # general methods
 sub another_method
@@ -856,6 +854,7 @@ Section~\ref{sec:created}).  Note that this required procedure is
 skipped unless \|new|s in children classes call the \|new| in the
 \|core|.
 
+\if0
 \subsection{\texttt{before\_isready}}
 
 In Xcrypt, application of the function \|submit| (cf.\
@@ -875,6 +874,17 @@ the methods \texttt{before\_isready}s applied to the job object return
 true.  Its argument is a reference to the job object.  The order of calling
 \texttt{before}s is in such a way from children to parents
 classes.  Return values of the methods are abandoned.
+\fi
+
+\subsection{\texttt{before}}
+
+In Xcrypt, application of the function \|submit| (cf.\
+Section~\ref{sec:submit}) makes a job object's state \|prepared|.  The
+methods \texttt{before}s are applied to a job object of the state
+\|prepared| (cf.\ Section~\ref{sec:states}).  Its argument is a
+reference to the job object.  The order of calling \texttt{before}s is
+in such a way from children to parents classes.  Return values of the
+methods are abandoned.
 
 \subsection{\texttt{start}}
 
@@ -896,6 +906,7 @@ job script and submits the job to a job scheduler.  Note that this
 required procedure is skipped unless \|start|s in children classes call
 the \|start| in the \|core|.
 
+\if0
 \subsection{\texttt{after\_isready}}
 
 In Xcrypt, a completion notice of a job submitted by the method
@@ -915,7 +926,19 @@ the methods \texttt{after\_isready}s applied to the job object return
 true.  Its argument is a reference to the job object.  The order of
 calling \texttt{after}s is in such a way from parents to children classes.
 Return values of the methods are abandoned.
+\fi
 
+\subsection{\texttt{after}}
+
+In Xcrypt, a completion notice of a job submitted by the method
+ \|core::start| makes the job object's state \|done|.  The methods
+ \texttt{after}s are applied to a job object with the state \|done|
+ (cf.\ Section~\ref{sec:states}).  Its argument is a reference to the
+ job object.  The order of calling \texttt{after}s is in such a way
+ from parents to children classes.  Return values of the methods are
+ abandoned.
+
+\if0
 \paragraph{Remark on Concurrency of \texttt{before\_isready}, \texttt{before}, \texttt{start}, \texttt{after\_isready}, and \texttt{after}.}
 Each method is called in concurrently with Xcrypt main thread.
 However, it is not necessary that each method is concurrently called
@@ -945,5 +968,6 @@ at each job object.  Xcrypt guarantees the following concurrency:
 	true, the \texttt{after}s of the job object are applied ,
 	i.e., no method is applied to the *other* job objects,
 \end{itemize}
+\fi
 
 \end{document}
