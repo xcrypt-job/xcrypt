@@ -416,7 +416,6 @@ sub prepare {
     }
     if ($job{"exe$user::expandingchar"}) {
 	$job{"exe0$user::expandingchar"} = $job{"exe$user::expandingchar"};
-#	delete($job{exe});
     }
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i"}) {
@@ -427,7 +426,6 @@ sub prepare {
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i$user::expandingchar"}) {
 	    $job{"arg0_$i$user::expandingchar"} = $job{"arg$i$user::expandingchar"};
-#	    delete($job{"arg$i"});
 	}
     }
     &add_user_customizable_core_members(%job);
