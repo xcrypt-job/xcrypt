@@ -16,7 +16,8 @@ use base qw(limit core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [40,41,42], # i.e., $ qsub ./fib 20 > out
+		 'arg0@' => [41,42], # i.e., $ qsub ./fib 20 > out
+		 'arg1@' => ['> out1','> out2'], # i.e., $ qsub ./fib 20 > out
 #                                             $ qsub ./fib 21 > out
 #                                             $ qsub ./fib 22 > out
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]

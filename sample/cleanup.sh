@@ -5,4 +5,3 @@ find . -name "bulk[0-9]*"| xargs rm -rf
 find . -name "job[0-9]*"| xargs rm -rf
 find . -name ".tmp"| xargs rm -rf
 find . -name "inv_watch"| xargs rm -rf
-find . -name "sub_query_[0-9]*"| xargs rm -rf
