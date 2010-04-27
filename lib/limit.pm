@@ -1,13 +1,17 @@
 package limit;
 
 use strict;
-use threads;
-use threads::shared;
+# use threads;
+# use threads::shared;
+use Coro;
+use Coro::Semaphore;
 
-my $smph : shared = 100;
+# my $smph : shared = 100;
+my $smph = Coro::Semaphore->new(100);
 
 sub initialize {
-    $smph= $_[0];
+    # $smph= $_[0];
+    $smph = Coro::Semaphore->new($_[0]);
 }
 
 sub new {
@@ -21,18 +25,18 @@ sub start {
     $self->NEXT::start();
 }
 
-sub before_isready {
-    return ($smph>0);
-}
+# sub before_isready {
+#     return ($smph>0);
+# }
 
 sub before {
-    $smph--;
+    # $smph--;
+    $smph->down;
 }
 
 sub after {
-    # my $self = shift;
-    # $self->NEXT::after();
-    $smph++;
+    # $smph++;
+    $smph->up;
 }
 
 1;

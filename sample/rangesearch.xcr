@@ -1,5 +1,7 @@
 use base qw(limit core);
 
+limit::initialize(1);
+
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
     'exe' => './fib',
