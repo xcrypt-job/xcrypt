@@ -215,6 +215,9 @@ sub make_jobscript_header {
             }
         }
     }
+    ## Environment variables
+    push (@header, "export XCRYPT=$ENV{XCRYPT}");
+    push (@header, 'export PERL5LIB=$XCRYPT/lib');
     $self->{jobscript_header} = \@header;
 }
 
@@ -264,22 +267,24 @@ sub make_jobscript_body {
     $self->{jobscript_body} = \@body;
 }
 
-# Create a perl script file for before_in_job
-sub make_before_in_job_script {
-    my $self = shift;
+# Create a perl script file for before/after_in_job
+sub make_in_job_script {
+    my ($self, $memb_evalstr, $memb_script) = @_;
     my @body = ();
+    push (@body, 'use Data_Extraction;', 'use Data_Generation;');
     push (@body, Data::Dumper->Dump([$self],['self']));
-    push (@body, $self->{before_in_job});
-    $self->{before_in_job_script} = \@body;
+    push (@body, $self->{$memb_evalstr});
+    $self->{$memb_script} = \@body;
 }
 
-# Create a perl script file for after_in_job
+sub make_before_in_job_script {
+    my $self = shift;
+    make_in_job_script ($self, 'before_in_job', 'before_in_job_script');
+}
+
 sub make_after_in_job_script {
     my $self = shift;
-    my @body = ();
-    push (@body, Data::Dumper->Dump([$self],['self']));
-    push (@body, $self->{after_in_job});
-    $self->{after_in_job_script} = \@body;
+    make_in_job_script ($self, 'after_in_job', 'after_in_job_script');
 }
 
 # Make/Update script file
