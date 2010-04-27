@@ -1,6 +1,10 @@
 use base qw(limit core);
 
+<<<<<<< local
+&limit::initialize(10);
+=======
 limit::initialize(1);
+>>>>>>> other
 
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
@@ -18,19 +22,11 @@ limit::initialize(1);
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [41,42], # i.e., $ qsub ./fib 20 > out
-		 'arg1@' => ['> out1','> out2'], # i.e., $ qsub ./fib 20 > out
-#                                             $ qsub ./fib 21 > out
-#                                             $ qsub ./fib 22 > out
+#		 'arg0@' => [41,42],
+#		 'arg1@' => ['> out1','> out2'],
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
-#		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0_0@' => '$R0 + 20 + $R2;'
-#'rhost@' => ['abet@super.para.media.kyoto-u.ac.jp'],
-#'rwd@' => ['/home/spara/abet/xcrypt/sample'],
-#'scheduler@' => ['muramasa']
-#'rhost' => 'abet@super.para.media.kyoto-u.ac.jp',
-#'rwd' => '/home/spara/abet/xcrypt/sample',
-#'scheduler' => 'muramasa'
+		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
 &submit(@jobs);
 #&repeat('print "hogehoge\n";');
