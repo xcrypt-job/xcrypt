@@ -43,7 +43,7 @@ print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 print TMP '&jobsched::check_and_write_aborted();' . "\n";
-print TMP 'sleep(2);' . "\n";
+#print TMP 'sleep(2);' . "\n";
 close(TMP);
 close(USER);
 

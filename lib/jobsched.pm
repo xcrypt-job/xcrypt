@@ -79,12 +79,12 @@ my $job_status_signal = new Coro::Signal;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
-my %status_level = ("active"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
+my %status_level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
 my %running_jobs : shared = ();
 # テスト実装
-our %active_nosync_jobs = ();
+our %initialized_nosync_jobs = ();
 # 定期的実行文字列が登録されている配列
 our %periodicfuns : shared = ();
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
@@ -240,8 +240,8 @@ sub handle_inventory {
     # inventory_watch は同じ更新情報を何度も出力するので，
     # 最後の更新より古い情報は無視する．
     # 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
-    } elsif ($line =~ /^time_active\:\s*([0-9]*)/) {   # ジョブ実行予定
-        set_job_active ($last_jobname, $1);
+    } elsif ($line =~ /^time_initialized\:\s*([0-9]*)/) {   # ジョブ実行予定
+        set_job_initialized ($last_jobname, $1);
         $ret = 1;
     } elsif ($line =~ /^time_prepared\:\s*([0-9]*)/) {   # ジョブ投入直前
         set_job_prepared ($last_jobname, $1);
@@ -491,7 +491,7 @@ sub get_job_status {
     if ( exists ($job_status{$jobname}) ) {
         return $job_status{$jobname};
     } else {
-        return "active";
+        return "initialized";
     }
 }
 # ジョブ名→最後の状態変化時刻
@@ -521,15 +521,15 @@ sub set_job_status {
         delete_running_job ($jobname);
     }
 }
-sub set_job_active  {
+sub set_job_initialized  {
     my ($jobname, $tim) = @_;
-    if (do_set_p ($jobname, $tim, "active", "active", "submitted", "queued", "running", "aborted") ) {
-        set_job_status ($jobname, "active", $tim);
+    if (do_set_p ($jobname, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
+        set_job_status ($jobname, "initialized", $tim);
     }
 }
 sub set_job_prepared  {
     my ($jobname, $tim) = @_;
-    if (do_set_p ($jobname, $tim, "prepared", "active") ) {
+    if (do_set_p ($jobname, $tim, "prepared", "initialized") ) {
         set_job_status ($jobname, "prepared", $tim);
     }
 }
@@ -572,7 +572,7 @@ sub set_job_finished   {
 sub set_job_aborted  {
     my ($jobname, $tim) = @_;
     my $curstat = get_job_status ($jobname);
-    if (do_set_p ($jobname, $tim, "aborted", "active", "prepared", "submitted", "queued", "running" )
+    if (do_set_p ($jobname, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
         && $curstat ne "done" && $curstat ne "finished" ) {
         set_job_status ($jobname, "aborted", $tim);
     }
@@ -627,7 +627,7 @@ sub wait_job_status {
     }
     # print "$jobname: exit wait_job_status\n";
 }
-sub wait_job_active    { wait_job_status ($_[0], "active"); }
+sub wait_job_initialized    { wait_job_status ($_[0], "initialized"); }
 sub wait_job_prepared  { wait_job_status ($_[0], "prepared"); }
 sub wait_job_submitted { wait_job_status ($_[0], "submitted"); }
 sub wait_job_queued    { wait_job_status ($_[0], "queued"); }
@@ -722,7 +722,7 @@ sub check_and_write_aborted {
         if ( exists $running_jobs{$req_id} ) {
             print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
 #            inventory_write ($unchecked{$req_id}, "aborted");
-            inventory_write ($unchecked{$req_id}, "aborted", $active_nosync_jobs{$unchecked{$req_id}}->{rhost}, $active_nosync_jobs{$unchecked{$req_id}}->{rwd});
+            inventory_write ($unchecked{$req_id}, "aborted", $initialized_nosync_jobs{$unchecked{$req_id}}->{rhost}, $initialized_nosync_jobs{$unchecked{$req_id}}->{rwd});
         }
     }
 }
