@@ -9,6 +9,7 @@ use Coro::Signal;
 use Coro::AnyEvent;
 use Cwd;
 use Data::Dumper;
+use File::Basename;
 
 use jobsched;
 use xcropt;
@@ -17,7 +18,7 @@ use common;
 
 use base qw(Exporter);
 our @EXPORT = qw(prepare submit sync
-prepare_submit_sync prepare_submit submit_sync
+expand_and_make prepare_directory prepare_submit_sync prepare_submit submit_sync
 add_key repeat get_elapsed_time
 );
 
@@ -56,7 +57,7 @@ sub update_running_and_done_now {
 }
 
 sub check_and_alert_elapsed {
-    my @jobids = keys(%jobsched::active_nosync_jobs);
+    my @jobids = keys(%jobsched::initialized_nosync_jobs);
 
     my $sum = 0;
     my %elapseds = ();
@@ -131,6 +132,7 @@ sub add_key {
             if (($i eq $j)
                 || ($i =~ /\Aexe[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*/)
+                || ($i =~ /\Aarg[0-9]*_[0-9]*/)
                 || ($i =~ /\Alinkedfile[0-9]*/)
                 || ($i =~ /\Acopiedfile[0-9]*/)
                 || ($i =~ /\Acopieddir[0-9]*/)
@@ -201,6 +203,7 @@ sub generate {
         }
     }
     my @ranges = &rm_tailnis(@_);
+
     $job{id} = join($user::separator, ($job{id}, @ranges));
     &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
@@ -214,7 +217,7 @@ sub generate {
                     my $tmp = eval "$ranges[$i];";
                     eval "our \$$arg = $tmp;";
                 }
-                my $tmp = eval($job{"$members"});
+                my $tmp = eval($job{"$members"}); # 「引数をとるものについては文字列をエバる」方式はR0のみをサポートしている（$_[0]は未サポート）
                 $job{"$_"} = $tmp;
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
@@ -300,113 +303,7 @@ sub MIN {
     return $num;
 }
 
-sub submit {
-    my @array = @_;
-    # my @coros = ();
-    foreach my $self (@array) {
-        my $stat = &jobsched::get_job_status($self->{id});
-        # submit対象のジョブ状態を 'prepared' にする．
-        # ただし，すでに done, finished, abortedなら無視
-        unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
-            # xcryptdelされていたら状態をabortedにして処理をとばす
-            if (jobsched::is_signaled_job($self->{id})) {
-                &jobsched::inventory_write($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
-                &jobsched::delete_signaled_job($self->{id});
-                push (@coros, undef);
-                next;
-            } else {
-		if (defined $self->{rhost}) {
-		    &jobsched::inventory_write($self->{id}, 'prepared',
-					       $self->{rhost}, $self->{rwd});
-		} else {
-		    &jobsched::inventory_write($self->{id}, 'prepared');
-		}
-            }
-        }
-        # ジョブスレッドを立ち上げる
-        my $job_coro = Coro::async {
-            my $self = $_[0];
-            if ( $xcropt::options{verbose} >= 2 ) {
-                Coro::on_enter {
-                    print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
-                };
-                Coro::on_leave {
-                    print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
-                };
-              }
-            ## before(), start()
-            $self->EVERY::before();
-            $self->start();
-            ## Waiting for the job "done"
-            &jobsched::wait_job_done($self->{id});
-            ## after()
-	    my $status = &jobsched::get_job_status($self->{id});
-	    if ($status eq 'done') {
-		my $flag0 = 0;
-		my $flag1 = 0;
-		until ($flag0 && $flag1) {
-		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &common::xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
-					    $self->{rhost},
-					    $self->{rwd});
-		    $flag1 = &common::xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
-					    $self->{rhost},
-					    $self->{rwd});
-		    }
-#	    }
-	    $self->EVERY::LAST::after();
-	    &jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
-	    }
-	} $self;
-        # push (@coros, $job_coro);
-        $self->{thread} = $job_coro;
-    }
-    return @array;
-}
-
-sub sync {
-    my @jobs = @_;
-    foreach (@jobs) {
-        if ( $xcropt::options{verbose} >= 1 ) {
-            print "Waiting for $_->{id}($_->{thread}) finished.\n";
-        }
-        $_->{thread}->join;
-        if ( $xcropt::options{verbose} >= 1 ) {
-            print "$_->{id} finished.\n";
-        }
-    }
-    foreach (@jobs) {
-	delete($jobsched::active_nosync_jobs{$_->{id}});
-    }
-    return @_;
-}
-
-sub submit_sync {
-    my @objs = &submit(@_);
-    return &sync(@objs);
-}
-
-sub prepare_submit {
-    my @jobs = &prepare(@_);
-    &submit(@jobs);
-}
-
-sub belong {
-    my $a = shift;
-    my @b = @_;
-    my $c = 0;
-    foreach (@b) {
-        if (($a eq $_) ||
-            ($a eq ("$_" . "$user::expandingchar")) ||
-            ($a =~ /\ARANGE[0-9]+\Z/)
-            ) {
-            $c = 1;
-        }
-    }
-    return $c;
-}
-
-sub prepare {
+sub expand_and_make {
     my %job = @_;
 
     # aliases
@@ -486,25 +383,216 @@ sub prepare {
         }
         my @range = &times(@ranges);
         foreach (@range) {
-            my $obj = &generate(\%job, @{$_});
-            push(@objs, $obj);
+            my $self = &generate(\%job, @{$_});
+#	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+            push(@objs, $self);
         }
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
-            my $obj = &generate(\%job, $_);
-            push(@objs, $obj);
+            my $self = &generate(\%job, $_);
+#	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+            push(@objs, $self);
         }
     } else {
-        my $obj = &generate(\%job);
-        push(@objs, $obj);
+        my $self = &generate(\%job);
+#	&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+        push(@objs, $self);
     }
     return @objs;
+}
+
+sub prepare_directory {
+    my @jobs = @_;
+    foreach my $self (@jobs) {
+	my $last_stat = &jobsched::get_job_status ($self->{id});
+	if ( jobsched::is_signaled_job ($self->{id}) ) {
+	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
+	    &jobsched::inventory_write ($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
+	    &jobsched::delete_signaled_job ($self->{id});
+	} elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+	    # Skip if the job is 'done' or 'finished'
+	    if ( $last_stat eq 'finished' ) {
+		&jobsched::inventory_write ($self->{id}, "done", $self->{rhost}, $self->{rwd});
+	    }
+	} else {
+	    # If the working directory already exists, delete it
+	    # ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしているが……
+	    if ( -e $self->{workdir} ) {
+		print "Delete directory $self->{workdir}\n";
+		File::Path::rmtree ($self->{workdir});
+	    }
+	    unless ($self->{rhost} eq '') {
+		my $ex = &xcr_exist('-d', $self->{id}, $self->{rhost}, $self->{rwd});
+		# If the working directory already exists, delete it
+		# ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしているが……
+		if ($ex) {
+		    print "Delete directory $self->{id}\n";
+		    File::Path::rmtree($self->{id});
+		}
+	    }
+	    &xcr_mkdir($xcropt::options{inventory_path}, $self->{rhost}, $self->{rwd});
+	    &xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
+	    unless (-d "$self->{id}") {
+		mkdir $self->{id}, 0755;
+	    }
+# initialized にするのは expand_and_make 中で行いたいが inventory_write がジョブディレクトリ内で行うものなのでとりあえずここにしておく．
+&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+
+	    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
+		# リモート実行未対応
+		if ($self->{"copieddir$i"}) {
+		    my $copied = $self->{"copieddir$i"};
+		    opendir(DIR, $copied);
+		    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
+		    closedir(DIR);
+		    foreach (@params) {
+			my $tmp = File::Spec->catfile($copied, $_);
+			my $temp = File::Spec->catfile($self->{workdir}, $_);
+			rcopy $tmp, $temp;
+		    }
+		}
+
+		if ($self->{"copiedfile$i"}) {
+		    my $copied = $self->{"copiedfile$i"};
+		    my $ex = &xcr_exist('-f', $copied, $self->{rhost});
+		    if ($ex) {
+			&xcr_copy($copied, $self->{id}, $self->{rhost}, $self->{rwd});
+		    } else {
+			warn "Can't copy $copied\n";
+		    }
+		}
+		if ($self->{"linkedfile$i"}) {
+		    my $file = $self->{"linkedfile$i"};
+		    &xcr_symlink($self->{id},
+				 File::Spec->catfile($file),
+				 File::Spec->catfile(basename($file)),
+				 $self->{rhost}, $self->{rwd});
+		}
+	    }
+	    unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
+		# xcryptdelされていたら状態をabortedにして処理をとばす
+		if (jobsched::is_signaled_job($self->{id})) {
+		    &jobsched::inventory_write($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
+		    &jobsched::delete_signaled_job($self->{id});
+		    push (@coros, undef);
+		    next;
+		} else {
+		    if (defined $self->{rhost}) {
+			&jobsched::inventory_write($self->{id}, 'prepared',
+						   $self->{rhost}, $self->{rwd});
+		    } else {
+			&jobsched::inventory_write($self->{id}, 'prepared');
+		    }
+		}
+	    }
+	}
+    }
+}
+
+sub prepare{
+    my @objs = &expand_and_make(@_);
+    &prepare_directory(@objs);
+    return @objs;
+}
+
+sub submit {
+    my @array = @_;
+    # my @coros = ();
+    foreach my $self (@array) {
+        my $stat = &jobsched::get_job_status($self->{id});
+        # submit対象のジョブ状態を 'prepared' にする．
+        # ただし，すでに done, finished, abortedなら無視
+        # ジョブスレッドを立ち上げる
+        my $job_coro = Coro::async {
+            my $self = $_[0];
+            if ( $xcropt::options{verbose} >= 2 ) {
+                Coro::on_enter {
+                    print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
+                };
+                Coro::on_leave {
+                    print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
+                };
+              }
+            ## before(), start()
+            $self->EVERY::before();
+            $self->start();
+            ## Waiting for the job "done"
+            &jobsched::wait_job_done($self->{id});
+            ## after()
+	    my $status = &jobsched::get_job_status($self->{id});
+	    if ($status eq 'done') {
+		my $flag0 = 0;
+		my $flag1 = 0;
+		until ($flag0 && $flag1) {
+		    Coro::AnyEvent::sleep 0.1;
+		    $flag0 = &common::xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
+					    $self->{rhost},
+					    $self->{rwd});
+		    $flag1 = &common::xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					    $self->{rhost},
+					    $self->{rwd});
+		    }
+#	    }
+	    $self->EVERY::LAST::after();
+	    &jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
+	    }
+	} $self;
+        # push (@coros, $job_coro);
+        $self->{thread} = $job_coro;
+    }
+    return @array;
+}
+
+sub sync {
+    my @jobs = @_;
+    foreach (@jobs) {
+        if ( $xcropt::options{verbose} >= 1 ) {
+            print "Waiting for $_->{id}($_->{thread}) finished.\n";
+        }
+        $_->{thread}->join;
+        if ( $xcropt::options{verbose} >= 1 ) {
+            print "$_->{id} finished.\n";
+        }
+    }
+    foreach (@jobs) {
+	delete($jobsched::initialized_nosync_jobs{$_->{id}});
+    }
+    return @_;
+}
+
+sub belong {
+    my $a = shift;
+    my @b = @_;
+    my $c = 0;
+    foreach (@b) {
+        if (($a eq $_) ||
+            ($a eq ("$_" . "$user::expandingchar")) ||
+            ($a =~ /\ARANGE[0-9]+\Z/)
+            ) {
+            $c = 1;
+        }
+    }
+    return $c;
 }
 
 sub prepare_submit_sync {
     my @objs = &prepare_submit(@_);
     return &sync(@objs);
+}
+
+sub submit_sync {
+    my @objs = &submit(@_);
+    return &sync(@objs);
+}
+
+sub prepare_submit {
+    my @objs = &expand_and_make(@_);
+    foreach (@objs) {
+	&prepare_directory($_);
+	&submit($_);
+    }
+    return @objs;
 }
 
 1;

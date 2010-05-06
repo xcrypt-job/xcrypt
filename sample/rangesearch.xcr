@@ -1,10 +1,6 @@
 use base qw(limit core);
 
-<<<<<<< local
-&limit::initialize(10);
-=======
-limit::initialize(1);
->>>>>>> other
+limit::initialize(10);
 
 %template = (
     'id' => 'job6',                # easy job-id for user to understand
@@ -21,14 +17,14 @@ limit::initialize(1);
 #    'JS_limit_time => 30, # for TSUKUBA
 );
 
-@jobs = &prepare(%template,
+@jobs = &prepare_submit(%template,
 #		 'arg0@' => [41,42],
 #		 'arg1@' => ['> out1','> out2'],
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
 #		 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
-		 'RANGE0' => [1,5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
+		 'RANGE0' => [1..5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
-&submit(@jobs);
+#&submit(@jobs);
 #&repeat('print "hogehoge\n";');
 #$hoge = 'hoge';
 #&repeat(sub {print STDOUT "$hoge\n";}, 3);

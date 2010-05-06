@@ -16,7 +16,7 @@ sub new {
     my $class = shift;
     my $self = shift;
 
-    $jobsched::active_nosync_jobs{$self->{id}} = $self;
+    $jobsched::initialized_nosync_jobs{$self->{id}} = $self;
 
     unless (@{$xcropt::options{rhost}} == ()) {
 	$self->{rhost} = ${$xcropt::options{rhost}}[0];
@@ -73,69 +73,6 @@ sub new {
 	&jobsched::entry_host_and_wd_for_qstat ('localhost', $self->{scheduler});
     }
     &jobsched::load_inventory ($jobname);
-    my $last_stat = &jobsched::get_job_status ($jobname);
-    if ( jobsched::is_signaled_job ($jobname) ) {
-        # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-        &jobsched::inventory_write ($jobname, "aborted", $self->{rhost}, $self->{rwd});
-	&jobsched::delete_signaled_job ($jobname);
-    } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
-        # Skip if the job is 'done' or 'finished'
-        if ( $last_stat eq 'finished' ) {
-	    &jobsched::inventory_write ($jobname, "done", $self->{rhost}, $self->{rwd});
-        }
-    } else {
-        # If the working directory already exists, delete it
-        if ( -e $self->{workdir} ) {
-            print "Delete directory $self->{workdir}\n";
-            File::Path::rmtree ($self->{workdir});
-        }
-	unless ($self->{rhost} eq '') {
-	    my $ex = &xcr_exist('-d', $self->{id}, $self->{rhost}, $self->{rwd});
-	    if ($ex) {
-		print "Delete directory $self->{id}\n";
-		File::Path::rmtree($self->{id});
-	    }
-	}
-	&xcr_mkdir($xcropt::options{inventory_path}, $self->{rhost}, $self->{rwd});
-	&xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
-	unless (-d "$jobname") {
-	    mkdir $jobname, 0755;
-	}
-        # Otherwise, make the job 'active'
-	&jobsched::inventory_write ($jobname, "active", $self->{rhost}, $self->{rwd});
-
-        for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
-	    # リモート実行未対応
-            if ($self->{"copieddir$i"}) {
-                my $copied = $self->{"copieddir$i"};
-                opendir(DIR, $copied);
-                my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
-                closedir(DIR);
-                foreach (@params) {
-                    my $tmp = File::Spec->catfile($copied, $_);
-                    my $temp = File::Spec->catfile($self->{workdir}, $_);
-                    rcopy $tmp, $temp;
-                }
-            }
-
-            if ($self->{"copiedfile$i"}) {
-                my $copied = $self->{"copiedfile$i"};
-		my $ex = &xcr_exist('-f', $copied, $self->{rhost});
-		if ($ex) {
-		    &xcr_copy($copied, $self->{id}, $self->{rhost}, $self->{rwd});
-		} else {
-		    warn "Can't copy $copied\n";
-		}
-            }
-            if ($self->{"linkedfile$i"}) {
-                my $file = $self->{"linkedfile$i"};
-		&xcr_symlink($self->{id},
-			     File::Spec->catfile($file),
-			     File::Spec->catfile(basename($file)),
-			     $self->{rhost}, $self->{rwd});
-            }
-        }
-    }
     return bless $self, $class;
 }
 
@@ -216,8 +153,8 @@ sub make_jobscript_header {
         }
     }
     ## Environment variables
-    push (@header, "export XCRYPT=$ENV{XCRYPT}");
-    push (@header, 'export PERL5LIB=$XCRYPT/lib');
+#    push (@header, "export XCRYPT=$ENV{XCRYPT}");
+#    push (@header, 'export PERL5LIB=$XCRYPT/lib');
     $self->{jobscript_header} = \@header;
 }
 
@@ -243,7 +180,7 @@ sub make_jobscript_body {
     }
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
-    push (@body, "sleep 6"); # running が早すぎて queued がなかなか勝てないため
+    push (@body, "sleep 2"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
