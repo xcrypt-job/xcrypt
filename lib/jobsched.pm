@@ -179,7 +179,8 @@ sub inventory_write {
     my ($jobname, $stat, $host, $wd) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_qx("$cmdline", $jobname, $host, $wd);
+#    &xcr_qx("$cmdline", $jobname, $host, $wd);
+    &xcr_qx("$cmdline", '.', $host, $wd);
 
     ## Use the following when $watch_thread is a Coro.
     # {

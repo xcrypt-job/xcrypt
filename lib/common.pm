@@ -156,6 +156,8 @@ sub xcr_symlink {
     my $ex0 = &xcr_exist('-f', $file, $rhost, $rwd);
     my $ex1 = &xcr_exist('-h', File::Spec->catfile($dir, $link), $rhost, $rwd);
     unless ($rhost eq 'localhost' || $rhost eq '') {
+print $ex0, "\n";
+print $ex1, "\n";
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
 		my $tmp = File::Spec->catfile($rwd, $dir, $link);

@@ -17,8 +17,8 @@ use Cwd;
 use common;
 
 use base qw(Exporter);
-our @EXPORT = qw(prepare submit sync
-expand_and_make prepare_directory prepare_submit_sync prepare_submit submit_sync
+our @EXPORT = qw(expand_and_make prepare_directory submit sync
+prepare prepare_submit submit_sync prepare_submit_sync
 add_key repeat get_elapsed_time
 );
 
@@ -44,7 +44,7 @@ sub get_elapsed_time {
 }
 
 sub update_running_and_done_now {
-    open( INV, "$_[0]" );
+    open( INV, "$_[0]" ) or die "$!";
     while (<INV>) {
         if ($_ =~ /^time_running\:\s*([0-9]*)/) {
             $time_running = $1;
@@ -384,19 +384,19 @@ sub expand_and_make {
         my @range = &times(@ranges);
         foreach (@range) {
             my $self = &generate(\%job, @{$_});
-#	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
             push(@objs, $self);
         }
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
             my $self = &generate(\%job, $_);
-#	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
             push(@objs, $self);
         }
     } else {
         my $self = &generate(\%job);
-#	&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
+	&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
         push(@objs, $self);
     }
     return @objs;
@@ -436,9 +436,6 @@ sub prepare_directory {
 	    unless (-d "$self->{id}") {
 		mkdir $self->{id}, 0755;
 	    }
-# initialized にするのは expand_and_make 中で行いたいが inventory_write がジョブディレクトリ内で行うものなのでとりあえずここにしておく．
-&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
-
 	    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
 		# リモート実行未対応
 		if ($self->{"copieddir$i"}) {
@@ -576,16 +573,6 @@ sub belong {
     return $c;
 }
 
-sub prepare_submit_sync {
-    my @objs = &prepare_submit(@_);
-    return &sync(@objs);
-}
-
-sub submit_sync {
-    my @objs = &submit(@_);
-    return &sync(@objs);
-}
-
 sub prepare_submit {
     my @objs = &expand_and_make(@_);
     foreach (@objs) {
@@ -593,6 +580,16 @@ sub prepare_submit {
 	&submit($_);
     }
     return @objs;
+}
+
+sub submit_sync {
+    my @objs = &submit(@_);
+    return &sync(@objs);
+}
+
+sub prepare_submit_sync {
+    my @objs = &prepare_submit(@_);
+    return &sync(@objs);
 }
 
 1;
