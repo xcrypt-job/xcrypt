@@ -419,7 +419,6 @@ sub prepare_directory {
 	    }
 	} else {
 	    # If the working directory already exists, delete it
-	    # ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしている？
 	    if ( -e $self->{workdir} ) {
 		print "Delete directory $self->{workdir}\n";
 		File::Path::rmtree ($self->{workdir});
@@ -428,10 +427,9 @@ sub prepare_directory {
 		my $ex = &xcr_exist('-d', $self->{id},
 				    $self->{rhost}, $self->{rwd});
 		# If the working directory already exists, delete it
-		# ↑ディレクトリをつくって……（ちょっと上のと同じ）
 		if ($ex) {
 		    print "Delete directory $self->{id}\n";
-		    File::Path::rmtree($self->{id});
+		    &xcr_qx('rm -rf', '.', $self->{rhost}, $self->{rwd});
 		}
 	    }
 	    &xcr_mkdir($xcropt::options{inventory_path},
