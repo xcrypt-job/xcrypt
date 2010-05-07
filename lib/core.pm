@@ -79,7 +79,7 @@ sub new {
 sub start {
     my $self = shift;
     # Skip if the job is done or finished in the previous execution
-    # ↑ finished もというのは間違い？
+    # ↑ 「finishedも」というのはコメントの書き間違い？
     my $stat = &jobsched::get_job_status($self->{id});
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
@@ -180,7 +180,7 @@ sub make_jobscript_body {
     }
     push (@body, "cd ". $wkdir_str);
     # Set the job's status to "running"
-    push (@body, "sleep 2"); # running が早すぎて queued がなかなか勝てないため
+    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
@@ -316,7 +316,8 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    &jobsched::inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
+    &jobsched::inventory_write($self->{id}, 'submitted',
+			       $self->{rhost}, $self->{rwd});
 
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
@@ -338,7 +339,8 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{rhost}, $self->{rwd});
+	my @qsub_output = &xcr_qx("$cmdline", '.',
+				  $self->{rhost}, $self->{rwd});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
