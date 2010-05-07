@@ -247,7 +247,10 @@ sub generate {
         $exist = 0;
     }
 =cut
-    return user->new(\%job);
+    my $self = user->new(\%job);
+    &jobsched::inventory_write ($self->{id}, "initialized",
+				$self->{rhost}, $self->{rwd});
+    return $self;
 }
 
 sub times {
@@ -384,19 +387,16 @@ sub expand_and_make {
         my @range = &times(@ranges);
         foreach (@range) {
             my $self = &generate(\%job, @{$_});
-	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
             push(@objs, $self);
         }
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
             my $self = &generate(\%job, $_);
-	    &jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
             push(@objs, $self);
         }
     } else {
         my $self = &generate(\%job);
-	&jobsched::inventory_write ($self->{id}, "initialized", $self->{rhost}, $self->{rwd});
         push(@objs, $self);
     }
     return @objs;
@@ -408,30 +408,34 @@ sub prepare_directory {
 	my $last_stat = &jobsched::get_job_status ($self->{id});
 	if ( jobsched::is_signaled_job ($self->{id}) ) {
 	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-	    &jobsched::inventory_write ($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
+	    &jobsched::inventory_write ($self->{id}, "aborted",
+					$self->{rhost}, $self->{rwd});
 	    &jobsched::delete_signaled_job ($self->{id});
 	} elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
 	    # Skip if the job is 'done' or 'finished'
 	    if ( $last_stat eq 'finished' ) {
-		&jobsched::inventory_write ($self->{id}, "done", $self->{rhost}, $self->{rwd});
+		&jobsched::inventory_write ($self->{id}, "done",
+					    $self->{rhost}, $self->{rwd});
 	    }
 	} else {
 	    # If the working directory already exists, delete it
-	    # ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしているが……
+	    # ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしている？
 	    if ( -e $self->{workdir} ) {
 		print "Delete directory $self->{workdir}\n";
 		File::Path::rmtree ($self->{workdir});
 	    }
 	    unless ($self->{rhost} eq '') {
-		my $ex = &xcr_exist('-d', $self->{id}, $self->{rhost}, $self->{rwd});
+		my $ex = &xcr_exist('-d', $self->{id},
+				    $self->{rhost}, $self->{rwd});
 		# If the working directory already exists, delete it
-		# ↑ディレクトリをつくってなにかする外部モジュールをつくれなくしているが……
+		# ↑ディレクトリをつくって……（ちょっと上のと同じ）
 		if ($ex) {
 		    print "Delete directory $self->{id}\n";
 		    File::Path::rmtree($self->{id});
 		}
 	    }
-	    &xcr_mkdir($xcropt::options{inventory_path}, $self->{rhost}, $self->{rwd});
+	    &xcr_mkdir($xcropt::options{inventory_path},
+		       $self->{rhost}, $self->{rwd});
 	    &xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
 	    unless (-d "$self->{id}") {
 		mkdir $self->{id}, 0755;
@@ -454,7 +458,8 @@ sub prepare_directory {
 		    my $copied = $self->{"copiedfile$i"};
 		    my $ex = &xcr_exist('-f', $copied, $self->{rhost});
 		    if ($ex) {
-			&xcr_copy($copied, $self->{id}, $self->{rhost}, $self->{rwd});
+			&xcr_copy($copied, $self->{id},
+				  $self->{rhost}, $self->{rwd});
 		    } else {
 			warn "Can't copy $copied\n";
 		    }
@@ -467,10 +472,13 @@ sub prepare_directory {
 				 $self->{rhost}, $self->{rwd});
 		}
 	    }
-	    unless ( $stat eq 'done' || $stat eq 'finished' || $stat eq 'aborted' ) {
+	    unless ( $stat eq 'done' ||
+		     $stat eq 'finished' ||
+		     $stat eq 'aborted' ) {
 		# xcryptdelされていたら状態をabortedにして処理をとばす
 		if (jobsched::is_signaled_job($self->{id})) {
-		    &jobsched::inventory_write($self->{id}, "aborted", $self->{rhost}, $self->{rwd});
+		    &jobsched::inventory_write($self->{id}, "aborted",
+					       $self->{rhost}, $self->{rwd});
 		    &jobsched::delete_signaled_job($self->{id});
 		    push (@coros, undef);
 		    next;
@@ -498,8 +506,6 @@ sub submit {
     # my @coros = ();
     foreach my $self (@array) {
         my $stat = &jobsched::get_job_status($self->{id});
-        # submit対象のジョブ状態を 'prepared' にする．
-        # ただし，すでに done, finished, abortedなら無視
         # ジョブスレッドを立ち上げる
         my $job_coro = Coro::async {
             my $self = $_[0];
@@ -523,16 +529,14 @@ sub submit {
 		my $flag1 = 0;
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &common::xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
-					    $self->{rhost},
-					    $self->{rwd});
-		    $flag1 = &common::xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
-					    $self->{rhost},
-					    $self->{rwd});
+		    $flag0 = &xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
+					$self->{rhost}, $self->{rwd});
+		    $flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					$self->{rhost}, $self->{rwd});
 		    }
-#	    }
-	    $self->EVERY::LAST::after();
-	    &jobsched::inventory_write ($self->{id}, 'finished', $self->{rhost}, $self->{rwd});
+		$self->EVERY::LAST::after();
+		&jobsched::inventory_write ($self->{id}, 'finished',
+					    $self->{rhost}, $self->{rwd});
 	    }
 	} $self;
         # push (@coros, $job_coro);
