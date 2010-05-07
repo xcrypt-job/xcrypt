@@ -51,7 +51,7 @@ my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 =comment
-unless (@rhosts == ()) {
+unless (@rhosts == ()) { ジョブオブジェクトのメンバに rhost が書かれるようになったのでこの条件による分岐ではダメになった
     my $fp_req    = File::Spec->catfile($rwds[0], $REQFILE);
     my $fp_ack    = File::Spec->catfile($rwds[0], $ACKFILE);
     my $fp_reqtmp = File::Spec->catfile($rwds[0], $REQ_TMPFILE);
