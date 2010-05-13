@@ -240,7 +240,8 @@ sub update_script_file {
 sub update_jobscript_file {
     my $self = shift;
     $self->update_script_file ($self->{jobscript_file},
-                               @{$self->{jobscript_header}},@{$self->{jobscript_body}});
+                               @{$self->{jobscript_header}},
+			       @{$self->{jobscript_body}});
 }
 
 # Make/Update a perl script file for before_in_job

@@ -167,7 +167,8 @@ sub xcr_symlink {
 	}
     } else {
 	if ($ex0 && !$ex1) {
-		symlink(File::Spec->rel2abs($file), File::Spec->catfile($dir, $link));
+	    symlink(File::Spec->rel2abs($file),
+		    File::Spec->catfile($dir, $link));
 	} else {
 	    warn "Can't link to $file";
 	}

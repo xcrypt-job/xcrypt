@@ -20,17 +20,6 @@
 \maketitle
 \tableofcontents
 
-\paragraph{Requirement.}
-
-Xcrypt requires the following outer modules:
-\begin{itemize}
-\item Marc Lehmann's Coro (where conftest.c is not contained), EV,
-\item Joshua Nathaniel Pritikin's Event, and
-\item Daniel Muey's Recursive,
-\end{itemize}
-and wants Marc Lehmann's AnyEvent, common::sense, and Guard (warns if
-none).
-
 \part{General}
 \chapter{Introduction}
 
@@ -61,6 +50,16 @@ job, and supports users to process jobs easily.
 
 Xcrypt requires a superset of Bourne shell, Perl 5.10.0 or any later
 version, and Perl/Tk 8.4 for GUI.
+
+Xcrypt also requires the following outer modules:
+\begin{itemize}
+\item Marc Lehmann's Coro (where conftest.c is not contained), EV,
+\item Joshua Nathaniel Pritikin's Event, and
+\item Daniel Muey's Recursive,
+\end{itemize}
+and wants Marc Lehmann's AnyEvent, common::sense, and Guard (warns if
+none).
+
 
 \chapter{Script}
 
@@ -222,6 +221,17 @@ Finally, execute Xcrypt with the script:
 \texttt{\$ \$XCRYPT/bin/xcrypt sample.xcr}
 \end{screen}
 
+\section{Interactive Usage}
+
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptstat}
+\end{screen}
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptdel myjob}
+\end{screen}
+
+
+
 \section{Product}\label{sec:created}
 
 Xcrypt creates the following in the working directory
@@ -243,19 +253,10 @@ of the names (which are the values of \texttt{copiedfile}\textit{i}
 and \texttt{linkedfile}\textit{i}) are copied and created in the job
 working directory, respectively.
 
-\subsection*{\texttt{\$XCRJOBSCHED.sh}}
+\subsection*{\texttt{\$XCRJOBSCHED.sh} or \texttt{sh.sh}}
 
-is a job script, which is passed to a job scheduler.
-
-\subsection*{\texttt{sh.sh}}
-
-is a Bourne shell script, which is executed, regarding OS as a job
-scheduler.
-
-\subsection*{\texttt{request\_id}}
-
-is a file storing the job's request ID (which the job scheduler
-returns).
+is a job script passed to a job scheduler or a Bourne shell script
+executed, regarding OS as a job scheduler, respectively.
 
 \subsection*{\texttt{stdout}}
 

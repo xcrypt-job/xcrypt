@@ -11,6 +11,7 @@ use base qw (core);
              'JS_queue' => 'ghxxxxx',  # modify for your system
              'JS_group' => 'ghxxxxx',  # modify for your system
              'before_in_job' => 'print STDERR $self->{JS_queue}. "\n";',
+#             'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
              'after_in_job' => 'print STDOUT $self->{id}. "\n";',
              );
 @job = prepare (%template);
