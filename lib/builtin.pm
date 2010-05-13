@@ -501,6 +501,7 @@ sub prepare{
 
 sub submit {
     my @array = @_;
+    my $slp = 0;
     # my @coros = ();
     foreach my $self (@array) {
         my $stat = &jobsched::get_job_status($self->{id});
@@ -539,6 +540,7 @@ sub submit {
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
+	Coro::AnyEvent::sleep $slp;
     }
     return @array;
 }

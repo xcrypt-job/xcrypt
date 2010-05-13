@@ -28,5 +28,6 @@ limit::initialize(10);
 #&repeat('print "hogehoge\n";');
 #$hoge = 'hoge';
 #&repeat(sub {print STDOUT "$hoge\n";}, 3);
+#sleep(30);
 &sync(@jobs);
 
