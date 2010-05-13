@@ -77,9 +77,11 @@ sub xcrypt_comm_log {
 }
 
 sub xcrypt_comm_log_finish {
-    close ($Log);
-    $Log=undef;
-    $Log_Header='';
+    if ($Log) {
+        close ($Log);
+        $Log=undef;
+        $Log_Header='';
+    }
     return 1;
 }
 

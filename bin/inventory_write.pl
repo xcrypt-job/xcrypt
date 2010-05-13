@@ -3,14 +3,14 @@ use strict;
 use Time::HiRes;
 use xcrypt_comm;
 
-my $Logfile = 'invwrite-sock.log';
+my $Logfile = '_invwrite.log';
 
 if ( @ARGV < 3
      || !(($ARGV[2] eq 'sock' && @ARGV == 5)
           || $ARGV[2] eq 'file' && @ARGV == 6))
 {
     print STDERR "usage: $0 [jobname] [status] sock [hostname] [port]\n";
-    print STDERR "       $0 [jobname] [status] file [lockdir] [requestfile] [ackfile]\n";
+    print STDERR "       $0 [jobname] [status] file [lockdir] [sendfile] [ackfile]\n";
     exit -1;
 }
 

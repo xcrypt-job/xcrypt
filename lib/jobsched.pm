@@ -43,7 +43,7 @@ my $Inventory_Write_Cmd = 'inventory_write.pl';
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
-my $ACK_TMPFILE = $ACKFILE . '.tmp';
+my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 =comment
 unless (@rhosts == ()) { ジョブオブジェクトのメンバに rhost が書かれるようになったのでこの条件による分岐ではダメになった
