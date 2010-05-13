@@ -37,12 +37,7 @@ my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0
 my $inventory_path = $xcropt::options{inventory_path};
 
 my $write_command = undef;
-my $sock_or_file;
-if ($inventory_port > 0) {
-    $sock_or_file = 'inventory_write_sock.pl';
-} else {
-    $sock_or_file = 'inventory_write_file.pl';
-}
+my $Inventory_Write_Cmd = 'inventory_write.pl';
 
 # for inventory_write_file
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
@@ -202,27 +197,27 @@ sub inventory_write_cmdline {
 	if ($prefix eq '') {
 	    die "Set the environment variable \$XCRYPT at $host\n";
 	}
-	$write_command=File::Spec->catfile($prefix, 'bin', $sock_or_file);
+	$write_command=File::Spec->catfile($prefix, 'bin', $Inventory_Write_Cmd);
     } else {
 	unless (defined $ENV{XCRYPT}) {
 	    die "Set the environment varialble \$XCRYPT\n";
 	}
-	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $sock_or_file);
+	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $Inventory_Write_Cmd);
     }
 
     if ( $inventory_port > 0 ) {
-        return "$write_command $inventory_host $inventory_port $jobname $stat";
+        return "$write_command $jobname $stat sock $inventory_host $inventory_port";
     } else {
 	if ($host) {
 	    my $dir = File::Spec->catfile($wd, $LOCKDIR);
 	    my $req = File::Spec->catfile($wd, $REQFILE);
 	    my $ack = File::Spec->catfile($wd, $ACKFILE);
-	    return "$write_command $dir $req $ack $jobname $stat";
+	    return "$write_command $jobname $stat file $dir $req $ack";
 	} else {
 	    my $dir = File::Spec->catfile(Cwd::getcwd(), $LOCKDIR);
 	    my $req = File::Spec->catfile(Cwd::getcwd(), $REQFILE);
 	    my $ack = File::Spec->catfile(Cwd::getcwd(), $ACKFILE);
-	    return "$write_command $dir $req $ack $jobname $stat";
+	    return "$write_command $jobname $stat file $dir $req $ack";
 	}
     }
 }
