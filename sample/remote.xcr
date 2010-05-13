@@ -7,10 +7,11 @@ use base qw(core);
 );
 
 @jobs = &prepare(%template,
-		 'arg0@' => [41,42],
-		 'arg1@' => ['> out1','> out2'],
-'rhost@' => ['abet@super.para.media.kyoto-u.ac.jp', 'abet@10.228.25.43'],
-'rwd@' => ['/home/spara/abet/xcrypt/sample', '/home/abet/xcrypt/sample']
+'arg0@'      => [41,                                    42],
+'arg1@'      => ['> out1',                              '> out2'],
+'rhost@'     => ['abet@super.para.media.kyoto-u.ac.jp', 'abet@10.228.25.43'],
+'rwd@'       => ['/home/spara/abet/xcrypt/sample',      '/home/abet/xcrypt/sample'],
+'scheduler@' => ['muramasa',                            'sh']
     );
 &submit(@jobs);
 &sync(@jobs);
