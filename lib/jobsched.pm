@@ -200,10 +200,11 @@ sub inventory_write_cmdline {
     status_name_to_level ($stat); # Valid status name?
 
     if ($host) {
+        my $prefix;
 	if (exists($hosts_xcrypts{$host})) {
-	    my $prefix = $hosts_xcrypts{$host};
+	    $prefix = $hosts_xcrypts{$host};
 	} else {
-	    my $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
+	    $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
 	    &entry_host_and_xcrypt($host, $prefix);
 	}
 	chomp($prefix);
