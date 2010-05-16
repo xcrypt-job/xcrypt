@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 use strict;
 use Time::HiRes;
+use FindBin qw($Bin);
+use lib $Bin;
 use xcrypt_comm;
 
 my $Logfile = '_invwrite.log';
