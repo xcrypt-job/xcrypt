@@ -65,6 +65,7 @@ our $watch_thread = undef; # used in bin/xcrypt
 
 my %hosts_schedulers_for_qstat : shared = ();
 my %hosts_wds_for_qstat : shared = ();
+my %hosts_xcrypts : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -122,6 +123,12 @@ sub qdel {
     }
 }
 
+sub entry_host_and_xcrypt {
+    my ($host, $xcrypt) = @_;
+#    if () {
+    $hosts_xcrypts{$host} = $xcrypt;
+#    }
+}
 sub entry_host_and_sched_for_qstat {
     my ($host, $sched) = @_;
 #    if () {
@@ -187,12 +194,18 @@ sub inventory_write {
     #     # print "$pid finished.\n";
     # }
 }
+
 sub inventory_write_cmdline {
     my ($jobname, $stat, $host, $wd) = @_;
     status_name_to_level ($stat); # Valid status name?
 
     if ($host) {
-	my $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
+	if (exists($hosts_xcrypts{$host})) {
+	    my $prefix = $hosts_xcrypts{$host};
+	} else {
+	    my $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
+	    &entry_host_and_xcrypt($host, $prefix);
+	}
 	chomp($prefix);
 	if ($prefix eq '') {
 	    die "Set the environment variable \$XCRYPT at $host\n";
