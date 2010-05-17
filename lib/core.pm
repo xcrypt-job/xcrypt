@@ -28,20 +28,22 @@ sub new {
 	$self->{scheduler} = $xcropt::options{scheduler};
     } else {
 	unless (defined $self->{scheduler}) {
+	    my $rxcrjsch = undef;
 	    if (defined $self->{rhost}) {
-		my $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
-		chomp($rxcrjsch);
-		if ($rxcrjsch) {
-		    $self->{scheduler} = $rxcrjsch;
+		unless (exists($jobsched::hosts_schedulers_for_qstat{$self->{rhost}})) {
+		    $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
+		    chomp($rxcrjsch);
+		    $jobsched::hosts_schedulers_for_qstat{$self->{rhost}} = $rxcrjsch;
 		} else {
-		    die "Set the environment varialble \$XCRJOBSCHED at $self->{rhost}\n" ;
+		    $rxcrjsch = $jobsched::hosts_schedulers_for_qstat{$self->{rhost}};
 		}
+	    } elsif ($ENV{XCRJOBSCHED}) {
+		$rxcrjsch = $ENV{XCRJOBSCHED};
+	    }
+	    if (defined $rxcrjsch) {
+		$self->{scheduler} = $rxcrjsch;
 	    } else {
-		if ($ENV{XCRJOBSCHED}) {
-		    $self->{scheduler} = $ENV{XCRJOBSCHED};
-		} else {
-		    die "Set the environment varialble \$XCRJOBSCHED\n" ;
-		}
+		die "Set the environment varialble \$XCRJOBSCHED at $self->{rhost}\n" ;
 	    }
 	}
     }

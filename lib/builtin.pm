@@ -432,8 +432,6 @@ sub prepare_directory {
 		    &xcr_qx('rm -rf', '.', $self->{rhost}, $self->{rwd});
 		}
 	    }
-	    &xcr_mkdir($xcropt::options{inventory_path},
-		       $self->{rhost}, $self->{rwd});
 	    &xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
 	    unless (-d "$self->{id}") {
 		mkdir $self->{id}, 0755;
