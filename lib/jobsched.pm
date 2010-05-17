@@ -63,9 +63,10 @@ unless (@rhosts == ()) { ジョブオブジェクトのメンバに rhost が書かれるようになっ
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread = undef; # used in bin/xcrypt
 
-my %hosts_schedulers_for_qstat : shared = ();
+our %hosts_schedulers_for_qstat : shared = ();
 my %hosts_wds_for_qstat : shared = ();
 my %hosts_xcrypts : shared = ();
+my %hosts_invwatches : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -180,6 +181,10 @@ sub qstat {
 sub inventory_write {
     my ($jobname, $stat, $host, $wd) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
+    unless (exists($hosts_invwatches{$host})) {
+	&xcr_mkdir($xcropt::options{inventory_path}, $host, $wd);
+	$hosts_invwatches{$host} = 1;
+    }
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
 #    &xcr_qx("$cmdline", $jobname, $host, $wd);
     &xcr_qx("$cmdline", '.', $host, $wd);
