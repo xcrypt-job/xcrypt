@@ -63,10 +63,10 @@ unless (@rhosts == ()) { ジョブオブジェクトのメンバに rhost が書かれるようになっ
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread = undef; # used in bin/xcrypt
 
-our %hosts_schedulers_for_qstat : shared = ();
-my %hosts_wds_for_qstat : shared = ();
-my %hosts_xcrypts : shared = ();
-my %hosts_invwatches : shared = ();
+our %hosts_schedulers : shared = ();
+our %hosts_wds : shared = ();
+our %hosts_xcrypts : shared = ();
+our %hosts_invwatches : shared = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -130,37 +130,37 @@ sub entry_host_and_xcrypt {
     $hosts_xcrypts{$host} = $xcrypt;
 #    }
 }
-sub entry_host_and_sched_for_qstat {
+sub entry_host_and_sched {
     my ($host, $sched) = @_;
 #    if () {
-    $hosts_schedulers_for_qstat{$host} = $sched;
+    $hosts_schedulers{$host} = $sched;
 #    }
 }
-sub entry_host_and_wd_for_qstat {
+sub entry_host_and_wd {
     my ($host, $wd) = @_;
 #    if () {
-    $hosts_wds_for_qstat{$host} = $wd;
+    $hosts_wds{$host} = $wd;
 #    }
 }
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
 #    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    foreach (keys %hosts_schedulers_for_qstat) {
-	my $qstat_command = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{qstat_command};
+    foreach (keys %hosts_schedulers) {
+	my $qstat_command = $jsconfig::jobsched_config{$hosts_schedulers{$_}}{qstat_command};
 	if ($_ eq 'localhost') {
 	    $qstat_command = "$qstat_command";
 	} else {
 	    $qstat_command = "$rsh_command $_ $qstat_command";
 	}
     unless ( defined $qstat_command ) {
-        die "qstat_command is not defined in $hosts_schedulers_for_qstat{$_}.pm";
+        die "qstat_command is not defined in $hosts_schedulers{$_}.pm";
     }
-    my $qstat_extractor = $jsconfig::jobsched_config{$hosts_schedulers_for_qstat{$_}}{extract_req_ids_from_qstat_output};
+    my $qstat_extractor = $jsconfig::jobsched_config{$hosts_schedulers{$_}}{extract_req_ids_from_qstat_output};
     unless ( defined $qstat_extractor ) {
-        die "extract_req_ids_from_qstat_output is not defined in $hosts_schedulers_for_qstat{$_}.pm";
+        die "extract_req_ids_from_qstat_output is not defined in $hosts_schedulers{$_}.pm";
     } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-        die "Error in $hosts_schedulers_for_qstat{$_}.pm: extract_req_ids_from_qstat_output must be a function.";
+        die "Error in $hosts_schedulers{$_}.pm: extract_req_ids_from_qstat_output must be a function.";
     }
     my $command_string = any_to_string_spc ($qstat_command);
     unless (common::cmd_executable ($command_string)) {
@@ -323,7 +323,8 @@ my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
     $watch_thread = threads->new( sub {
-        my $interval = 0.1;
+#        my $interval = 0.1;
+        my $interval = 0.5;
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
@@ -332,7 +333,7 @@ sub invoke_watch_by_file {
 	    my $wd;
 	    my $count = 0;
 	    until ($flag) {
-		my @tmp = %hosts_wds_for_qstat;
+		my @tmp = %hosts_wds;
 		Time::HiRes::sleep ($interval);
 		$host = $tmp[$count];
 		$wd = $tmp[$count+1];

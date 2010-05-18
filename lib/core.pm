@@ -30,12 +30,12 @@ sub new {
 	unless (defined $self->{scheduler}) {
 	    my $rxcrjsch = undef;
 	    if (defined $self->{rhost}) {
-		unless (exists($jobsched::hosts_schedulers_for_qstat{$self->{rhost}})) {
+		unless (exists($jobsched::hosts_schedulers{$self->{rhost}})) {
 		    $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
 		    chomp($rxcrjsch);
-		    $jobsched::hosts_schedulers_for_qstat{$self->{rhost}} = $rxcrjsch;
+		    $jobsched::hosts_schedulers{$self->{rhost}} = $rxcrjsch;
 		} else {
-		    $rxcrjsch = $jobsched::hosts_schedulers_for_qstat{$self->{rhost}};
+		    $rxcrjsch = $jobsched::hosts_schedulers{$self->{rhost}};
 		}
 	    } elsif ($ENV{XCRJOBSCHED}) {
 		$rxcrjsch = $ENV{XCRJOBSCHED};
@@ -68,11 +68,11 @@ sub new {
 
     # Load the inventory file to recover the job's status after the previous execution
     if (defined $self->{rhost}) {
-	&jobsched::entry_host_and_sched_for_qstat ($self->{rhost}, $self->{scheduler});
-	&jobsched::entry_host_and_wd_for_qstat ($self->{rhost}, $self->{rwd});
+	&jobsched::entry_host_and_sched ($self->{rhost}, $self->{scheduler});
+	&jobsched::entry_host_and_wd ($self->{rhost}, $self->{rwd});
     } else {
-	&jobsched::entry_host_and_sched_for_qstat ('localhost', $self->{scheduler});
-	&jobsched::entry_host_and_wd_for_qstat ('localhost', $self->{scheduler});
+	&jobsched::entry_host_and_sched ('localhost', $self->{scheduler});
+	&jobsched::entry_host_and_wd ('localhost', $self->{scheduler});
     }
     &jobsched::load_inventory ($jobname);
     return bless $self, $class;
