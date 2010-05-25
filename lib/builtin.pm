@@ -19,7 +19,7 @@ use common;
 use base qw(Exporter);
 our @EXPORT = qw(expand_and_make prepare_directory submit sync
 prepare prepare_submit submit_sync prepare_submit_sync
-add_key repeat get_elapsed_time
+add_key add_host repeat get_elapsed_time
 );
 
 # id, exe$i, arg$i_$j, linkedfile$i, copiedfile$i, and copieddir$i are built-in.
@@ -28,6 +28,8 @@ our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'rhos
 my $nilchar = 'nil';
 my $argument_name = 'R';
 my $before_after_slp = 1;
+
+our %rhost_object;
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
@@ -123,6 +125,19 @@ sub repeat {
         print ")\n";
     }
     return $new_coro;
+}
+
+sub add_host {
+    foreach my $i (@_) {
+	unless (exists $rhost_object{$i}) {
+	    my ($user, $host) = split(/@/, $i);
+	    my %args = (host => $host, user => $user);
+	    our $sftp = Net::SFTP::Foreign->new(%args);
+	    $sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
+	    $rhost_object{$i} = $sftp;
+	    push(@jobsched::rhost_for_watch, $i);
+	}
+    }
 }
 
 sub add_key {
