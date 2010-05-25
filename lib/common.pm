@@ -4,7 +4,8 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_pull xcr_push);
+xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx
+xcr_pull xcr_push);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -12,6 +13,8 @@ use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
+use Net::SFTP::Foreign;
+use builtin;
 
 my $rsh_command = $xcropt::options{rsh};
 my $rcp_command = $xcropt::options{rcp};
@@ -213,17 +216,6 @@ sub xcr_qx {
 #     close($fh);
 # }
 
-sub xcr_pull {
-    my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
-	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($rwd, $file);
-	    qx/$rcp_command $rhost:$remote $file/;
-	    qx/$rsh_command $rhost rm -f $remote/;
-	}
-    }
-}
-
 sub xcr_copy {
     my ($copied, $dir, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
@@ -237,13 +229,34 @@ sub xcr_copy {
     }
 }
 
+sub xcr_pull {
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq 'localhost' || $rhost eq '') {
+	unless ($xcropt::options{shared}) {
+	    my $remote = File::Spec->catfile($rwd, $file);
+	    if (exists $builtin::rhost_object{$rhost}) {
+		my $tmp = $builtin::rhost_object{$rhost};
+		$tmp->get("$remote", "$file") or die "get failed: " . $tmp->error;
+	    } else {
+		die "Add hostname by &add_host";
+	    }
+	    qx/$rsh_command $rhost rm -f $remote/;
+	}
+    }
+}
+
 sub xcr_push {
     my ($file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($rwd, $file);
-	    qx/$rcp_command $file $rhost:$remote/;
+	    if (exists $builtin::rhost_object{$rhost}) {
+		my $tmp = $builtin::rhost_object{$rhost};
+		$tmp->put("$file", "$remote") or die "put failed: " . $tmp->error;
 	    unlink $file;
+	    } else {
+		die "Add hostname by &add_host";
+	    }
 	}
     }
 }

@@ -2,7 +2,7 @@ use base qw(n_section_method core);
 use Data_Generation;
 use Data_Extraction;
 
-$n_section_method::del_extra_jobs = 1;
+$n_section_method::del_extra_jobs = 0;
 
 %job = (
     'id' => 'job0',

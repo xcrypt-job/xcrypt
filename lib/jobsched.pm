@@ -96,6 +96,9 @@ my $abort_check_interval = $xcropt::options{abort_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
 our $periodic_thread=undef; # accessed from bin/xcrypt
 
+our %rhost_object_for_watch;
+our @rhost_for_watch : shared;
+
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
@@ -326,6 +329,8 @@ sub invoke_watch_by_file {
 #        my $interval = 0.1;
         my $interval = 0.5;
         while (1) {
+	    &new_obj_for_sftp();
+
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
 	    my $flag;
@@ -346,7 +351,7 @@ sub invoke_watch_by_file {
 	    }
 
 	    my $CLIENT_IN;
-	    &xcr_pull($REQFILE, $host, $wd);
+	    &xcr_pull_for_watch($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -386,7 +391,7 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_push($ACKFILE, $host, $wd);
+		&xcr_push_for_watch($ACKFILE, $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
@@ -398,6 +403,50 @@ sub invoke_watch_by_file {
         # close (INVWATCH_LOG);
 				  });
     $watch_thread->detach();
+}
+
+sub xcr_pull_for_watch {
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq 'localhost' || $rhost eq '') {
+	unless ($xcropt::options{shared}) {
+	    my $remote = File::Spec->catfile($rwd, $file);
+	    if (exists $rhost_object_for_watch{$rhost}) {
+		my $tmp = $rhost_object_for_watch{$rhost};
+		$tmp->get("$remote", "$file") or die "get failed: " . $tmp->error;
+	    } else {
+		die "Add hostname by &add_host";
+	    }
+	    qx/$rsh_command $rhost rm -f $remote/;
+	}
+    }
+}
+
+sub xcr_push_for_watch {
+    my ($file, $rhost, $rwd) = @_;
+    unless ($rhost eq 'localhost' || $rhost eq '') {
+	unless ($xcropt::options{shared}) {
+	    my $remote = File::Spec->catfile($rwd, $file);
+	    if (exists $rhost_object_for_watch{$rhost}) {
+		my $tmp = $rhost_object_for_watch{$rhost};
+		$tmp->put("$file", "$remote") or die "put failed: " . $tmp->error;
+	    unlink $file;
+	    } else {
+		die "Add hostname by &add_host";
+	    }
+	}
+    }
+}
+
+sub new_obj_for_sftp {
+    my @tmp = @rhost_for_watch;
+    foreach my $i (@tmp) {
+	my ($user, $host) = split(/@/, $i);
+	my %args = (host => $host, user => $user);
+	our $sftp = Net::SFTP::Foreign->new(%args);
+	$sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
+	$rhost_object_for_watch{$i} = $sftp;
+	shift(@rhost_for_watch);
+    }
 }
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
@@ -413,6 +462,7 @@ sub invoke_watch_by_socket {
     $watch_thread = threads->new (sub {
         my $socket;
         while (1) {
+	    &new_obj_for_sftp();
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
             # print "Connection accepted.\n";

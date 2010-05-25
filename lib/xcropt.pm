@@ -9,6 +9,7 @@ use Getopt::Long;
 my $localhost = qx/hostname/;
 chomp $localhost;
 
+my @rusers = ();
 my @rhosts = ();
 my @rwds = ();
 
@@ -25,6 +26,7 @@ our %options =
      # リモート実行をコマンドラインで行えることにするかは未定
      'rsh' => 'ssh',
      'rcp' => 'scp',
+     'ruser' => \@rusers,
      'rhost' => \@rhosts,
      'rwd' => \@rwds,
      # define other default values...
@@ -35,6 +37,7 @@ GetOptions
      'shared',
      'rsh=s',
      'rcp=s',
+     'ruser=s',
      'rhost=s',
      'rwd=s',
      'localhost=s',
