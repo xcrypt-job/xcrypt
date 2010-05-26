@@ -10,6 +10,7 @@ use Coro::AnyEvent;
 use Cwd;
 use Data::Dumper;
 use File::Basename;
+use Net::OpenSSH;
 
 use jobsched;
 use xcropt;
@@ -131,8 +132,9 @@ sub add_host {
     foreach my $i (@_) {
 	unless (exists $rhost_object{$i}) {
 	    my ($user, $host) = split(/@/, $i);
-	    my %args = (host => $host, user => $user);
-	    our $sftp = Net::SFTP::Foreign->new(%args);
+#	    my %args = (host => $host, user => $user);
+#	    our $sftp = Net::SFTP::Foreign->new(%args);
+	    our $sftp = Net::OpenSSH->new($host, (user => $user));
 	    $sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
 	    $rhost_object{$i} = $sftp;
 	    push(@jobsched::rhost_for_watch, $i);

@@ -4,8 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx
-xcr_get xcr_put);
+xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_rename);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -13,7 +12,7 @@ use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
-use Net::SFTP::Foreign;
+use Net::OpenSSH;
 use builtin;
 
 my $rsh_command = $xcropt::options{rsh};
@@ -154,6 +153,20 @@ sub xcr_unlink {
     }
 }
 
+sub xcr_rename {
+    my ($file0, $file1, $rhost, $rwd) = @_;
+    unless ($rhost eq 'localhost' || $rhost eq '') {
+	my $flag = &xcr_exist('-f', $file0, $rhost, $rwd);
+	if ($flag) {
+	    my $tmp0 = File::Spec->catfile($rwd, $file0);
+	    my $tmp1 = File::Spec->catfile($rwd, $file1);
+	    qx/$rsh_command $rhost mv -f $tmp0 $tmp1 /;
+	}
+    } else {
+	rename $file0, $file1;
+    }
+}
+
 sub xcr_symlink {
     my ($dir, $file, $link, $rhost, $rwd) = @_;
     my $ex0 = &xcr_exist('-f', $file, $rhost, $rwd);
@@ -229,37 +242,13 @@ sub xcr_copy {
     }
 }
 
-sub xcr_get {
-    my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
-	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($rwd, $file);
-	    if (exists $builtin::rhost_object{$rhost}) {
-		my $tmp = $builtin::rhost_object{$rhost};
-		$tmp->get("$remote", "$file") or die "get failed: " . $tmp->error;
-	    } else {
-		die "Add hostname by &add_host";
-	    }
-	    qx/$rsh_command $rhost rm -f $remote/;
-	}
-    }
-}
-
-sub xcr_put {
-    my ($file, $rhost, $rwd) = @_;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
-	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($rwd, $file);
-	    if (exists $builtin::rhost_object{$rhost}) {
-		my $tmp = $builtin::rhost_object{$rhost};
-		$tmp->put("$file", "$remote") or die "put failed: " . $tmp->error;
-	    unlink $file;
-	    } else {
-		die "Add hostname by &add_host";
-	    }
-	}
-    }
-}
+my %sftp_opts = (
+                copy_attrs => 1,     # -pと同じ。オリジナルの情報を保持
+                recursive => 1,       # -rと同じ。再帰的にコピー
+                bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
+                glob => 1,               # ファイル名に「*」を使えるようにする。
+                quiet => 1,              # 進捗を表示する
+    );
 
 1;
 
