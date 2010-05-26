@@ -234,7 +234,7 @@ sub update_script_file {
     my $file = $self->workdir_file($file_base);
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&xcr_push($file, $self->{rhost}, $self->{rwd});
+	&xcr_put($file, $self->{rhost}, $self->{rwd});
     }
 }
 

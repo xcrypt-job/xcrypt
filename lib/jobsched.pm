@@ -19,6 +19,7 @@ use Coro::Signal;
 use Coro::AnyEvent;
 use AnyEvent::Socket;
 use Time::HiRes;
+use File::Copy::Recursive qw(fcopy dircopy rcopy);
 # use Coro::Socket;
 
 use common;
@@ -351,7 +352,7 @@ sub invoke_watch_by_file {
 	    }
 
 	    my $CLIENT_IN;
-	    &xcr_pull_for_watch($REQFILE, $host, $wd);
+	    &xcr_get_for_watch($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -376,7 +377,7 @@ sub invoke_watch_by_file {
             ###
             my $CLIENT_OUT = undef;
             until ($CLIENT_OUT) {
-                open($CLIENT_OUT, '>', $ACK_TMPFILE);
+		open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
 		unless ($CLIENT_OUT) {
 		    warn ("Failed to make ackfile $ACK_TMPFILE");
                     sleep $slp;
@@ -390,22 +391,24 @@ sub invoke_watch_by_file {
                 print $SAVE $inv_text;
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
+		close($CLIENT_OUT);
 		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_push_for_watch($ACKFILE, $host, $wd);
+		&xcr_put_for_watch($ACKFILE, $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
+		close($CLIENT_OUT);
+		rename $ACK_TMPFILE, $ACKFILE;
+		&xcr_put_for_watch($ACKFILE, $host, $wd);
             }
-	    close($CLIENT_OUT);
 	    unlink($REQFILE);
-
         }
         # close (INVWATCH_LOG);
 				  });
     $watch_thread->detach();
 }
 
-sub xcr_pull_for_watch {
+sub xcr_get_for_watch {
     my ($file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
@@ -421,7 +424,7 @@ sub xcr_pull_for_watch {
     }
 }
 
-sub xcr_push_for_watch {
+sub xcr_put_for_watch {
     my ($file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
