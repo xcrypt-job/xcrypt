@@ -5,7 +5,7 @@ our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx
-xcr_pull xcr_push);
+xcr_get xcr_put);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -229,7 +229,7 @@ sub xcr_copy {
     }
 }
 
-sub xcr_pull {
+sub xcr_get {
     my ($file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
@@ -245,7 +245,7 @@ sub xcr_pull {
     }
 }
 
-sub xcr_push {
+sub xcr_put {
     my ($file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
