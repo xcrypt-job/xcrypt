@@ -21,6 +21,7 @@ use AnyEvent::Socket;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 # use Coro::Socket;
+use Net::OpenSSH;
 
 use common;
 use xcropt;
@@ -392,14 +393,14 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_put_for_watch($ACKFILE, $host, $wd);
+		&xcr_put_for_watch($ACK_TMPFILE, $host, $wd);
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		rename $ACK_TMPFILE, $ACKFILE;
-		&xcr_put_for_watch($ACKFILE, $host, $wd);
+		&xcr_put_for_watch($ACK_TMPFILE, $host, $wd);
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
             }
 	    unlink($REQFILE);
         }
@@ -408,44 +409,89 @@ sub invoke_watch_by_file {
     $watch_thread->detach();
 }
 
-sub xcr_get_for_watch {
-    my ($file, $rhost, $rwd) = @_;
+my %sftp_opts = (
+                copy_attrs => 1,     # -pと同じ。オリジナルの情報を保持
+                recursive => 1,       # -rと同じ。再帰的にコピー
+                bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
+                glob => 1,               # ファイル名に「*」を使えるようにする。
+                quiet => 1,              # 進捗を表示する
+    );
+
+sub xcr_get {
+    my ($main_or_watch, $file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($rwd, $file);
-	    if (exists $rhost_object_for_watch{$rhost}) {
-		my $tmp = $rhost_object_for_watch{$rhost};
-		$tmp->get("$remote", "$file") or die "get failed: " . $tmp->error;
+	    if ($main_or_watch eq 'watch') {
+		if (exists $rhost_object_for_watch{$rhost}) {
+		    my $tmp = $rhost_object_for_watch{$rhost};
+		    $tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
+		} else {
+		    die "Add hostname by &add_host";
+		}
+		qx/$rsh_command $rhost rm -f $remote/;
 	    } else {
-		die "Add hostname by &add_host";
+		if (exists $builtin::rhost_object{$rhost}) {
+		    my $tmp = $builtin::rhost_object{$rhost};
+		    $tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
+		} else {
+		    die "Add hostname by &add_host";
+		}
+		qx/$rsh_command $rhost rm -f $remote/;
 	    }
-	    qx/$rsh_command $rhost rm -f $remote/;
 	}
     }
 }
 
-sub xcr_put_for_watch {
-    my ($file, $rhost, $rwd) = @_;
+sub xcr_get_for_main {
+    xcr_get('main', @_);
+}
+
+sub xcr_get_for_watch {
+    xcr_get('watch', @_);
+}
+
+sub xcr_put {
+    my ($main_or_watch, $file, $rhost, $rwd) = @_;
     unless ($rhost eq 'localhost' || $rhost eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($rwd, $file);
-	    if (exists $rhost_object_for_watch{$rhost}) {
-		my $tmp = $rhost_object_for_watch{$rhost};
-		$tmp->put("$file", "$remote") or die "put failed: " . $tmp->error;
-	    unlink $file;
+	    if ($main_or_watch eq 'watch') {
+		if (exists $rhost_object_for_watch{$rhost}) {
+		    my $tmp = $rhost_object_for_watch{$rhost};
+		    $tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
+		    unlink $file;
+		} else {
+		    die "Add hostname by &add_host";
+		}
 	    } else {
-		die "Add hostname by &add_host";
+		if (exists $builtin::rhost_object{$rhost}) {
+		    my $tmp = $builtin::rhost_object{$rhost};
+		    $tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
+		    unlink $file;
+		} else {
+		    die "Add hostname by &add_host";
+		}
 	    }
 	}
     }
+}
+
+sub xcr_put_for_main {
+    xcr_put('main', @_);
+}
+
+sub xcr_put_for_watch {
+    xcr_put('watch', @_);
 }
 
 sub new_obj_for_sftp {
     my @tmp = @rhost_for_watch;
     foreach my $i (@tmp) {
 	my ($user, $host) = split(/@/, $i);
-	my %args = (host => $host, user => $user);
-	our $sftp = Net::SFTP::Foreign->new(%args);
+#	my %args = (host => $host, user => $user);
+#	our $sftp = Net::SFTP::Foreign->new(%args);
+	our $sftp = Net::OpenSSH->new($host, (user => $user));
 	$sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
 	$rhost_object_for_watch{$i} = $sftp;
 	shift(@rhost_for_watch);
