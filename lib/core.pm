@@ -96,9 +96,9 @@ sub workdir_file {
     my $self = shift;
     my $basename = shift;
     if ($xcropt::options{sandbox}) {
-	return File::Spec->catfile($basename);
-    } else {
 	return File::Spec->catfile($self->{id}, $basename);
+    } else {
+	return File::Spec->catfile($basename);
     }
 }
 
@@ -184,7 +184,7 @@ sub make_jobscript_body {
     unless ($self->{rhost} eq '') {
 	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
     }
-unless ($xcropt::options{sandbox}) {
+if ($xcropt::options{sandbox}) {
     push (@body, "cd ". $wkdir_str);
 }
     # Set the job's status to "running"
