@@ -61,9 +61,9 @@ sub new {
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
-    set_member_if_empty ($self, 'jobscript_file', $self->{scheduler}.'.sh');
-    set_member_if_empty ($self, 'before_in_job_file', 'before_in_job.pl');
-    set_member_if_empty ($self, 'after_in_job_file', 'after_in_job.pl');
+    set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{scheduler}.'.sh');
+    set_member_if_empty ($self, 'before_in_job_file', $self->{id}.'_before_in_job.pl');
+    set_member_if_empty ($self, 'after_in_job_file', $self->{id}.'_after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
     # Load the inventory file to recover the job's status after the previous execution
@@ -95,7 +95,11 @@ sub start {
 sub workdir_file {
     my $self = shift;
     my $basename = shift;
-    return File::Spec->catfile($self->{id}, $basename);
+    if ($xcropt::options{sandbox}) {
+	return File::Spec->catfile($basename);
+    } else {
+	return File::Spec->catfile($self->{id}, $basename);
+    }
 }
 
 sub workdir_member_file {
@@ -180,7 +184,9 @@ sub make_jobscript_body {
     unless ($self->{rhost} eq '') {
 	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
     }
+unless ($xcropt::options{sandbox}) {
     push (@body, "cd ". $wkdir_str);
+}
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
