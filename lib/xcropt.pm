@@ -34,6 +34,7 @@ our %options =
 
 GetOptions
     (\%options,
+     'sandbox',
      'shared',
      'rsh=s',
      'rcp=s',

@@ -485,23 +485,30 @@ sub prepare_directory {
 				 $self->{rhost}, $self->{rwd});
 		}
 	    }
-	    unless ( $stat eq 'done' ||
-		     $stat eq 'finished' ||
-		     $stat eq 'aborted' ) {
-		# xcryptdelされていたら状態をabortedにして処理をとばす
-		if (jobsched::is_signaled_job($self->{id})) {
-		    &jobsched::inventory_write($self->{id}, "aborted",
-					       $self->{rhost}, $self->{rwd});
+	}
+    }
+}
+
+sub do_prepared {
+    my @jobs = @_;
+    foreach my $self (@jobs) {
+	my $last_stat = &jobsched::get_job_status ($self->{id});
+	unless ( $last_stat eq 'done' ||
+		 $last_stat eq 'finished' ||
+		 $last_stat eq 'aborted' ) {
+	    # xcryptdelされていたら状態をabortedにして処理をとばす
+	    if (jobsched::is_signaled_job($self->{id})) {
+		&jobsched::inventory_write($self->{id}, "aborted",
+					   $self->{rhost}, $self->{rwd});
 		    &jobsched::delete_signaled_job($self->{id});
-		    push (@coros, undef);
-		    next;
+		push (@coros, undef);
+		next;
+	    } else {
+		if (defined $self->{rhost}) {
+		    &jobsched::inventory_write($self->{id}, 'prepared',
+					       $self->{rhost}, $self->{rwd});
 		} else {
-		    if (defined $self->{rhost}) {
-			&jobsched::inventory_write($self->{id}, 'prepared',
-						   $self->{rhost}, $self->{rwd});
-		    } else {
-			&jobsched::inventory_write($self->{id}, 'prepared');
-		    }
+		    &jobsched::inventory_write($self->{id}, 'prepared');
 		}
 	    }
 	}
@@ -510,7 +517,10 @@ sub prepare_directory {
 
 sub prepare{
     my @objs = &expand_and_make(@_);
-    &prepare_directory(@objs);
+    unless ($xcropt::options{sandbox}) {
+	&prepare_directory(@objs);
+    }
+    &do_prepared(@objs);
     return @objs;
 }
 
@@ -519,7 +529,6 @@ sub submit {
     my $slp = 0;
     # my @coros = ();
     foreach my $self (@array) {
-        my $stat = &jobsched::get_job_status($self->{id});
         # ジョブスレッドを立ち上げる
         my $job_coro = Coro::async {
             my $self = $_[0];
@@ -543,11 +552,18 @@ sub submit {
 		my $flag1 = 0;
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f',"$self->{id}/$self->{JS_stdout}",
-					$self->{rhost}, $self->{rwd});
-		    $flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
-					$self->{rhost}, $self->{rwd});
+		    if ($xcropt::options{sandbox}) {
+			$flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
+					    $self->{rhost}, $self->{rwd});
+			$flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
+					    $self->{rhost}, $self->{rwd});
+		    } else {
+			$flag0 = &xcr_exist('-f', "$self->{id}/$self->{JS_stdout}",
+					    $self->{rhost}, $self->{rwd});
+			$flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					    $self->{rhost}, $self->{rwd});
 		    }
+		}
 		$self->EVERY::LAST::after();
 		&jobsched::inventory_write ($self->{id}, 'finished',
 					    $self->{rhost}, $self->{rwd});
