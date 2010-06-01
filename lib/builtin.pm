@@ -517,7 +517,7 @@ sub do_prepared {
 
 sub prepare{
     my @objs = &expand_and_make(@_);
-    unless ($xcropt::options{sandbox}) {
+    if ($xcropt::options{sandbox}) {
 	&prepare_directory(@objs);
     }
     &do_prepared(@objs);
@@ -553,14 +553,14 @@ sub submit {
 		until ($flag0 && $flag1) {
 		    Coro::AnyEvent::sleep 0.1;
 		    if ($xcropt::options{sandbox}) {
-			$flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					    $self->{rhost}, $self->{rwd});
-			$flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					    $self->{rhost}, $self->{rwd});
-		    } else {
 			$flag0 = &xcr_exist('-f', "$self->{id}/$self->{JS_stdout}",
 					    $self->{rhost}, $self->{rwd});
 			$flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					    $self->{rhost}, $self->{rwd});
+		    } else {
+			$flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
+					    $self->{rhost}, $self->{rwd});
+			$flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
 					    $self->{rhost}, $self->{rwd});
 		    }
 		}
