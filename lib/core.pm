@@ -18,24 +18,20 @@ sub new {
 
     $jobsched::initialized_nosync_jobs{$self->{id}} = $self;
 
-    unless (@{$xcropt::options{rhost}} == ()) {
-	$self->{rhost} = ${$xcropt::options{rhost}}[0];
-    }
-    unless (@{$xcropt::options{rwd}} == ()) {
-	$self->{rwd} = ${$xcropt::options{rwd}}[0];
-    }
-    if ($xcropt::options{scheduler}) {
+    if (defined $xcropt::options{rhost}) { $self->{rhost} = $xcropt::options{rhost}; }
+    if (defined $xcropt::options{rwd}) { $self->{rwd} = $xcropt::options{rwd}; }
+    if (defined $xcropt::options{scheduler}) {
 	$self->{scheduler} = $xcropt::options{scheduler};
     } else {
 	unless (defined $self->{scheduler}) {
 	    my $rxcrjsch = undef;
 	    if (defined $self->{rhost}) {
-		unless (exists($jobsched::hosts_schedulers{$self->{rhost}})) {
+		unless (exists($jobsched::host_env{$self->{rhost}})) {
 		    $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
 		    chomp($rxcrjsch);
-		    $jobsched::hosts_schedulers{$self->{rhost}} = $rxcrjsch;
+		    $jobsched::host_env{$self->{rhost}}->{scheduler} = $rxcrjsch;
 		} else {
-		    $rxcrjsch = $jobsched::hosts_schedulers{$self->{rhost}};
+		    $rxcrjsch = $jobsched::host_env{$self->{rhost}}->{scheduler};
 		}
 	    } elsif ($ENV{XCRJOBSCHED}) {
 		$rxcrjsch = $ENV{XCRJOBSCHED};
@@ -68,11 +64,10 @@ sub new {
 
     # Load the inventory file to recover the job's status after the previous execution
     if (defined $self->{rhost}) {
-	&jobsched::entry_host_and_sched ($self->{rhost}, $self->{scheduler});
-	&jobsched::entry_host_and_wd ($self->{rhost}, $self->{rwd});
+	$jobsched::host_env{$self->{rhost}}->{scheduler} = $self->{scheduler};
+	$jobsched::host_env{$self->{rhost}}->{wd} = $self->{rwd};
     } else {
-	&jobsched::entry_host_and_sched ('localhost', $self->{scheduler});
-	&jobsched::entry_host_and_wd ('localhost', $self->{scheduler});
+	$jobsched::host_env{'localhost'}->{scheduler} = $self->{scheduler};
     }
     &jobsched::load_inventory ($jobname);
     return bless $self, $class;
@@ -339,17 +334,16 @@ sub qsub {
 
     my $flag;
     if ($self->{rhost}) {
-	$flag = common::cmd_executable ($qsub_command, $self->{rhost});
+	$flag = common::cmd_executable ($qsub_command, 'core', $self->{rhost});
     } else {
-	$flag = common::cmd_executable ($qsub_command);
+	$flag = common::cmd_executable ($qsub_command, 'core');
     }
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.',
-				  $self->{rhost}, $self->{rwd});
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{rhost}, $self->{rwd}, 'core');
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output

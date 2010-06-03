@@ -29,8 +29,6 @@ use jsconfig;
 # use Thread::Semaphore;
 
 my $rsh_command = $xcropt::options{rsh};
-my @rhosts = @{$xcropt::options{rhost}};
-my @rwds = @{$xcropt::options{rwd}};
 ##################################################
 
 ### Inventory
@@ -47,28 +45,16 @@ my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
-=comment
-unless (@rhosts == ()) { ジョブオブジェクトのメンバに rhost が書かれるようになったのでこの条件による分岐ではダメになった
-    my $fp_req    = File::Spec->catfile($rwds[0], $REQFILE);
-    my $fp_ack    = File::Spec->catfile($rwds[0], $ACKFILE);
-    my $fp_reqtmp = File::Spec->catfile($rwds[0], $REQ_TMPFILE);
-    my $fp_acktmp = File::Spec->catfile($rwds[0], $ACK_TMPFILE);
-    my $fp_lock   = File::Spec->catfile($rwds[0], $LOCKDIR);
-    qx/$rsh_command $rhosts[0] rm -f $fp_req; $rsh_command $rhosts[0] rm -f $fp_ack; $rsh_command $rhosts[0] rm -f $fp_reqtmp; $rsh_command $rhosts[0] rm -f $fp_acktmp/;
-    qx/$rsh_command $rhosts[0] test -d $fp_lock && $rsh_command $rhosts[0] rmdir $fp_lock/;
-} else {
-=cut
-    unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
-    rmdir $LOCKDIR;
-#}
+# ジョブオブジェクトのメンバに rhost が書かれるようになったので
+# jobsched.pm 読み込み時にリモートのファイルの削除を行えばよいというわ
+# けでなくなったので，ローカルのファイルのみを削除している．
+unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
+rmdir $LOCKDIR;
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread = undef; # used in bin/xcrypt
 
-our %hosts_schedulers : shared = ();
-our %hosts_wds : shared = ();
-our %hosts_xcrypts : shared = ();
-our %hosts_invwatches : shared = ();
+our %host_env = ();
 
 # ジョブ名→ジョブのrequest_id
 my %job_request_id : shared;
@@ -98,9 +84,6 @@ my $abort_check_interval = $xcropt::options{abort_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
 our $periodic_thread=undef; # accessed from bin/xcrypt
 
-our %rhost_object_for_watch;
-our @rhost_for_watch : shared;
-
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
@@ -120,7 +103,7 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (common::cmd_executable ($command_string)) {
+        if (common::cmd_executable ($command_string, 'jobsched')) {
             print "Deleting $jobname (request ID: $req_id)\n";
             common::exec_async ($command_string);
         } else {
@@ -129,54 +112,31 @@ sub qdel {
     }
 }
 
-sub entry_host_and_xcrypt {
-    my ($host, $xcrypt) = @_;
-#    if () {
-    $hosts_xcrypts{$host} = $xcrypt;
-#    }
-}
-sub entry_host_and_sched {
-    my ($host, $sched) = @_;
-#    if () {
-    $hosts_schedulers{$host} = $sched;
-#    }
-}
-sub entry_host_and_wd {
-    my ($host, $wd) = @_;
-#    if () {
-    $hosts_wds{$host} = $wd;
-#    }
-}
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
 #    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    foreach (keys %hosts_schedulers) {
-	my $qstat_command = $jsconfig::jobsched_config{$hosts_schedulers{$_}}{qstat_command};
-	if ($_ eq 'localhost') {
-	    $qstat_command = "$qstat_command";
-	} else {
-	    $qstat_command = "$rsh_command $_ $qstat_command";
+    foreach (keys %host_env) {
+	my $qstat_command = $jsconfig::jobsched_config{$host_env{$_}->{scheduler}}{qstat_command};
+	unless ( defined $qstat_command ) {
+	    die "qstat_command is not defined in $host_env{$_}->{schedulers}.pm";
 	}
-    unless ( defined $qstat_command ) {
-        die "qstat_command is not defined in $hosts_schedulers{$_}.pm";
-    }
-    my $qstat_extractor = $jsconfig::jobsched_config{$hosts_schedulers{$_}}{extract_req_ids_from_qstat_output};
-    unless ( defined $qstat_extractor ) {
-        die "extract_req_ids_from_qstat_output is not defined in $hosts_schedulers{$_}.pm";
-    } elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-        die "Error in $hosts_schedulers{$_}.pm: extract_req_ids_from_qstat_output must be a function.";
-    }
-    my $command_string = any_to_string_spc ($qstat_command);
-    unless (common::cmd_executable ($command_string)) {
-        warn "$command_string not executable";
-        return ();
-    }
+	my $qstat_extractor = $jsconfig::jobsched_config{$host_env{$_}->{scheduler}}{extract_req_ids_from_qstat_output};
+	unless ( defined $qstat_extractor ) {
+	    die "extract_req_ids_from_qstat_output is not defined in $host_env{$_}->{schedulers}.pm";
+	} elsif ( ref ($qstat_extractor) ne 'CODE' ) {
+	    die "Error in $host_env{$_}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
+	}
+	my $command_string = any_to_string_spc ($qstat_command);
+	unless (common::cmd_executable ($command_string, 'jobsched')) {
+	    warn "$command_string not executable";
+	    return ();
+	}
 
-    # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
-    my @qstat_out = qx/$command_string/;
-    my @tmp_ids = &$qstat_extractor(@qstat_out);
-    push(@ids, @tmp_ids);
+	# foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
+	my @qstat_out = &xcr_qx($command_string, 'jobsched');
+	my @tmp_ids = &$qstat_extractor(@qstat_out);
+	push(@ids, @tmp_ids);
     }
     return @ids;
 }
@@ -186,13 +146,12 @@ sub qstat {
 sub inventory_write {
     my ($jobname, $stat, $host, $wd) = @_;
     my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
-    unless (exists($hosts_invwatches{$host})) {
-	&xcr_mkdir($xcropt::options{inventory_path}, $host, $wd);
-	$hosts_invwatches{$host} = 1;
+    unless (exists($host_env{$host}->{invwatch})) {
+	&xcr_mkdir($xcropt::options{inventory_path}, 'jobsched', $host, $wd);
+	$host_env{$host}->{invwatch} = 1;
     }
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-#    &xcr_qx("$cmdline", $jobname, $host, $wd);
-    &xcr_qx("$cmdline", '.', $host, $wd);
+    &xcr_qx("$cmdline", '.', $host, $wd); # &xcr_system("$cmdline", $jobname, $host, $wd);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -211,10 +170,11 @@ sub inventory_write_cmdline {
 
     if ($host) {
         my $prefix;
-	if (exists($hosts_xcrypts{$host})) {
-	    $prefix = $hosts_xcrypts{$host};
+	if (exists($host_env{$host}->{xcrypt})) {
+	    $prefix = $host_env{$host}->{xcrypt};
 	} else {
-	    $prefix = qx/$rsh_command $host 'echo \$XCRYPT'/;
+	    my @ret = &xcr_qx('echo $XCRYPT');
+	    $prefix = @ret[0];
 	    &entry_host_and_xcrypt($host, $prefix);
 	}
 	chomp($prefix);
@@ -331,14 +291,13 @@ sub invoke_watch_by_file {
 #        my $interval = 0.1;
         my $interval = 0.5;
         while (1) {
-	    &new_obj_for_sftp();
-
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
 	    my $flag;
 	    my $host;
 	    my $wd;
 	    my $count = 0;
+# Coro版監視スレッドがあればジョブオブジェクトを使って監視をするので以下のような監視はしない
 	    until ($flag) {
 		my @tmp = %hosts_wds;
 		Time::HiRes::sleep ($interval);
@@ -353,7 +312,7 @@ sub invoke_watch_by_file {
 	    }
 
 	    my $CLIENT_IN;
-	    &xcr_get_for_watch($REQFILE, $host, $wd);
+	    &xcr_get($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -393,14 +352,14 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put_for_watch($ACK_TMPFILE, $host, $wd);
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
+		&xcr_put($ACK_TMPFILE, $host, $wd);
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put_for_watch($ACK_TMPFILE, $host, $wd);
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
+		&xcr_put($ACK_TMPFILE, $host, $wd);
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
             }
 	    unlink($REQFILE);
         }
@@ -417,87 +376,6 @@ my %sftp_opts = (
                 quiet => 1,              # 進捗を表示する
     );
 
-sub xcr_get {
-    my ($main_or_watch, $file, $rhost, $rwd) = @_;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
-	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($rwd, $file);
-	    if ($main_or_watch eq 'watch') {
-		if (exists $rhost_object_for_watch{$rhost}) {
-		    my $tmp = $rhost_object_for_watch{$rhost};
-		    $tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
-		} else {
-		    die "Add hostname by &add_host";
-		}
-		qx/$rsh_command $rhost rm -f $remote/;
-	    } else {
-		if (exists $builtin::rhost_object{$rhost}) {
-		    my $tmp = $builtin::rhost_object{$rhost};
-		    $tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
-		} else {
-		    die "Add hostname by &add_host";
-		}
-		qx/$rsh_command $rhost rm -f $remote/;
-	    }
-	}
-    }
-}
-
-sub xcr_get_for_main {
-    xcr_get('main', @_);
-}
-
-sub xcr_get_for_watch {
-    xcr_get('watch', @_);
-}
-
-sub xcr_put {
-    my ($main_or_watch, $file, $rhost, $rwd) = @_;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
-	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($rwd, $file);
-	    if ($main_or_watch eq 'watch') {
-		if (exists $rhost_object_for_watch{$rhost}) {
-		    my $tmp = $rhost_object_for_watch{$rhost};
-		    $tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
-		    unlink $file;
-		} else {
-		    die "Add hostname by &add_host";
-		}
-	    } else {
-		if (exists $builtin::rhost_object{$rhost}) {
-		    my $tmp = $builtin::rhost_object{$rhost};
-		    $tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
-		    unlink $file;
-		} else {
-		    die "Add hostname by &add_host";
-		}
-	    }
-	}
-    }
-}
-
-sub xcr_put_for_main {
-    xcr_put('main', @_);
-}
-
-sub xcr_put_for_watch {
-    xcr_put('watch', @_);
-}
-
-sub new_obj_for_sftp {
-    my @tmp = @rhost_for_watch;
-    foreach my $i (@tmp) {
-	my ($user, $host) = split(/@/, $i);
-#	my %args = (host => $host, user => $user);
-#	our $sftp = Net::SFTP::Foreign->new(%args);
-	our $sftp = Net::OpenSSH->new($host, (user => $user));
-	$sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
-	$rhost_object_for_watch{$i} = $sftp;
-	shift(@rhost_for_watch);
-    }
-}
-
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
     my $listen_socket = IO::Socket::INET->new (LocalAddr => $inventory_host,
@@ -511,7 +389,6 @@ sub invoke_watch_by_socket {
     $watch_thread = threads->new (sub {
         my $socket;
         while (1) {
-	    &new_obj_for_sftp();
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
             # print "Connection accepted.\n";

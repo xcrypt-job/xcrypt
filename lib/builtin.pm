@@ -132,12 +132,9 @@ sub add_host {
     foreach my $i (@_) {
 	unless (exists $rhost_object{$i}) {
 	    my ($user, $host) = split(/@/, $i);
-#	    my %args = (host => $host, user => $user);
-#	    our $sftp = Net::SFTP::Foreign->new(%args);
 	    our $sftp = Net::OpenSSH->new($host, (user => $user));
 	    $sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
 	    $rhost_object{$i} = $sftp;
-	    push(@jobsched::rhost_for_watch, $i);
 	}
     }
 }
@@ -446,15 +443,15 @@ sub prepare_directory {
 		# If the working directory already exists, delete it
 		if ($ex) {
 		    print "Delete directory $self->{id}\n";
-		    &xcr_qx('rm -rf', '.', $self->{rhost}, $self->{rwd});
+		    &xcr_unlink($self->{id}, 'core', $self->{rhost}, $self->{rwd});
 		}
 	    }
-	    &xcr_mkdir($self->{id}, $self->{rhost}, $self->{rwd});
+	    &xcr_mkdir($self->{id}, 'core', $self);
 	    unless (-d "$self->{id}") {
 		mkdir $self->{id}, 0755;
 	    }
 	    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
-		# リモート実行未対応
+		# ここからリモート実行未対応
 		if ($self->{"copieddir$i"}) {
 		    my $copied = $self->{"copieddir$i"};
 		    opendir(DIR, $copied);
@@ -466,13 +463,13 @@ sub prepare_directory {
 			rcopy $tmp, $temp;
 		    }
 		}
+		# ここまでリモート実行未対応
 
 		if ($self->{"copiedfile$i"}) {
 		    my $copied = $self->{"copiedfile$i"};
 		    my $ex = &xcr_exist('-f', $copied, $self->{rhost});
 		    if ($ex) {
-			&xcr_copy($copied, $self->{id},
-				  $self->{rhost}, $self->{rwd});
+			&xcr_copy($copied, $self->{id}, 'core', $self->{rhost}, $self->{rwd});
 		    } else {
 			warn "Can't copy $copied\n";
 		    }
@@ -481,7 +478,7 @@ sub prepare_directory {
 		    my $file = $self->{"linkedfile$i"};
 		    &xcr_symlink($self->{id},
 				 File::Spec->catfile($file),
-				 File::Spec->catfile(basename($file)),
+				 File::Spec->catfile(basename($file)), 'core',
 				 $self->{rhost}, $self->{rwd});
 		}
 	    }
