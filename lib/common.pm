@@ -8,12 +8,20 @@ xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_r
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
-use strict;
+#use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
 use builtin;
+
+my %sftp_opts = (
+    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
+    recursive => 1,    # -rと同じ。再帰的にコピー
+    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
+    glob => 1,         # ファイル名に「*」を使えるようにする。
+    quiet => 1,        # 進捗を表示する
+    );
 
 ##
 sub mkarray ($) {
@@ -54,9 +62,8 @@ sub get_jobids {
 
 sub remote_qx {
     my ($cmd, $self) = @_;
-    my $ssh;
+    my $ssh = $builtin::rhost_object{$self};
     my @ret;
-    $ssh = $builtin::rhost_object{$self};
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
 }
@@ -66,8 +73,7 @@ sub cmd_executable {
     my ($cmd, $self, $host) = @_;
     my @cmd0 = split(/\s+/,$cmd);
     if ($host) {
-	my $ssh;
-	$ssh = $builtin::rhost_object{$self};
+	my $ssh = $builtin::rhost_object{$self};
 	$ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
     } else {
 	qx/which $cmd0[0]/;
@@ -128,7 +134,7 @@ sub write_string_array {
 sub xcr_qx {
     my ($cmd, $dir, $self) = @_;
     my @ret;
-    unless ($rhost eq 'localhost' || $rhost eq '') {
+    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	my $tmp = "cd " . File::Spec->catfile($self->{rwd}, $self) . "; $cmd";
 	@ret = &remote_qx("$tmp", $self);
     } else {
@@ -139,14 +145,15 @@ sub xcr_qx {
 
 sub xcr_exist {
     my ($type, $file, $self) = @_;
-    my @flag;
+    my @flags;
     unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
+	my $ssh = $builtin::rhost_object{$self};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
 #	$ssh->error and die "remote ls command failed: " . $ssh->error;
 #	chomp($flag);
     } else {
-	if (-e $file) { $flag[0] = 1; }
+	if (-e $file) { $flags[0] = 1; }
     }
     return $flags[0];
 }
@@ -258,13 +265,6 @@ sub xcr_put {
     }
 }
 
-my %sftp_opts = (
-    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
-    recursive => 1,    # -rと同じ。再帰的にコピー
-    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
-    glob => 1,         # ファイル名に「*」を使えるようにする。
-    quiet => 1,        # 進捗を表示する
-    );
 
 1;
 
