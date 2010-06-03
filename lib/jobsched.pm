@@ -15,12 +15,12 @@ use File::Basename;
 use File::Spec;
 use IO::Socket;
 use Coro;
-use Coro::Signal;
-use Coro::AnyEvent;
-use AnyEvent::Socket;
+use Coro::Socket;
+#use Coro::Signal;
+#use Coro::AnyEvent;
+#use AnyEvent::Socket;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
-# use Coro::Socket;
 use Net::OpenSSH;
 
 use common;
@@ -87,6 +87,12 @@ our $periodic_thread=undef; # accessed from bin/xcrypt
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
+
+my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
+				       LocalPort => 9999,
+				       Listen => 10,
+				       Proto => 'tcp',
+				       ReuseAddr => 1 );
 
 ##################################################
 # qdelコマンドを実行して指定されたjobnameのジョブを殺す
@@ -287,10 +293,10 @@ sub invoke_watch {
 my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
-    $watch_thread = threads->new( sub {
+#    $watch_thread = threads->new( sub {
 #        my $interval = 0.1;
         my $interval = 0.5;
-        while (1) {
+#        while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
 	    my $flag;
@@ -298,6 +304,7 @@ sub invoke_watch_by_file {
 	    my $wd;
 	    my $count = 0;
 # Coro版監視スレッドがあればジョブオブジェクトを使って監視をするので以下のような監視はしない
+=comment
 	    until ($flag) {
 		my @tmp = %hosts_wds;
 		Time::HiRes::sleep ($interval);
@@ -310,6 +317,7 @@ sub invoke_watch_by_file {
 		    $count = 0;
 		}
 	    }
+=cut
 
 	    my $CLIENT_IN;
 	    &xcr_get($REQFILE, $host, $wd);
@@ -362,10 +370,10 @@ sub invoke_watch_by_file {
 		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
             }
 	    unlink($REQFILE);
-        }
+#        }
         # close (INVWATCH_LOG);
-				  });
-    $watch_thread->detach();
+#				  });
+#    $watch_thread->detach();
 }
 
 my %sftp_opts = (
@@ -378,17 +386,19 @@ my %sftp_opts = (
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
+=comment
     my $listen_socket = IO::Socket::INET->new (LocalAddr => $inventory_host,
                                                LocalPort => $inventory_port,
                                                Listen => 10,
                                                Proto => 'tcp',
                                                ReuseAddr => 1);
+=cut
     unless ($listen_socket) {
         die "Can't bind : $@\n";
     }
-    $watch_thread = threads->new (sub {
+#    $watch_thread = threads->new (sub {
         my $socket;
-        while (1) {
+#        while (1) {
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
             # print "Connection accepted.\n";
@@ -427,9 +437,9 @@ sub invoke_watch_by_socket {
                 # print STDERR "sent :failed\n";
             }
             $socket->close();
-        }
-    });
-    $watch_thread->detach();
+#        }
+#    });
+#    $watch_thread->detach();
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映

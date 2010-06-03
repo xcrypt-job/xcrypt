@@ -31,7 +31,6 @@ print TMP 'our $expandingchar = \'@\';' . "\n";
 print TMP 'our $smph : shared;' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
-#print TMP '&jobsched::invoke_watch();' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
 # print TMP '&jobsched::invoke_periodic();' . "\n";
 #print TMP 'sub before {my $self = shift;if ($self->{before}) {&{$self->{before}}($self)};$self->SUPER::before();}' . "\n";
@@ -39,10 +38,14 @@ print TMP 'sub before {my $self = shift;if ($self->{before}) {&{$self->{before}}
 print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 #print TMP 'sub after  {my $self = shift;$self->SUPER::after();if ($self->{after}) {&{$self->{after}}($self)};}' . "\n";
 print TMP 'sub after  {my $self = shift;if ($self->{after}) {&{$self->{after}}($self)};}' . "\n";
+print TMP 'use base qw(core);' . "\n";
+
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
+print TMP 'foreach (async {&jobsched::invoke_watch();}, async {' . "\n";
 foreach (<USER>) { print TMP "$_"; }
+print TMP '}) { $_->join;}' . "\n";
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
-print TMP '&jobsched::check_and_write_aborted();' . "\n";
+#print TMP '&jobsched::check_and_write_aborted();' . "\n";
 #print TMP 'sleep(2);' . "\n";
 close(TMP);
 close(USER);
