@@ -88,12 +88,6 @@ our $periodic_thread=undef; # accessed from bin/xcrypt
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
 
-my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
-				       LocalPort => 9999,
-				       Listen => 10,
-				       Proto => 'tcp',
-				       ReuseAddr => 1 );
-
 ##################################################
 # qdelコマンドを実行して指定されたjobnameのジョブを殺す
 # リモート実行未対応
@@ -150,14 +144,17 @@ sub qstat {
 ##############################
 # Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
-    my ($jobname, $stat, $host, $wd) = @_;
+    my ($jobname, $stat, $self) = @_;
+    my $host = $self->{rhost};
+    my $wd = $self->{wd};
     my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
     unless (exists($host_env{$host}->{invwatch})) {
 	&xcr_mkdir($xcropt::options{inventory_path}, 'jobsched', $host, $wd);
 	$host_env{$host}->{invwatch} = 1;
     }
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_qx("$cmdline", '.', $host, $wd); # &xcr_system("$cmdline", $jobname, $host, $wd);
+print "$cmdline\n";
+    &xcr_system("$cmdline", '.', $self); # &xcr_system("$cmdline", $jobname, $host, $wd);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -386,6 +383,11 @@ my %sftp_opts = (
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 sub invoke_watch_by_socket {
+my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
+				       LocalPort => 9999,
+				       Listen => 10,
+				       Proto => 'tcp',
+				       ReuseAddr => 1 );
 =comment
     my $listen_socket = IO::Socket::INET->new (LocalAddr => $inventory_host,
                                                LocalPort => $inventory_port,

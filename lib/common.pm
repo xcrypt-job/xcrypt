@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_rename);
+xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_system xcr_rename);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -65,6 +65,14 @@ sub remote_qx {
     my $ssh = $builtin::rhost_object{$self};
     my @ret;
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
+    return @ret;
+}
+
+sub remote_system {
+    my ($cmd, $self) = @_;
+    my $ssh = $builtin::rhost_object{$self};
+    my @ret;
+    @ret = $ssh->system("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
 }
 
@@ -137,6 +145,18 @@ sub xcr_qx {
     unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	my $tmp = "cd " . File::Spec->catfile($self->{rwd}, $self) . "; $cmd";
 	@ret = &remote_qx("$tmp", $self);
+    } else {
+	@ret = qx/cd $dir; $cmd/;
+    }
+    return @ret;
+}
+
+sub xcr_system {
+    my ($cmd, $dir, $self) = @_;
+    my @ret;
+    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
+	my $tmp = "cd " . File::Spec->catfile($self->{rwd}, $self) . "; $cmd";
+	@ret = &remote_system("$tmp", $self);
     } else {
 	@ret = qx/cd $dir; $cmd/;
     }

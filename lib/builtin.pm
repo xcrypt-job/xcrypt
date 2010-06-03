@@ -262,8 +262,7 @@ sub generate {
     }
 =cut
     my $self = user->new(\%job);
-    &jobsched::inventory_write ($self->{id}, "initialized",
-				$self->{rhost}, $self->{rwd});
+    &jobsched::inventory_write ($self->{id}, "initialized", $self);
     return $self;
 }
 
