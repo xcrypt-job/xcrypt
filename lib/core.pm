@@ -184,7 +184,8 @@ if ($xcropt::options{sandbox}) {
 }
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
+# push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
+    push (@body, "ftp localhost 9999 || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -203,7 +204,8 @@ if ($xcropt::options{sandbox}) {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
+#    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
+    push (@body, "ftp localhost 9999 || exit 1");
     $self->{jobscript_body} = \@body;
 }
 
@@ -320,8 +322,7 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-    &jobsched::inventory_write($self->{id}, 'submitted',
-			       $self->{rhost}, $self->{rwd});
+#    &jobsched::inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
 
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
@@ -361,7 +362,7 @@ sub qsub {
 	$self->{req_id} = $req_id;
         &jobsched::set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-	&inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
+#	&inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
         return $req_id;
     } else {
         die "$qsub_command is not executable";

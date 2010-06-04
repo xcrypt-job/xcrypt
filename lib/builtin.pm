@@ -32,6 +32,7 @@ my $before_after_slp = 1;
 
 our %rhost_object;
 
+=comment
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
 my $time_running : shared = undef;
@@ -45,6 +46,7 @@ sub get_elapsed_time {
         return $elapsed;
     }
 }
+=cut
 
 sub update_running_and_done_now {
     open( INV, "$_[0]" ) or die "$!";
@@ -59,6 +61,7 @@ sub update_running_and_done_now {
     close( INV );
 }
 
+=comment
 sub check_and_alert_elapsed {
     my @jobids = keys(%jobsched::initialized_nosync_jobs);
 
@@ -90,7 +93,9 @@ sub check_and_alert_elapsed {
         }
     }
 }
+=cut
 
+=comment
 my $default_period = 10;
 my $periodic_threads = ();
 sub repeat {
@@ -127,6 +132,7 @@ sub repeat {
     }
     return $new_coro;
 }
+=cut
 
 sub add_host {
     foreach my $i (@_) {
@@ -262,7 +268,7 @@ sub generate {
     }
 =cut
     my $self = user->new(\%job);
-    &jobsched::inventory_write ($self->{id}, "initialized", $self);
+#    &jobsched::inventory_write ($self->{id}, "initialized", $self);
     return $self;
 }
 
@@ -504,7 +510,7 @@ sub do_prepared {
 		    &jobsched::inventory_write($self->{id}, 'prepared',
 					       $self->{rhost}, $self->{rwd});
 		} else {
-		    &jobsched::inventory_write($self->{id}, 'prepared');
+#		    &jobsched::inventory_write($self->{id}, 'prepared');
 		}
 	    }
 	}
@@ -520,10 +526,46 @@ sub prepare{
     return @objs;
 }
 
+my $running = Coro::Signal->new;
+my $done = Coro::Signal->new;
+
 sub submit {
     my @array = @_;
     my $slp = 0;
     # my @coros = ();
+
+    foreach my $self (@array) {
+        my $job_coro = Coro::async {
+            my $self = $_[0];
+	    unless (-d "$inventory_path") {
+		mkdir $inventory_path, 0755;
+	    }
+	    my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
+						   LocalPort => 9999,
+						   Listen => 10,
+						   Proto => 'tcp',
+						   ReuseAddr => 1 );
+	    my $socket;
+	    $socket = $listen_socket->accept;
+	    unless ($socket) {next;}
+	    $socket->autoflush();
+	    $socket->close();
+	    $running->send;
+	    print "signal running\n";
+
+	    $socket = $listen_socket->accept;
+	    unless ($socket) {next;}
+	    $socket->autoflush();
+	    $socket->close();
+	    $done->send;
+	    print "signal done\n";
+
+	} $self;
+        # push (@coros, $job_coro);
+        $self->{inventory_thread} = $job_coro;
+#	Coro::AnyEvent::sleep $slp;
+    }
+
     foreach my $self (@array) {
         # ジョブスレッドを立ち上げる
         my $job_coro = Coro::async {
@@ -539,8 +581,12 @@ sub submit {
             ## before(), start()
             $self->EVERY::before();
             $self->start();
+
+            ## Waiting for the job "running"
+	    $running->wait;
             ## Waiting for the job "done"
-            &jobsched::wait_job_done($self->{id});
+#            &jobsched::wait_job_done($self->{id});
+	    $done->wait;
             ## after()
 	    my $status = &jobsched::get_job_status($self->{id});
 	    if ($status eq 'done') {
@@ -564,6 +610,7 @@ sub submit {
 		&jobsched::inventory_write ($self->{id}, 'finished',
 					    $self->{rhost}, $self->{rwd});
 	    }
+
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
