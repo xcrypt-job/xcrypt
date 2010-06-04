@@ -1,6 +1,6 @@
 package builtin;
 
-#use strict;
+use strict;
 use NEXT;
 use threads ();
 use threads::shared;
@@ -28,13 +28,13 @@ our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'rhos
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
-my $before_after_slp = 1;
 
-our %rhost_object;
+our %host_and_object;
 
-=comment
+
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
+=comment
 my $time_running : shared = undef;
 my $time_done_now = undef;
 sub get_elapsed_time {
@@ -47,19 +47,6 @@ sub get_elapsed_time {
     }
 }
 =cut
-
-sub update_running_and_done_now {
-    open( INV, "$_[0]" ) or die "$!";
-    while (<INV>) {
-        if ($_ =~ /^time_running\:\s*([0-9]*)/) {
-            $time_running = $1;
-        }
-        if ($_ =~ /^time_done\:\s*([0-9]*)/) {
-            $time_done_now = $1;
-        }
-    }
-    close( INV );
-}
 
 =comment
 sub check_and_alert_elapsed {
@@ -132,15 +119,28 @@ sub repeat {
     }
     return $new_coro;
 }
+
+sub update_running_and_done_now {
+    open( INV, "$_[0]" ) or die "$!";
+    while (<INV>) {
+        if ($_ =~ /^time_running\:\s*([0-9]*)/) {
+            $time_running = $1;
+        }
+        if ($_ =~ /^time_done\:\s*([0-9]*)/) {
+            $time_done_now = $1;
+        }
+    }
+    close( INV );
+}
 =cut
 
 sub add_host {
     foreach my $i (@_) {
-	unless (exists $rhost_object{$i}) {
+	unless (exists $host_and_object{$i}) {
 	    my ($user, $host) = split(/@/, $i);
-	    our $sftp = Net::OpenSSH->new($host, (user => $user));
-	    $sftp->error and die "Unable to stablish SFTP connection: " . $sftp->error;
-	    $rhost_object{$i} = $sftp;
+	    our $object = Net::OpenSSH->new($host, (user => $user));
+	    $object->error and die "Unable to stablish SFTP connection: " . $object->error;
+	    $host_and_object{$i} = $object;
 	}
     }
 }
@@ -162,8 +162,8 @@ sub add_key {
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$expandingchar"\Z/) {
-            die "Can't use $i as key since $i has $expandingchar at its tail.\n";
+        } elsif ($i =~ /"$user::expandingchar"\Z/) {
+            die "Can't use $i as key since $i has $user::expandingchar at its tail.\n";
         } else {
             push(@allkeys, $i);
         }
@@ -202,7 +202,7 @@ sub add_user_customizable_core_members {
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
-            if ($key =~ /"$expandingchar"\Z/) {
+            if ($key =~ /"$user::expandingchar"\Z/) {
                 $/ = $user::expandingchar;
                 chomp $key;
                 push(@allkeys, $key);
@@ -268,7 +268,7 @@ sub generate {
     }
 =cut
     my $self = user->new(\%job);
-#    &jobsched::inventory_write ($self->{id}, "initialized", $self);
+    &jobsched::set_job_initialized($self->{id});
     return $self;
 }
 
@@ -373,12 +373,12 @@ sub expand_and_make {
         $exist = 0;
     }
 
-    my $existOfRANGE = 0;
+    my $exist_of_RANGE = 0;
     for ( my $i = 0; $i < $user::maxrange; $i++ ) {
         if ( exists($job{"RANGE$i"}) ) {
             if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                 my $tmp = @{$job{"RANGE$i"}};
-                $existOfRANGE = $existOfRANGE + $tmp;
+                $exist_of_RANGE = $exist_of_RANGE + $tmp;
             } else {
                 warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
             }
@@ -392,7 +392,7 @@ sub expand_and_make {
     }
 
     my @objs;
-    if ( $existOfRANGE ) {
+    if ( $exist_of_RANGE ) {
         my @ranges = ();
         for ( my $i = 0; $i < $user::maxrange; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
@@ -503,14 +503,14 @@ sub do_prepared {
 		&jobsched::inventory_write($self->{id}, "aborted",
 					   $self->{rhost}, $self->{rwd});
 		    &jobsched::delete_signaled_job($self->{id});
-		push (@coros, undef);
+#		push (@coros, undef);
 		next;
 	    } else {
 		if (defined $self->{rhost}) {
-		    &jobsched::inventory_write($self->{id}, 'prepared',
-					       $self->{rhost}, $self->{rwd});
+		    &jobsched::set_job_prepared($self->{id});
+#		    &jobsched::inventory_write($self->{id}, 'prepared', $self->{rhost}, $self->{rwd});
 		} else {
-#		    &jobsched::inventory_write($self->{id}, 'prepared');
+		    &jobsched::set_job_prepared($self->{id});
 		}
 	    }
 	}
@@ -528,9 +528,8 @@ sub prepare{
 
 my $done = Coro::Signal->new;
 
-$count = 3;
+my $count = 3;
 Coro::async {
-    my $self = $_[0];
     unless (-d "$inventory_path") {
 	mkdir $inventory_path, 0755;
     }
@@ -550,7 +549,7 @@ Coro::async {
 	    $done->send;
 	}
     }
-} $self;
+};
 
 sub submit {
     my @array = @_;
@@ -577,29 +576,29 @@ sub submit {
 	    $done->wait;
 
             ## after()
-	    my $status = &jobsched::get_job_status($self->{id});
-	    if ($status eq 'done') {
-		my $flag0 = 0;
-		my $flag1 = 0;
-		until ($flag0 && $flag1) {
-		    Coro::AnyEvent::sleep 0.1;
-		    if ($xcropt::options{sandbox}) {
-			$flag0 = &xcr_exist('-f', "$self->{id}/$self->{JS_stdout}",
-					    $self->{rhost}, $self->{rwd});
-			$flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
-					    $self->{rhost}, $self->{rwd});
-		    } else {
-			$flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					    $self->{rhost}, $self->{rwd});
-			$flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					    $self->{rhost}, $self->{rwd});
-		    }
+	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
+	    # さすがに念の入れすぎかもしれない．
+=comment
+	    my $flag0 = 0;
+	    my $flag1 = 0;
+	    until ($flag0 && $flag1) {
+		Coro::AnyEvent::sleep 0.1;
+		if ($xcropt::options{sandbox}) {
+		    $flag0 = &xcr_exist('-f', "$self->{id}/$self->{JS_stdout}",
+					$self->{rhost}, $self->{rwd});
+		    $flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
+					$self->{rhost}, $self->{rwd});
+		} else {
+		    $flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
+					$self->{rhost}, $self->{rwd});
+		    $flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
+					$self->{rhost}, $self->{rwd});
 		}
-		$self->EVERY::LAST::after();
-		&jobsched::inventory_write ($self->{id}, 'finished',
-					    $self->{rhost}, $self->{rwd});
 	    }
+=cut
 
+	    $self->EVERY::LAST::after();
+	    &jobsched::set_job_finished($self->{id});
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
