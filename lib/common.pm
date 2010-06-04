@@ -78,9 +78,9 @@ sub remote_system {
 
 ##
 sub cmd_executable {
-    my ($cmd, $self, $host) = @_;
+    my ($cmd, $self) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if ($host) {
+    if ($self->{rhost}) {
 	my $ssh = $builtin::rhost_object{$self};
 	$ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
     } else {
