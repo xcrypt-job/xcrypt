@@ -92,7 +92,8 @@ select(STDERR); $|=1; select(STDOUT);
 # qdelコマンドを実行して指定されたjobnameのジョブを殺す
 # リモート実行未対応
 sub qdel {
-    my ($jobname) = @_;
+    my ($self) = @_;
+    my $jobname = $self->{id};
     # qdelコマンドをconfigから獲得
     my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
     unless ( defined $qdel_command ) {
@@ -103,7 +104,7 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (common::cmd_executable ($command_string, 'jobsched')) {
+        if (common::cmd_executable ($command_string, $self)) {
             print "Deleting $jobname (request ID: $req_id)\n";
             common::exec_async ($command_string);
         } else {
@@ -128,7 +129,7 @@ sub qstat {
 	    die "Error in $host_env{$_}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
-	unless (common::cmd_executable ($command_string, 'jobsched')) {
+	unless (common::cmd_executable ($command_string, $_)) {
 	    warn "$command_string not executable";
 	    return ();
 	}

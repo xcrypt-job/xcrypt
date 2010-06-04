@@ -335,9 +335,9 @@ sub qsub {
 
     my $flag;
     if ($self->{rhost}) {
-	$flag = common::cmd_executable ($qsub_command, 'core', $self->{rhost});
+	$flag = common::cmd_executable ($qsub_command, $self);
     } else {
-	$flag = common::cmd_executable ($qsub_command, 'core');
+	$flag = common::cmd_executable ($qsub_command, $self);
     }
     if ($flag) {
         # Execute qsub command
