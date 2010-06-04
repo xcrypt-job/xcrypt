@@ -8,7 +8,7 @@ xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_s
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
-#use strict;
+use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
@@ -62,7 +62,7 @@ sub get_jobids {
 
 sub remote_qx {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::rhost_object{$self};
+    my $ssh = $builtin::host_and_object{$self};
     my @ret;
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -70,7 +70,7 @@ sub remote_qx {
 
 sub remote_system {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::rhost_object{$self};
+    my $ssh = $builtin::host_and_object{$self};
     my @ret;
     @ret = $ssh->system("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -80,9 +80,11 @@ sub remote_system {
 sub cmd_executable {
     my ($cmd, $self) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if ($self->{rhost}) {
-	my $ssh = $builtin::rhost_object{$self};
-	$ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
+    if (defined $self->{rhost}) {
+	unless ($self->{rhost} eq 'localhost') {
+	    my $ssh = $builtin::host_and_object{$self};
+	    $ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
+	}
     } else {
 	qx/which $cmd0[0]/;
     }
@@ -168,7 +170,7 @@ sub xcr_exist {
     my @flags;
     unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
-	my $ssh = $builtin::rhost_object{$self};
+	my $ssh = $builtin::host_and_object{$self};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
 #	$ssh->error and die "remote ls command failed: " . $ssh->error;
 #	chomp($flag);
@@ -258,8 +260,8 @@ sub xcr_get {
     unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($self->{rwd}, $file);
-	    if (exists $builtin::rhost_object{$self->{rhost}}) {
-		my $tmp = $builtin::rhost_object{$self->{rhost}};
+	    if (exists $builtin::host_and_object{$self->{rhost}}) {
+		my $tmp = $builtin::host_and_object{$self->{rhost}};
 		$tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
 	    } else {
 		die "Add hostname by &add_host";
@@ -274,8 +276,8 @@ sub xcr_put {
     unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
 	unless ($xcropt::options{shared}) {
 	    my $remote = File::Spec->catfile($self->{rwd}, $file);
-	    if (exists $builtin::rhost_object{$self->{rhost}}) {
-		my $tmp = $builtin::rhost_object{$self->{rhost}};
+	    if (exists $builtin::host_and_object{$self->{rhost}}) {
+		my $tmp = $builtin::host_and_object{$self->{rhost}};
 		$tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
 		unlink $file;
 	    } else {

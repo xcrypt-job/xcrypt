@@ -322,7 +322,7 @@ sub qsub {
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
-#    &jobsched::inventory_write($self->{id}, 'submitted', $self->{rhost}, $self->{rwd});
+    &jobsched::set_job_submitted($self->{id});
 
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
@@ -362,7 +362,7 @@ sub qsub {
 	$self->{req_id} = $req_id;
         &jobsched::set_job_request_id ($self->{id}, $req_id);
         # Set job's status "queued"
-#	&inventory_write($self->{id}, 'queued', $self->{rhost}, $self->{rwd});
+	&jobsched::set_job_queued($self->{id});
         return $req_id;
     } else {
         die "$qsub_command is not executable";

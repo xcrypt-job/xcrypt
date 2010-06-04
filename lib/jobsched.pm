@@ -129,11 +129,12 @@ sub qstat {
 	    die "Error in $host_env{$_}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
+=comment
 	unless (common::cmd_executable ($command_string, $_)) {
 	    warn "$command_string not executable";
 	    return ();
 	}
-
+=cut
 	# foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
 	my @qstat_out = &xcr_qx($command_string, 'jobsched');
 	my @tmp_ids = &$qstat_extractor(@qstat_out);
@@ -404,7 +405,6 @@ my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
 #        while (1) {
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
-print "foo\n";
             # print "Connection accepted.\n";
             unless ($socket) {next;}
             $socket->autoflush();
@@ -728,8 +728,7 @@ sub check_and_write_aborted {
     foreach my $req_id ( keys %unchecked ) {
         if ( exists $running_jobs{$req_id} ) {
             print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
-#            inventory_write ($unchecked{$req_id}, "aborted");
-            inventory_write ($unchecked{$req_id}, "aborted", $initialized_nosync_jobs{$unchecked{$req_id}}->{rhost}, $initialized_nosync_jobs{$unchecked{$req_id}}->{rwd});
+#            inventory_write ($unchecked{$req_id}, "aborted", $initialized_nosync_jobs{$unchecked{$req_id}}->{rhost}, $initialized_nosync_jobs{$unchecked{$req_id}}->{rwd});
         }
     }
 }
