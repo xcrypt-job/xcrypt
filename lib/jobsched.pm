@@ -153,7 +153,6 @@ sub inventory_write {
 	$host_env{$host}->{invwatch} = 1;
     }
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-print "$cmdline\n";
     &xcr_system("$cmdline", '.', $self); # &xcr_system("$cmdline", $jobname, $host, $wd);
 
     ## Use the following when $watch_thread is a Coro.
@@ -382,6 +381,7 @@ my %sftp_opts = (
     );
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
+
 sub invoke_watch_by_socket {
 my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
 				       LocalPort => 9999,
@@ -403,6 +403,7 @@ my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
 #        while (1) {
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
+print "foo\n";
             # print "Connection accepted.\n";
             unless ($socket) {next;}
             $socket->autoflush();
@@ -623,6 +624,7 @@ sub wait_job_status {
     # print "$jobname: wait for the status changed to $stat($stat_lv)\n";
     until ( &status_name_to_level (&get_job_status ($jobname))
             >= $stat_lv) {
+print &status_name_to_level (&get_job_status ($jobname));
         Coro::AnyEvent::sleep $slp;
         $slp *= 2;
         $slp = $slp>$slp_max ? $slp_max : $slp;
