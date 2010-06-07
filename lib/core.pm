@@ -25,7 +25,6 @@ sub new {
     # Check if the job ID is not empty
     my $jobname= $self->{id};
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
-    $self->{workdir} = $jobname;
 
     # Job script related members
     set_member_if_empty ($self, 'host', $xcropt::options{localhost});
@@ -68,19 +67,13 @@ sub start {
     }
 }
 
-sub workdir_file {
-    my $self = shift;
-    my $basename = shift;
-    return File::Spec->catfile($basename);
-}
-
 sub workdir_member_file {
     my $self = shift;
     my $member = shift;
     unless ($self->{$member}) {
         warn "The job object $self->{id} does not have a member '$member'";
     }
-    return $self->workdir_file($self->{$member});
+    return $self->{$member};
 }
 
 # not a method
@@ -141,6 +134,8 @@ sub make_jobscript_body {
     my @body = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
     ## Job script body
+
+=comment
     # Chdir to the job's working directory
     my $wkdir_str = $self->{workdir};
     if (defined ($cfg{jobscript_workdir})) {
@@ -153,6 +148,7 @@ sub make_jobscript_body {
             warn "Error in config file $self->{scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
+=cut
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
@@ -205,7 +201,7 @@ sub make_after_in_job_script {
 sub update_script_file {
     my $self = shift;
     my $file_base = shift;
-    my $file = $self->workdir_file($file_base);
+    my $file = $file_base;
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
 	&jobsched::xcr_put('main', $file, $self->{rhost}, $self->{rwd});

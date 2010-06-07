@@ -8,8 +8,6 @@ sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
 
-    $self->{workdir} = $self->{id};
-
     my $last_stat = &jobsched::get_job_status ($self);
     if ( jobsched::is_signaled_job ($self) ) {
 	# If the job is 'xcryptdel'ed, make it 'aborted' and skip
@@ -22,9 +20,9 @@ sub new {
 	}
     } else {
 	# If the working directory already exists, delete it
-	if ( -e $self->{workdir} ) {
-	    print "Delete directory $self->{workdir}\n";
-	    File::Path::rmtree ($self->{workdir});
+	if ( -e $self->{id} ) {
+	    print "Delete directory $self->{id}\n";
+	    File::Path::rmtree ($self->{id});
 	}
 	unless ($self->{rhost} eq '') {
 	    my $ex = &xcr_exist('-d', $self->{id},
@@ -48,7 +46,7 @@ sub new {
 		closedir(DIR);
 		foreach (@params) {
 		    my $tmp = File::Spec->catfile($copied, $_);
-		    my $temp = File::Spec->catfile($self->{workdir}, $_);
+		    my $temp = File::Spec->catfile($self->{id}, $_);
 		    rcopy $tmp, $temp;
 		}
 		}
