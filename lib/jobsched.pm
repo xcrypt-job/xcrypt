@@ -60,7 +60,7 @@ our %host_env = ();
 my %job_request_id : shared;
 # ジョブ名→ジョブの状態
 my %job_status : shared;
-my $job_status_signal = new Coro::Signal;
+my $Job_Status_Signal = new Coro::Signal;
 # ジョブ名→最後のジョブ変化時刻
 my %job_last_update : shared;
 # ジョブの状態→ランレベル
@@ -511,7 +511,7 @@ sub set_job_status {
     {
         $job_status{$jobname} = $stat;
         $job_last_update{$jobname} = $tim;
-        $job_status_signal->broadcast();
+        $Job_Status_Signal->broadcast();
     }
     # 実行中ジョブ一覧に登録／削除
     if ( $stat eq "queued" || $stat eq "running" ) {
@@ -622,16 +622,10 @@ sub expect_job_stat {
 sub wait_job_status {
     my ($jobname, $stat) = @_;
     my $stat_lv = status_name_to_level ($stat);
-    my $slp=0.1; my $slp_max=2;
     # print "$jobname: wait for the status changed to $stat($stat_lv)\n";
     until ( &status_name_to_level (&get_job_status ($jobname))
             >= $stat_lv) {
-print &status_name_to_level (&get_job_status ($jobname));
-        Coro::AnyEvent::sleep $slp;
-        $slp *= 2;
-        $slp = $slp>$slp_max ? $slp_max : $slp;
-        ## Does not work because inventory_watch thread is a Perl thread
-        # $job_status_signal->wait;
+        $Job_Status_Signal->wait;
     }
     # print "$jobname: exit wait_job_status\n";
 }
