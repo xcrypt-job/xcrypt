@@ -526,31 +526,6 @@ sub prepare{
     return @objs;
 }
 
-my $done = Coro::Signal->new;
-
-my $count = 3;
-Coro::async {
-    unless (-d "$inventory_path") {
-	mkdir $inventory_path, 0755;
-    }
-    my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
-					   LocalPort => 9999,
-					   Listen => 10,
-					   Proto => 'tcp',
-					   ReuseAddr => 1 );
-    my $socket;
-    while (1) {
-	$socket = $listen_socket->accept;
-	$count++;
-	unless ($socket) {next;}
-	$socket->autoflush();
-	$socket->close();
-	if ($count == 5) {
-	    $done->send;
-	}
-    }
-};
-
 sub submit {
     my @array = @_;
     my $slp = 0;
@@ -573,8 +548,8 @@ sub submit {
             $self->start();
 
             ## Waiting for the job "done"
-	    $done->wait;
-
+	    &jobsched::wait_job_done ($self->{id});
+            
             ## after()
 	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
 	    # さすがに念の入れすぎかもしれない．
