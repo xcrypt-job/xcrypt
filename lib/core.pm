@@ -18,8 +18,6 @@ sub new {
 
     $jobsched::initialized_nosync_jobs{$self->{id}} = $self;
 
-    if (defined $xcropt::options{rhost}) { $self->{rhost} = $xcropt::options{rhost}; }
-    if (defined $xcropt::options{rwd}) { $self->{rwd} = $xcropt::options{rwd}; }
     if (defined $xcropt::options{scheduler}) {
 	$self->{scheduler} = $xcropt::options{scheduler};
     } else {
@@ -54,6 +52,9 @@ sub new {
     $self->{workdir} = $jobname;
 
     # Job script related members
+    set_member_if_empty ($self, 'host', $xcropt::options{localhost});
+    set_member_if_empty ($self, 'wd', File::Spec->rel2abs('.'));
+
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
