@@ -146,13 +146,13 @@ sub qsub {
     # print job script file
     $self = &jobsched::print_job_scriptfile ($self);
     foreach my $subself (@{$self->{bulkedjobs}}) {
-        &jobsched::inventory_write($subself->{id}, 'prepared');
+        &jobsched::inventory_write($subself, 'prepared');
         &jobsched::print_job_scriptfile ($subself);
     }
     # Set job's status "submitted"
-    &jobsched::inventory_write ($self->{id}, "submitted");
+    &jobsched::inventory_write($self, "submitted");
     foreach my $subself (@{$self->{bulkedjobs}}) {
-        &jobsched::inventory_write ($subself->{id}, "submitted");
+        &jobsched::inventory_write($subself, "submitted");
     }
     # qsub job script file
     return &jobsched::qsub_job_scriptfile ($self);

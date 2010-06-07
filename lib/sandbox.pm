@@ -13,14 +13,12 @@ sub new {
     my $last_stat = &jobsched::get_job_status ($self);
     if ( jobsched::is_signaled_job ($self) ) {
 	# If the job is 'xcryptdel'ed, make it 'aborted' and skip
-	&jobsched::inventory_write ($self->{id}, "aborted",
-				    $self->{rhost}, $self->{rwd});
+	&jobsched::inventory_write ($self, "aborted");
 	&jobsched::delete_signaled_job ($self);
     } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
 	# Skip if the job is 'done' or 'finished'
 	if ( $last_stat eq 'finished' ) {
-	    &jobsched::inventory_write ($self->{id}, "done",
-					$self->{rhost}, $self->{rwd});
+	    &jobsched::inventory_write ($self, "done");
 	}
     } else {
 	# If the working directory already exists, delete it

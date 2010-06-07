@@ -43,7 +43,7 @@ sub before
 	# submit by myself
 	my @objs;
 	foreach my $job (@jobs) {
-	    &jobsched::inventory_write($job->{'id'}, 'prepared');
+	    &jobsched::inventory_write($job, 'prepared');
 	    &user::before($job);
 	    &user::start($job);
 	}
@@ -59,7 +59,7 @@ sub before
 	       && (-e "$job->{'id'}/$job->{'stdefile'}")) {
 	    sleep(1);
 	}
-	&jobsched::inventory_write($job->{'id'}, "finished");
+	&jobsched::inventory_write($job, "finished");
 #		}
     }
     # sync by myself
