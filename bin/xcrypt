@@ -20,8 +20,6 @@ open(TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
-print TMP 'use threads ();' . "\n";
-print TMP 'use threads::shared;' . "\n";
 print TMP 'use Coro;' . "\n";
 print TMP 'use jobsched;' . "\n";
 print TMP 'our $max_exe_etc = \'15\';' . "\n";

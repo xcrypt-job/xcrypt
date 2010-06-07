@@ -1,8 +1,6 @@
 package limit;
 
 use strict;
-# use threads;
-# use threads::shared;
 use Coro;
 use Coro::Semaphore;
 
