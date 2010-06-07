@@ -19,8 +19,7 @@ our %options =
      'inventory_path' => 'inv_watch', # ローカルとリモートとで同じ名前で別のフルパスにしたかったので相対パスで指定するようにした
      'verbose' => 0,               # verbose level
      'stack_size' => 32768,        # Perlスレッドのスタックサイズ
-     # リモート実行をコマンドラインで行えることにするかは未定
-     'rsh' => 'ssh',
+      'rsh' => 'ssh',
      'rcp' => 'scp',
      'rhost' => undef,
      'rwd' => undef,
