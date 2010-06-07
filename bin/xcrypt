@@ -36,11 +36,12 @@ print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 print TMP 'sub after  {my $self = shift;if ($self->{after}) {&{$self->{after}}($self)};}' . "\n";
 
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
+print TMP '&jobsched::invoke_watch();' . "\n";
+# print TMP '&jobsched::check_and_write_aborted();' . "\n";
 #print TMP 'foreach (async {' . "\n";
 foreach (<USER>) { print TMP "$_"; }
-#print TMP '}, async { print "hoge\n"; &jobsched::invoke_watch(); print "hage\n"; }) { $_->join; }' . "\n";
+#print TMP '}) { $_->join; }' . "\n";
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
-print TMP '&jobsched::check_and_write_aborted();' . "\n";
 #print TMP 'sleep(1);' . "\n";
 close(TMP);
 close(USER);

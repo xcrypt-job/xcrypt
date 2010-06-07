@@ -177,8 +177,8 @@ sub make_jobscript_body {
     }
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-# push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
-    push (@body, "ftp localhost 9999 || exit 1");
+    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
+    # push (@body, "ftp localhost 9999 || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -197,8 +197,8 @@ sub make_jobscript_body {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-#    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
-    push (@body, "ftp localhost 9999 || exit 1");
+    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
+    # push (@body, "ftp localhost 9999 || exit 1");
     $self->{jobscript_body} = \@body;
 }
 
