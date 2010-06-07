@@ -123,7 +123,7 @@ sub start {
         $self->NEXT::start();
     } else {
         # 前回done, finishedになったジョブならとばす．
-        my $stat = &jobsched::get_job_status($self->{id});
+        my $stat = &jobsched::get_job_status($self);
         if ( $stat eq 'done' ) {
             print "Skipping " . $self->{id} . " because already $stat.\n";
         } else {

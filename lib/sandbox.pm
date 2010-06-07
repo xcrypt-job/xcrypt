@@ -10,12 +10,12 @@ sub new {
 
     $self->{workdir} = $self->{id};
 
-    my $last_stat = &jobsched::get_job_status ($self->{id});
-    if ( jobsched::is_signaled_job ($self->{id}) ) {
+    my $last_stat = &jobsched::get_job_status ($self);
+    if ( jobsched::is_signaled_job ($self) ) {
 	# If the job is 'xcryptdel'ed, make it 'aborted' and skip
 	&jobsched::inventory_write ($self->{id}, "aborted",
 				    $self->{rhost}, $self->{rwd});
-	&jobsched::delete_signaled_job ($self->{id});
+	&jobsched::delete_signaled_job ($self);
     } elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
 	# Skip if the job is 'done' or 'finished'
 	if ( $last_stat eq 'finished' ) {
@@ -82,7 +82,7 @@ sub start {
 
     # Skip if the job is done or finished in the previous execution
     # ↑ 「finishedも」というのはコメントの書き間違い？
-    my $stat = &jobsched::get_job_status($self->{id});
+    my $stat = &jobsched::get_job_status($self);
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
