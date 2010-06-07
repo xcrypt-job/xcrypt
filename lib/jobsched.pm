@@ -385,24 +385,18 @@ my %sftp_opts = (
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 
 sub invoke_watch_by_socket {
-my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
-				       LocalPort => 9999,
-				       Listen => 10,
-				       Proto => 'tcp',
-				       ReuseAddr => 1 );
-=comment
-    my $listen_socket = IO::Socket::INET->new (LocalAddr => $inventory_host,
-                                               LocalPort => $inventory_port,
-                                               Listen => 10,
-                                               Proto => 'tcp',
-                                               ReuseAddr => 1);
-=cut
+    my $listen_socket = Coro::Socket->new (LocalAddr => $inventory_host,
+                                           LocalPort => $inventory_port,
+                                           Listen => 10,
+                                           Proto => 'tcp',
+                                           ReuseAddr => 1);
     unless ($listen_socket) {
         die "Can't bind : $@\n";
     }
-#    $watch_thread = threads->new (sub {
+    $watch_thread = async_pool
+    {
         my $socket;
-#        while (1) {
+        while (1) {
             # print "Waiting for connection.\n";
             $socket = $listen_socket->accept;
             # print "Connection accepted.\n";
@@ -441,9 +435,8 @@ my $listen_socket = Coro::Socket->new( LocalAddr => 'localhost',
                 # print STDERR "sent :failed\n";
             }
             $socket->close();
-#        }
-#    });
-#    $watch_thread->detach();
+       }
+   };
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
@@ -529,36 +522,42 @@ sub set_job_status {
 }
 sub set_job_initialized  {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
         set_job_status ($jobname, "initialized", $tim);
     }
 }
 sub set_job_prepared  {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "prepared", "initialized") ) {
         set_job_status ($jobname, "prepared", $tim);
     }
 }
 sub set_job_submitted {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "submitted", "prepared") ) {
         set_job_status ($jobname, "submitted", $tim);
     }
 }
 sub set_job_queued {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "queued", "submitted" ) ) {
         set_job_status ($jobname, "queued", $tim);
     }
 }
 sub set_job_running  {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "running", "queued" ) ) {
         set_job_status ($jobname, "running", $tim);
     }
 }
 sub set_job_done   {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     # finished→done はリトライのときに有り得る
     if (do_set_p ($jobname, $tim, "done", "running", "finished" ) ) {
         set_job_status ($jobname, "done", $tim);
@@ -569,14 +568,16 @@ sub set_job_done   {
 #        }
     }
 }
-sub set_job_finished   {
+sub set_job_finished {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     if (do_set_p ($jobname, $tim, "finished", "done" ) ) {
         set_job_status ($jobname, "finished", $tim);
     }
 }
 sub set_job_aborted  {
     my ($jobname, $tim) = @_;
+    unless ($tim) { $tim = time(); }
     my $curstat = get_job_status ($jobname);
     if (do_set_p ($jobname, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
         && $curstat ne "done" && $curstat ne "finished" ) {
