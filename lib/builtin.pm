@@ -261,7 +261,9 @@ sub generate {
     }
 =cut
     my $self = user->new(\%job);
-    &jobsched::set_job_initialized($self->{id});
+    &jobsched::entry_job_id ($self);
+    &jobsched::set_job_initialized($self);
+    # &jobsched::load_inventory ($self->{id});
     return $self;
 }
 
@@ -417,23 +419,23 @@ sub expand_and_make {
 sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
-	my $last_stat = &jobsched::get_job_status ($self->{id});
+	my $last_stat = &jobsched::get_job_status ($self);
 	unless ( $last_stat eq 'done' ||
 		 $last_stat eq 'finished' ||
 		 $last_stat eq 'aborted' ) {
 	    # xcryptdelされていたら状態をabortedにして処理をとばす
-	    if (jobsched::is_signaled_job($self->{id})) {
+	    if (jobsched::is_signaled_job($self)) {
 		&jobsched::inventory_write($self->{id}, "aborted",
 					   $self->{rhost}, $self->{rwd});
-		    &jobsched::delete_signaled_job($self->{id});
+		    &jobsched::delete_signaled_job($self);
 #		push (@coros, undef);
 		next;
 	    } else {
 		if (defined $self->{rhost}) {
-		    &jobsched::set_job_prepared($self->{id});
+		    &jobsched::set_job_prepared($self);
 #		    &jobsched::inventory_write($self->{id}, 'prepared', $self->{rhost}, $self->{rwd});
 		} else {
-		    &jobsched::set_job_prepared($self->{id});
+		    &jobsched::set_job_prepared($self);
 		}
 	    }
 	}
@@ -468,7 +470,7 @@ sub submit {
             $self->start();
 
             ## Waiting for the job "done"
-	    &jobsched::wait_job_done ($self->{id});
+	    &jobsched::wait_job_done ($self);
             
             ## after()
 	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
@@ -486,7 +488,7 @@ sub submit {
 =cut
 
 	    $self->EVERY::LAST::after();
-	    &jobsched::set_job_finished($self->{id});
+	    &jobsched::set_job_finished($self);
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
@@ -530,6 +532,7 @@ sub belong {
 sub prepare_submit {
     my @objs = &expand_and_make(@_);
     foreach (@objs) {
+        &do_prepared ($_);
 	&submit($_);
     }
     return @objs;

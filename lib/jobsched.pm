@@ -4,7 +4,6 @@ package jobsched;
 use base qw(Exporter);
 our @EXPORT = qw(any_to_string_nl any_to_string_spc
 inventory_write_cmdline inventory_write
-set_job_request_id
 );
 
 use strict;
@@ -16,7 +15,7 @@ use File::Spec;
 use IO::Socket;
 use Coro;
 use Coro::Socket;
-#use Coro::Signal;
+use Coro::Signal;
 #use Coro::AnyEvent;
 #use AnyEvent::Socket;
 use Time::HiRes;
@@ -56,25 +55,22 @@ our $watch_thread = undef; # used in bin/xcrypt
 
 our %host_env = ();
 
-# ジョブ名→ジョブのrequest_id
-my %job_request_id : shared;
-# ジョブ名→ジョブの状態
-my %job_status : shared;
+# Hash table (key,val)=(job ID, job objcect)
+my %Job_ID_Hash = ();
+# The signal to broadcast that a job status is updated.
 my $Job_Status_Signal = new Coro::Signal;
-# ジョブ名→最後のジョブ変化時刻
-my %job_last_update : shared;
 # ジョブの状態→ランレベル
-my %status_level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
+my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
-# "running"状態のジョブが登録されているハッシュ (key,value)=(req_id,jobname)
-my %running_jobs : shared = ();
+# "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
+my %Running_Jobs = ();
 # テスト実装
 our %initialized_nosync_jobs = ();
 # 定期的実行文字列が登録されている配列
 our %periodicfuns : shared = ();
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
-my %signaled_jobs : shared = ();
-my $all_jobs_signaled : shared = undef;
+my %Signaled_Jobs = ();
+my $All_Jobs_Signaled = undef;
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 our $watch_thread=undef;    # accessed from bin/xcrypt
@@ -89,23 +85,21 @@ $|=1;
 select(STDERR); $|=1; select(STDOUT);
 
 ##################################################
-# qdelコマンドを実行して指定されたjobnameのジョブを殺す
+# qdelコマンドを実行して指定されたジョブを殺す
 # リモート実行未対応
 sub qdel {
     my ($self) = @_;
-    my $jobname = $self->{id};
     # qdelコマンドをconfigから獲得
     my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
     unless ( defined $qdel_command ) {
         die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
     }
-    # jobname -> request id
-    my $req_id = get_job_request_id ($jobname);
+    my $req_id = $self->{request_id};
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
         if (common::cmd_executable ($command_string, $self)) {
-            print "Deleting $jobname (request ID: $req_id)\n";
+            print "Deleting $self->{id} (request ID: $req_id)\n";
             common::exec_async ($command_string);
         } else {
             warn "$command_string not executable.";
@@ -135,7 +129,7 @@ sub qstat {
 	    return ();
 	}
 =cut
-	# foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
+	# foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
 	my @qstat_out = &xcr_qx($command_string, 'jobsched');
 	my @tmp_ids = &$qstat_extractor(@qstat_out);
 	push(@ids, @tmp_ids);
@@ -215,44 +209,42 @@ sub inventory_write_cmdline {
 # set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
                         # handle_inventoryとinvoke_watch_by_socketから参照
+my $last_job=undef;     # The job corresponding to $last_jobname
 sub handle_inventory {
     my ($line) = @_;
     my $ret = 0;
     if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
         $last_jobname = $1;
-    # ・以下はNFS通信版の話
-    # inventory_watch は同じ更新情報を何度も出力するので，
-    # 最後の更新より古い情報は無視する．
-    # 同じ時刻の更新の場合→「意図する順序」の更新なら受け入れる (ref. set_job_*)
+        $last_job = find_job_by_id ($last_jobname);
     } elsif ($line =~ /^time_initialized\:\s*([0-9]*)/) {   # ジョブ実行予定
-        set_job_initialized ($last_jobname, $1);
+        set_job_initialized ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_prepared\:\s*([0-9]*)/) {   # ジョブ投入直前
-        set_job_prepared ($last_jobname, $1);
+        set_job_prepared ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_submitted\:\s*([0-9]*)/) {   # ジョブ投入直前
-        set_job_submitted ($last_jobname, $1);
+        set_job_submitted ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_queued\:\s*([0-9]*)/) {   # qsub成功
-        set_job_queued ($last_jobname, $1);
+        set_job_queued ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_running\:\s*([0-9]*)/) {   # プログラム開始
         # まだqueuedになっていなければ書き込まず，0を返すことで再連絡を促す
         # ここでwaitしないのはデッドロック防止のため
-        if ( get_job_status ($last_jobname) eq "queued" ) {
-            set_job_running ($last_jobname, $1);
+        if ( get_job_status ($last_job) eq "queued" ) {
+            set_job_running ($last_job, $1);
             $ret = 1;
         } else {
             $ret = -1;
         }
     } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
-        set_job_done ($last_jobname, $1);
+        set_job_done ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_finished\:\s*([0-9]*)/) {   # ジョブスレッドの終了 
-        set_job_finished ($last_jobname, $1);
+        set_job_finished ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^time_aborted\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
-        set_job_aborted ($last_jobname, $1);
+        set_job_aborted ($last_job, $1);
         $ret = 1;
     } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
         # とりあえず何もなし
@@ -454,180 +446,174 @@ sub load_inventory {
 }
 
 ##############################
-# ジョブ名→request_id
-sub get_job_request_id {
-    my ($jobname) = @_;
-    if ( exists ($job_request_id{$jobname}) ) {
-        return $job_request_id{$jobname};
-    } else {
-        return 0;
-    }
+# job_id_hash
+sub entry_job_id {
+    my ($self) = @_;
+    print "$self->{id} entried\n";
+    $Job_ID_Hash{$self->{id}} = $self;
 }
-sub set_job_request_id {
-    my ($jobname, $req_id) = @_;
-    unless ( $req_id =~ /[0-9]+/ ) {
-        die "Unexpected request_id of $jobname: $req_id";
+
+sub find_job_by_id {
+    my ($id) = @_;
+    if ( $Job_ID_Hash{$id} ) {
+        return $Job_ID_Hash{$id};
+    } else {
+        warn "No job named $id found.";
+        return undef;
     }
-    print "$jobname id <= $req_id\n";
-    lock (%job_request_id);
-    $job_request_id{$jobname} = $req_id;
 }
 
 ##############################
 # ジョブ状態名→状態レベル数
 sub status_name_to_level {
     my ($name) = @_;
-    if ( exists ($status_level{$name}) ) {
-        return $status_level{$name};
+    if ( exists ($Status_Level{$name}) ) {
+        return $Status_Level{$name};
     } else {
         die "status_name_to_runlevel: unexpected status name \"$name\"\n";
     }
 }
 
-# ジョブ名→状態
+# Get the status of job
 sub get_job_status {
-    my ($jobname) = @_;
-    if ( exists ($job_status{$jobname}) ) {
-        return $job_status{$jobname};
+    my ($self) = @_;
+    if ( exists $self->{status} ) {
+        return $self->{status};
     } else {
         return "initialized";
     }
 }
-# ジョブ名→最後の状態変化時刻
+# Get the last time when the status of the job updated.
 sub get_job_last_update {
-    my ($jobname) = @_;
-    if ( exists ($job_last_update{$jobname}) ) {
-        return $job_last_update{$jobname};
+    my ($self) = @_;
+    if ( exists $self->{last_update} ) {
+        return $self->{last_update};
     } else {
         return -1;
     }
 }
 
-# ジョブの状態を変更
+# Update the status of the job, broadcast the signal
+# and, if necessary, entry the job into the "running_job" hash table.
 sub set_job_status {
-    my ($jobname, $stat, $tim) = @_;
+    my ($self, $stat, $tim) = @_;
     status_name_to_level ($stat); # 有効な名前かチェック
-    print "$jobname <= $stat\n";
+    print "$self->{id} <= $stat\n";
     {
-        $job_status{$jobname} = $stat;
-        $job_last_update{$jobname} = $tim;
+        $self->{status} = $stat;
+        $self->{last_update} = $tim;
         $Job_Status_Signal->broadcast();
     }
     # 実行中ジョブ一覧に登録／削除
     if ( $stat eq "queued" || $stat eq "running" ) {
-        entry_running_job ($jobname);
+        entry_running_job ($self);
     } else {
-        delete_running_job ($jobname);
+        delete_running_job ($self);
     }
 }
 sub set_job_initialized  {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
-        set_job_status ($jobname, "initialized", $tim);
+    if (do_set_p ($self, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
+        set_job_status ($self, "initialized", $tim);
     }
 }
 sub set_job_prepared  {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "prepared", "initialized") ) {
-        set_job_status ($jobname, "prepared", $tim);
+    if (do_set_p ($self, $tim, "prepared", "initialized") ) {
+        set_job_status ($self, "prepared", $tim);
     }
 }
 sub set_job_submitted {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "submitted", "prepared") ) {
-        set_job_status ($jobname, "submitted", $tim);
+    if (do_set_p ($self, $tim, "submitted", "prepared") ) {
+        set_job_status ($self, "submitted", $tim);
     }
 }
 sub set_job_queued {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "queued", "submitted" ) ) {
-        set_job_status ($jobname, "queued", $tim);
+    if (do_set_p ($self, $tim, "queued", "submitted" ) ) {
+        set_job_status ($self, "queued", $tim);
     }
 }
 sub set_job_running  {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "running", "queued" ) ) {
-        set_job_status ($jobname, "running", $tim);
+    if (do_set_p ($self, $tim, "running", "queued" ) ) {
+        set_job_status ($self, "running", $tim);
     }
 }
 sub set_job_done   {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
     # finished→done はリトライのときに有り得る
-    if (do_set_p ($jobname, $tim, "done", "running", "finished" ) ) {
-        set_job_status ($jobname, "done", $tim);
-        # リトライのときに実行されると，downされてないセマフォをupしてしまう
-# after 処理をメインスレッド以外ですることになり limit.pm が復活したので
-#        if (defined $user::smph) {
-#            $user::smph->up;
-#        }
+    if (do_set_p ($self, $tim, "done", "running", "finished" ) ) {
+        set_job_status ($self, "done", $tim);
     }
 }
 sub set_job_finished {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($jobname, $tim, "finished", "done" ) ) {
-        set_job_status ($jobname, "finished", $tim);
+    if (do_set_p ($self, $tim, "finished", "done" ) ) {
+        set_job_status ($self, "finished", $tim);
     }
 }
 sub set_job_aborted  {
-    my ($jobname, $tim) = @_;
+    my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    my $curstat = get_job_status ($jobname);
-    if (do_set_p ($jobname, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
+    my $curstat = get_job_status ($self);
+    if (do_set_p ($self, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
         && $curstat ne "done" && $curstat ne "finished" ) {
-        set_job_status ($jobname, "aborted", $tim);
+        set_job_status ($self, "aborted", $tim);
     }
 }
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
 sub do_set_p {
-  my ($jobname, $tim, $stat, @e_stats) = @_;
+  my ($self, $tim, $stat, @e_stats) = @_;
   my $who = "set_job_$stat";
-  my $last_update = get_job_last_update ($jobname);
-  # print "$jobname: cur=$tim, last=$last_update\n";
+  my $last_update = get_job_last_update ($self);
+  # print "$self->{id}: cur=$tim, last=$last_update\n";
   if ( $tim > $last_update ) {
-      expect_job_stat ($who, $jobname, 1, @e_stats);
+      expect_job_stat ($who, $self, 1, @e_stats);
       return 1;
   } elsif ( $tim == $last_update ) {
-      if ( $stat eq get_job_status($jobname) ) {
+      if ( $stat eq get_job_status($self) ) {
           return 0;
       } else {
-          return expect_job_stat ($who, $jobname, 0, @e_stats);
+          return expect_job_stat ($who, $self, 0, @e_stats);
       }
   } else {
       return 0;
   }
 }
-# $jobnameの状態が，$whoによる状態遷移の期待するもの（@e_statsのどれか）であるかをチェック
+# ジョブ$selfの状態が，$whoによる状態遷移の期待するもの（@e_statsのどれか）であるかをチェック
 sub expect_job_stat {
-    my ($who, $jobname, $do_warn, @e_stats) = @_;
-    my $stat = get_job_status($jobname);
+    my ($who, $self, $do_warn, @e_stats) = @_;
+    my $stat = get_job_status($self);
     foreach my $es (@e_stats) {
         if ( $stat eq $es ) {
             return 1;
         }
     }
     if ( $do_warn ) {
-        print "$who expects $jobname is (or @e_stats), but $stat.\n";
+        print "$who expects $self->{id} is (or @e_stats), but $stat.\n";
     }
     return 0;
 }
 
-# ジョブ"$jobname"の状態が$stat以上になるまで待つ
+# ジョブ$selfの状態が$stat以上になるまで待つ
 sub wait_job_status {
-    my ($jobname, $stat) = @_;
+    my ($self, $stat) = @_;
     my $stat_lv = status_name_to_level ($stat);
-    # print "$jobname: wait for the status changed to $stat($stat_lv)\n";
-    until ( &status_name_to_level (&get_job_status ($jobname))
+    # print "$self->{id}: wait for the status changed to $stat($stat_lv)\n";
+    until ( &status_name_to_level (&get_job_status ($self))
             >= $stat_lv) {
         $Job_Status_Signal->wait;
     }
-    # print "$jobname: exit wait_job_status\n";
+    # print "$self->id: exit wait_job_status\n";
 }
 sub wait_job_initialized    { wait_job_status ($_[0], "initialized"); }
 sub wait_job_prepared  { wait_job_status ($_[0], "prepared"); }
@@ -640,8 +626,8 @@ sub wait_job_aborted   { wait_job_status ($_[0], "aborted"); }
 
 # すべてのジョブの状態を出力（デバッグ用）
 sub print_all_job_status {
-    foreach my $jn (keys %job_status) {
-        print "$jn:" . get_job_status ($jn) . " ";
+    foreach my $jn (keys %Job_ID_Hash) {
+        print "$jn:" . get_job_status (find_job_by_id ($jn)) . " ";
     }
     print "\n";
 }
@@ -649,45 +635,39 @@ sub print_all_job_status {
 ##################################################
 # "running"なジョブ一覧の更新
 sub entry_running_job {
-    my ($jobname) = @_;
-    my $req_id = get_job_request_id ($jobname);
-    lock (%running_jobs);
-    $running_jobs{$req_id} = $jobname;
-    # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %running_jobs) . "\n";
+    my ($self) = @_;
+    my $req_id = $self->{request_id};
+    $Running_Jobs{$req_id} = $self;
+    # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %Running_Jobs) . "\n";
 }
 sub delete_running_job {
-    my ($jobname) = @_;
-    my $req_id = get_job_request_id ($jobname);
+    my ($self) = @_;
+    my $req_id = $self->{request_id};
     if ($req_id) {
-        lock (%running_jobs);
-        delete ($running_jobs{$req_id});
+        delete ($Running_Jobs{$req_id});
     }
 }
 
 sub entry_signaled_job {
-    my ($jobname) = @_;
-    lock (%signaled_jobs);
-    $signaled_jobs{$jobname} = 1;
-    print "$jobname is signaled to be deleted.\n";
+    my ($self) = @_;
+    $Signaled_Jobs{$self->{id}} = 1;
+    print "$self->{id} is signaled to be deleted.\n";
 }
 sub signal_all_jobs {
-    lock ($all_jobs_signaled);
-    $all_jobs_signaled = 1;
+    $All_Jobs_Signaled = 1;
     print "All jobs are signaled to be deleted.\n";
 }
 sub delete_signaled_job {
-    my ($jobname) = @_;
-    lock (%signaled_jobs);
-    if ( exists $signaled_jobs{$jobname} ) {
-        delete $signaled_jobs{$jobname};
+    my ($self) = @_;
+    if ( exists $Signaled_Jobs{$self->{id}} ) {
+        delete $Signaled_Jobs{$self->{id}};
     }
 }
 sub is_signaled_job {
-    lock (%signaled_jobs);
-    return ($all_jobs_signaled || $signaled_jobs{$_[0]});
+    return ($All_Jobs_Signaled || $Signaled_Jobs{$_[0]});
 }
 
-# running_jobsのジョブがabortedになってないかチェック
+# Running_Jobsのジョブがabortedになってないかチェック
 # 状態が "queued" または "running"にもかかわらず，qstatで当該ジョブが出力されないものを
 # abortedとみなし，ジョブ状態ハッシュを更新する．
 # また，signaledなジョブがqstatに現れたらqdelする
@@ -701,29 +681,29 @@ sub is_signaled_job {
 sub check_and_write_aborted {
     my %unchecked;
     {
-        # %running_jobs のうち，qstatで表示されなかったジョブが%uncheckedに残る
+        # %Running_Jobs のうち，qstatで表示されなかったジョブが%uncheckedに残る
         {
-            lock (%running_jobs);
-            %unchecked = %running_jobs;
+            %unchecked = %Running_Jobs;
         }
         print "check_and_write_aborted:\n";
-        # foreach my $j ( keys %running_jobs ) { print " " . $running_jobs{$j} . "($j)"; }
+        # foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
         my @ids = qstat();
         foreach (@ids) {
-            my $jobname = $unchecked{$_};
+            my $job = $unchecked{$_};
             delete ($unchecked{$_});
-            # ここでsignaledのチェックもする．
-            if ($jobname && is_signaled_job($jobname)) {
-                delete_signaled_job($jobname);
-                qdel ($jobname);
+            # If the job exists but is signaled, qdel it.
+            if ($job && is_signaled_job($job)) {
+                delete_signaled_job($job);
+                qdel ($job);
             }
         }
     }
     # %uncheckedに残っているジョブを"aborted"にする．
     foreach my $req_id ( keys %unchecked ) {
-        if ( exists $running_jobs{$req_id} ) {
-            print STDERR "aborted: $req_id: " . $unchecked{$req_id} . "\n";
-#            inventory_write ($unchecked{$req_id}, "aborted", $initialized_nosync_jobs{$unchecked{$req_id}}->{rhost}, $initialized_nosync_jobs{$unchecked{$req_id}}->{rwd});
+        if ( exists $Running_Jobs{$req_id} ) {
+            my $aborted_job = $Running_Jobs{$req_id};
+            print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
+            set_job_aborted ($aborted_job);
         }
     }
 }
