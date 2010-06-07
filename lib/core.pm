@@ -18,30 +18,6 @@ sub new {
 
     $jobsched::initialized_nosync_jobs{$self->{id}} = $self;
 
-    if (defined $xcropt::options{scheduler}) {
-	$self->{scheduler} = $xcropt::options{scheduler};
-    } else {
-	unless (defined $self->{scheduler}) {
-	    my $rxcrjsch = undef;
-	    if (defined $self->{rhost}) {
-		unless (exists($jobsched::host_env{$self->{rhost}})) {
-		    $rxcrjsch = qx/$xcropt::options{rsh} $self->{rhost} 'echo \$XCRJOBSCHED'/;
-		    chomp($rxcrjsch);
-		    $jobsched::host_env{$self->{rhost}}->{scheduler} = $rxcrjsch;
-		} else {
-		    $rxcrjsch = $jobsched::host_env{$self->{rhost}}->{scheduler};
-		}
-	    } elsif ($ENV{XCRJOBSCHED}) {
-		$rxcrjsch = $ENV{XCRJOBSCHED};
-	    }
-	    if (defined $rxcrjsch) {
-		$self->{scheduler} = $rxcrjsch;
-	    } else {
-		die "Set the environment varialble \$XCRJOBSCHED at $self->{rhost}\n" ;
-	    }
-	}
-    }
-
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', 'stdout');
     set_member_if_empty ($self, 'JS_stderr', 'stderr');
@@ -57,19 +33,24 @@ sub new {
 
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
+
+    if (defined $ENV{XCRYPT}) {
+	set_member_if_empty ($self, 'xcrypt', $ENV{XCRYPT});
+    } else {
+	die "Set the environment $ENV{XCRYPT}\n";
+    }
+    if (defined $xcropt::options{scheduler}) {
+	set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
+    } elsif (defined $ENV{XCRJOBSCHED}) {
+	set_member_if_empty ($self, 'scheduler', $ENV{XCRJOBSCHED});
+    } else {
+	die "Set a batch scheduler\n";
+    }
     set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', $self->{id}.'_before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', $self->{id}.'_after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
 
-    # Load the inventory file to recover the job's status after the previous execution
-    if (defined $self->{rhost}) {
-	$jobsched::host_env{$self->{rhost}}->{scheduler} = $self->{scheduler};
-	$jobsched::host_env{$self->{rhost}}->{wd} = $self->{rwd};
-    } else {
-	$jobsched::host_env{'localhost'}->{scheduler} = $self->{scheduler};
-    }
     return bless $self, $class;
 }
 
@@ -172,12 +153,9 @@ sub make_jobscript_body {
             warn "Error in config file $self->{scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-    unless ($self->{rhost} eq '') {
-	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
-    }
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");
+    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     # push (@body, "ftp localhost 9999 || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
@@ -197,7 +175,7 @@ sub make_jobscript_body {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@body, jobsched::inventory_write_cmdline($self->{id}, 'done', $self->{rhost}, $self->{rwd}). " || exit 1");
+    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
     # push (@body, "ftp localhost 9999 || exit 1");
     $self->{jobscript_body} = \@body;
 }

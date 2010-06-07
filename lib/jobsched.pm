@@ -7,8 +7,6 @@ inventory_write_cmdline inventory_write
 );
 
 use strict;
-use threads ();
-use threads::shared;
 use Cwd;
 use File::Basename;
 use File::Spec;
@@ -16,8 +14,6 @@ use IO::Socket;
 use Coro;
 use Coro::Socket;
 use Coro::Signal;
-#use Coro::AnyEvent;
-#use AnyEvent::Socket;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use Net::OpenSSH;
@@ -25,7 +21,6 @@ use Net::OpenSSH;
 use common;
 use xcropt;
 use jsconfig;
-# use Thread::Semaphore;
 
 my $rsh_command = $xcropt::options{rsh};
 ##################################################
@@ -35,7 +30,6 @@ my $inventory_host = $xcropt::options{localhost};
 my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
 my $inventory_path = $xcropt::options{inventory_path};
 
-my $write_command = undef;
 my $Inventory_Write_Cmd = 'inventory_write.pl';
 
 # for inventory_write_file
@@ -50,11 +44,6 @@ my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
 rmdir $LOCKDIR;
 
-# 外部からの状態変更通知を待ち受け，処理するスレッド
-our $watch_thread = undef; # used in bin/xcrypt
-
-our %host_env = ();
-
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
 # The signal to broadcast that a job status is updated.
@@ -67,18 +56,20 @@ my %Running_Jobs = ();
 # テスト実装
 our %initialized_nosync_jobs = ();
 # 定期的実行文字列が登録されている配列
-our %periodicfuns : shared = ();
+our %periodicfuns;
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
 my %Signaled_Jobs = ();
 my $All_Jobs_Signaled = undef;
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
-our $watch_thread=undef;    # accessed from bin/xcrypt
+my $watch_thread = undef;    # accessed from bin/xcrypt
+# 外部からの状態変更通知を待ち受け，処理するスレッド
+our %host_env = ();
 # ジョブがabortedになってないかチェックするスレッド
-our $abort_check_thread=undef;    # accessed from bin/xcrypt
+my $abort_check_thread = undef;
 my $abort_check_interval = $xcropt::options{abort_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
-our $periodic_thread=undef; # accessed from bin/xcrypt
+our $periodic_thread = undef; # accessed from bin/xcrypt
 
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
@@ -110,17 +101,16 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
-#    my $qstat_command = $jsconfig::jobsched_config{$xcropt::options{scheduler}}{qstat_command};
-    foreach (keys %host_env) {
-	my $qstat_command = $jsconfig::jobsched_config{$host_env{$_}->{scheduler}}{qstat_command};
+    foreach (keys(%Running_Jobs)) {
+	my $qstat_command = $jsconfig::jobsched_config{$Running_Jobs{$_}->{scheduler}}{qstat_command};
 	unless ( defined $qstat_command ) {
-	    die "qstat_command is not defined in $host_env{$_}->{schedulers}.pm";
+	    die "qstat_command is not defined in $Running_Jobs{$_}->{schedulers}.pm";
 	}
-	my $qstat_extractor = $jsconfig::jobsched_config{$host_env{$_}->{scheduler}}{extract_req_ids_from_qstat_output};
+	my $qstat_extractor = $jsconfig::jobsched_config{$Running_Jobs{$_}->{scheduler}}{extract_req_ids_from_qstat_output};
 	unless ( defined $qstat_extractor ) {
-	    die "extract_req_ids_from_qstat_output is not defined in $host_env{$_}->{schedulers}.pm";
+	    die "extract_req_ids_from_qstat_output is not defined in $Running_Jobs{$_}->{schedulers}.pm";
 	} elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-	    die "Error in $host_env{$_}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
+	    die "Error in $Running_Jobs{$_}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
 =comment
@@ -129,7 +119,6 @@ sub qstat {
 	    return ();
 	}
 =cut
-	# foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
 	my @qstat_out = &xcr_qx($command_string, 'jobsched');
 	my @tmp_ids = &$qstat_extractor(@qstat_out);
 	push(@ids, @tmp_ids);
@@ -140,16 +129,13 @@ sub qstat {
 ##############################
 # Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
-    my ($jobname, $stat, $self) = @_;
-    my $host = $self->{rhost};
+    my ($self, $stat) = @_;
+    my $host = $self->{host};
     my $wd = $self->{wd};
-    my $cmdline = inventory_write_cmdline($jobname, $stat, $host, $wd);
-    unless (exists($host_env{$host}->{invwatch})) {
-	&xcr_mkdir($xcropt::options{inventory_path}, 'jobsched', $host, $wd);
-	$host_env{$host}->{invwatch} = 1;
-    }
+    my $cmdline = inventory_write_cmdline($self, $stat);
+    &xcr_mkdir($xcropt::options{inventory_path}, 'jobsched', $host, $wd);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_system("$cmdline", '.', $self); # &xcr_system("$cmdline", $jobname, $host, $wd);
+    &xcr_system("$cmdline", '.', $self);
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -163,44 +149,16 @@ sub inventory_write {
 }
 
 sub inventory_write_cmdline {
-    my ($jobname, $stat, $host, $wd) = @_;
+    my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
-
-    if ($host) {
-        my $prefix;
-	if (exists($host_env{$host}->{xcrypt})) {
-	    $prefix = $host_env{$host}->{xcrypt};
-	} else {
-	    my @ret = &xcr_qx('echo $XCRYPT');
-	    $prefix = @ret[0];
-	    &entry_host_and_xcrypt($host, $prefix);
-	}
-	chomp($prefix);
-	if ($prefix eq '') {
-	    die "Set the environment variable \$XCRYPT at $host\n";
-	}
-	$write_command=File::Spec->catfile($prefix, 'bin', $Inventory_Write_Cmd);
-    } else {
-	unless (defined $ENV{XCRYPT}) {
-	    die "Set the environment varialble \$XCRYPT\n";
-	}
-	$write_command=File::Spec->catfile($ENV{XCRYPT}, 'bin', $Inventory_Write_Cmd);
-    }
-
+    my $write_command=File::Spec->catfile($self->{xcrypt}, 'bin', $Inventory_Write_Cmd);
     if ( $inventory_port > 0 ) {
-        return "$write_command $jobname $stat sock $inventory_host $inventory_port";
+        return "$write_command $self->{id} $stat sock $inventory_host $inventory_port";
     } else {
-	if ($host) {
-	    my $dir = File::Spec->catfile($wd, $LOCKDIR);
-	    my $req = File::Spec->catfile($wd, $REQFILE);
-	    my $ack = File::Spec->catfile($wd, $ACKFILE);
-	    return "$write_command $jobname $stat file $dir $req $ack";
-	} else {
-	    my $dir = File::Spec->catfile(Cwd::getcwd(), $LOCKDIR);
-	    my $req = File::Spec->catfile(Cwd::getcwd(), $REQFILE);
-	    my $ack = File::Spec->catfile(Cwd::getcwd(), $ACKFILE);
-	    return "$write_command $jobname $stat file $dir $req $ack";
-	}
+	my $dir = File::Spec->catfile($self->{wd}, $LOCKDIR);
+	my $req = File::Spec->catfile($self->{wd}, $REQFILE);
+	my $ack = File::Spec->catfile($self->{wd}, $ACKFILE);
+	return "$write_command $self->{id} $stat file $dir $req $ack";
     }
 }
 
@@ -283,34 +241,14 @@ sub invoke_watch {
 my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
-#    $watch_thread = threads->new( sub {
 #        my $interval = 0.1;
         my $interval = 0.5;
 #        while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    # common::wait_file ($REQFILE, $interval);
-	    my $flag;
-	    my $host;
-	    my $wd;
-	    my $count = 0;
-# Coro版監視スレッドがあればジョブオブジェクトを使って監視をするので以下のような監視はしない
-=comment
-	    until ($flag) {
-		my @tmp = %hosts_wds;
-		Time::HiRes::sleep ($interval);
-		$host = $tmp[$count];
-		$wd = $tmp[$count+1];
-		$flag = &xcr_exist('-f', $REQFILE, $host, $wd);
-		if ($count + 2 < $#tmp) {
-		    $count = $count + 2;
-		} else {
-		    $count = 0;
-		}
-	    }
-=cut
 
 	    my $CLIENT_IN;
-	    &xcr_get($REQFILE, $host, $wd);
+#	    &xcr_get($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
@@ -350,20 +288,19 @@ sub invoke_watch_by_file {
                 close($SAVE);
                 print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $host, $wd);
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
+#		&xcr_put($ACK_TMPFILE, $host, $wd);
+#		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $host, $wd);
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
+#		&xcr_put($ACK_TMPFILE, $host, $wd);
+#		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
             }
 	    unlink($REQFILE);
 #        }
         # close (INVWATCH_LOG);
 #				  });
-#    $watch_thread->detach();
 }
 
 my %sftp_opts = (

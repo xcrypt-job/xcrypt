@@ -425,15 +425,13 @@ sub do_prepared {
 		 $last_stat eq 'aborted' ) {
 	    # xcryptdelされていたら状態をabortedにして処理をとばす
 	    if (jobsched::is_signaled_job($self)) {
-		&jobsched::inventory_write($self->{id}, "aborted",
-					   $self->{rhost}, $self->{rwd});
-		    &jobsched::delete_signaled_job($self);
+		&jobsched::inventory_write($self, "aborted");
+		&jobsched::delete_signaled_job($self);
 #		push (@coros, undef);
 		next;
 	    } else {
 		if (defined $self->{rhost}) {
 		    &jobsched::set_job_prepared($self);
-#		    &jobsched::inventory_write($self->{id}, 'prepared', $self->{rhost}, $self->{rwd});
 		} else {
 		    &jobsched::set_job_prepared($self);
 		}
