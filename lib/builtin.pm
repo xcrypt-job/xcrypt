@@ -22,7 +22,7 @@ add_key add_host repeat
 );
 
 # id, exe$i and arg$i_$j are built-in.
-our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'rhost', 'rwd', 'scheduler');
+our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'host', 'wd', 'xd', 'scheduler');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
@@ -478,10 +478,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					$self->{rhost}, $self->{rwd});
-		    $flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
-					$self->{rhost}, $self->{rwd});
+		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}), $self->{rhost}, $self->{rwd});
+		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}), $self->{rhost}, $self->{rwd});
 	    }
 =cut
 

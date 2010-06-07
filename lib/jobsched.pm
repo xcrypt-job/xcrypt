@@ -151,7 +151,7 @@ sub inventory_write {
 sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
-    my $write_command=File::Spec->catfile($self->{xcrypt}, 'bin', $Inventory_Write_Cmd);
+    my $write_command=File::Spec->catfile($self->{xd}, 'bin', $Inventory_Write_Cmd);
     if ( $inventory_port > 0 ) {
         return "$write_command $self->{id} $stat sock $inventory_host $inventory_port";
     } else {
