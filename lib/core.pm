@@ -90,11 +90,7 @@ sub start {
 sub workdir_file {
     my $self = shift;
     my $basename = shift;
-    if ($xcropt::options{sandbox}) {
-	return File::Spec->catfile($self->{id}, $basename);
-    } else {
-	return File::Spec->catfile($basename);
-    }
+    return File::Spec->catfile($basename);
 }
 
 sub workdir_member_file {
@@ -179,9 +175,6 @@ sub make_jobscript_body {
     unless ($self->{rhost} eq '') {
 	$wkdir_str = File::Spec->catfile($self->{rwd}, $wkdir_str);
     }
-if ($xcropt::options{sandbox}) {
-    push (@body, "cd ". $wkdir_str);
-}
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
 # push (@body, jobsched::inventory_write_cmdline($self->{id}, 'running', $self->{rhost}, $self->{rwd}). " || exit 1");

@@ -1,0 +1,13 @@
+use base qw(sandbox core);
+
+%template = (
+    'id' => 'job6',
+    'exe' => './fib',
+    'arg0' => 40,
+    'arg1' => '> job6_out1',
+    'linkedfile0' => 'bin/fib'
+);
+
+my @jobs = &prepare(%template);
+&submit(@jobs);
+&sync(@jobs);

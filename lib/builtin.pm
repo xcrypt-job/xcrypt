@@ -2,8 +2,6 @@ package builtin;
 
 use strict;
 use NEXT;
-use threads ();
-use threads::shared;
 use Coro;
 use Coro::Signal;
 use Coro::AnyEvent;
@@ -18,19 +16,18 @@ use Cwd;
 use common;
 
 use base qw(Exporter);
-our @EXPORT = qw(expand_and_make prepare_directory submit sync
-prepare prepare_submit submit_sync prepare_submit_sync
-add_key add_host repeat get_elapsed_time
+our @EXPORT = qw(expand_and_make prepare submit sync
+prepare_submit submit_sync prepare_submit_sync
+add_key add_host repeat
 );
 
-# id, exe$i, arg$i_$j, linkedfile$i, copiedfile$i, and copieddir$i are built-in.
+# id, exe$i and arg$i_$j are built-in.
 our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'rhost', 'rwd', 'scheduler');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
 
 our %host_and_object;
-
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
@@ -46,9 +43,7 @@ sub get_elapsed_time {
         return $elapsed;
     }
 }
-=cut
 
-=comment
 sub check_and_alert_elapsed {
     my @jobids = keys(%jobsched::initialized_nosync_jobs);
 
@@ -80,9 +75,7 @@ sub check_and_alert_elapsed {
         }
     }
 }
-=cut
 
-=comment
 my $default_period = 10;
 my $periodic_threads = ();
 sub repeat {
@@ -421,76 +414,6 @@ sub expand_and_make {
     return @objs;
 }
 
-sub prepare_directory {
-    my @jobs = @_;
-    foreach my $self (@jobs) {
-	my $last_stat = &jobsched::get_job_status ($self->{id});
-	if ( jobsched::is_signaled_job ($self->{id}) ) {
-	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-	    &jobsched::inventory_write ($self->{id}, "aborted",
-					$self->{rhost}, $self->{rwd});
-	    &jobsched::delete_signaled_job ($self->{id});
-	} elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
-	    # Skip if the job is 'done' or 'finished'
-	    if ( $last_stat eq 'finished' ) {
-		&jobsched::inventory_write ($self->{id}, "done",
-					    $self->{rhost}, $self->{rwd});
-	    }
-	} else {
-	    # If the working directory already exists, delete it
-	    if ( -e $self->{workdir} ) {
-		print "Delete directory $self->{workdir}\n";
-		File::Path::rmtree ($self->{workdir});
-	    }
-	    unless ($self->{rhost} eq '') {
-		my $ex = &xcr_exist('-d', $self->{id},
-				    $self->{rhost}, $self->{rwd});
-		# If the working directory already exists, delete it
-		if ($ex) {
-		    print "Delete directory $self->{id}\n";
-		    &xcr_unlink($self->{id}, 'core', $self->{rhost}, $self->{rwd});
-		}
-	    }
-	    &xcr_mkdir($self->{id}, 'core', $self);
-	    unless (-d "$self->{id}") {
-		mkdir $self->{id}, 0755;
-	    }
-	    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
-		# ここからリモート実行未対応
-		if ($self->{"copieddir$i"}) {
-		    my $copied = $self->{"copieddir$i"};
-		    opendir(DIR, $copied);
-		    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
-		    closedir(DIR);
-		    foreach (@params) {
-			my $tmp = File::Spec->catfile($copied, $_);
-			my $temp = File::Spec->catfile($self->{workdir}, $_);
-			rcopy $tmp, $temp;
-		    }
-		}
-		# ここまでリモート実行未対応
-
-		if ($self->{"copiedfile$i"}) {
-		    my $copied = $self->{"copiedfile$i"};
-		    my $ex = &xcr_exist('-f', $copied, $self->{rhost});
-		    if ($ex) {
-			&xcr_copy($copied, $self->{id}, 'core', $self->{rhost}, $self->{rwd});
-		    } else {
-			warn "Can't copy $copied\n";
-		    }
-		}
-		if ($self->{"linkedfile$i"}) {
-		    my $file = $self->{"linkedfile$i"};
-		    &xcr_symlink($self->{id},
-				 File::Spec->catfile($file),
-				 File::Spec->catfile(basename($file)), 'core',
-				 $self->{rhost}, $self->{rwd});
-		}
-	    }
-	}
-    }
-}
-
 sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
@@ -519,9 +442,6 @@ sub do_prepared {
 
 sub prepare{
     my @objs = &expand_and_make(@_);
-    if ($xcropt::options{sandbox}) {
-	&prepare_directory(@objs);
-    }
     &do_prepared(@objs);
     return @objs;
 }
@@ -583,17 +503,10 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		if ($xcropt::options{sandbox}) {
-		    $flag0 = &xcr_exist('-f', "$self->{id}/$self->{JS_stdout}",
-					$self->{rhost}, $self->{rwd});
-		    $flag1 = &xcr_exist('-f', "$self->{id}/$self->{JS_stderr}",
-					$self->{rhost}, $self->{rwd});
-		} else {
 		    $flag0 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
 					$self->{rhost}, $self->{rwd});
 		    $flag1 = &xcr_exist('-f', $self->workdir_file($self->{JS_stdout}),
 					$self->{rhost}, $self->{rwd});
-		}
 	    }
 =cut
 
@@ -642,7 +555,6 @@ sub belong {
 sub prepare_submit {
     my @objs = &expand_and_make(@_);
     foreach (@objs) {
-	&prepare_directory($_);
 	&submit($_);
     }
     return @objs;
