@@ -53,8 +53,6 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
-# テスト実装
-our %initialized_nosync_jobs = ();
 # 定期的実行文字列が登録されている配列
 our %periodicfuns;
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
@@ -388,6 +386,17 @@ sub entry_job_id {
     my ($self) = @_;
     print "$self->{id} entried\n";
     $Job_ID_Hash{$self->{id}} = $self;
+}
+
+sub tell_me_all_job_ids {
+    my ($self) = @_;
+    return keys(%Job_ID_Hash)
+}
+
+sub delete_job_id {
+    my ($self) = @_;
+    print "$self->{id} deleted\n";
+    delete($Job_ID_Hash{$self->{id}});
 }
 
 sub find_job_by_id {
