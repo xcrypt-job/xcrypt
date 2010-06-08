@@ -144,8 +144,8 @@ sub write_string_array {
 sub xcr_qx {
     my ($cmd, $dir, $self) = @_;
     my @ret;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	my $tmp = "cd " . File::Spec->catfile($self->{rwd}, $self) . "; $cmd";
+    unless ($self->{host} eq 'localhost' || $self->{host} eq '') {
+	my $tmp = "cd " . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
 	@ret = &remote_qx("$tmp", $self);
     } else {
 	@ret = qx/cd $dir; $cmd/;

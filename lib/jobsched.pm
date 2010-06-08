@@ -393,9 +393,9 @@ sub tell_me_all_job_ids {
     return keys(%Job_ID_Hash)
 }
 
-sub delete_job_id {
+sub exit_job_id {
     my ($self) = @_;
-    print "$self->{id} deleted\n";
+    print "$self->{id} exit\n";
     delete($Job_ID_Hash{$self->{id}});
 }
 
