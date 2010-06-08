@@ -74,8 +74,22 @@ sub check_and_alert_elapsed {
     }
 }
 
+sub update_running_and_done_now {
+    open( INV, "$_[0]" ) or die "$!";
+    while (<INV>) {
+        if ($_ =~ /^time_running\:\s*([0-9]*)/) {
+            $time_running = $1;
+        }
+        if ($_ =~ /^time_done\:\s*([0-9]*)/) {
+            $time_done_now = $1;
+        }
+    }
+    close( INV );
+}
+=cut
+
 my $default_period = 10;
-my $periodic_threads = ();
+my @periodic_threads = ();
 sub repeat {
     my $new_coro = undef;
     my $sub_or_str = $_[0];
@@ -110,20 +124,6 @@ sub repeat {
     }
     return $new_coro;
 }
-
-sub update_running_and_done_now {
-    open( INV, "$_[0]" ) or die "$!";
-    while (<INV>) {
-        if ($_ =~ /^time_running\:\s*([0-9]*)/) {
-            $time_running = $1;
-        }
-        if ($_ =~ /^time_done\:\s*([0-9]*)/) {
-            $time_done_now = $1;
-        }
-    }
-    close( INV );
-}
-=cut
 
 my %host_and_object;
 sub add_host {

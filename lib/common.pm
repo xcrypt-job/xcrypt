@@ -4,7 +4,8 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink xcr_qx xcr_system xcr_rename);
+xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
+xcr_qx xcr_system xcr_rename);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
@@ -153,7 +154,7 @@ sub xcr_exist {
 	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
 	my $ssh = $builtin::host_and_object{$self};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
-	chomp($flag[0]);
+	chomp($flags[0]);
     } else {
 	if (-e $file) { $flags[0] = 1; }
     }
