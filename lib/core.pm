@@ -12,9 +12,17 @@ use jsconfig;
 use xcropt;
 use common;
 
+
+my $default_env = &builtin::add_env( 'host'      => $xcropt::options{localhost},
+				     'wd'        => $xcropt::options{wd},
+				     'scheduler' => $xcropt::options{scheduler},
+				     'xd'        => $xcropt::options{xd} );
+
 sub new {
     my $class = shift;
     my $self = shift;
+
+    set_member_if_empty ($self, 'env', $default_env);
 
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', 'stdout');
@@ -25,48 +33,9 @@ sub new {
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
 
     # Job script related members
-    if (defined $xcropt::options{rhost}) {
-	$self->{host} = $xcropt::options{rhost};
-    }
-    set_member_if_empty ($self, 'host', $xcropt::options{localhost});
-
-    if (defined $xcropt::options{rwd}) {
-	$self->{wd} = $xcropt::options{rwd};
-    }
-    set_member_if_empty ($self, 'wd', File::Spec->rel2abs('.'));
-
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-
-    my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $self->{host}, $self->{wd});
-    chomp($sched[0]);
-    unless ($sched[0] eq '') {
-	$self->{scheduler} = $sched[0];
-    } else {
-	die "Set the environment varialble \$XCRJOBSCHED at $self->{host}\n";
-    }
-    if (defined $xcropt::options{scheduler}) {
-	set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
-    } elsif (defined $ENV{XCRJOBSCHED}) {
-	set_member_if_empty ($self, 'scheduler', $ENV{XCRJOBSCHED});
-    } else {
-	die "Set a batch scheduler\n";
-    }
-
-    my @xd = &xcr_qx('echo $XCRYPT', '.', $self->{host}, $self->{wd});
-    chomp($xd[0]);
-    unless ($xd[0] eq '') {
-	$self->{xd} = $xd[0];
-    } else {
-	die "Set the environment varialble \$XCRYPT at $self->{host}\n";
-    }
-    if (defined $ENV{XCRYPT}) {
-	set_member_if_empty ($self, 'xcrypt', $ENV{XCRYPT});
-    } else {
-	die "Set the environment $ENV{XCRYPT}\n";
-    }
-
-    set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{scheduler}.'.sh');
+    set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{env}->{scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', $self->{id}.'_before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', $self->{id}.'_after_in_job.pl');
     set_member_if_empty ($self, 'qsub_options', []);
@@ -117,7 +86,7 @@ sub make_jobscript {
 sub make_jobscript_header {
     my $self = shift;
     my @header = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{scheduler}}};
     ## preamble
     my $preamble = $cfg{jobscript_preamble};
     if ( ref($preamble) eq 'CODE' ) {
@@ -140,7 +109,7 @@ sub make_jobscript_header {
                 my @ret = &$v($self, $mb_name);
                 push (@header, @ret);
             } else {
-                warn "Error in config file $self->{scheduler}: $k is neither scalar nor CODE."
+                warn "Error in config file $self->{env}->{scheduler}: $k is neither scalar nor CODE."
             }
         }
     }
@@ -153,7 +122,7 @@ sub make_jobscript_header {
 sub make_jobscript_body {
     my $self = shift;
     my @body = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{scheduler}}};
     ## Job script body
 
 =comment
@@ -166,7 +135,7 @@ sub make_jobscript_body {
         } elsif ( ref($js_wkdir) eq 'CODE' ) {
             $wkdir_str = &$js_wkdir($self);
         } else {
-            warn "Error in config file $self->{scheduler}: jobscript_workdir is neither scalar nor CODE."
+            warn "Error in config file $self->{env}->{scheduler}: jobscript_workdir is neither scalar nor CODE."
         }
     }
 =cut
@@ -225,7 +194,7 @@ sub update_script_file {
     my $file = $file_base;
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&jobsched::xcr_put('main', $file, $self->{host}, $self->{wd});
+	&jobsched::xcr_put('main', $file, $self->{env}->{host}, $self->{env}->{wd});
     }
 }
 
@@ -261,7 +230,7 @@ sub update_all_script_files {
 sub make_qsub_options {
     my $self = shift;
     my @contents = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{scheduler}}};
+    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{scheduler}}};
     foreach my $k (keys %cfg) {
         if ( $k =~ /^qsub_option_(.*)/ ) {
             my $v = $cfg{$k};
@@ -276,7 +245,7 @@ sub make_qsub_options {
                 my @ret = &$v($self, $mb_name);
                 push (@contents, @ret);
             } else {
-                warn "Error in config file $self->{scheduler}: $k is neither scalar nor CODE."
+                warn "Error in config file $self->{env}->{scheduler}: $k is neither scalar nor CODE."
             }
         }
     }
@@ -290,7 +259,7 @@ sub after {}
 # after creating a job script file and a string of command-line option.
 sub qsub {
     my $self = shift;
-    my $sched = $self->{scheduler};
+    my $sched = $self->{env}->{scheduler};
     unless (defined $jsconfig::jobsched_config{$sched}) {
 	die "$sched.pm doesn't exist in lib/config";
     }
@@ -316,7 +285,7 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &xcr_exist('-f', $scriptfile, $self->{host}, $self->{wd});
+    my $flag = &xcr_exist('-f', $scriptfile, $self->{env}->{host}, $self->{env}->{wd});
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
@@ -328,7 +297,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{host}, $self->{wd});
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{env}->{host}, $self->{env}->{wd});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output

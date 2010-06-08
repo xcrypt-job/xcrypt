@@ -17,15 +17,15 @@ sub new {
 	print "Delete directory $self->{id}\n";
 	File::Path::rmtree ($self->{id});
     }
-    unless ($self->{host} eq 'localhost' || $self->{host} eq '') {
-	my $ex = &xcr_exist('-d', $self->{id}, $self->{host}, $self->{wd});
+    unless ($self->{env}->{host} eq 'localhost') {
+	my $ex = &xcr_exist('-d', $self->{id}, $self->{env}->{host}, $self->{env}->{wd});
 	# If the working directory already exists, delete it
 	if ($ex) {
 	    print "Delete directory $self->{id}\n";
-	    &xcr_unlink($self->{id}, $self->{host}, $self->{wd});
+	    &xcr_unlink($self->{id}, $self->{env}->{host}, $self->{env}->{wd});
 	}
     }
-    &xcr_mkdir($self->{id}, $self->{host}, $self->{wd});
+    &xcr_mkdir($self->{id}, $self->{env}->{host}, $self->{env}->{wd});
     unless (-d "$self->{id}") {
 	mkdir $self->{id}, 0755;
     }
@@ -46,9 +46,9 @@ sub new {
 
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    my $ex = &xcr_exist('-f', $copied, $self->{host}, $self->{wd});
+	    my $ex = &xcr_exist('-f', $copied, $self->{env}->{host}, $self->{env}->{wd});
 	    if ($ex) {
-		&xcr_copy($copied, $self->{id}, $self->{host}, $self->{wd});
+		&xcr_copy($copied, $self->{id}, $self->{env}->{host}, $self->{env}->{wd});
 	    } else {
 			warn "Can't copy $copied\n";
 	    }
@@ -56,7 +56,7 @@ sub new {
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
 	    &xcr_symlink($self->{id}, File::Spec->catfile($file),
-			 File::Spec->catfile(basename($file)), $self->{host}, $self->{wd});
+			 File::Spec->catfile(basename($file)), $self->{env}->{host}, $self->{env}->{wd});
 	}
     }
     return bless $self, $class;
