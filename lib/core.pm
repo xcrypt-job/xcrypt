@@ -16,8 +16,6 @@ sub new {
     my $class = shift;
     my $self = shift;
 
-    $jobsched::initialized_nosync_jobs{$self->{id}} = $self;
-
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', 'stdout');
     set_member_if_empty ($self, 'JS_stderr', 'stderr');

@@ -45,7 +45,7 @@ sub get_elapsed_time {
 }
 
 sub check_and_alert_elapsed {
-    my @jobids = keys(%jobsched::initialized_nosync_jobs);
+    my @jobids = &jobsched::tell_me_all_job_ids();
 
     my $sum = 0;
     my %elapseds = ();
@@ -469,7 +469,7 @@ sub submit {
 
             ## Waiting for the job "done"
 	    &jobsched::wait_job_done ($self);
-            
+
             ## after()
 	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
 	    # さすがに念の入れすぎかもしれない．
@@ -505,7 +505,7 @@ sub sync {
         }
     }
     foreach (@jobs) {
-	delete($jobsched::initialized_nosync_jobs{$_->{id}});
+	&jobsched::delete_job_id($_);
     }
     return @_;
 }
