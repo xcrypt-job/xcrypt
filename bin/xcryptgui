@@ -162,7 +162,7 @@ sub fun {
 					      -command => ['destroy', $toplevel2] );
 	    $button1->pack( -fill => 'x' );
 
-	    my @jobids = &common::get_jobids();
+	    my @jobids = &jobsched::get_all_job_ids();
 	    foreach (@jobids) {
 		$listbox->insert('end', $_);
 		$listbox->yview('end');
@@ -202,7 +202,7 @@ $tool->add( 'command', -label => 'Monitor', -command => [\&monitor, 0] );
 $tool->add( 'command', -label => 'Monitor & Delete', -command => [\&monitor, 1] );
 
 sub monitoring {
-    my @jobids = &common::get_jobids();
+    my @jobids = &jobsched::get_all_job_ids();
 
     my %jobcolors = ( 'done'      => $green,
 		      'finished'  => $green,
@@ -274,7 +274,7 @@ sub del2 {
 }
 
 sub del3 {
-    my @jobids = &common::get_jobids();
+    my @jobids = &jobsched::get_all_job_ids();
     my @index = $_[0]->infoSelection();
     my $job = $jobids[$index[0]];
     &del($job);

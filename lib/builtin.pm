@@ -43,7 +43,7 @@ sub get_elapsed_time {
 }
 
 sub check_and_alert_elapsed {
-    my @jobids = &jobsched::tell_me_all_job_ids();
+    my @jobids = &jobsched::get_all_job_ids();
 
     my $sum = 0;
     my %elapseds = ();

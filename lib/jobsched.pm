@@ -388,7 +388,7 @@ sub entry_job_id {
     $Job_ID_Hash{$self->{id}} = $self;
 }
 
-sub tell_me_all_job_ids {
+sub get_all_job_ids {
     my ($self) = @_;
     return keys(%Job_ID_Hash)
 }

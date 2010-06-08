@@ -41,28 +41,9 @@ sub set_member_if_empty ($$$) {
     unless ($refobj->{$member}) { $refobj->{$member} = $newval; }
 }
 
-##
-# used in bin/xcryptgui only
-=comment
-sub get_jobids {
-    my $current_directory=Cwd::getcwd();
-    my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-    my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
-    open(JOBIDS, "< $idfiles");
-    my %reqid_jobids = split(' ', <JOBIDS>);
-    my %count;
-    my @vals = values(%reqid_jobids);
-    @vals = grep(!$count{$_}++, @vals);
-    my @jobids = sort @vals;
-    close(JOBIDS);
-
-    return @jobids;
-}
-=cut
-
 sub remote_qx {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::host_and_object{$self};
+    my $ssh = $builtin::host_and_object{$self->{host}};
     my @ret;
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -70,7 +51,7 @@ sub remote_qx {
 
 sub remote_system {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::host_and_object{$self};
+    my $ssh = $builtin::host_and_object{$self->{host}};
     my @ret;
     @ret = $ssh->system("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -156,8 +137,8 @@ sub xcr_qx {
 sub xcr_system {
     my ($cmd, $dir, $self) = @_;
     my @ret;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	my $tmp = "cd " . File::Spec->catfile($self->{rwd}, $self) . "; $cmd";
+    unless ($self->{host} eq 'localhost' || $self->{host} eq '') {
+	my $tmp = "cd " . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
 	@ret = &remote_system("$tmp", $self);
     } else {
 	@ret = qx/cd $dir; $cmd/;
@@ -172,7 +153,7 @@ sub xcr_exist {
 	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
 	my $ssh = $builtin::host_and_object{$self};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
-#	chomp($flag);
+	chomp($flag[0]);
     } else {
 	if (-e $file) { $flags[0] = 1; }
     }

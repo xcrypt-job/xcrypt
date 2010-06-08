@@ -51,6 +51,7 @@ sub new {
     } else {
 	die "Set a batch scheduler\n";
     }
+
     my @xd = &xcr_qx('echo $XCRYPT', '.', $self);
     chomp($xd[0]);
     unless ($xd[0] eq '') {
@@ -63,6 +64,7 @@ sub new {
     } else {
 	die "Set the environment $ENV{XCRYPT}\n";
     }
+
     set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', $self->{id}.'_before_in_job.pl');
     set_member_if_empty ($self, 'after_in_job_file', $self->{id}.'_after_in_job.pl');
