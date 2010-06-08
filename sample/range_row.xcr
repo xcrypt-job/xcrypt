@@ -19,7 +19,7 @@ my @jobs = &prepare_submit(%template,
 #@jobs = &prepare(%template,
 # 'arg0@' => [41,42],
 # 'arg1@' => ['> out1','> out2'],
-# 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
+ 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
 # 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
 # 'RANGE0' => [1..5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;',
     );

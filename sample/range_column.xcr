@@ -4,8 +4,9 @@ use base qw(limit core);
 
 %template = (
     'id' => 'job6',
-    'exe@' => sub { 'bin/fib ' . $_[0] . '> out' . $_[0]},
-    'RANGE0' => [41,42],
+    'exe@' => sub { 'bin/fib ' . "$_[0] + $_[1]" . " > out$_[0]$_[1]"},
+    'RANGE0' => [31,32],
+    'RANGE1' => [0,1]
 );
 &prepare_submit_sync(%template);
 
