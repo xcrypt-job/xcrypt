@@ -18,16 +18,14 @@ use common;
 use base qw(Exporter);
 our @EXPORT = qw(expand_and_make prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_key add_host repeat
+add_host add_key repeat
 );
 
 # id, exe$i and arg$i_$j are built-in.
-our @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'host', 'wd', 'xd', 'scheduler');
+my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'host', 'wd', 'xd', 'scheduler');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
-
-our %host_and_object;
 
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
@@ -127,6 +125,7 @@ sub update_running_and_done_now {
 }
 =cut
 
+my %host_and_object;
 sub add_host {
     foreach my $i (@_) {
 	unless (exists $host_and_object{$i}) {
@@ -505,7 +504,7 @@ sub sync {
         }
     }
     foreach (@jobs) {
-	&jobsched::delete_job_id($_);
+	&jobsched::exit_job_id($_);
     }
     return @_;
 }

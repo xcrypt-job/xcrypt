@@ -25,16 +25,24 @@ sub new {
     if ($jobname eq '') { die "Can't generate any job without id\n"; }
 
     # Job script related members
-    set_member_if_empty ($self, 'host', $xcropt::options{localhost});
+    if (defined $xcropt::options{rhost}) {
+	$self->{host} = $xcropt::options{rhost};
+    }
+    set_member_if_empty ($self, 'host', $self->{localhost});
+    if (defined $xcropt::options{rwd}) {
+	$self->{wd} = $xcropt::options{rwd};
+    }
     set_member_if_empty ($self, 'wd', File::Spec->rel2abs('.'));
 
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
 
-    if (defined $ENV{XCRYPT}) {
-	set_member_if_empty ($self, 'xcrypt', $ENV{XCRYPT});
+    my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $self);
+    chomp($sched[0]);
+    unless ($sched[0] eq '') {
+	$self->{scheduler} = $sched[0];
     } else {
-	die "Set the environment $ENV{XCRYPT}\n";
+	die "Set the environment varialble \$XCRJOBSCHED at $self->{host}\n";
     }
     if (defined $xcropt::options{scheduler}) {
 	set_member_if_empty ($self, 'scheduler', $xcropt::options{scheduler});
@@ -42,6 +50,18 @@ sub new {
 	set_member_if_empty ($self, 'scheduler', $ENV{XCRJOBSCHED});
     } else {
 	die "Set a batch scheduler\n";
+    }
+    my @xd = &xcr_qx('echo $XCRYPT', '.', $self);
+    chomp($xd[0]);
+    unless ($xd[0] eq '') {
+	$self->{xd} = $xd[0];
+    } else {
+	die "Set the environment varialble \$XCRYPT at $self->{host}\n";
+    }
+    if (defined $ENV{XCRYPT}) {
+	set_member_if_empty ($self, 'xcrypt', $ENV{XCRYPT});
+    } else {
+	die "Set the environment $ENV{XCRYPT}\n";
     }
     set_member_if_empty ($self, 'jobscript_file', $self->{id}.'_'.$self->{scheduler}.'.sh');
     set_member_if_empty ($self, 'before_in_job_file', $self->{id}.'_before_in_job.pl');
@@ -269,7 +289,7 @@ sub qsub {
     my $self = shift;
     my $sched = $self->{scheduler};
     unless (defined $jsconfig::jobsched_config{$sched}) {
-	die "$sched.pm doesn't exist in lib/config" ;
+	die "$sched.pm doesn't exist in lib/config";
     }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
