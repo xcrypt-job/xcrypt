@@ -137,6 +137,21 @@ sub add_host {
     }
 }
 
+my %Host_Wd_Hash;
+sub update_wds_at_host {
+    my $host = shift;
+    $Host_Wd_Hash{$host} = \@_;
+}
+
+sub get_all_wds {
+    my $host = @_;
+    return @{Host_Wd_Hash{$host}};
+}
+
+sub get_all_hosts {
+    return keys(%Host_Hash);
+}
+
 sub get_ssh_object_by_host {
     my $host = @_;
     return $Host_Hash{$host};
@@ -496,8 +511,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self);
-		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self);
+		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{host}, $self->{wd});
+		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{host}, $self->{wd});
 	    }
 =cut
 

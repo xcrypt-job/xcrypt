@@ -38,7 +38,7 @@ sub new {
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
 
-    my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $self);
+    my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $self->{host}, $self->{wd});
     chomp($sched[0]);
     unless ($sched[0] eq '') {
 	$self->{scheduler} = $sched[0];
@@ -53,7 +53,7 @@ sub new {
 	die "Set a batch scheduler\n";
     }
 
-    my @xd = &xcr_qx('echo $XCRYPT', '.', $self);
+    my @xd = &xcr_qx('echo $XCRYPT', '.', $self->{host}, $self->{wd});
     chomp($xd[0]);
     unless ($xd[0] eq '') {
 	$self->{xd} = $xd[0];
@@ -225,7 +225,7 @@ sub update_script_file {
     my $file = $file_base;
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&jobsched::xcr_put('main', $file, $self);
+	&jobsched::xcr_put('main', $file, $self->{host}, $self->{wd});
     }
 }
 
@@ -316,7 +316,7 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &xcr_exist('-f', $scriptfile, $self);
+    my $flag = &xcr_exist('-f', $scriptfile, $self->{host}, $self->{wd});
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
@@ -328,7 +328,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self);
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{host}, $self->{wd});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
