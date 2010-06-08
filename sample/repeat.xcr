@@ -1,0 +1,14 @@
+use base qw(core);
+
+%template = (
+    'id' => 'job6',
+    'exe' => 'sleep 30'
+);
+
+my @jobs = &prepare_submit(%template);
+&submit(@jobs);
+&repeat('print "hogehoge\n";');
+$hoge = 'hoge';
+&repeat(sub {print STDOUT "$hoge\n";}, 3);
+&sync(@jobs);
+

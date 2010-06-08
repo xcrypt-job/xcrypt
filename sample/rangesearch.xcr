@@ -26,8 +26,8 @@ limit::initialize(10);
 #		 'RANGE0' => [1..5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;'
     );
 #&submit(@jobs);
-#&repeat('print "hogehoge\n";');
-#$hoge = 'hoge';
-#&repeat(sub {print STDOUT "$hoge\n";}, 3);
+&repeat('print "hogehoge\n";');
+$hoge = 'hoge';
+&repeat(sub {print STDOUT "$hoge\n";}, 3);
 &sync(@jobs);
 

@@ -117,7 +117,7 @@ sub qstat {
 	    return ();
 	}
 =cut
-	my @qstat_out = &xcr_qx($command_string, 'jobsched');
+	my @qstat_out = &xcr_qx($command_string, '.', $Running_Jobs{$_});
 	my @tmp_ids = &$qstat_extractor(@qstat_out);
 	push(@ids, @tmp_ids);
     }
@@ -451,7 +451,7 @@ sub set_job_status {
         $Job_Status_Signal->broadcast();
     }
     # 実行中ジョブ一覧に登録／削除
-    if ( $stat eq "queued" || $stat eq "running" ) {
+    if ( $stat eq "running" ) {
         entry_running_job ($self);
     } else {
         delete_running_job ($self);

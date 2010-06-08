@@ -28,7 +28,8 @@ sub new {
     if (defined $xcropt::options{rhost}) {
 	$self->{host} = $xcropt::options{rhost};
     }
-    set_member_if_empty ($self, 'host', $self->{localhost});
+    set_member_if_empty ($self, 'host', $xcropt::options{localhost});
+
     if (defined $xcropt::options{rwd}) {
 	$self->{wd} = $xcropt::options{rwd};
     }
@@ -346,7 +347,7 @@ sub qsub {
         }
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
-	$self->{reqest_id} = $req_id;
+	$self->{request_id} = $req_id;
         # Set job's status "queued"
 	&jobsched::set_job_queued($self);
         return $req_id;
