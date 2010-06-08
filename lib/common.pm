@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
 cmd_executable wait_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
+xcr_get_all xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
 xcr_qx xcr_system xcr_rename);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
@@ -16,7 +16,7 @@ use Coro::AnyEvent;
 use Net::OpenSSH;
 use builtin;
 
-my %sftp_opts = (
+my %ssh_opts = (
     copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
     recursive => 1,    # -rと同じ。再帰的にコピー
     bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
@@ -44,7 +44,7 @@ sub set_member_if_empty ($$$) {
 
 sub remote_qx {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::host_and_object{$self->{host}};
+    my $ssh = &builtin::get_ssh_object_by_host($self->{host});
     my @ret;
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -52,7 +52,7 @@ sub remote_qx {
 
 sub remote_system {
     my ($cmd, $self) = @_;
-    my $ssh = $builtin::host_and_object{$self->{host}};
+    my $ssh = &builtin::get_ssh_object_by_host($self->{host});
     my @ret;
     @ret = $ssh->system("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -64,7 +64,7 @@ sub cmd_executable {
     my @cmd0 = split(/\s+/,$cmd);
     if (defined $self->{rhost}) {
 	unless ($self->{rhost} eq 'localhost') {
-	    my $ssh = $builtin::host_and_object{$self};
+	    my $ssh = $builtin::Host_Hash{$self};
 	    $ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
 	}
     } else {
@@ -78,7 +78,9 @@ sub cmd_executable {
 ##
 sub wait_file {
     my ($path, $interval) = @_;
-    until ( -e $path ) { Coro::AnyEvent::sleep ($interval); }
+    until (-e $path) {
+	Coro::AnyEvent::sleep ($interval);
+    }
 }
 
 ##
@@ -126,8 +128,8 @@ sub write_string_array {
 sub xcr_qx {
     my ($cmd, $dir, $self) = @_;
     my @ret;
-    unless ($self->{host} eq 'localhost' || $self->{host} eq '') {
-	my $tmp = "cd " . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
+    unless ($self->{host} eq 'localhost') {
+	my $tmp = 'cd ' . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
 	@ret = &remote_qx("$tmp", $self);
     } else {
 	@ret = qx/cd $dir; $cmd/;
@@ -138,8 +140,8 @@ sub xcr_qx {
 sub xcr_system {
     my ($cmd, $dir, $self) = @_;
     my @ret;
-    unless ($self->{host} eq 'localhost' || $self->{host} eq '') {
-	my $tmp = "cd " . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
+    unless ($self->{host} eq 'localhost') {
+	my $tmp = 'cd ' . File::Spec->catfile($self->{wd}, $self) . "; $cmd";
 	@ret = &remote_system("$tmp", $self);
     } else {
 	@ret = qx/cd $dir; $cmd/;
@@ -150,9 +152,9 @@ sub xcr_system {
 sub xcr_exist {
     my ($type, $file, $self) = @_;
     my @flags;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
-	my $ssh = $builtin::host_and_object{$self};
+    unless ($self->{host} eq 'localhost') {
+	my $fullpath = File::Spec->catfile($self->{wd}, $file);
+	my $ssh = &builtin::get_ssh_object_by_host($self->{host});
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
 	chomp($flags[0]);
     } else {
@@ -163,10 +165,10 @@ sub xcr_exist {
 
 sub xcr_mkdir {
     my ($dir, $self) = @_;
-    my $flag = &xcr_exist('-d', $dir, $self->{rhost}, $self->{rwd});
+    my $flag = &xcr_exist('-d', $dir, $self);
     unless ($flag) {
-	unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	    my $rdir = File::Spec->catfile($self->{rwd}, $dir);
+	unless ($self->{host} eq 'localhost') {
+	    my $rdir = File::Spec->catfile($self->{wd}, $dir);
 	    &remote_qx("mkdir $rdir", $self);
 	}
     }
@@ -174,10 +176,10 @@ sub xcr_mkdir {
 
 sub xcr_copy {
     my ($copied, $dir, $self) = @_;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
+    unless ($self->{host} eq 'localhost') {
 	unless ($xcropt::options{shared}) {
-	    my $fp_copied = File::Spec->catfile($self->{rwd}, $copied);
-	    my $fp_dir = File::Spec->catfile($self->{rwd}, $dir);
+	    my $fp_copied = File::Spec->catfile($self->{wd}, $copied);
+	    my $fp_dir = File::Spec->catfile($self->{wd}, $dir);
 	    &remote_qx("cp -f $fp_copied $fp_dir", $self);
 	}
     } else {
@@ -187,11 +189,11 @@ sub xcr_copy {
 
 sub xcr_rename {
     my ($file0, $file1, $self) = @_;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	my $flag = &xcr_exist('-f', $file0, $self->{rhost}, $self->{rwd});
+    unless ($self->{host} eq 'localhost') {
+	my $flag = &xcr_exist('-f', $file0, $self);
 	if ($flag) {
-	    my $tmp0 = File::Spec->catfile($self->{rwd}, $file0);
-	    my $tmp1 = File::Spec->catfile($self->{rwd}, $file1);
+	    my $tmp0 = File::Spec->catfile($self->{wd}, $file0);
+	    my $tmp1 = File::Spec->catfile($self->{wd}, $file1);
 	    &remote_qx("mv -f $tmp0 $tmp1", $self);
 	}
     } else {
@@ -201,13 +203,13 @@ sub xcr_rename {
 
 sub xcr_symlink {
     my ($dir, $file, $link, $self) = @_;
-    my $ex0 = &xcr_exist('-f', $file, $self->{rhost}, $self->{rwd});
-    my $ex1 = &xcr_exist('-h', File::Spec->catfile($dir, $link), $self->{rhost}, $self->{rwd});
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
+    my $ex0 = &xcr_exist('-f', $file, $self);
+    my $ex1 = &xcr_exist('-h', File::Spec->catfile($dir, $link), $self);
+    unless ($self->{host} eq 'localhost') {
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
-		my $tmp = File::Spec->catfile($self->{rwd}, $dir, $link);
-		my $file1 = File::Spec->catfile($self->{rwd}, $file);
+		my $tmp = File::Spec->catfile($self->{wd}, $dir, $link);
+		my $file1 = File::Spec->catfile($self->{wd}, $file);
 		&remote_qx("ln -s $file1 $tmp", $self);
 	    }
 	} else {
@@ -225,10 +227,10 @@ sub xcr_symlink {
 
 sub xcr_unlink {
     my ($file, $self) = @_;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
-	my $flag = &xcr_exist('-f', $file, $self->{rhost}, $self->{rwd});
+    unless ($self->{rhost} eq 'localhost') {
+	my $flag = &xcr_exist('-f', $file, $self);
 	if ($flag) {
-	    my $tmp = File::Spec->catfile($self->{rwd}, $file);
+	    my $tmp = File::Spec->catfile($self->{wd}, $file);
 	    &remote_qx("rm -f $tmp", $self);
 	}
     } else {
@@ -237,33 +239,25 @@ sub xcr_unlink {
 }
 
 sub xcr_get {
-    my ($file, $self) = @_;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
+    my ($base, $self) = @_;
+    unless ($self->{host} eq 'localhost') {
 	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($self->{rwd}, $file);
-	    if (exists $builtin::host_and_object{$self->{rhost}}) {
-		my $tmp = $builtin::host_and_object{$self->{rhost}};
-		$tmp->scp_get(\%sftp_opts, "$remote", "$file") or die "get failed: " . $tmp->error;
-	    } else {
-		die "Add hostname by &add_host";
-	    }
-	    &xcr_unlink($remote, $self->{rhost}, $self->{rwd});
+	    my $file = File::Spec->catfile($self->{wd}, $base);
+	    my $ssh = &builtin::get_ssh_object_by_host($self->{host});
+	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
+	    &xcr_unlink($file, $self);
 	}
     }
 }
 
 sub xcr_put {
-    my ($file, $self) = @_;
-    unless ($self->{rhost} eq 'localhost' || $self->{rhost} eq '') {
+    my ($base, $self) = @_;
+    unless ($self->{host} eq 'localhost') {
 	unless ($xcropt::options{shared}) {
-	    my $remote = File::Spec->catfile($self->{rwd}, $file);
-	    if (exists $builtin::host_and_object{$self->{rhost}}) {
-		my $tmp = $builtin::host_and_object{$self->{rhost}};
-		$tmp->scp_put(\%sftp_opts, "$file", "$remote") or die "put failed: " . $tmp->error;
-		unlink $file;
-	    } else {
-		die "Add hostname by &add_host";
-	    }
+	    my $file = File::Spec->catfile($self->{wd}, $base);
+	    my $ssh = &builtin::get_ssh_object_by_host($self->{host});
+	    $ssh->scp_put(\%ssh_opts, "$base", "$file") or die "put failed: " . $ssh->error;
+	    unlink $base;
 	}
     }
 }
