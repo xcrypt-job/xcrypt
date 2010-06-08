@@ -23,6 +23,7 @@ add_host add_key repeat
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'host', 'wd', 'xd', 'scheduler');
+my @premembers = ('exe');
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
@@ -125,36 +126,33 @@ sub repeat {
     return $new_coro;
 }
 
-my %Host_Hash;
-sub add_host {
-    foreach my $i (@_) {
-	unless (exists $Host_Hash{$i}) {
+my %Host_Ssh_Hash;
+my %Host_Wd_Hash;
+sub add_host_wd {
+    my ($i, $j) = @_;
+    unless (exists $Host_Ssh_Hash{$i}) {
+	unless ($i eq 'localhost') {
 	    my ($user, $host) = split(/@/, $i);
-	    our $object = Net::OpenSSH->new($host, (user => $user));
-	    $object->error and die "Unable to stablish SFTP connection: " . $object->error;
-	    $Host_Hash{$i} = $object;
+	    our $ssh = Net::OpenSSH->new($host, (user => $user));
+	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
+	    $Host_Ssh_Hash{$i} = $ssh;
 	}
+	$Host_Wd_Hash{$i} = $j;
     }
 }
 
-my %Host_Wd_Hash;
-sub update_wds_at_host {
-    my $host = shift;
-    $Host_Wd_Hash{$host} = \@_;
-}
-
-sub get_all_wds {
-    my $host = @_;
-    return @{Host_Wd_Hash{$host}};
-}
-
 sub get_all_hosts {
-    return keys(%Host_Hash);
+    return keys(%Host_Ssh_Hash);
 }
 
 sub get_ssh_object_by_host {
     my $host = @_;
-    return $Host_Hash{$host};
+    return $Host_Ssh_Hash{$host};
+}
+
+sub get_wd_by_host {
+    my $host = @_;
+    return $Host_Wd_Hash{$host};
 }
 
 sub add_key {
@@ -165,9 +163,6 @@ sub add_key {
                 || ($i =~ /\Aexe[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*_[0-9]*/)
-#                || ($i =~ /\Alinkedfile[0-9]*/)
-#                || ($i =~ /\Acopiedfile[0-9]*/)
-#                || ($i =~ /\Acopieddir[0-9]*/)
                 ) {
                 $exist = 1;
             }
@@ -178,6 +173,29 @@ sub add_key {
             die "Can't use $i as key since $i has $user::expandingchar at its tail.\n";
         } else {
             push(@allkeys, $i);
+        }
+        $exist = 0;
+    }
+}
+
+sub add_keys {
+    my $exist = 0;
+    foreach my $i (@_) {
+        foreach my $j ((@allkeys, 'id')) {
+            if (($i eq $j)
+                || ($i =~ /\Aexe[0-9]*/)
+                || ($i =~ /\Aarg[0-9]*/)
+                || ($i =~ /\Aarg[0-9]*_[0-9]*/)
+                ) {
+                $exist = 1;
+            }
+        }
+        if ($exist == 1) {
+            die "$i has already been added or reserved.\n";
+        } elsif ($i =~ /"$user::expandingchar"\Z/) {
+            die "Can't use $i as key since $i has $user::expandingchar at its tail.\n";
+        } else {
+            push(@premembers, $i);
         }
         $exist = 0;
     }
@@ -195,8 +213,6 @@ sub rm_tailnis {
 
 sub add_user_customizable_core_members {
     my %job = @_;
-    my @premembers = ('exe', 'linkedfile', 'copiedfile', 'copieddir');
-#    my @premembers = ('exe');
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;

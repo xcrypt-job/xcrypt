@@ -1,8 +1,7 @@
 use base qw(core);
 
-&add_host('abet@10.228.25.43', 'abet@super.para.media.kyoto-u.ac.jp');
-&update_wds_at_host('abet@10.228.25.43', ('/home/abet/xcrypt/sample'));
-&update_wds_at_host('abet@super.para.media.kyoto-u.ac.jp', ('/home/spara/abet/xcrypt/sample'));
+&add_host_wd('abet@10.228.25.43',                   '/home/abet/xcrypt/sample');
+&add_host_wd('abet@super.para.media.kyoto-u.ac.jp', '/home/spara/abet/xcrypt/sample');
 
 %template = (
     'id' => 'job6',

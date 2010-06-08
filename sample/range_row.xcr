@@ -5,24 +5,11 @@ use base qw(limit core);
 %template = (
     'id' => 'job6',
     'exe' => 'bin/fib',
-    'arg0' => '40',
-    'arg1' => '> out0',
-#    'JS_queue' => 'gh10034',
-#    'JS_queue' => 'S004' # for TOKYO
-#    'JS_cpu' => '1',
-#    'JS_group' => 'gh10034' # for KYOTO
-#    'JS_group' => 'ESCIENCE' # for TSUKUBA
-#    'JS_limit_time => 30, # for TSUKUBA
+    'RANGE0' => [31,32],
+    'RANGE1' => [0,1],
+    'arg0@' => sub { ($_[0] + $_[1]) },
+    'arg1@' => sub { "> out$_[0]_$_[1]" }
 );
 
-my @jobs = &prepare_submit(%template,
-#@jobs = &prepare(%template,
-# 'arg0@' => [41,42],
-# 'arg1@' => ['> out1','> out2'],
- 'RANGE0' => [0..2], 'arg0_0@' => [20..22]
-# 'RANGE0' => [0..2], 'arg0_0@' => [20,21]
-# 'RANGE0' => [1..5], 'RANGE2' => [2,7], 'arg0@' => '$R0 + 20 + $R2;',
-    );
-#&submit(@jobs);
-&sync(@jobs);
+&prepare_submit_sync(%template);
 

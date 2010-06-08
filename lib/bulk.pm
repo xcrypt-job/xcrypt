@@ -10,7 +10,7 @@ use jsconfig;
 
 our %bulk = ();
 
-&addkeys('bulkedjobs');
+&add_key('bulkedjobs');
 
 sub initialize {
     if ( $_[0] =~ /^CODE\(/ ) {

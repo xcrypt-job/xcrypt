@@ -246,75 +246,74 @@ sub invoke_watch_by_file {
 #	    common::wait_file ($REQFILE, $interval);
 	    my @hosts = &builtin::get_all_hosts();
 	    foreach my $host (@hosts) {
-		my @wds = &builtin::get_all_wds($host);
-		foreach my $wd (@wds) {
-		    my $tmp = &xcr_exist('-e', $REQFILE, $host, $wd);
-		    if ($tmp) {
-			&xcr_get($REQFILE, $host, $wd);
-			&xcr_unlink($REQFILE, $host, $wd);
+		my $wd = &builtin::get_wd_by_host($host);
+		my $tmp = &xcr_exist('-e', $REQFILE, $host, $wd);
+		if ($tmp) {
+		    &xcr_get($REQFILE, $host, $wd);
+		    &xcr_unlink($REQFILE, $host, $wd);
 
-			my $CLIENT_IN;
-			open($CLIENT_IN, '<', $REQFILE) || next;
-			my $inv_text = '';
-			my $handle_inventory_ret = 0;
-                        # ↓未使用
-			my $handled_job; my $handled_jobname;
-                        # ↑未使用
-			# クライアントからのメッセージは
-			# (0行以上のメッセージ行)+(":end"で始まる行)
-			while (<$CLIENT_IN>) {
-			    if ( $_ =~ /^:/ ) {
-				if ( $_ =~ /^:end/ ) {
+		    my $CLIENT_IN;
+		    open($CLIENT_IN, '<', $REQFILE) || next;
+		    my $inv_text = '';
+		    my $handle_inventory_ret = 0;
+		    # ↓未使用
+		    my $handled_job; my $handled_jobname;
+		    # ↑未使用
+		    # クライアントからのメッセージは
+		    # (0行以上のメッセージ行)+(":end"で始まる行)
+		    while (<$CLIENT_IN>) {
+			if ( $_ =~ /^:/ ) {
+			    if ( $_ =~ /^:end/ ) {
 				# print STDERR "received :end\n";
-				    last;
-				}
-			    } else {
-				# ':' で始まる行を除いてinventory_fileに保存する
-				$inv_text .= $_;
+				last;
 			    }
-			# 一度エラーがでたら以降のhandle_inventoryはとばす
-			    if ( $handle_inventory_ret >= 0 ) {
-				($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
-			    }
-			}
-			close($CLIENT_IN);
-			###
-			my $CLIENT_OUT = undef;
-			until ($CLIENT_OUT) {
-			    open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
-			    unless ($CLIENT_OUT) {
-				warn ("Failed to make ackfile $ACK_TMPFILE");
-				sleep $slp;
-			    }
-			}
-			if ($handle_inventory_ret >= 0) {
-			    # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-			    my $inv_save = File::Spec->catfile($inventory_path,
-							       $last_jobname);
-			    open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
-			    print $SAVE $inv_text;
-			    close($SAVE);
-			    print $CLIENT_OUT ":ack\n";
-			    close($CLIENT_OUT);
-			    &xcr_put($ACK_TMPFILE, $host, $wd);
-			    &xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
-			    rename($ACK_TMPFILE, $ACKFILE);
 			} else {
-			# エラーがあれば:failedを返す（inventory fileには書き込まない）
-			    print $CLIENT_OUT ":failed\n";
-			    close($CLIENT_OUT);
-			    &xcr_put($ACK_TMPFILE, $host, $wd);
-			    &xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
-			    rename($ACK_TMPFILE, $ACKFILE);
+			    # ':' で始まる行を除いてinventory_fileに保存する
+			    $inv_text .= $_;
 			}
-		    unlink($REQFILE);
+			# 一度エラーがでたら以降のhandle_inventoryはとばす
+			if ( $handle_inventory_ret >= 0 ) {
+			    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
+			}
 		    }
+		    close($CLIENT_IN);
+		    ###
+		    my $CLIENT_OUT = undef;
+		    until ($CLIENT_OUT) {
+			open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
+			unless ($CLIENT_OUT) {
+			    warn ("Failed to make ackfile $ACK_TMPFILE");
+			    sleep $slp;
+			}
+		    }
+		    if ($handle_inventory_ret >= 0) {
+			# エラーがなければinventoryファイルにログを書き込んで:ackを返す
+			my $inv_save = File::Spec->catfile($inventory_path,
+							   $last_jobname);
+			open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
+			print $SAVE $inv_text;
+			close($SAVE);
+			print $CLIENT_OUT ":ack\n";
+			close($CLIENT_OUT);
+			&xcr_put($ACK_TMPFILE, $host, $wd);
+			&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
+			rename($ACK_TMPFILE, $ACKFILE);
+		    } else {
+			# エラーがあれば:failedを返す（inventory fileには書き込まない）
+			print $CLIENT_OUT ":failed\n";
+			close($CLIENT_OUT);
+			&xcr_put($ACK_TMPFILE, $host, $wd);
+			&xcr_rename($ACK_TMPFILE, $ACKFILE, $host, $wd);
+			rename($ACK_TMPFILE, $ACKFILE);
+		    }
+		    unlink($REQFILE);
 		}
-	    Coro::AnyEvent::sleep ($interval);
 	    }
+	    Coro::AnyEvent::sleep ($interval);
 	}
     }
 }
+
 
 my %ssh_opts = (
     copy_attrs => 1,     # -pと同じ。オリジナルの情報を保持

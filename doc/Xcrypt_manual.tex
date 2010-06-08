@@ -124,8 +124,6 @@ Xcrypt's templates are implemented as Perl's hashes.  For example,
     'exe' => '\textit{./myexe}',
     'arg0' => '100',
     'arg1' => '\textit{myinput}',
-    'linkedfile0' => '\textit{myexe}',
-    'copiedfile0' => '\textit{myinput}',
     'stdofile' => '\textit{myout}',
     'stdefile' => '\textit{myerr}',
     'queue' => '\textit{myqueue}',
@@ -159,8 +157,6 @@ $separator = '-';
     'exe' => '\textit{./myexe}',
     'arg0' => '100',
     'arg1' => '\textit{myinput}',
-    'linkedfile0' => '\textit{myexe}',
-    'copiedfile0' => '\textit{myinput}',
     'stdofile' => '\textit{myout}',
     'stdefile' => '\textit{myerr}',
     'queue' => '\textit{myqueue}',
@@ -238,23 +234,19 @@ Finally, execute Xcrypt with the script:
 Xcrypt creates the following in the working directory
 during and after its execution.
 
-\subsection*{directory}
-
-is created for each job (called a \textit{job working directory}).  It is
-named by the value of the job hash's key \texttt{id}.  Job-processing
-is done in the job working directory.
-
 \subsection*{\textit{myscript}\texttt{.pl}}
 
 is a Perl script created from the Xcrypt script \textit{myscript}.
 
+\if0
 \subsection*{file and soft link}
 
 of the names (which are the values of \texttt{copiedfile}\textit{i}
 and \texttt{linkedfile}\textit{i}) are copied and created in the job
 working directory, respectively.
+\fi
 
-\subsection*{\texttt{\$XCRJOBSCHED.sh} or \texttt{sh.sh}}
+\subsection*{\textit{myjob}\_\texttt{\$XCRJOBSCHED.sh} or \texttt{sh.sh}}
 
 is a job script passed to a job scheduler or a Bourne shell script
 executed, regarding OS as a job scheduler, respectively.
@@ -320,6 +312,31 @@ which becomes available in Xcrypt scripts.  When the value of
 $\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips a check of
 whether \texttt{\$separator} consists of only available characters or not.
 The default is $0$.
+
+\section{\texttt{sandbox}}
+
+directory
+
+is created for each job (called a \textit{job working directory}).  It is
+named by the value of the job hash's key \texttt{id}.  Job-processing
+is done in the job working directory.
+
+
+\texttt{linkedfile}\textit{i}
+
+A soft link of the file (whose name is its value) is created in the
+job working directory.
+
+\texttt{copiedfile}\textit{i}
+
+The indicated file is copied to the job working directory.
+
+\texttt{copieddir}\textit{i}
+
+All files in the indicated directory are copied
+in the job working directory.
+
+
 
 \section{\texttt{limit}}
 
@@ -450,20 +467,6 @@ follows,
 \begin{screen}
 \texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
 \end{screen}
-
-\section{\texttt{linkedfile}\textit{i}}
-
-A soft link of the file (whose name is its value) is created in the
-job working directory.
-
-\section{\texttt{copiedfile}\textit{i}}
-
-The indicated file is copied to the job working directory.
-
-\section{\texttt{copieddir}\textit{i}}
-
-All files in the indicated directory are copied
-in the job working directory.
 
 \section{\texttt{stdofile}}
 
@@ -688,6 +691,8 @@ submit(@jobs);
 sync(@jobs);
 \end{alltt}
 \end{boxnote}
+
+\section{\texttt{add\_host\_wd}}
 
 \section{\texttt{add\_key}}
 
