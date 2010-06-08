@@ -153,7 +153,7 @@ sub xcr_exist {
 	my $fullpath = File::Spec->catfile($self->{rwd}, $file);
 	my $ssh = $builtin::host_and_object{$self};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
-	chomp($flag[0]);
+	chomp($flags[0]);
     } else {
 	if (-e $file) { $flags[0] = 1; }
     }

@@ -162,7 +162,8 @@ sub inventory_write_cmdline {
 
 ##############################
 # watchの出力一行を処理
-# set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
+# for scalar contexts: set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
+# for list contexts: returns (status(the same to scalar contexts), last_job, last_jobname)
 my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
                         # handle_inventoryとinvoke_watch_by_socketから参照
 my $last_job=undef;     # The job corresponding to $last_jobname
@@ -218,7 +219,7 @@ sub handle_inventory {
         warn "unexpected inventory: \"$line\"\n";
         $ret = -1;
     }
-    return $ret;
+    wantarray ? return ($ret, $last_job, $last_jobname) : return $ret;
 }
 
 # ジョブの状態変化を監視するスレッドを起動
@@ -239,17 +240,19 @@ sub invoke_watch {
 my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
-#        my $interval = 0.1;
+    $watch_thread = async_pool
+    {
         my $interval = 0.5;
-#        while (1) {
+        while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
-	    # common::wait_file ($REQFILE, $interval);
+	    common::wait_file ($REQFILE, $interval);
 
 	    my $CLIENT_IN;
 #	    &xcr_get($REQFILE, $host, $wd);
 	    open($CLIENT_IN, '<', $REQFILE) || next;
             my $inv_text = '';
             my $handle_inventory_ret = 0;
+            my $handled_job; my $handled_jobname;
             # クライアントからのメッセージは
             # (0行以上のメッセージ行)+(":end"で始まる行)
             while (<$CLIENT_IN>) {
@@ -264,7 +267,7 @@ sub invoke_watch_by_file {
                 }
                 # 一度エラーがでたら以降のhandle_inventoryはとばす
                 if ( $handle_inventory_ret >= 0 ) {
-                    $handle_inventory_ret = handle_inventory ($_, 1);
+                    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
                 }
             }
             close($CLIENT_IN);
@@ -288,17 +291,18 @@ sub invoke_watch_by_file {
 		close($CLIENT_OUT);
 #		&xcr_put($ACK_TMPFILE, $host, $wd);
 #		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
+		rename($ACK_TMPFILE, $ACKFILE);
             } else {
                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
                 print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
 #		&xcr_put($ACK_TMPFILE, $host, $wd);
 #		&xcr_rename($ACK_TMPFILE, $ACKFILE, 'jobsched', $host, $wd);
+		rename($ACK_TMPFILE, $ACKFILE);
             }
 	    unlink($REQFILE);
-#        }
-        # close (INVWATCH_LOG);
-#				  });
+        }
+    }
 }
 
 my %sftp_opts = (
