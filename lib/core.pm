@@ -225,7 +225,7 @@ sub update_script_file {
     my $file = $file_base;
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&jobsched::xcr_put('main', $file, $self->{rhost}, $self->{rwd});
+	&jobsched::xcr_put('main', $file, $self);
     }
 }
 
@@ -316,23 +316,19 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &xcr_exist('-f', $scriptfile, $self->{rhost}, $self->{rwd});
+    my $flag = &xcr_exist('-f', $scriptfile, $self);
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
 
     my $flag;
-    if ($self->{rhost}) {
-	$flag = common::cmd_executable ($qsub_command, $self);
-    } else {
-	$flag = common::cmd_executable ($qsub_command, $self);
-    }
+    $flag = common::cmd_executable ($qsub_command, $self);
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{rhost}, $self->{rwd}, 'core');
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self);
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output

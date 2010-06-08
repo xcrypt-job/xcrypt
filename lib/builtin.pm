@@ -125,16 +125,21 @@ sub repeat {
     return $new_coro;
 }
 
-my %host_and_object;
+my %Host_Hash;
 sub add_host {
     foreach my $i (@_) {
-	unless (exists $host_and_object{$i}) {
+	unless (exists $Host_Hash{$i}) {
 	    my ($user, $host) = split(/@/, $i);
 	    our $object = Net::OpenSSH->new($host, (user => $user));
 	    $object->error and die "Unable to stablish SFTP connection: " . $object->error;
-	    $host_and_object{$i} = $object;
+	    $Host_Hash{$i} = $object;
 	}
     }
+}
+
+sub get_ssh_object_by_host {
+    my $host = @_;
+    return $Host_Hash{$host};
 }
 
 sub add_key {
@@ -441,7 +446,7 @@ sub do_prepared {
 #		push (@coros, undef);
 		    next;
 		} else {
-		    if (defined $self->{rhost}) {
+		    if (defined $self->{host}) {
 		    &jobsched::set_job_prepared($self);
 		    } else {
 			&jobsched::set_job_prepared($self);
@@ -460,6 +465,7 @@ sub prepare{
 
 sub submit {
     my @array = @_;
+#    foreach (@array) {print $_->{host}, "\n";}
     my $slp = 0;
     # my @coros = ();
 
@@ -490,8 +496,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}), $self->{rhost}, $self->{rwd});
-		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}), $self->{rhost}, $self->{rwd});
+		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self);
+		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self);
 	    }
 =cut
 

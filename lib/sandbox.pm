@@ -73,6 +73,7 @@ sub start {
     } else {
 	chdir $self->{id};
         $self->{request_id} = &core::qsub($self);
+	chdir '..';
     }
 }
 
