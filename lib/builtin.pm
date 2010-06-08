@@ -18,11 +18,11 @@ use common;
 use base qw(Exporter);
 our @EXPORT = qw(expand_and_make prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_host add_key repeat
+add_env add_key add_keys repeat
 );
 
 # id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'host', 'wd', 'xd', 'scheduler');
+my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @premembers = ('exe');
 
 my $nilchar = 'nil';
@@ -128,31 +128,42 @@ sub repeat {
 
 my %Host_Ssh_Hash;
 my %Host_Wd_Hash;
-sub add_host_wd {
-    my ($i, $j) = @_;
-    unless (exists $Host_Ssh_Hash{$i}) {
-	unless ($i eq 'localhost') {
-	    my ($user, $host) = split(/@/, $i);
+my @Env;
+sub add_env {
+    my %env = @_;
+    unless ($env{host} eq 'localhost') {
+	unless (exists $Host_Ssh_Hash{$env{host}}) {
+	    my ($user, $host) = split(/@/, $env{host});
 	    our $ssh = Net::OpenSSH->new($host, (user => $user));
 	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
-	    $Host_Ssh_Hash{$i} = $ssh;
+	    $Host_Ssh_Hash{$env{host}} = $ssh;
 	}
-	$Host_Wd_Hash{$i} = $j;
+	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $env{host}, $env{wd});
+	chomp($sched[0]);
+	unless ($sched[0] eq '') {
+	    $env{scheduler} = $sched[0];
+	} else {
+	    die "Set the environment varialble \$XCRJOBSCHED\n";
+	}
+	my @xd = &xcr_qx('echo $XCRYPT', '.', $env{host}, $env{wd});
+	chomp($xd[0]);
+	unless ($xd[0] eq '') {
+	    $env{xd} = $xd[0];
+	} else {
+	    die "Set the environment varialble \$XCRYPT\n";
+	}
     }
+    push(@Env, \%env);
+    return \%env;
 }
 
-sub get_all_hosts {
-    return keys(%Host_Ssh_Hash);
+sub get_all_envs {
+    return @Env;
 }
 
 sub get_ssh_object_by_host {
     my $host = @_;
     return $Host_Ssh_Hash{$host};
-}
-
-sub get_wd_by_host {
-    my $host = @_;
-    return $Host_Wd_Hash{$host};
 }
 
 sub add_key {
@@ -477,7 +488,7 @@ sub do_prepared {
 #		push (@coros, undef);
 		    next;
 		} else {
-		    if (defined $self->{host}) {
+		    if (defined $self->{env}->{host}) {
 		    &jobsched::set_job_prepared($self);
 		    } else {
 			&jobsched::set_job_prepared($self);
@@ -527,8 +538,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{host}, $self->{wd});
-		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{host}, $self->{wd});
+		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env}->{host}, $self->{env}->{wd});
+		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env}->{host}, $self->{env}->{wd});
 	    }
 =cut
 

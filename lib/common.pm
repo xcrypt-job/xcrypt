@@ -2,14 +2,14 @@ package common;
 
 use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_jobids
-cmd_executable wait_file exec_async
+cmd_executable wait_and_get_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 xcr_get_all xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
 xcr_qx xcr_system xcr_rename);
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
-use strict;
+#use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
@@ -64,8 +64,8 @@ sub remote_system {
 sub cmd_executable {
     my ($cmd, $self) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if (defined $self->{host}) {
-	unless ($self->{host} eq 'localhost') {
+    if (defined $self->{env}->{host}) {
+	unless ($self->{env}->{host} eq 'localhost') {
 	    my $ssh = $builtin::Host_Hash{$self};
 	    $ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
 	}
@@ -78,9 +78,21 @@ sub cmd_executable {
 }
 
 ##
-sub wait_file {
+sub wait_and_get_file {
     my ($path, $interval) = @_;
-    until (-e $path) {
+    my @envs = &builtin::get_all_envs();
+    my $exist = 0;
+    until ($exist) {
+	foreach my $tmp (@envs) {
+	    my %env = %$tmp;
+	    my $tmp = &xcr_exist('-e', $path, $env{host}, $env{wd});
+	    if ($tmp) {
+		&xcr_get($path, $env{host}, $env{wd});
+		&xcr_unlink($path, $env{host}, $env{wd});
+		$exist = 1;
+	    }
+	    break;
+	}
 	Coro::AnyEvent::sleep ($interval);
     }
 }
