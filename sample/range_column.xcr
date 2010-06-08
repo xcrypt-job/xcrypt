@@ -1,0 +1,11 @@
+use base qw(limit core);
+
+&limit::initialize(10);
+
+%template = (
+    'id' => 'job6',
+    'exe@' => sub { 'bin/fib ' . $_[0] . '> out' . $_[0]},
+    'RANGE0' => [41,42],
+);
+&prepare_submit_sync(%template);
+
