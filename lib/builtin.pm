@@ -145,9 +145,9 @@ sub add_key {
                 || ($i =~ /\Aexe[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*/)
                 || ($i =~ /\Aarg[0-9]*_[0-9]*/)
-                || ($i =~ /\Alinkedfile[0-9]*/)
-                || ($i =~ /\Acopiedfile[0-9]*/)
-                || ($i =~ /\Acopieddir[0-9]*/)
+#                || ($i =~ /\Alinkedfile[0-9]*/)
+#                || ($i =~ /\Acopiedfile[0-9]*/)
+#                || ($i =~ /\Acopieddir[0-9]*/)
                 ) {
                 $exist = 1;
             }
@@ -176,6 +176,7 @@ sub rm_tailnis {
 sub add_user_customizable_core_members {
     my %job = @_;
     my @premembers = ('exe', 'linkedfile', 'copiedfile', 'copieddir');
+#    my @premembers = ('exe');
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
@@ -419,20 +420,32 @@ sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
 	my $last_stat = &jobsched::get_job_status ($self);
-	unless ( $last_stat eq 'done' ||
-		 $last_stat eq 'finished' ||
-		 $last_stat eq 'aborted' ) {
-	    # xcryptdelされていたら状態をabortedにして処理をとばす
-	    if (jobsched::is_signaled_job($self)) {
-		&jobsched::inventory_write($self, "aborted");
-		&jobsched::delete_signaled_job($self);
+
+	if ( jobsched::is_signaled_job ($self) ) {
+	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
+	    &jobsched::inventory_write ($self, "aborted");
+	    &jobsched::delete_signaled_job ($self);
+	} elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+	    # Skip if the job is 'done' or 'finished'
+	    if ( $last_stat eq 'finished' ) {
+		&jobsched::inventory_write ($self, "done");
+	    }
+	} else {
+	    unless ( $last_stat eq 'done' ||
+		     $last_stat eq 'finished' ||
+		     $last_stat eq 'aborted' ) {
+		# xcryptdelされていたら状態をabortedにして処理をとばす
+		if (jobsched::is_signaled_job($self)) {
+		    &jobsched::inventory_write($self, "aborted");
+		    &jobsched::delete_signaled_job($self);
 #		push (@coros, undef);
-		next;
-	    } else {
-		if (defined $self->{rhost}) {
-		    &jobsched::set_job_prepared($self);
+		    next;
 		} else {
+		    if (defined $self->{rhost}) {
 		    &jobsched::set_job_prepared($self);
+		    } else {
+			&jobsched::set_job_prepared($self);
+		    }
 		}
 	    }
 	}
