@@ -96,28 +96,27 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
-    foreach my $tmp (@builtin::Env) {
-	my %env = %$tmp;
-	my $qstat_command = $jsconfig::jobsched_config{$env{sched}}{qstat_command};
+    foreach my $env (@builtin::Env) {
+	my $qstat_command = $jsconfig::jobsched_config{$env->{sched}}{qstat_command};
 	unless ( defined $qstat_command ) {
-	    die "qstat_command is not defined in $env{sched}.pm";
+	    die "qstat_command is not defined in $env->{sched}.pm";
 	}
-	my $extractor = $jsconfig::jobsched_config{$env{sched}}{extract_req_ids_from_qstat_output};
+	my $extractor = $jsconfig::jobsched_config{$env->{sched}}{extract_req_ids_from_qstat_output};
 	unless ( defined $extractor ) {
-	    die "extract_req_ids_from_qstat_output is not defined in $env{sched}.pm";
+	    die "extract_req_ids_from_qstat_output is not defined in $env->{sched}.pm";
 	} elsif ( ref ($extractor) ne 'CODE' ) {
-	    die "Error in $env{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
+	    die "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
 	unless (common::cmd_executable ($command_string, $_)) {
 	    warn "$command_string not executable";
 	    return ();
 	}
-	my @qstat_out = &xcr_qx($command_string, '.', $env{host}, $env{wd});
+	my @qstat_out = &xcr_qx($command_string, '.', $env->{host}, $env->{wd});
 	my @tmp_ids = &$extractor(@qstat_out);
-	    push(@ids, "$env{host}"."$_");
+	    push(@ids, "$env->{host}"."$_");
 #	foreach (@tmp_ids) {
-#	    push(@ids, ($env{host}, $_));
+#	    push(@ids, ($env->{host}, $_));
 #	}
     }
     return @ids;
@@ -243,7 +242,6 @@ sub invoke_watch_by_file {
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    common::wait_and_get_file ($REQFILE, $interval);
-    print "hoge\n";
 	    my $CLIENT_IN;
 	    open($CLIENT_IN, '<', $REQFILE) || next;
 	    my $inv_text = '';
@@ -268,6 +266,7 @@ sub invoke_watch_by_file {
 	    }
 	    close($CLIENT_IN);
 	    ###
+    print "$handled_jobname\n";
 	    my $CLIENT_OUT = undef;
 	    until ($CLIENT_OUT) {
 		open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
@@ -635,7 +634,6 @@ sub check_and_write_aborted {
         }
         print "check_and_write_aborted:\n";
         # foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
-# @ids -> @(host,id)
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};

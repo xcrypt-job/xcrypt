@@ -81,15 +81,13 @@ sub cmd_executable {
 sub wait_and_get_file {
     my ($path, $interval) = @_;
     my @envs = &builtin::get_all_envs();
-    my $exist = 0;
-    until ($exist) {
+    LABEL: while (1) {
 	foreach my $env (@envs) {
 	    my $tmp = &xcr_exist('-e', $path, $env->{host}, $env->{wd});
 	    if ($tmp) {
 		&xcr_get($path, $env->{host}, $env->{wd});
-		$exist = 1;
+		last LABEL if ($tmp);
 	    }
-	    break;
 	}
 	Coro::AnyEvent::sleep ($interval);
     }
