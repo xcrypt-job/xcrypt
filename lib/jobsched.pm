@@ -39,11 +39,6 @@ my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
 my $REQ_TMPFILE = $REQFILE . '.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
-# ジョブオブジェクトのメンバに rhost が書かれるようになったので
-# jobsched.pm 読み込み時にリモートのファイルの削除を行えばよいというわ
-# けでなくなったので，ローカルのファイルのみを削除している．
-unlink $REQFILE, $ACK_TMPFILE, $REQ_TMPFILE, $ACKFILE;
-rmdir $LOCKDIR;
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -128,7 +123,6 @@ sub qstat {
 sub inventory_write {
     my ($self, $stat) = @_;
     my $cmdline = inventory_write_cmdline($self, $stat);
-    &xcr_mkdir($xcropt::options{inventory_path}, $self->{env}->{host}, $self->{env}->{wd});
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
     &xcr_system("$cmdline", '.', $self->{env}->{host}, $self->{env}->{wd});
 
@@ -241,8 +235,7 @@ sub invoke_watch_by_file {
     {
         my $interval = 0.5;
         while (1) {
-	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
-	    common::wait_and_get_file ($REQFILE, $interval);
+	    &common::wait_and_get_file ($REQFILE, $interval);
 	    my $CLIENT_IN;
 	    open($CLIENT_IN, '<', $REQFILE) || next;
 	    my $inv_text = '';
@@ -284,19 +277,15 @@ sub invoke_watch_by_file {
 		close($SAVE);
 		print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE,
-			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE,
-			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_put($ACK_TMPFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 #		rename($ACK_TMPFILE, $ACKFILE);
 	    } else {
 		# エラーがあれば:failedを返す（inventory fileには書き込まない）
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE,
-			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE,
-			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_put($ACK_TMPFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 #		rename($ACK_TMPFILE, $ACKFILE);
 	    }
 	    unlink($REQFILE);
@@ -638,7 +627,6 @@ sub check_and_write_aborted {
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
-#	    print $job, "\n";
             delete ($unchecked{$_});
             # If the job exists but is signaled, qdel it.
             if ($job && is_signaled_job($job)) {

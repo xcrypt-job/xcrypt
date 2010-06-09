@@ -26,9 +26,7 @@ sub new {
 	}
     }
     &xcr_mkdir($self->{id}, $self->{env}->{host}, $self->{env}->{wd});
-    unless (-d "$self->{id}") {
-	mkdir $self->{id}, 0755;
-    }
+
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
 	# ここからリモート実行未対応
 	if ($self->{"copieddir$i"}) {

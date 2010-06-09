@@ -6,7 +6,7 @@ use base qw (core);
              'exe' => 'bin/fib-file',
              'arg0' => "dat/num40",
              'arg1' => "output",
-             'before_in_job' => 'print STDERR $self->{JS_queue}. "\n";',
+             'before_in_job' => 'print STDERR $self->{exe}. "\n";',
 #             'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
              'after_in_job' => 'print STDOUT $self->{id}. "\n";',
              );
