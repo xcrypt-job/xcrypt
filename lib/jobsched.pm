@@ -243,6 +243,7 @@ sub invoke_watch_by_file {
         while (1) {
 	    # Can't call Coro::AnyEvent::sleep from a thread of the Thread module.(
 	    common::wait_and_get_file ($REQFILE, $interval);
+    print "hoge\n";
 	    my $CLIENT_IN;
 	    open($CLIENT_IN, '<', $REQFILE) || next;
 	    my $inv_text = '';
@@ -288,7 +289,7 @@ sub invoke_watch_by_file {
 			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 		&xcr_rename($ACK_TMPFILE, $ACKFILE,
 			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		rename($ACK_TMPFILE, $ACKFILE);
+#		rename($ACK_TMPFILE, $ACKFILE);
 	    } else {
 		# エラーがあれば:failedを返す（inventory fileには書き込まない）
 		print $CLIENT_OUT ":failed\n";
@@ -297,7 +298,7 @@ sub invoke_watch_by_file {
 			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 		&xcr_rename($ACK_TMPFILE, $ACKFILE,
 			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		rename($ACK_TMPFILE, $ACKFILE);
+#		rename($ACK_TMPFILE, $ACKFILE);
 	    }
 	    unlink($REQFILE);
 	    Coro::AnyEvent::sleep ($interval);
