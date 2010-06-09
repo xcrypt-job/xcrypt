@@ -5,8 +5,6 @@ use FindBin qw($Bin);
 use lib $Bin;
 use xcrypt_comm;
 
-my $Logfile = '_invwrite.log';
-
 if ( @ARGV < 3
      || !(($ARGV[2] eq 'sock' && @ARGV == 5)
           || $ARGV[2] eq 'file' && @ARGV == 6))
@@ -18,12 +16,13 @@ if ( @ARGV < 3
 
 my $Jobname = shift (@ARGV);
 my $Status = shift (@ARGV);
+my $Logfile = "${Jobname}_invwrite.log";
 my @Comm_Start_Args = @ARGV;
 
 my $RETRY_P = 1;
 
+xcrypt_comm_log_start ($Logfile, "$Jobname\[$Status\]: ");
 while ($RETRY_P) {
-    xcrypt_comm_log_start ($Logfile, "$Jobname\[$Status\]: ");
     my $handler=undef;
     $handler = xcrypt_comm_start (@Comm_Start_Args);
     ###
@@ -47,6 +46,5 @@ while ($RETRY_P) {
         die "Unexpected ack message: $ackline";
     }
 }
-
 xcrypt_comm_log ("successfully done\n");
 xcrypt_comm_log_finish ();
