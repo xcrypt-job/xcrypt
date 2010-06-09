@@ -44,12 +44,12 @@ sub get_elapsed_time {
 }
 
 sub check_and_alert_elapsed {
-    my @jobids = &jobsched::get_all_job_ids();
+    my @job_ids = &jobsched::get_all_job_ids();
 
     my $sum = 0;
     my %elapseds = ();
     my $length = 0;
-    foreach my $i (@jobids) {
+    foreach my $i (@job_ids) {
         $elapseds{"$i"} = undef;
         my $inventoryfile = File::Spec->catfile ($inventory_path, "$i");
         $time_done_now = time();
@@ -66,7 +66,7 @@ sub check_and_alert_elapsed {
     unless ($length == 0) {
         $average = $sum / $length;
     }
-    foreach (@jobids) {
+    foreach (@job_ids) {
         if (defined $elapseds{$_}) {
             if ( $elapseds{$_} - $average > 300 ) {
                 print "Warning: $_ takes more time than the other jobs.\n";
@@ -127,7 +127,6 @@ sub repeat {
 }
 
 my %Host_Ssh_Hash;
-my %Host_Wd_Hash;
 my @Env;
 sub add_env {
     my %env = @_;
@@ -141,7 +140,7 @@ sub add_env {
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $env{host}, $env{wd});
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
-	    $env{scheduler} = $sched[0];
+	    $env{sched} = $sched[0];
 	} else {
 	    die "Set the environment varialble \$XCRJOBSCHED\n";
 	}

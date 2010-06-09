@@ -1,7 +1,7 @@
 package common;
 
 use base qw(Exporter);
-our @EXPORT = qw(mkarray set_member_if_empty get_jobids
+our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable wait_and_get_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 xcr_get_all xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
@@ -46,8 +46,8 @@ sub remote_qx {
     my ($cmd, $host) = @_;
     my $ssh = &builtin::get_ssh_object_by_host($host);
     my @ret;
-    print $cmd, "\n";
     print $host, "\n";
+    print $cmd, "\n";
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
 }
@@ -83,12 +83,12 @@ sub wait_and_get_file {
     my @envs = &builtin::get_all_envs();
     my $exist = 0;
     until ($exist) {
-	foreach my $tmp (@envs) {
-	    my %env = %$tmp;
-	    my $tmp = &xcr_exist('-e', $path, $env{host}, $env{wd});
+	foreach my $env (@envs) {
+#print $env->{host}, "\n";
+	    my $tmp = &xcr_exist('-e', $path, $env->{host}, $env->{wd});
 	    if ($tmp) {
-		&xcr_get($path, $env{host}, $env{wd});
-		&xcr_unlink($path, $env{host}, $env{wd});
+		&xcr_get($path, $env->{host}, $env->{wd});
+		&xcr_unlink($path, $env->{host}, $env->{wd});
 		$exist = 1;
 	    }
 	    break;
@@ -241,7 +241,7 @@ sub xcr_symlink {
 
 sub xcr_unlink {
     my ($file, $host, $wd) = @_;
-    unless ($host, $wd->{rhost} eq 'localhost') {
+    unless ($host eq 'localhost') {
 	my $flag = &xcr_exist('-f', $file, $host, $wd);
 	if ($flag) {
 	    my $tmp = File::Spec->catfile($wd, $file);
@@ -275,7 +275,6 @@ sub xcr_put {
 	}
     }
 }
-
 
 1;
 
