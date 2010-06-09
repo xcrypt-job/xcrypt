@@ -96,7 +96,8 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
-    foreach my $env (@builtin::Env) {
+    my @envs = &builtin::get_all_envs();
+    foreach my $env (@envs) {
 	my $qstat_command = $jsconfig::jobsched_config{$env->{sched}}{qstat_command};
 	unless ( defined $qstat_command ) {
 	    die "qstat_command is not defined in $env->{sched}.pm";
@@ -114,10 +115,10 @@ sub qstat {
 	}
 	my @qstat_out = &xcr_qx($command_string, '.', $env->{host}, $env->{wd});
 	my @tmp_ids = &$extractor(@qstat_out);
+	foreach (@tmp_ids) {
 	    push(@ids, "$env->{host}"."$_");
-#	foreach (@tmp_ids) {
 #	    push(@ids, ($env->{host}, $_));
-#	}
+	}
     }
     return @ids;
 }
@@ -266,7 +267,6 @@ sub invoke_watch_by_file {
 	    }
 	    close($CLIENT_IN);
 	    ###
-    print "$handled_jobname\n";
 	    my $CLIENT_OUT = undef;
 	    until ($CLIENT_OUT) {
 		open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
@@ -589,7 +589,8 @@ sub entry_running_job {
 }
 sub delete_running_job {
     my ($self) = @_;
-    my $req_id = $self->{request_id};
+#    my $req_id = $self->{request_id};
+    my $req_id = $self->{env}->{host} . $self->{request_id};
     if ($req_id) {
         delete ($Running_Jobs{$req_id});
     }
@@ -637,6 +638,7 @@ sub check_and_write_aborted {
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
+#	    print $job, "\n";
             delete ($unchecked{$_});
             # If the job exists but is signaled, qdel it.
             if ($job && is_signaled_job($job)) {

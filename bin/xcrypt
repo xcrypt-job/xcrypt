@@ -38,7 +38,7 @@ print TMP '&jobsched::invoke_abort_check();' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
-#print TMP '&jobsched::check_and_write_aborted();' . "\n";
+print TMP '&jobsched::check_and_write_aborted();' . "\n";
 #print TMP 'sleep(1);' . "\n";
 close(TMP);
 close(USER);
