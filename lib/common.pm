@@ -84,11 +84,9 @@ sub wait_and_get_file {
     my $exist = 0;
     until ($exist) {
 	foreach my $env (@envs) {
-#print $env->{host}, "\n";
 	    my $tmp = &xcr_exist('-e', $path, $env->{host}, $env->{wd});
 	    if ($tmp) {
 		&xcr_get($path, $env->{host}, $env->{wd});
-		&xcr_unlink($path, $env->{host}, $env->{wd});
 		$exist = 1;
 	    }
 	    break;
@@ -252,6 +250,17 @@ sub xcr_unlink {
     }
 }
 
+sub remote_unlink {
+    my ($file, $host, $wd) = @_;
+    unless ($host eq 'localhost') {
+	my $flag = &xcr_exist('-f', $file, $host, $wd);
+	if ($flag) {
+	    my $tmp = File::Spec->catfile($wd, $file);
+	    &remote_qx("rm -f $tmp", $host);
+	}
+    }
+}
+
 sub xcr_get {
     my ($base, $host, $wd) = @_;
     unless ($host eq 'localhost') {
@@ -259,7 +268,7 @@ sub xcr_get {
 	    my $file = File::Spec->catfile($wd, $base);
 	    my $ssh = &builtin::get_ssh_object_by_host($host);
 	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
-	    &xcr_unlink($file, $host, $wd);
+	    &remote_unlink($file, $host, $wd);
 	}
     }
 }
