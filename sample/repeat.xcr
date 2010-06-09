@@ -6,7 +6,7 @@ use base qw(core);
 );
 
 my @jobs = &prepare_submit(%template);
-&submit(@jobs);
+#&submit(@jobs);
 &repeat('print "hogehoge\n";');
 $hoge = 'hoge';
 &repeat(sub {print STDOUT "$hoge\n";}, 3);
