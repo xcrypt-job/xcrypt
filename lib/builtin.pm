@@ -126,7 +126,7 @@ sub repeat {
     return $new_coro;
 }
 
-my %Host_Ssh_Hash;
+our %Host_Ssh_Hash;
 my @Env;
 sub add_env {
     my %env = @_;
@@ -134,14 +134,14 @@ sub add_env {
 	unless (exists $Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
-#	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
-# ↓ここから先で$sshが消えている（リモート実行の深刻なバグ）
-	    &remote_mkdir($xcropt::options{inventory_path}, $env{host}, $env{wd});
-	    print $ssh, "\n";
 	    $Host_Ssh_Hash{$env{host}} = $ssh;
+#	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
+	    &remote_mkdir($xcropt::options{inventory_path}, \%env);
 	}
 	$env{is_local} = 0;
+print "foo\n";
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
+print "bar\n";
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
 	    $env{sched} = $sched[0];
@@ -165,7 +165,7 @@ sub get_all_envs {
 }
 
 sub get_ssh_object_by_host {
-    my $host = @_;
+    my $host = shift;
     return $Host_Ssh_Hash{$host};
 }
 
