@@ -1,15 +1,17 @@
 use base qw(core);
 
+
 my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 		     'wd'   => '/home/spara/abet/xcrypt/sample' );
+=comment
 my $env1 = &add_env( 'host' => 'abet@10.228.25.43',
 		     'wd'   => '/home/abet/xcrypt/sample' );
-
+=cut
 %template = (
     'id' => 'job6',
     'exe' => 'bin/fib',
-    'arg0@' => [41,       42],
-    'arg1@' => ['> out1', '> out2'],
-    'env@'  => [$env0,    $env1]
+    'arg0@' => [41,        42],
+    'arg1@' => ['> out_1', '> out_2'],
+    'env@'  => [$env0,     $env0]
 );
 &prepare_submit_sync(%template);

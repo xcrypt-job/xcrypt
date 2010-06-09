@@ -17,15 +17,15 @@ sub new {
 	print "Delete directory $self->{id}\n";
 	File::Path::rmtree ($self->{id});
     }
-    unless ($self->{env}->{host} eq 'localhost') {
-	my $ex = &xcr_exist('-d', $self->{id}, $self->{env}->{host}, $self->{env}->{wd});
+    if ($self->{env}->{is_local} == 0) {
+	my $ex = &xcr_exist('-d', $self->{id}, $self->{env});
 	# If the working directory already exists, delete it
 	if ($ex) {
 	    print "Delete directory $self->{id}\n";
-	    &xcr_unlink($self->{id}, $self->{env}->{host}, $self->{env}->{wd});
+	    &xcr_unlink($self->{id}, $self->{env});
 	}
     }
-    &xcr_mkdir($self->{id}, $self->{env}->{host}, $self->{env}->{wd});
+    &xcr_mkdir($self->{id}, $self->{env});
 
     for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
 	# ここからリモート実行未対応
@@ -44,9 +44,9 @@ sub new {
 
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    my $ex = &xcr_exist('-f', $copied, $self->{env}->{host}, $self->{env}->{wd});
+	    my $ex = &xcr_exist('-f', $copied, $self->{env});
 	    if ($ex) {
-		&xcr_copy($copied, $self->{id}, $self->{env}->{host}, $self->{env}->{wd});
+		&xcr_copy($copied, $self->{id}, $self->{env});
 	    } else {
 			warn "Can't copy $copied\n";
 	    }
@@ -54,7 +54,7 @@ sub new {
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
 	    &xcr_symlink($self->{id}, File::Spec->catfile($file),
-			 File::Spec->catfile(basename($file)), $self->{env}->{host}, $self->{env}->{wd});
+			 File::Spec->catfile(basename($file)), $self->{env});
 	}
     }
     return bless $self, $class;
