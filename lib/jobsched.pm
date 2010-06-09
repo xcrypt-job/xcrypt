@@ -108,7 +108,7 @@ sub qstat {
 	    warn "$command_string not executable";
 	    return ();
 	}
-	my @qstat_out = &xcr_qx($command_string, '.', $env->{host}, $env->{wd});
+	my @qstat_out = &xcr_qx($command_string, '.',  $env);
 	my @tmp_ids = &$extractor(@qstat_out);
 	foreach (@tmp_ids) {
 	    push(@ids, "$env->{host}"."$_");
@@ -124,7 +124,7 @@ sub inventory_write {
     my ($self, $stat) = @_;
     my $cmdline = inventory_write_cmdline($self, $stat);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_system("$cmdline", '.', $self->{env}->{host}, $self->{env}->{wd});
+    &xcr_system("$cmdline", '.', $self->{env});
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -277,15 +277,15 @@ sub invoke_watch_by_file {
 		close($SAVE);
 		print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_put($ACK_TMPFILE, $handled_job->{env});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
 #		rename($ACK_TMPFILE, $ACKFILE);
 	    } else {
 		# エラーがあれば:failedを返す（inventory fileには書き込まない）
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_put($ACK_TMPFILE, $handled_job->{env});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
 #		rename($ACK_TMPFILE, $ACKFILE);
 	    }
 	    unlink($REQFILE);

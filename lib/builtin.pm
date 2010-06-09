@@ -130,22 +130,25 @@ my %Host_Ssh_Hash;
 my @Env;
 sub add_env {
     my %env = @_;
-    unless ($env{host} eq 'localhost') {
+    unless ($env{is_local} == 1) {
 	unless (exists $Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
-	    our $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
+	    my $ssh = Net::OpenSSH->new($host, (user => $user));
+#	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
+# ↓ここから先で$sshが消えている（リモート実行の深刻なバグ）
 	    &remote_mkdir($xcropt::options{inventory_path}, $env{host}, $env{wd});
+	    print $ssh, "\n";
 	    $Host_Ssh_Hash{$env{host}} = $ssh;
 	}
-	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $env{host}, $env{wd});
+	$env{is_local} = 0;
+	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
 	    $env{sched} = $sched[0];
 	} else {
 	    die "Set the environment varialble \$XCRJOBSCHED\n";
 	}
-	my @xd = &xcr_qx('echo $XCRYPT', '.', $env{host}, $env{wd});
+	my @xd = &xcr_qx('echo $XCRYPT', '.', \%env);
 	chomp($xd[0]);
 	unless ($xd[0] eq '') {
 	    $env{xd} = $xd[0];
@@ -538,8 +541,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env}->{host}, $self->{env}->{wd});
-		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env}->{host}, $self->{env}->{wd});
+		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env});
+		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env});
 	    }
 =cut
 

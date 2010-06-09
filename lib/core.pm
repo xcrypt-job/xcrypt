@@ -13,10 +13,11 @@ use xcropt;
 use common;
 use builtin;
 
-my $default_env = &add_env( 'host'  => $xcropt::options{localhost},
-			    'wd'    => $xcropt::options{wd},
-			    'sched' => $xcropt::options{sched},
-			    'xd'    => $xcropt::options{xd} );
+my $default_env = &add_env( 'host'     => $xcropt::options{localhost},
+			    'wd'       => $xcropt::options{wd},
+			    'sched'    => $xcropt::options{sched},
+			    'xd'       => $xcropt::options{xd},
+			    'is_local' => 1 );
 
 sub new {
     my $class = shift;
@@ -189,7 +190,7 @@ sub update_script_file {
     my $file = $file_base;
     write_string_array ($file, @_);
     unless ($self->{rhost} eq '') {
-	&jobsched::xcr_put('main', $file, $self->{env}->{host}, $self->{env}->{wd});
+	&jobsched::xcr_put('main', $file, $self->{env});
     }
 }
 
@@ -280,7 +281,7 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
-    my $flag = &xcr_exist('-f', $scriptfile, $self->{env}->{host}, $self->{env}->{wd});
+    my $flag = &xcr_exist('-f', $scriptfile, $self->{env});
     unless ($flag) {
 	die "Can't find a job script file \"$scriptfile\"";
     }
@@ -292,7 +293,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{env}->{host}, $self->{env}->{wd});
+	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{env});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
