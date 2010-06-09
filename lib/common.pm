@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable wait_and_get_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-remote_unlink remote_qx remote_system remote_mkdir
+remote_unlink remote_qx remote_system remote_mkdir remote_xcr
 xcr_get_all xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
 xcr_qx xcr_system xcr_rename);
 
@@ -44,8 +44,8 @@ sub set_member_if_empty ($$$) {
 }
 
 sub remote_qx {
-    my ($cmd, $host) = @_;
-    my $ssh = &builtin::get_ssh_object_by_host($env->{host});
+    my ($cmd, $env) = @_;
+    my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
     my @ret;
     @ret = $ssh->capture("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -53,7 +53,7 @@ sub remote_qx {
 
 sub remote_system {
     my ($cmd, $host) = @_;
-    my $ssh = &builtin::get_ssh_object_by_host($env->{host});
+    my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
     my @ret;
     @ret = $ssh->system("$cmd") or die "remote command failed: " . $ssh->error;
     return @ret;
@@ -141,9 +141,10 @@ sub write_string_array {
 ##
 sub xcr_qx {
     my ($cmd, $dir, $env) = @_;
+#print "$ssh\n";
     my @ret;
     unless ($env->{is_local} == 1) {
-	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $env->{host}, $env->{wd}) . "; $cmd";
+	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
 	@ret = &remote_qx("$tmp", $env->{host});
     } else {
 	@ret = qx/cd $dir; $cmd/;
@@ -168,7 +169,7 @@ sub xcr_exist {
     my @flags;
     unless ($env->{is_local} == 1) {
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	my $ssh = &builtin::get_ssh_object_by_host($env->{host});
+	my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
 	@flags = $ssh->capture("test $type $fullpath && echo 1");
 	chomp($flags[0]);
     } else {
@@ -177,9 +178,22 @@ sub xcr_exist {
     return $flags[0];
 }
 
+sub remote_exist {
+    my ($type, $file, $env) = @_;
+    my @flags;
+
+    my $fullpath = File::Spec->catfile($env->{wd}, $file);
+    my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
+    @flags = $ssh->capture("test $type $fullpath && echo 1");
+
+    chomp($flags[0]);
+
+    return $flags[0];
+}
+
 sub remote_mkdir {
     my ($dir, $env) = @_;
-    my $flag = &xcr_exist('-d', $dir, $env);
+    my $flag = &remote_exist('-d', $dir, $env);
     unless ($flag) {
 	unless ($env->{is_local} == 1) {
 	    my $rdir = File::Spec->catfile($env->{wd}, $dir);
@@ -281,7 +295,7 @@ sub xcr_get {
     unless ($env->{is_local} == 1) {
 	unless ($xcropt::options{shared}) {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
-	    my $ssh = &builtin::get_ssh_object_by_host($env->{host});
+	    my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
 	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
 	}
     }
@@ -292,7 +306,7 @@ sub xcr_put {
     unless ($env->{is_local} == 1) {
 	unless ($xcropt::options{shared}) {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
-	    my $ssh = &builtin::get_ssh_object_by_host($env->{host});
+	    my $ssh = $builtin::Host_Ssh_Hash{$env->{host}};
 	    $ssh->scp_put(\%ssh_opts, "$base", "$file") or die "put failed: " . $ssh->error;
 	    unlink $base;
 	}
