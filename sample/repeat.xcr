@@ -2,7 +2,7 @@ use base qw(core);
 
 %template = (
     'id' => 'job6',
-    'exe' => 'sleep 30'
+    'exe' => 'sleep 10'
 );
 
 my @jobs = &prepare_submit(%template);
