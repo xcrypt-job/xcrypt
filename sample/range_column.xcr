@@ -4,7 +4,7 @@ use base qw(core);
     'id' => 'job6',
     'exe@' => sub { 'bin/fib ' . ($_[0] + $_[1]) . " > out_$_[0]_$_[1]"},
     'RANGE0' => [31,32],
-    'RANGE1' => [0,1]
+    'RANGE1' => [0,6]
 );
 
 &prepare_submit_sync(%template);

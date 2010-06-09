@@ -8,6 +8,4 @@ use base qw(sandbox core);
     'linkedfile0' => 'bin/fib'
 );
 
-my @jobs = &prepare(%template);
-&submit(@jobs);
-&sync(@jobs);
+&prepare_submit_sync(%template);
