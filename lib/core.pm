@@ -26,8 +26,8 @@ sub new {
     set_member_if_empty ($self, 'env', $default_env);
 
     # stderr & stdout
-    set_member_if_empty ($self, 'JS_stdout', 'stdout');
-    set_member_if_empty ($self, 'JS_stderr', 'stderr');
+    set_member_if_empty ($self, 'JS_stdout', "$self->{id}_stdout");
+    set_member_if_empty ($self, 'JS_stderr', "$self->{id}_stderr");
 
     # Check if the job ID is not empty
     if ($self->{id} eq '') { die "Can't generate any job without id\n"; }
@@ -139,7 +139,6 @@ sub make_jobscript_body {
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
-    # push (@body, "ftp localhost 9999 || exit 1");
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -159,7 +158,6 @@ sub make_jobscript_body {
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
-    # push (@body, "ftp localhost 9999 || exit 1");
     $self->{jobscript_body} = \@body;
 }
 

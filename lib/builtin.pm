@@ -135,6 +135,7 @@ sub add_env {
 	    my ($user, $host) = split(/@/, $env{host});
 	    our $ssh = Net::OpenSSH->new($host, (user => $user));
 	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
+	    &remote_mkdir($xcropt::options{inventory_path}, $env{host}, $env{wd});
 	    $Host_Ssh_Hash{$env{host}} = $ssh;
 	}
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', $env{host}, $env{wd});

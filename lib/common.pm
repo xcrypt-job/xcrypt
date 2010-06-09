@@ -4,6 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable wait_and_get_file exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
+remote_unlink remote_qx remote_system remote_mkdir
 xcr_get_all xcr_get xcr_put xcr_exist xcr_mkdir xcr_symlink xcr_copy xcr_unlink
 xcr_qx xcr_system xcr_rename);
 
@@ -81,16 +82,21 @@ sub cmd_executable {
 sub wait_and_get_file {
     my ($path, $interval) = @_;
     my @envs = &builtin::get_all_envs();
-    LABEL: while (1) {
-	foreach my $env (@envs) {
-	    my $tmp = &xcr_exist('-e', $path, $env->{host}, $env->{wd});
-	    if ($tmp) {
-		&xcr_get($path, $env->{host}, $env->{wd});
-		last LABEL if ($tmp);
-	    }
-	}
-	Coro::AnyEvent::sleep ($interval);
-    }
+  LABEL: while (1) {
+      foreach my $env (@envs) {
+	  my $tmp = &xcr_exist('-e', $path, $env->{host}, $env->{wd});
+	  if ($tmp) {
+	      &xcr_rename($path, $path.'.tmp', $env->{host}, $env->{wd});
+	      &xcr_get($path.'.tmp', $env->{host}, $env->{wd});
+	      unless (-e $path) {
+		  rename $path.'.tmp', $path;
+		  &remote_unlink($path.'.tmp', $env->{host}, $env->{wd});
+	      }
+	      last LABEL if ($tmp);
+	  }
+      }
+      Coro::AnyEvent::sleep ($interval);
+  }
 }
 
 ##
@@ -173,6 +179,17 @@ sub xcr_exist {
     return $flags[0];
 }
 
+sub remote_mkdir {
+    my ($dir, $host, $wd) = @_;
+    my $flag = &xcr_exist('-d', $dir, $host, $wd);
+    unless ($flag) {
+	unless ($host eq 'localhost') {
+	    my $rdir = File::Spec->catfile($wd, $dir);
+	    &remote_qx("mkdir $rdir", $host);
+	}
+    }
+}
+
 sub xcr_mkdir {
     my ($dir, $host, $wd) = @_;
     my $flag = &xcr_exist('-d', $dir, $host, $wd);
@@ -180,6 +197,8 @@ sub xcr_mkdir {
 	unless ($host eq 'localhost') {
 	    my $rdir = File::Spec->catfile($wd, $dir);
 	    &remote_qx("mkdir $rdir", $host);
+	} else {
+	    mkdir $dir, 0755;
 	}
     }
 }
@@ -266,7 +285,6 @@ sub xcr_get {
 	    my $file = File::Spec->catfile($wd, $base);
 	    my $ssh = &builtin::get_ssh_object_by_host($host);
 	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
-	    &remote_unlink($file, $host, $wd);
 	}
     }
 }
