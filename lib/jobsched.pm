@@ -13,6 +13,7 @@ use File::Spec;
 use IO::Socket;
 use Coro;
 use Coro::Socket;
+use Coro::AnyEvent;
 use Coro::Signal;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
@@ -53,8 +54,6 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
-# 定期的実行文字列が登録されている配列
-our %periodicfuns;
 # delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
 my %Signaled_Jobs = ();
 my $All_Jobs_Signaled = undef;
@@ -97,27 +96,29 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
-    foreach (keys(%Running_Jobs)) {
-	my $qstat_command = $jsconfig::jobsched_config{$Running_Jobs{$_}->{env}->{scheduler}}{qstat_command};
+    foreach my $tmp (@builtin::Env) {
+	my %env = %$tmp;
+	my $qstat_command = $jsconfig::jobsched_config{$env{sched}}{qstat_command};
 	unless ( defined $qstat_command ) {
-	    die "qstat_command is not defined in $Running_Jobs{$_}->{schedulers}.pm";
+	    die "qstat_command is not defined in $env{sched}.pm";
 	}
-	my $qstat_extractor = $jsconfig::jobsched_config{$Running_Jobs{$_}->{env}->{scheduler}}{extract_req_ids_from_qstat_output};
-	unless ( defined $qstat_extractor ) {
-	    die "extract_req_ids_from_qstat_output is not defined in $Running_Jobs{$_}->{schedulers}.pm";
-	} elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-	    die "Error in $Running_Jobs{$_}->{env}->{scheduler}.pm: extract_req_ids_from_qstat_output must be a function.";
+	my $extractor = $jsconfig::jobsched_config{$env{sched}}{extract_req_ids_from_qstat_output};
+	unless ( defined $extractor ) {
+	    die "extract_req_ids_from_qstat_output is not defined in $env{sched}.pm";
+	} elsif ( ref ($extractor) ne 'CODE' ) {
+	    die "Error in $env{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
-=comment
 	unless (common::cmd_executable ($command_string, $_)) {
 	    warn "$command_string not executable";
 	    return ();
 	}
-=cut
-	my @qstat_out = &xcr_qx($command_string, '.', $Running_Jobs{$_}->{host}, $Running_Jobs{$_}->{wd});
-	my @tmp_ids = &$qstat_extractor(@qstat_out);
-	push(@ids, @tmp_ids);
+	my @qstat_out = &xcr_qx($command_string, '.', $env{host}, $env{wd});
+	my @tmp_ids = &$extractor(@qstat_out);
+	    push(@ids, "$env{host}"."$_");
+#	foreach (@tmp_ids) {
+#	    push(@ids, ($env{host}, $_));
+#	}
     }
     return @ids;
 }
@@ -126,10 +127,8 @@ sub qstat {
 # Set the status of job $jobname to $stat by executing an external process.
 sub inventory_write {
     my ($self, $stat) = @_;
-    my $host = $self->{env}->{host};
-    my $wd = $self->{env}->{wd};
     my $cmdline = inventory_write_cmdline($self, $stat);
-    &xcr_mkdir($xcropt::options{inventory_path}, $host, $wd);
+    &xcr_mkdir($xcropt::options{inventory_path}, $self->{env}->{host}, $self->{env}->{wd});
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
     &xcr_system("$cmdline", '.', $self->{env}->{host}, $self->{env}->{wd});
 
@@ -285,20 +284,24 @@ sub invoke_watch_by_file {
 		close($SAVE);
 		print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{host}, $handled_job->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{host}, $handled_job->{wd});
+		&xcr_put($ACK_TMPFILE,
+			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE,
+			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 		rename($ACK_TMPFILE, $ACKFILE);
 	    } else {
 		# エラーがあれば:failedを返す（inventory fileには書き込まない）
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{host}, $handled_job->{wd});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{host}, $handled_job->{wd});
+		&xcr_put($ACK_TMPFILE,
+			 $handled_job->{env}->{host}, $handled_job->{env}->{wd});
+		&xcr_rename($ACK_TMPFILE, $ACKFILE,
+			    $handled_job->{env}->{host}, $handled_job->{env}->{wd});
 		rename($ACK_TMPFILE, $ACKFILE);
 	    }
 	    unlink($REQFILE);
+	    Coro::AnyEvent::sleep ($interval);
 	}
-	Coro::AnyEvent::sleep ($interval);
     }
 }
 
@@ -318,9 +321,7 @@ sub invoke_watch_by_socket {
                                            Listen => 10,
                                            Proto => 'tcp',
                                            ReuseAddr => 1);
-    unless ($listen_socket) {
-        die "Can't bind : $@\n";
-    }
+    unless ($listen_socket) { die "Can't bind : $@\n"; }
     $watch_thread = async_pool
     {
         my $socket;
@@ -582,7 +583,7 @@ sub print_all_job_status {
 # "running"なジョブ一覧の更新
 sub entry_running_job {
     my ($self) = @_;
-    my $req_id = $self->{request_id};
+    my $req_id = $self->{env}->{host} . $self->{request_id};
     $Running_Jobs{$req_id} = $self;
     # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %Running_Jobs) . "\n";
 }
@@ -633,6 +634,7 @@ sub check_and_write_aborted {
         }
         print "check_and_write_aborted:\n";
         # foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
+# @ids -> @(host,id)
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
@@ -654,6 +656,8 @@ sub check_and_write_aborted {
     }
 }
 
+# 定期的実行文字列が登録されている配列
+# our %periodicfuns;
 # sub invoke_periodic {
 #     $periodic_thread = Coro::async_pool {
 #        while (1) {

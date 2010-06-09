@@ -162,8 +162,8 @@ sub fun {
 					      -command => ['destroy', $toplevel2] );
 	    $button1->pack( -fill => 'x' );
 
-	    my @jobids = &jobsched::get_all_job_ids();
-	    foreach (@jobids) {
+	    my @job_ids = &jobsched::get_all_job_ids();
+	    foreach (@job_ids) {
 		$listbox->insert('end', $_);
 		$listbox->yview('end');
 	    }
@@ -202,7 +202,7 @@ $tool->add( 'command', -label => 'Monitor', -command => [\&monitor, 0] );
 $tool->add( 'command', -label => 'Monitor & Delete', -command => [\&monitor, 1] );
 
 sub monitoring {
-    my @jobids = &jobsched::get_all_job_ids();
+    my @job_ids = &jobsched::get_all_job_ids();
 
     my %jobcolors = ( 'done'      => $green,
 		      'finished'  => $green,
@@ -214,11 +214,11 @@ sub monitoring {
 		      'running'   => $black
 	);
 
-    my $lt = @jobids;
+    my $lt = @job_ids;
     if ($lt > 0) {
 	$tiler0->delete(0, $lt-1);
     }
-    foreach (@jobids) {
+    foreach (@job_ids) {
 	my $inv = File::Spec->catfile ("$inventorydir", "$_");
 	open( JOB, "< $inv" );
 	while( $line = <JOB> ){
@@ -274,9 +274,9 @@ sub del2 {
 }
 
 sub del3 {
-    my @jobids = &jobsched::get_all_job_ids();
+    my @job_ids = &jobsched::get_all_job_ids();
     my @index = $_[0]->infoSelection();
-    my $job = $jobids[$index[0]];
+    my $job = $job_ids[$index[0]];
     &del($job);
 }
 

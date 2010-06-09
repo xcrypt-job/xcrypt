@@ -1,6 +1,4 @@
-use base qw(limit core);
-
-&limit::initialize(10);
+use base qw(core);
 
 %template = (
     'id' => 'job6',
@@ -8,5 +6,6 @@ use base qw(limit core);
     'RANGE0' => [31,32],
     'RANGE1' => [0,1]
 );
+
 &prepare_submit_sync(%template);
 
