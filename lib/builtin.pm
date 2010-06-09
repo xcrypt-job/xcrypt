@@ -95,7 +95,7 @@ sub repeat {
     my $new_coro = undef;
     my $sub_or_str = $_[0];
     my $slp = $_[1];
-    unless ($slp) { $slp = 10; }
+    unless ($slp) { $slp = $default_period; }
     if ( ref($_[0]) eq 'CODE' ) {
         $new_coro = Coro::async_pool {
             while (1) {
