@@ -311,28 +311,18 @@ sub wait_and_get_file {
   LABEL: while (1) {
       foreach my $env (@envs) {
 	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist('-e', $path.'.tmp', $env);
+	      my $tmp = &rmt_exist('-e', $path, $env);
 	      if ($tmp) {
-		  &rmt_get($path.'.tmp', $env);
-		  unless (-e $path) {
-		      rename $path.'.tmp', $path;
-		      &rmt_unlink($path.'.tmp', $env);
-		  }
+		  &rmt_copy($path, $path.'.tmp.tmp', $env);
+		  &rmt_get($path.'.tmp.tmp', $env);
+		  &rmt_unlink($path.'.tmp.tmp', $env);
 		  last LABEL;
-	      } else {
-		  my $real = &rmt_exist('-e', $path, $env);
-		  if ($real) {
-		      &rmt_rename($path, $path.'.tmp', $env);
-		      &rmt_get($path.'.tmp', $env);
-		      unless (-e $path) {
-			  rename $path.'.tmp', $path;
-			  &rmt_unlink($path.'.tmp', $env);
-		      }
-		      last LABEL;
-		  }
 	      }
 	  } else {
-	      last LABEL if (-e $path)
+	      if (-e $path) {
+		  rename $path, $path.'.tmp.tmp';
+		  last LABEL;
+	      }
 	  }
       }
       Coro::AnyEvent::sleep ($interval);

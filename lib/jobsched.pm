@@ -37,7 +37,7 @@ my $Inventory_Write_Cmd = 'inventory_write.pl';
 # for inventory_write_file
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
-my $REQ_TMPFILE = $REQFILE . '.tmp';
+my $REQ_TMPFILE = $REQFILE . '.tmp.tmp';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 
@@ -176,9 +176,11 @@ sub handle_inventory {
                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
                 my $cur_stat = get_job_status ($job);
+print $cur_stat, "\n";
                 if ( $cur_stat eq 'queued' ) {
                     set_job_running ($job, $tim); $flag=1;
                 } else {
+print "foo\n";
                     $flag = -1;
                 }
             } elsif ($status eq 'done') {
@@ -228,7 +230,7 @@ sub invoke_watch_by_file {
         while (1) {
 	    &wait_and_get_file ($REQFILE, $interval);
 	    my $CLIENT_IN;
-	    open($CLIENT_IN, '<', $REQFILE) || next;
+	    open($CLIENT_IN, '<', $REQ_TMPFILE) || next;
 	    my $inv_text = '';
 	    my $handle_inventory_ret = 0;
 	    my $handled_job; my $handled_jobname;
@@ -246,10 +248,12 @@ sub invoke_watch_by_file {
 		}
 		# 一度エラーがでたら以降のhandle_inventoryはとばす
 		if ( $handle_inventory_ret >= 0 ) {
+print $_, "\n";
 		    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
 		}
 	    }
 	    close($CLIENT_IN);
+print $handle_inventory_ret, "\n";
 	    ###
 	    my $CLIENT_OUT = undef;
 	    until ($CLIENT_OUT) {
@@ -260,6 +264,7 @@ sub invoke_watch_by_file {
 		}
 	    }
 	    if ($handle_inventory_ret >= 0) {
+print $handled_jobname, "\n";
 		# エラーがなければinventoryファイルにログを書き込んで:ackを返す
 		my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
 		open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
@@ -275,7 +280,7 @@ sub invoke_watch_by_file {
 	    &rmt_put($ACK_TMPFILE, $handled_job->{env});
 	    &xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
 	    unlink $ACK_TMPFILE;
-	    unlink $REQFILE;
+	    unlink $REQ_TMPFILE;
 	    Coro::AnyEvent::sleep ($interval);
 	}
     }
