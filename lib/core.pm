@@ -17,7 +17,7 @@ my $default_env = &add_env( 'host'     => $xcropt::options{localhost},
 			    'wd'       => $xcropt::options{wd},
 			    'sched'    => $xcropt::options{sched},
 			    'xd'       => $xcropt::options{xd},
-			    'is_local' => 1 );
+			    'location' => 'local' );
 
 sub new {
     my $class = shift;
@@ -189,7 +189,7 @@ sub update_script_file {
     my $file_base = shift;
     my $file = $file_base;
     write_string_array ($file, @_);
-    unless ($self->{env}->{is_local} == 1) {
+    if ($self->{env}->{location} eq 'remote') {
 	&rmt_put($file, $self->{env});
 	unlink $file;
     }

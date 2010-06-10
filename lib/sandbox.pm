@@ -12,20 +12,15 @@ sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
 
+=comment
     # If the working directory already exists, delete it
-    if ( -e $self->{id} ) {
+    my $ex = &xcr_exist('-d', $self->{id}, $self->{env});
+    if ($ex) {
 	print "Delete directory $self->{id}\n";
-	File::Path::rmtree ($self->{id});
-    }
-    if ($self->{env}->{is_local} == 0) {
-	my $ex = &xcr_exist('-d', $self->{id}, $self->{env});
-	# If the working directory already exists, delete it
-	if ($ex) {
-	    print "Delete directory $self->{id}\n";
-	    &xcr_unlink($self->{id}, $self->{env});
-	}
+	&xcr_rmtree($self->{id}, $self->{env});
     }
     &xcr_mkdir($self->{id}, $self->{env});
+=cut
 
     for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
 	# ここからリモート実行未対応

@@ -139,7 +139,7 @@ sub repeat {
 
 sub add_env {
     my %env = @_;
-    unless ($env{is_local} == 1) {
+    if ($env{location} eq 'remote') {
 	unless (exists $common::Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
@@ -147,7 +147,7 @@ sub add_env {
 #	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
 	    &rmt_mkdir($xcropt::options{inventory_path}, \%env);
 	}
-	$env{is_local} = 0;
+	$env{location} = 'remote';
 print "foo\n";
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
 print "bar\n";
