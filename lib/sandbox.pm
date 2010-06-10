@@ -27,7 +27,7 @@ sub new {
     }
     &xcr_mkdir($self->{id}, $self->{env});
 
-    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
+    for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
 	# ここからリモート実行未対応
 	if ($self->{"copieddir$i"}) {
 	    my $copied = $self->{"copieddir$i"};
