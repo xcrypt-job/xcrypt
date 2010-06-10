@@ -139,7 +139,8 @@ sub repeat {
 
 sub add_env {
     my %env = @_;
-    if ($env{location} eq 'remote') {
+    unless ($env{location} eq 'local') {
+	$env{location} = 'remote';
 	unless (exists $common::Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
@@ -148,9 +149,7 @@ sub add_env {
 	    &rmt_mkdir($xcropt::options{inventory_path}, \%env);
 	}
 	$env{location} = 'remote';
-print "foo\n";
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
-print "bar\n";
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
 	    $env{sched} = $sched[0];

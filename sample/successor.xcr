@@ -5,7 +5,7 @@ use base qw(successor core);
     'exe' => 'echo 10',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'successors' => ['child0', 'child2']
+    'successor' => ['child0', 'child2']
     );
 %child0 = (
     'id' => 'job11',

@@ -363,7 +363,7 @@ sub load_inventory {
 # job_id_hash
 sub entry_job_id {
     my ($self) = @_;
-    print "$self->{id} entried\n";
+#    print "$self->{id} entried\n";
     $Job_ID_Hash{$self->{id}} = $self;
 }
 
@@ -373,7 +373,7 @@ sub get_all_job_ids {
 
 sub exit_job_id {
     my ($self) = @_;
-    print "$self->{id} exit\n";
+#    print "$self->{id} exit\n";
     delete($Job_ID_Hash{$self->{id}});
 }
 

@@ -4,14 +4,14 @@ use base qw(core);
 my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 		     'wd'   => '/home/spara/abet/xcrypt/sample' );
 =comment
-my $env1 = &add_env( 'host' => 'abet@10.228.25.43',
-		     'wd'   => '/home/abet/xcrypt/sample' );
+my $env1 = &add_env( 'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
+		     'wd'   => '/home/b/b30331/abet/xcrypt/sample' );
 =cut
+
 %template = (
     'id' => 'job6',
-    'exe' => 'bin/fib',
-    'arg0@' => [41,        42],
-    'arg1@' => ['> out_1', '> out_2'],
-    'env@'  => [$env0,     $env0]
+    'exe@' => sub { 'bin/fib ' . (40 + $_[0]) . " > out_$_[0]"},
+    'RANGE0' => [0,1],
+    'env@'  => sub { if ($_[0] == 0) { $env0; } else { $env0; } }
 );
 &prepare_submit_sync(%template);

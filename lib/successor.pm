@@ -4,7 +4,7 @@ use strict;
 use NEXT;
 use builtin;
 
-&add_key('successors');
+&add_key('successor');
 
 my $slp = 1;
 sub new {
@@ -24,13 +24,13 @@ sub before {
 
 sub after {
     my $self = shift;
-    if ($self->{successors}) {
+    if ($self->{successor}) {
 	my @objs;
-	foreach (@{$self->{successors}}) {
+	foreach (@{$self->{successor}}) {
 	    no strict 'refs';
 	    my $foo = 'user::' . $_;
 	    my %bar = %$foo;
-	    delete $bar{successors};
+	    delete $bar{successor};
 	    my @job = &prepare(%bar);
 	    push(@objs, $job[0]);
 	}
