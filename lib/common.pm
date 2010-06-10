@@ -5,8 +5,8 @@ our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 rmt_get rmt_put
-rmt_qx rmt_exist rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
-xcr_qx xcr_exist xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
+rmt_system rmt_qx rmt_exist rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
+xcr_system xcr_qx xcr_exist xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 wait_and_get_file
 get_all_envs
 );
@@ -53,7 +53,7 @@ sub cmd_executable {
     my @cmd0 = split(/\s+/,$cmd);
     if ($self->{env}->{location} eq 'remote') {
 	my $ssh = $Host_Ssh_Hash{$self->{env}->{host}};
-	$ssh->system("$cmd0[0]"); # or die "remote command failed: " . $ssh->error;
+	$ssh->system("which $cmd0[0]") or die "remote command failed: " . $ssh->error;
     } else {
 	qx/which $cmd0[0]/;
     }
@@ -104,19 +104,38 @@ sub write_string_array {
     close ($out);
 }
 
+sub rmt_system {
+    my ($cmd, $env) = @_;
+    my $ssh = $Host_Ssh_Hash{$env->{host}};
+    my @ret;
+    @ret = $ssh->system("$cmd") or die "remote command failed: ". $ssh->error;
+    return @ret;
+}
+
+##
+sub xcr_system {
+    my ($cmd, $dir, $env) = @_;
+    my @ret;
+    if ($env->{location} eq 'remote') {
+	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
+	@ret = &rmt_system("$tmp", $env);
+    } else {
+	@ret = system("cd $dir; $cmd/");
+    }
+    return @ret;
+}
+
 sub rmt_qx {
     my ($cmd, $env) = @_;
     my $ssh = $Host_Ssh_Hash{$env->{host}};
     my @ret;
-    print $cmd, "\n";
-    @ret = $ssh->capture("$cmd"); # or die "remote command failed: ". $ssh->error;
+    @ret = $ssh->capture("$cmd") or die "remote command failed: ". $ssh->error;
     return @ret;
 }
 
 ##
 sub xcr_qx {
     my ($cmd, $dir, $env) = @_;
-#print "$ssh\n";
     my @ret;
     if ($env->{location} eq 'remote') {
 	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
@@ -156,7 +175,7 @@ sub rmt_mkdir {
     unless ($flag) {
 	if ($env->{location} eq 'remote') {
 	    my $rdir = File::Spec->catfile($env->{wd}, $dir);
-	    &rmt_qx("mkdir $rdir", $env);
+	    &rmt_system("mkdir $rdir", $env);
 	}
     }
 }
@@ -178,7 +197,7 @@ sub rmt_copy {
     unless ($xcropt::options{shared}) {
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_qx("cp -f $fp_copied $fp_dir", $env);
+	&rmt_system("cp -f $fp_copied $fp_dir", $env);
     }
 }
 
@@ -193,11 +212,11 @@ sub xcr_copy {
 
 sub rmt_rename {
     my ($file0, $file1, $env) = @_;
-    my $flag = &remoter_exist('-f', $file0, $env);
+    my $flag = &rmt_exist('-f', $file0, $env);
     if ($flag) {
 	my $tmp0 = File::Spec->catfile($env->{wd}, $file0);
 	my $tmp1 = File::Spec->catfile($env->{wd}, $file1);
-	&rmt_qx("mv -f $tmp0 $tmp1", $env);
+	&rmt_system("mv -f $tmp0 $tmp1", $env);
     }
 }
 
@@ -218,7 +237,7 @@ sub rmt_symlink {
 	unless ($ex1) {
 	    my $tmp = File::Spec->catfile($env->{wd}, $dir, $link);
 	    my $file1 = File::Spec->catfile($env->{wd}, $file);
-	    &rmt_qx("ln -s $file1 $tmp", $env);
+	    &rmt_system("ln -s $file1 $tmp", $env);
 	}
     } else {
 	warn "Can't link to $file";
@@ -246,7 +265,7 @@ sub rmt_unlink {
     my $flag = &rmt_exist('-f', $file, $env);
     if ($flag) {
 	my $tmp = File::Spec->catfile($env->{wd}, $file);
-	&rmt_qx("rm -f $tmp", $env);
+	&rmt_system("rm -f $tmp", $env);
     }
 }
 
@@ -292,15 +311,25 @@ sub wait_and_get_file {
   LABEL: while (1) {
       foreach my $env (@envs) {
 	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist('-e', $path, $env);
+	      my $tmp = &rmt_exist('-e', $path.'.tmp', $env);
 	      if ($tmp) {
-		  &rmt_rename($path, $path.'.tmp', $env);
 		  &rmt_get($path.'.tmp', $env);
 		  unless (-e $path) {
 		      rename $path.'.tmp', $path;
 		      &rmt_unlink($path.'.tmp', $env);
 		  }
 		  last LABEL;
+	      } else {
+		  my $real = &rmt_exist('-e', $path, $env);
+		  if ($real) {
+		      &rmt_rename($path, $path.'.tmp', $env);
+		      &rmt_get($path.'.tmp', $env);
+		      unless (-e $path) {
+			  rename $path.'.tmp', $path;
+			  &rmt_unlink($path.'.tmp', $env);
+		      }
+		      last LABEL;
+		  }
 	      }
 	  } else {
 	      last LABEL if (-e $path)
