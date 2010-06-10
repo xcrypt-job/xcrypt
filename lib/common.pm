@@ -52,7 +52,7 @@ sub cmd_executable {
     my ($cmd, $self) = @_;
     my @cmd0 = split(/\s+/,$cmd);
     if (defined $self->{env}->{host}) {
-	if ($self->{env}->{is_local} == 0) {
+	if ($self->{env}->{location} eq 'remote') {
 	    my $ssh = $Host_Hash{$self};
 	    $ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
 	}
@@ -119,7 +119,7 @@ sub xcr_qx {
     my ($cmd, $dir, $env) = @_;
 #print "$ssh\n";
     my @ret;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
 	@ret = &rmt_qx("$tmp", $env);
     } else {
@@ -143,7 +143,7 @@ sub rmt_exist {
 sub xcr_exist {
     my ($type, $file, $env) = @_;
     my $flag;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	$flag = &rmt_exist($type, $file, $env);
     } else {
 	if (-e $file) { $flag = 1; }
@@ -155,7 +155,7 @@ sub rmt_mkdir {
     my ($dir, $env) = @_;
     my $flag = &rmt_exist('-d', $dir, $env);
     unless ($flag) {
-	unless ($env->{is_local} == 1) {
+	if ($env->{location} eq 'remote') {
 	    my $rdir = File::Spec->catfile($env->{wd}, $dir);
 	    &rmt_qx("mkdir $rdir", $env);
 	}
@@ -166,7 +166,7 @@ sub xcr_mkdir {
     my ($dir, $env) = @_;
     my $flag = &xcr_exist('-d', $dir, $env);
     unless ($flag) {
-	unless ($env->{is_local} == 1) {
+	if ($env->{location} eq 'remote') {
 	    &rmt_mkdir($dir, $env);
 	} else {
 	    mkdir $dir, 0755;
@@ -185,7 +185,7 @@ sub rmt_copy {
 
 sub xcr_copy {
     my ($copied, $dir, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	&rmt_copy($copied, $dir, $env);
     } else {
 	fcopy($copied, $dir);
@@ -204,7 +204,7 @@ sub rmt_rename {
 
 sub xcr_rename {
     my ($file0, $file1, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	&rmt_rename($file0, $file1, $env);
     } else {
 	rename $file0, $file1;
@@ -228,7 +228,7 @@ sub rmt_symlink {
 
 sub xcr_symlink {
     my ($dir, $file, $link, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	&rmt_symlink($dir, $file, $link, $env);
     } else {
 	if (-f $file) {
@@ -253,7 +253,7 @@ sub rmt_unlink {
 
 sub xcr_unlink {
     my ($file, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	&rmt_unlink($file, $env);
     } else {
 	unlink $file;
@@ -262,7 +262,7 @@ sub xcr_unlink {
 
 sub rmt_get {
     my ($base, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	unless ($xcropt::options{shared}) {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
 	    my $ssh = $Host_Ssh_Hash{$env->{host}};
@@ -273,7 +273,7 @@ sub rmt_get {
 
 sub rmt_put {
     my ($base, $env) = @_;
-    unless ($env->{is_local} == 1) {
+    if ($env->{location} eq 'remote') {
 	unless ($xcropt::options{shared}) {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
 	    my $ssh = $Host_Ssh_Hash{$env->{host}};
@@ -292,9 +292,7 @@ sub wait_and_get_file {
     my @envs = &get_all_envs();
   LABEL: while (1) {
       foreach my $env (@envs) {
-	  if ($env->{is_local} == 1) {
-	      last LABEL if (-e $path)
-	  } else {
+	  if ($env->{location} eq 'remote') {
 	      my $tmp = &rmt_exist('-e', $path, $env);
 	      if ($tmp) {
 		  &rmt_rename($path, $path.'.tmp', $env);
@@ -305,6 +303,8 @@ sub wait_and_get_file {
 		  }
 		  last LABEL;
 	      }
+	  } else {
+	      last LABEL if (-e $path)
 	  }
       }
       Coro::AnyEvent::sleep ($interval);
