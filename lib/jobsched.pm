@@ -162,7 +162,7 @@ sub handle_inventory {
     if ($line =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/) {
         $job_id = $1;
         my ($status, $tim) = ($2, $3);
-        my $job = find_job_by_id ($job_id);
+        $job = find_job_by_id ($job_id);
         if ($job) {
             if ($status eq 'initialized') {
                 set_job_initialized ($job, $tim); $flag=1;
@@ -175,8 +175,9 @@ sub handle_inventory {
             } elsif ($status eq 'running') {
                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
-                if ( get_job_status ($job) eq "queued" ) {
-                    set_job_running ($job, $1); $flag=1;
+                my $cur_stat = get_job_status ($job);
+                if ( $cur_stat eq 'queued' ) {
+                    set_job_running ($job, $tim); $flag=1;
                 } else {
                     $flag = -1;
                 }
