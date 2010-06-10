@@ -7,7 +7,6 @@ any_to_string any_to_string_nl any_to_string_spc write_string_array
 rmt_get rmt_put
 rmt_system rmt_qx rmt_exist rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_system xcr_qx xcr_exist xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-wait_and_get_file
 get_all_envs
 );
 
@@ -285,6 +284,7 @@ sub rmt_get {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
 	    my $ssh = $Host_Ssh_Hash{$env->{host}};
 	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
+	    &rmt_unlink($base, $env);
 	}
     }
 }
@@ -296,37 +296,13 @@ sub rmt_put {
 	    my $file = File::Spec->catfile($env->{wd}, $base);
 	    my $ssh = $Host_Ssh_Hash{$env->{host}};
 	    $ssh->scp_put(\%ssh_opts, "$base", "$file") or die "put failed: " . $ssh->error;
+	    unlink $base;
 	}
     }
 }
 
 sub get_all_envs {
     return @Env;
-}
-
-##
-sub wait_and_get_file {
-    my ($path, $interval) = @_;
-    my @envs = &get_all_envs();
-  LABEL: while (1) {
-      foreach my $env (@envs) {
-	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist('-e', $path, $env);
-	      if ($tmp) {
-		  &rmt_copy($path, $path.'.tmp.tmp', $env);
-		  &rmt_get($path.'.tmp.tmp', $env);
-		  &rmt_unlink($path.'.tmp.tmp', $env);
-		  last LABEL;
-	      }
-	  } else {
-	      if (-e $path) {
-		  rename $path, $path.'.tmp.tmp';
-		  last LABEL;
-	      }
-	  }
-      }
-      Coro::AnyEvent::sleep ($interval);
-  }
 }
 
 1;

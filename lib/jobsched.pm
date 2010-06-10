@@ -37,7 +37,7 @@ my $Inventory_Write_Cmd = 'inventory_write.pl';
 # for inventory_write_file
 my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
 my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
-my $REQ_TMPFILE = $REQFILE . '.tmp.tmp';
+my $OPENED_FILE = $REQFILE . '.opened';
 my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
 my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
 
@@ -226,9 +226,9 @@ sub invoke_watch_by_file {
     {
         my $interval = 0.5;
         while (1) {
-	    &wait_and_get_file ($REQFILE, $interval);
+	    &wait_and_get_file ($interval);
 	    my $CLIENT_IN;
-	    open($CLIENT_IN, '<', $REQ_TMPFILE) || next;
+	    open($CLIENT_IN, '<', $OPENED_FILE) || next;
 	    my $inv_text = '';
 	    my $handle_inventory_ret = 0;
 	    my $handled_job; my $handled_jobname;
@@ -274,8 +274,7 @@ sub invoke_watch_by_file {
 	    }
 	    &rmt_put($ACK_TMPFILE, $handled_job->{env});
 	    &xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
-	    unlink $ACK_TMPFILE;
-	    unlink $REQ_TMPFILE;
+	    unlink $OPENED_FILE;
 	    Coro::AnyEvent::sleep ($interval);
 	}
     }
@@ -662,6 +661,30 @@ sub invoke_abort_check {
         }
     };
     # print "invoke_abort_check done.\n";
+}
+
+##
+sub wait_and_get_file {
+    my ($interval) = @_;
+    my @envs = &get_all_envs();
+  LABEL: while (1) {
+      foreach my $env (@envs) {
+	  if ($env->{location} eq 'remote') {
+	      my $tmp = &rmt_exist('-e', $REQFILE, $env);
+	      if ($tmp) {
+		  &rmt_rename($REQFILE, $OPENED_FILE, $env);
+		  &rmt_get($OPENED_FILE, $env);
+		  last LABEL;
+	      }
+	  } else {
+	      if (-e $REQFILE) {
+		  rename $REQFILE, $OPENED_FILE;
+		  last LABEL;
+	      }
+	  }
+      }
+      Coro::AnyEvent::sleep ($interval);
+  }
 }
 
 1;
