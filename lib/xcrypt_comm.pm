@@ -184,8 +184,8 @@ sub xcrypt_comm_send_sock {
     my $handler = shift;  # arg1: comm handler
     my $str = shift;      # arg2: string to send
     my $need_ack = shift; # arg3: whether ack is required
-    print $handler->{sock}->print ($str);
-    print $handler->{sock}->print ($need_ack?":end\n":":end_noack\n");
+    $handler->{sock}->print ($str);
+    $handler->{sock}->print ($need_ack?":end\n":":end_noack\n");
     if ( $need_ack ) {
         xcrypt_comm_log ("waiting ack.\n");
         my $ackline = $handler->{sock}->getline();
