@@ -10,7 +10,7 @@ use strict;
 use Cwd;
 use File::Basename;
 use File::Spec;
-use IO::Socket;
+#use IO::Socket;
 use Coro;
 use Coro::Socket;
 use Coro::AnyEvent;
@@ -19,6 +19,7 @@ use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use Net::OpenSSH;
 
+#use builtin;
 use common;
 use xcropt;
 use jsconfig;
@@ -91,7 +92,7 @@ sub qdel {
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
     my @ids;
-    my @envs = &builtin::get_all_envs();
+    my @envs = &get_all_envs();
     foreach my $env (@envs) {
 	my $qstat_command = $jsconfig::jobsched_config{$env->{sched}}{qstat_command};
 	unless ( defined $qstat_command ) {
@@ -124,7 +125,7 @@ sub inventory_write {
     my ($self, $stat) = @_;
     my $cmdline = inventory_write_cmdline($self, $stat);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_system("$cmdline", '.', $self->{env});
+    &xcr_qx("$cmdline", '.', $self->{env});
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -224,7 +225,7 @@ sub invoke_watch_by_file {
     {
         my $interval = 0.5;
         while (1) {
-	    &common::wait_and_get_file ($REQFILE, $interval);
+	    &wait_and_get_file ($REQFILE, $interval);
 	    my $CLIENT_IN;
 	    open($CLIENT_IN, '<', $REQFILE) || next;
 	    my $inv_text = '';
@@ -265,18 +266,15 @@ sub invoke_watch_by_file {
 		close($SAVE);
 		print $CLIENT_OUT ":ack\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{env});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
-#		rename($ACK_TMPFILE, $ACKFILE);
 	    } else {
 		# エラーがあれば:failedを返す（inventory fileには書き込まない）
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
-		&xcr_put($ACK_TMPFILE, $handled_job->{env});
-		&xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
-#		rename($ACK_TMPFILE, $ACKFILE);
 	    }
-	    unlink($REQFILE);
+	    &rmt_put($ACK_TMPFILE, $handled_job->{env});
+	    &xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
+	    unlink $ACK_TMPFILE;
+	    unlink $REQFILE;
 	    Coro::AnyEvent::sleep ($interval);
 	}
     }
@@ -659,7 +657,7 @@ sub invoke_abort_check {
             # print_all_job_status();
             ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
             ## とりあえずコメントアウト
-            # &builtin::check_and_alert_elapsed();
+            # &check_and_alert_elapsed();
         }
     };
     # print "invoke_abort_check done.\n";

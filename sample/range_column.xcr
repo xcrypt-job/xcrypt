@@ -3,8 +3,8 @@ use base qw(core);
 %template = (
     'id' => 'job6',
     'exe@' => sub { 'bin/fib ' . ($_[0] + $_[1]) . " > out_$_[0]_$_[1]"},
-    'RANGE0' => [41,42],
-    'RANGE1' => [0,2,4]
+    'RANGE0' => [31..33],
+    'RANGE1' => [0,9]
 );
 
 &prepare_submit_sync(%template);
