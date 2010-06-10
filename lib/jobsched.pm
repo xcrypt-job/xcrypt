@@ -176,11 +176,9 @@ sub handle_inventory {
                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
                 my $cur_stat = get_job_status ($job);
-print $cur_stat, "\n";
                 if ( $cur_stat eq 'queued' ) {
                     set_job_running ($job, $tim); $flag=1;
                 } else {
-print "foo\n";
                     $flag = -1;
                 }
             } elsif ($status eq 'done') {
@@ -248,12 +246,10 @@ sub invoke_watch_by_file {
 		}
 		# 一度エラーがでたら以降のhandle_inventoryはとばす
 		if ( $handle_inventory_ret >= 0 ) {
-print $_, "\n";
 		    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
 		}
 	    }
 	    close($CLIENT_IN);
-print $handle_inventory_ret, "\n";
 	    ###
 	    my $CLIENT_OUT = undef;
 	    until ($CLIENT_OUT) {
@@ -264,7 +260,6 @@ print $handle_inventory_ret, "\n";
 		}
 	    }
 	    if ($handle_inventory_ret >= 0) {
-print $handled_jobname, "\n";
 		# エラーがなければinventoryファイルにログを書き込んで:ackを返す
 		my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
 		open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
@@ -471,9 +466,9 @@ sub set_job_queued {
 sub set_job_running  {
     my ($self, $tim) = @_;
     unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "running", "queued" ) ) {
+#    if (do_set_p ($self, $tim, "running", "queued" ) ) {
         set_job_status ($self, "running", $tim);
-    }
+#    }
 }
 sub set_job_done   {
     my ($self, $tim) = @_;
