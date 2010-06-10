@@ -155,62 +155,51 @@ sub inventory_write_cmdline {
 # watchの出力一行を処理
 # for scalar contexts: set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
 # for list contexts: returns (status(the same to scalar contexts), last_job, last_jobname)
-my $last_jobname=undef; # 今処理中のジョブの名前（＝最後に見た"spec: <name>"）
-                        # handle_inventoryとinvoke_watch_by_socketから参照
-my $last_job=undef;     # The job corresponding to $last_jobname
 sub handle_inventory {
     my ($line) = @_;
-    my $ret = 0;
-    if ($line =~ /^spec\:\s*(.+)/) {            # ジョブ名
-        $last_jobname = $1;
-        $last_job = find_job_by_id ($last_jobname);
-    } elsif ($line =~ /^time_initialized\:\s*([0-9]*)/) {   # ジョブ実行予定
-        set_job_initialized ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_prepared\:\s*([0-9]*)/) {   # ジョブ投入直前
-        set_job_prepared ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_submitted\:\s*([0-9]*)/) {   # ジョブ投入直前
-        set_job_submitted ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_queued\:\s*([0-9]*)/) {   # qsub成功
-        set_job_queued ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_running\:\s*([0-9]*)/) {   # プログラム開始
-        # まだqueuedになっていなければ書き込まず，0を返すことで再連絡を促す
-        # ここでwaitしないのはデッドロック防止のため
-        if ( get_job_status ($last_job) eq "queued" ) {
-            set_job_running ($last_job, $1);
-            $ret = 1;
+    my ($flag, $job, $job_id);  # return values
+    if ($line =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/) {
+        $job_id = $1;
+        my ($status, $tim) = ($2, $3);
+        my $job = find_job_by_id ($job_id);
+        if ($job) {
+            if ($status eq 'initialized') {
+                set_job_initialized ($job, $tim); $flag=1;
+            } elsif ($status eq 'prepared') {
+                set_job_prepared ($job, $tim); $flag=1;
+            } elsif ($status eq 'submitted') {
+                set_job_submitted ($job, $tim); $flag=1;
+            } elsif ($status eq 'queued') {
+                set_job_queued ($job, $tim); $flag=1;
+            } elsif ($status eq 'running') {
+                # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
+                # ここでwaitせずに再連絡させるのはデッドロック防止のため
+                if ( get_job_status ($job) eq "queued" ) {
+                    set_job_running ($job, $1); $flag=1;
+                } else {
+                    $flag = -1;
+                }
+            } elsif ($status eq 'done') {
+                set_job_done ($job, $tim); $flag=1;
+            } elsif ($status eq 'finished') {
+                set_job_finished ($job, $tim); $flag=1;
+            } elsif ($status eq 'aborted') {
+                set_job_aborted ($job, $tim); $flag=1;
+            }
         } else {
-            $ret = -1;
+            warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
+            $flag = 0;
         }
-    } elsif ($line =~ /^time_done\:\s*([0-9]*)/) {   # プログラムの終了（正常） 
-        set_job_done ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_finished\:\s*([0-9]*)/) {   # ジョブスレッドの終了 
-        set_job_finished ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^time_aborted\:\s*([0-9]*)/) {   # プログラムの終了（正常以外）
-        set_job_aborted ($last_job, $1);
-        $ret = 1;
-    } elsif ($line =~ /^status\:\s*([a-z]*)/) { # 終了以外のジョブ状態変化
-        # とりあえず何もなし
-    } elsif ($line =~ /^date\_.*\:\s*(.+)/){    # ジョブ状態変化の時刻
-        # とりあえず何もなし
-    } elsif ($line =~/^time\_.*\:\s*(.+)/){     # ジョブ状態変化の時刻
-        # とりあえず何もなし
     } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
-        entry_signaled_job ($1);
-        $ret = 0;
+        my $job = find_job_by_id ($1);
+        entry_signaled_job ($1); $flag = 0;
     } elsif ($line =~/^:delall/) {              # 全ジョブ削除依頼
-        signal_all_jobs ();
-        $ret = 0;
+        signal_all_jobs (); $flag = 0;
     } else {
         warn "unexpected inventory: \"$line\"\n";
-        $ret = -1;
+        $flag = -1;
     }
-    wantarray ? return ($ret, $last_job, $last_jobname) : return $ret;
+    wantarray ? return ($flag, $job, $job_id) : return $flag;
 }
 
 # ジョブの状態変化を監視するスレッドを起動
@@ -270,8 +259,7 @@ sub invoke_watch_by_file {
 	    }
 	    if ($handle_inventory_ret >= 0) {
 		# エラーがなければinventoryファイルにログを書き込んで:ackを返す
-		my $inv_save = File::Spec->catfile($inventory_path,
-						   $last_jobname);
+		my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
 		open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
 		print $SAVE $inv_text;
 		close($SAVE);
@@ -322,6 +310,7 @@ sub invoke_watch_by_socket {
             $socket->autoflush();
             my $inv_text = '';
             my $handle_inventory_ret = 0;
+            my ($handled_job, $handled_jobname);
             # クライアントからのメッセージは
             # (0行以上のメッセージ行)+(":end"で始まる行)
             while (<$socket>) {
@@ -336,12 +325,12 @@ sub invoke_watch_by_socket {
                 }
                 # 一度エラーがでたら以降のhandle_inventoryはとばす
                 if ( $handle_inventory_ret >= 0 ) {
-                    $handle_inventory_ret = handle_inventory ($_, 1);
+                    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
                 }
             }
             if ($handle_inventory_ret >= 0) {
                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($inventory_path, $last_jobname);
+                my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
                 open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
                 print SAVE $inv_text;
                 close (SAVE);

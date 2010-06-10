@@ -27,14 +27,15 @@ while ($RETRY_P) {
     $handler = xcrypt_comm_start (@Comm_Start_Args);
     ###
     my $time_now = time();
-    my @times = localtime($time_now);
-    my ($year, $mon, $mday, $hour, $min, $sec, $wday) = ($times[5] + 1900, $times[4] + 1, $times[3], $times[2], $times[1], $times[0], $times[6]);
-    my $timestring = sprintf("%04d%02d%02d_%02d:%02d:%02d", $year, $mon, $mday, $hour, $min, $sec);
+    #  my @times = localtime($time_now);
+    # my ($year, $mon, $mday, $hour, $min, $sec, $wday) = ($times[5] + 1900, $times[4] + 1, $times[3], $times[2], $times[1], $times[0], $times[6]);
+    # my $timestring = sprintf("%04d%02d%02d_%02d:%02d:%02d", $year, $mon, $mday, $hour, $min, $sec);
     my $ackline = xcrypt_comm_send ($handler,
-                                    "spec: $Jobname\n".
-                                    "status: $Status\n".
-                                    "date_$Status: $timestring\n".
-                                    "time_$Status: $time_now\n",
+                                    ":transition $Jobname $Status $time_now\n",
+                                    # "spec: $Jobname\n".
+                                    # "status: $Status\n".
+                                    # "date_$Status: $timestring\n".
+                                    # "time_$Status: $time_now\n",
                                     1);
     xcrypt_comm_finish ($handler);
     if ( $ackline =~ /^:ack/ ) {
