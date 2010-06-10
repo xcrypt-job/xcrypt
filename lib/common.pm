@@ -51,11 +51,9 @@ sub set_member_if_empty ($$$) {
 sub cmd_executable {
     my ($cmd, $self) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if (defined $self->{env}->{host}) {
-	if ($self->{env}->{location} eq 'remote') {
-	    my $ssh = $Host_Hash{$self};
-	    $ssh->system("$cmd0[0]") or die "remote command failed: " . $ssh->error;
-	}
+    if ($self->{env}->{location} eq 'remote') {
+	my $ssh = $Host_Ssh_Hash{$self->{env}->{host}};
+	$ssh->system("$cmd0[0]"); # or die "remote command failed: " . $ssh->error;
     } else {
 	qx/which $cmd0[0]/;
     }
@@ -110,7 +108,8 @@ sub rmt_qx {
     my ($cmd, $env) = @_;
     my $ssh = $Host_Ssh_Hash{$env->{host}};
     my @ret;
-    @ret = $ssh->capture("$cmd") or die "remote command failed: ". $ssh->error;
+    print $cmd, "\n";
+    @ret = $ssh->capture("$cmd"); # or die "remote command failed: ". $ssh->error;
     return @ret;
 }
 
