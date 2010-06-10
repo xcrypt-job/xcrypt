@@ -20,12 +20,13 @@ sub start {
 sub before {
     my $self = shift;
     if ($self->{dry} == 1) {
-	for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
-            $self->{"exe$i"} = '';
-            for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
-                my $arg = "arg$i" . '_' . "$j";
-                $self->{$arg} = '';
-            }
+	foreach my $key (keys(%$self)) {
+            if ($key =~ /\Aexe[0-9]+\Z/) {
+		$self->{$key} = ' ';
+	    }
+            if ($key =~ /\Aarg[0-9]+_[0-9]+\Z/) {
+		$self->{$key} = ' ';
+	    }
         }
     }
 }

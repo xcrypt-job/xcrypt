@@ -1,5 +1,13 @@
 package builtin;
 
+use base qw(Exporter);
+our @EXPORT = qw(expand_and_make
+prepare submit sync
+prepare_submit submit_sync prepare_submit_sync
+add_env add_key add_keys
+repeat
+);
+
 use strict;
 use NEXT;
 use Coro;
@@ -15,11 +23,14 @@ use xcropt;
 use Cwd;
 use common;
 
-use base qw(Exporter);
-our @EXPORT = qw(expand_and_make prepare submit sync
-prepare_submit submit_sync prepare_submit_sync
-add_env add_key add_keys repeat
-);
+my %ssh_opts = (
+    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
+    recursive => 1,    # -rと同じ。再帰的にコピー
+    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
+    glob => 1,         # ファイル名に「*」を使えるようにする。
+    quiet => 1,        # 進捗を表示する
+    );
+
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
@@ -126,17 +137,15 @@ sub repeat {
     return $new_coro;
 }
 
-our %Host_Ssh_Hash;
-my @Env;
 sub add_env {
     my %env = @_;
     unless ($env{is_local} == 1) {
-	unless (exists $Host_Ssh_Hash{$env{host}}) {
+	unless (exists $common::Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $Host_Ssh_Hash{$env{host}} = $ssh;
+	    $common::Host_Ssh_Hash{$env{host}} = $ssh;
 #	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
-	    &remote_mkdir($xcropt::options{inventory_path}, \%env);
+	    &rmt_mkdir($xcropt::options{inventory_path}, \%env);
 	}
 	$env{is_local} = 0;
 print "foo\n";
@@ -156,17 +165,8 @@ print "bar\n";
 	    die "Set the environment varialble \$XCRYPT\n";
 	}
     }
-    push(@Env, \%env);
+    push(@common::Env, \%env);
     return \%env;
-}
-
-sub get_all_envs {
-    return @Env;
-}
-
-sub get_ssh_object_by_host {
-    my $host = shift;
-    return $Host_Ssh_Hash{$host};
 }
 
 sub add_key {
@@ -183,8 +183,8 @@ sub add_key {
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expandingchar"\Z/) {
-            die "Can't use $i as key since $i has $user::expandingchar at its tail.\n";
+        } elsif ($i =~ /"$user::expanding_char"\Z/) {
+            die "Can't use $i as key since $i has $user::expanding_char at its tail.\n";
         } else {
             push(@allkeys, $i);
         }
@@ -206,8 +206,8 @@ sub add_keys {
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expandingchar"\Z/) {
-            die "Can't use $i as key since $i has $user::expandingchar at its tail.\n";
+        } elsif ($i =~ /"$user::expanding_char"\Z/) {
+            die "Can't use $i as key since $i has $user::expanding_char at its tail.\n";
         } else {
             push(@premembers, $i);
         }
@@ -227,7 +227,7 @@ sub rm_tailnis {
 
 sub add_user_customizable_core_members {
     my %job = @_;
-    for ( my $i = 0; $i <= $user::max_exe_etc; $i++ ) {
+    for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
             push(@allkeys, "$name");
@@ -245,8 +245,8 @@ sub add_user_customizable_core_members {
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
-            if ($key =~ /"$user::expandingchar"\Z/) {
-                $/ = $user::expandingchar;
+            if ($key =~ /"$user::expanding_char"\Z/) {
+                $/ = $user::expanding_char;
                 chomp $key;
                 push(@allkeys, $key);
             } else {
@@ -270,11 +270,11 @@ sub generate {
     $job{id} = join($user::separator, ($job{id}, @ranges));
     &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expandingchar;
+        my $members = "$_" . $user::expanding_char;
         if ( exists($job{"$members"}) ) {
             # 「ジョブ定義ハッシュ@」の値がスカラである時
             unless ( ref($job{"$members"}) ) {
-                for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+                for ( my $i = 0; $i < $user::max_range; $i++ ) {
                     my $arg = $argument_name . $i;
 #                   no strict 'refs';
                     my $tmp = eval "$ranges[$i];";
@@ -317,6 +317,19 @@ sub generate {
     return $self;
 }
 
+sub rm_tail {
+    my @args = @_;
+  JUMP: until ($#args == 0) {
+      my $tmp = $args[$#args];
+      if ($tmp eq $nilchar) {
+	  pop(@args);
+      } else {
+	  last JUMP;
+      }
+  }
+    return @args;
+}
+
 sub times {
     if (@_ == ()) { return (); }
     my $head = shift;
@@ -340,7 +353,7 @@ sub MAX {
 
     &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expandingchar;
+        my $members = "$_" . $user::expanding_char;
         if ( exists($_[0]{"$members"}) ) {
             if (ref($_[0]{"$members"}) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -357,7 +370,7 @@ sub MIN {
 
     &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expandingchar;
+        my $members = "$_" . $user::expanding_char;
         if ( exists($_[0]{"$members"}) ) {
             if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -378,8 +391,8 @@ sub expand_and_make {
 	$job{exe0} = $job{exe};
 #	delete($job{exe});
     }
-    if ($job{"exe$user::expandingchar"}) {
-	$job{"exe0$user::expandingchar"} = $job{"exe$user::expandingchar"};
+    if ($job{"exe$user::expanding_char"}) {
+	$job{"exe0$user::expanding_char"} = $job{"exe$user::expanding_char"};
     }
     foreach my $i (0..$user::max_arg) {
 	if ($job{"arg$i"}) {
@@ -388,8 +401,8 @@ sub expand_and_make {
 	}
     }
     foreach my $i (0..$user::max_arg) {
-	if ($job{"arg$i$user::expandingchar"}) {
-	    $job{"arg0_$i$user::expandingchar"} = $job{"arg$i$user::expandingchar"};
+	if ($job{"arg$i$user::expanding_char"}) {
+	    $job{"arg0_$i$user::expanding_char"} = $job{"arg$i$user::expanding_char"};
 	}
     }
     &add_user_customizable_core_members(%job);
@@ -419,7 +432,7 @@ sub expand_and_make {
     }
 
     my $exist_of_RANGE = 0;
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $user::max_range; $i++ ) {
         if ( exists($job{"RANGE$i"}) ) {
             if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                 my $tmp = @{$job{"RANGE$i"}};
@@ -429,7 +442,7 @@ sub expand_and_make {
             }
         }
     }
-    for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+    for ( my $i = 0; $i < $user::max_range; $i++ ) {
         unless ( exists($job{"RANGE$i"}) ) {
             my @tmp = ($nilchar);
             $job{"RANGE$i"} = \@tmp;
@@ -439,7 +452,7 @@ sub expand_and_make {
     my @objs;
     if ( $exist_of_RANGE ) {
         my @ranges = ();
-        for ( my $i = 0; $i < $user::maxrange; $i++ ) {
+        for ( my $i = 0; $i < $user::max_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
                 if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                     push(@ranges, $job{"RANGE$i"});
@@ -448,7 +461,8 @@ sub expand_and_make {
                 }
             }
         }
-        my @range = &times(@ranges);
+        my @tmp = &rm_tail(@ranges);
+        my @range = &times(@tmp);
         foreach (@range) {
             my $self = &generate(\%job, @{$_});
             push(@objs, $self);
@@ -579,7 +593,7 @@ sub belong {
     my $c = 0;
     foreach (@b) {
         if (($a eq $_) ||
-            ($a eq ("$_" . "$user::expandingchar")) ||
+            ($a eq ("$_" . "$user::expanding_char")) ||
             ($a =~ /\ARANGE[0-9]+\Z/)
             ) {
             $c = 1;

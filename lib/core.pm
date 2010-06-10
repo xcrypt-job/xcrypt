@@ -143,7 +143,7 @@ sub make_jobscript_body {
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
-    foreach my $j (0..$user::max_exe_etc) {
+    foreach my $j (0..$user::max_exe) {
 	if ($self->{"exe$j"}) {
 	    my @args = ();
 	    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
@@ -189,8 +189,9 @@ sub update_script_file {
     my $file_base = shift;
     my $file = $file_base;
     write_string_array ($file, @_);
-    unless ($self->{rhost} eq '') {
-	&jobsched::xcr_put('main', $file, $self->{env});
+    unless ($self->{env}->{is_local} == 1) {
+	&rmt_put($file, $self->{env});
+	unlink $file;
     }
 }
 
