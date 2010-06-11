@@ -23,8 +23,6 @@ our %options = (
     'verbose' => 0,               # verbose level
     'stack_size' => 32768,        # Perlスレッドのスタックサイズ
     #
-    'rsh' => 'ssh',
-    'rcp' => 'scp',
     'rhost' => undef,
     'rwd' => undef,
     # define other default values...
@@ -47,8 +45,6 @@ GetOptions
      'verbose=i',
      'stack_size=i',
      #
-     'rsh=s',
-     'rcp=s',
      'rhost=s',
      'rwd=s',
      # define other command-line options...

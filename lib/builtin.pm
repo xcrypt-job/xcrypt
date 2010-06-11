@@ -23,15 +23,6 @@ use xcropt;
 use Cwd;
 use common;
 
-my %ssh_opts = (
-    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
-    recursive => 1,    # -rと同じ。再帰的にコピー
-    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
-    glob => 1,         # ファイル名に「*」を使えるようにする。
-    quiet => 1,        # 進捗を表示する
-    );
-
-
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @premembers = ('exe');
