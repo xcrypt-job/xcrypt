@@ -108,7 +108,7 @@ sub qstat {
 	    warn "$command_string not executable";
 	    return ();
 	}
-	my @qstat_out = &xcr_qx($command_string, '.',  $env);
+	my @qstat_out = &xcr_qx($command_string, $env);
 	my @tmp_ids = &$extractor(@qstat_out);
 	foreach (@tmp_ids) {
 	    push(@ids, "$env->{host}"."$_");
@@ -271,7 +271,7 @@ sub invoke_watch_by_file {
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
 	    }
-	    &rmt_put($ACK_TMPFILE, $handled_job->{env});
+	    &rmt_put($ACK_TMPFILE, $handled_job->{env}, '.');
 	    &xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
 	    unlink $OPENED_FILE;
 	    Coro::AnyEvent::sleep ($interval);

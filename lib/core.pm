@@ -14,9 +14,12 @@ use common;
 use builtin;
 
 
+my $cwd = Cwd::getcwd();
 sub new {
     my $class = shift;
     my $self = shift;
+
+    set_member_if_empty ($self, 'workdir', '.');
 
     # default env
     set_member_if_empty ($self, 'env', $common::default_env);
@@ -46,6 +49,7 @@ sub start {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
         # print "$self->{id}: calling qsub.\n";
+        &qsub_make($self);
         $self->{request_id} = &qsub($self);
         # print "$self->{id}: qsub finished.\n";
     }
@@ -185,7 +189,7 @@ sub update_script_file {
     my $file = $file_base;
     write_string_array ($file, @_);
     if ($self->{env}->{location} eq 'remote') {
-	&rmt_put($file, $self->{env});
+	&rmt_put(File::Spec->catfile($self->{workdir}, $file), $self->{env});
 	unlink $file;
     }
 }
@@ -249,8 +253,9 @@ sub after {}
 
 # Submit a job specified by a jop object ($self) by executing "qsub"
 # after creating a job script file and a string of command-line option.
-sub qsub {
+sub qsub_make {
     my $self = shift;
+
     my $sched = $self->{env}->{sched};
     unless (defined $jsconfig::jobsched_config{$sched}) {
 	die "$sched.pm doesn't exist in lib/config";
@@ -266,6 +271,10 @@ sub qsub {
     $self->make_before_in_job_script();
     $self->make_after_in_job_script();
     $self->update_all_script_files();
+}
+
+sub qsub {
+    my $self = shift;
 
     my $scriptfile = $self->workdir_member_file('jobscript_file');
     my $qsub_options = join(' ', @{$self->{qsub_options}});
@@ -273,13 +282,11 @@ sub qsub {
     # Set job's status "submitted"
     &jobsched::set_job_submitted($self);
 
+    my $sched = $self->{env}->{sched};
+    my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
-    }
-    my $flag = &xcr_exist('-f', $scriptfile, $self->{env});
-    unless ($flag) {
-	die "Can't find a job script file \"$scriptfile\"";
     }
 
     my $flag;
@@ -289,7 +296,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_qx("$cmdline", '.', $self->{env});
+	my @qsub_output = &xcr_chdir_qx("$cmdline", $self->{workdir}, $self->{env});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output
