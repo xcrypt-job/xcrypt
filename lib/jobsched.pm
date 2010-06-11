@@ -80,7 +80,7 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (common::cmd_executable ($command_string, $self)) {
+        if (common::cmd_executable ($command_string, $self->{env})) {
             print "Deleting $self->{id} (request ID: $req_id)\n";
             common::exec_async ($command_string);
         } else {
@@ -105,7 +105,7 @@ sub qstat {
 	    die "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
-	unless (common::cmd_executable ($command_string, $_)) {
+	unless (common::cmd_executable ($command_string, $env)) {
 	    warn "$command_string not executable";
 	    return ();
 	}

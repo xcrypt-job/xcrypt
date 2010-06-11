@@ -162,6 +162,15 @@ sub add_env {
 	}
     }
 =cut
+    unless (defined $env{p5l}) {
+	my @p5l = &xcr_qx('echo $PERL5LIB', '.', \%env);
+	chomp($p5l[0]);
+	unless ($p5l[0] eq '') {
+	    $env{p5l} = $p5l[0];
+	} else {
+	    die "Set the environment varialble \$PERL5LIB\n";
+	}
+    }
     unless (defined $env{sched}) {
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
 	chomp($sched[0]);

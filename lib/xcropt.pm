@@ -13,6 +13,7 @@ our %options = (
     'localhost' => $localhost,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
+    'p5l' => $ENV{PERL5LIB},
     'sched' => $ENV{XCRJOBSCHED},
     #
     'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
@@ -36,6 +37,7 @@ GetOptions
      'localhost=s',
      'wd=s',
      'xd=s',
+     'p5l=s',
      'sched=s',
      #
      'inventory_path=s',

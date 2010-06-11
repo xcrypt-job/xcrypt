@@ -110,7 +110,7 @@ sub make_jobscript_header {
     ## Environment variables
 #    push (@header, "export XCRYPT=$ENV{XCRYPT}");
 #    push (@header, 'export PERL5LIB=$XCRYPT/lib');
-    push (@header, "export PERL5LIB=$ENV{PERL5LIB}");
+    push (@header, 'export PERL5LIB=' . $self->{env}->{p5l});
     $self->{jobscript_header} = \@header;
 }
 
@@ -283,7 +283,7 @@ sub qsub {
     }
 
     my $flag;
-    $flag = common::cmd_executable ($qsub_command, $self);
+    $flag = common::cmd_executable ($qsub_command, $self->{env});
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";

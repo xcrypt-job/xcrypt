@@ -33,6 +33,7 @@ $default_env = { 'host'     => $xcropt::options{localhost},
 		 'wd'       => $xcropt::options{wd},
 		 'sched'    => $xcropt::options{sched},
 		 'xd'       => $xcropt::options{xd},
+		 'p5l'      => $xcropt::options{p5l},
 		 'location' => 'local' };
 our @Env = ($default_env);
 ##
@@ -55,11 +56,17 @@ sub set_member_if_empty ($$$) {
 
 ##
 sub cmd_executable {
-    my ($cmd, $self) = @_;
+    my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if ($self->{env}->{location} eq 'remote') {
-	my $ssh = $Host_Ssh_Hash{$self->{env}->{host}};
-	$ssh->system("which $cmd0[0]") or die "remote command failed: " . $ssh->error;
+    if ($env->{location} eq 'remote') {
+	my $ssh = $Host_Ssh_Hash{$env->{host}};
+print "$cmd $env->{host} \n";
+	my $tmp = $ssh->system("which $cmd0[0]") or die "remote command failed: " . $ssh->error;
+	if ($tmp == 0) {
+	    return 0;
+	} else {
+	    return 1;
+	}
     } else {
 	qx/which $cmd0[0]/;
     }
