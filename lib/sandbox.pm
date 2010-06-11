@@ -19,8 +19,8 @@ sub new {
 	print "Delete directory $self->{id}\n";
 	&xcr_rmtree($self->{id}, $self->{env});
     }
-    &xcr_mkdir($self->{id}, $self->{env});
 =cut
+    &xcr_mkdir($self->{id}, $self->{env});
 
     for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
 	# ここからリモート実行未対応

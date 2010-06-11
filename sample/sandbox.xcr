@@ -5,7 +5,9 @@ use base qw(sandbox core);
     'exe' => './fib',
     'arg0' => 40,
     'arg1' => '> job6_out1',
-    'linkedfile0' => 'bin/fib'
+    'linkedfile0' => 'bin/fib',
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034'
 );
 
 &prepare_submit_sync(%template);

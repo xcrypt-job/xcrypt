@@ -5,7 +5,7 @@ use base qw (core);
     'id' => 'job0',
     'exe' => 'bin/fib-file',
     'arg0' => "dat/num40",
-    'arg1' => "out0",
+    'arg1' => "out_0",
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'before_in_job' => 'print STDERR $self->{exe}. "\n";',

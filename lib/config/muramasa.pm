@@ -8,7 +8,8 @@ $jsconfig::jobsched_config{"muramasa"} = {
     qstat_command => "ps",
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
-    jobscript_workdir => sub { $_[0]->{id}; },
+#    jobscript_workdir => sub { $_[0]->{id}; },
+    jobscript_workdir => sub { '.'; },
     qsub_option_stdout => workdir_file_option('-o ', 'stdout'),
     qsub_option_stderr => workdir_file_option('-e ', 'stderr'),
     extract_req_id_from_qsub_output => sub {
