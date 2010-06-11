@@ -24,8 +24,8 @@ our %options = (
     #
     'rsh' => 'ssh',
     'rcp' => 'scp',
-#    'rhost' => undef,
-#    'rwd' => undef,
+    'rhost' => undef,
+    'rwd' => undef,
     # define other default values...
     );
 
@@ -47,8 +47,8 @@ GetOptions
      #
      'rsh=s',
      'rcp=s',
-#     'rhost=s',
-#     'rwd=s',
+     'rhost=s',
+     'rwd=s',
      # define other command-line options...
     );
 

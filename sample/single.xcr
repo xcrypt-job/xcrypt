@@ -2,12 +2,14 @@
 use base qw (core);
 
 %template = (
-             'id' => 'job0',
-             'exe' => 'bin/fib-file',
-             'arg0' => "dat/num40",
-             'arg1' => "output",
-             'before_in_job' => 'print STDERR $self->{exe}. "\n";',
-#             'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
-             'after_in_job' => 'print STDOUT $self->{id}. "\n";',
-             );
+    'id' => 'job0',
+    'exe' => 'bin/fib-file',
+    'arg0' => "dat/num40",
+    'arg1' => "out0",
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034',
+    'before_in_job' => 'print STDERR $self->{exe}. "\n";',
+#    'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
+    'after_in_job' => 'print STDOUT $self->{id}. "\n";',
+    );
 &prepare_submit_sync (%template);

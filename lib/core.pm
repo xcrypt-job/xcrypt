@@ -13,18 +13,13 @@ use xcropt;
 use common;
 use builtin;
 
-my $default_env = &add_env( 'host'     => $xcropt::options{localhost},
-			    'wd'       => $xcropt::options{wd},
-			    'sched'    => $xcropt::options{sched},
-			    'xd'       => $xcropt::options{xd},
-			    'location' => 'local' );
 
 sub new {
     my $class = shift;
     my $self = shift;
 
     # default env
-    set_member_if_empty ($self, 'env', $default_env);
+    set_member_if_empty ($self, 'env', $common::default_env);
 
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', "$self->{id}_stdout");
@@ -115,6 +110,7 @@ sub make_jobscript_header {
     ## Environment variables
 #    push (@header, "export XCRYPT=$ENV{XCRYPT}");
 #    push (@header, 'export PERL5LIB=$XCRYPT/lib');
+    push (@header, "export PERL5LIB=$ENV{PERL5LIB}");
     $self->{jobscript_header} = \@header;
 }
 
@@ -123,8 +119,7 @@ sub make_jobscript_body {
     my @body = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
     ## Job script body
-=comment
-    # Chdir to the job's working directory -> この機能を sandbox.pm に移す
+    # Chdir to the job's working directory
     my $wkdir_str = $self->{workdir};
     if (defined ($cfg{jobscript_workdir})) {
         my $js_wkdir = $cfg{jobscript_workdir};
@@ -136,7 +131,6 @@ sub make_jobscript_body {
             warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-=cut
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
