@@ -139,8 +139,10 @@ sub repeat {
 
 sub add_env {
     my %env = @_;
-    unless ($env{location} eq 'local') {
+    unless (defined $env{location}) {
 	$env{location} = 'remote';
+    }
+    if ($env{location} eq 'remote') {
 	unless (exists $common::Host_Ssh_Hash{$env{host}}) {
 	    my ($user, $host) = split(/@/, $env{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
@@ -148,7 +150,19 @@ sub add_env {
 #	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
 	    &rmt_mkdir($xcropt::options{inventory_path}, \%env);
 	}
-	$env{location} = 'remote';
+    }
+=comment
+    unless (defined $env{wd}) {
+	my @wd = &xcr_qx('echo $HOME', '.', \%env);
+	chomp($wd[0]);
+	unless ($wd[0] eq '') {
+	    $env{wd} = $wd[0];
+	} else {
+	    die "Set the key wd\n";
+	}
+    }
+=cut
+    unless (defined $env{sched}) {
 	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
@@ -156,13 +170,15 @@ sub add_env {
 	} else {
 	    die "Set the environment varialble \$XCRJOBSCHED\n";
 	}
-	my @xd = &xcr_qx('echo $XCRYPT', '.', \%env);
-	chomp($xd[0]);
-	unless ($xd[0] eq '') {
-	    $env{xd} = $xd[0];
-	} else {
-	    die "Set the environment varialble \$XCRYPT\n";
-	}
+    }
+    unless (defined $env{xd}) {
+	    my @xd = &xcr_qx('echo $XCRYPT', '.', \%env);
+	    chomp($xd[0]);
+	    unless ($xd[0] eq '') {
+		$env{xd} = $xd[0];
+	    } else {
+		die "Set the environment varialble \$XCRYPT\n";
+	    }
     }
     push(@common::Env, \%env);
     return \%env;

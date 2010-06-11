@@ -17,6 +17,7 @@ use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
+use xcropt;
 
 my %ssh_opts = (
     copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
@@ -27,7 +28,13 @@ my %ssh_opts = (
     );
 
 our %Host_Ssh_Hash;
-our @Env;
+our $default_env;
+$default_env = { 'host'     => $xcropt::options{localhost},
+		 'wd'       => $xcropt::options{wd},
+		 'sched'    => $xcropt::options{sched},
+		 'xd'       => $xcropt::options{xd},
+		 'location' => 'local' };
+our @Env = ($default_env);
 ##
 sub mkarray ($) {
     my $x = shift;
