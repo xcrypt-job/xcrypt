@@ -131,6 +131,7 @@ sub make_jobscript_body {
             warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
         }
     }
+    push (@body, "cd $wkdir_str");
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
