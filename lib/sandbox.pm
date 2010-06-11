@@ -12,6 +12,7 @@ sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
 
+    $self->{workdir} = $self->{id};
 =comment
     # If the working directory already exists, delete it
     my $ex = &xcr_exist('-d', $self->{id}, $self->{env});
@@ -20,7 +21,8 @@ sub new {
 	&xcr_rmtree($self->{id}, $self->{env});
     }
 =cut
-    &xcr_mkdir($self->{id}, $self->{env});
+    mkdir $self->{workdir}, 0755;
+    &xcr_mkdir($self->{workdir}, $self->{env});
 
     for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
 	# ここからリモート実行未対応
@@ -64,7 +66,6 @@ sub start {
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
-        $self->{workdir} = File::Spec->catfile($self->{workdir}, $self->{id});
         &core::qsub_make($self);
         $self->{request_id} = &core::qsub($self);
     }

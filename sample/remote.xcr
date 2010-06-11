@@ -1,6 +1,5 @@
 use base qw(sandbox core);
 
-
 my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 		     'wd'   => '/home/spara/abet/xcrypt/sample' );
 my $env1 = &add_env( 'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',

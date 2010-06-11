@@ -521,7 +521,7 @@ sub do_prepared {
 		    next;
 		} else {
 		    if (defined $self->{env}->{host}) {
-		    &jobsched::set_job_prepared($self);
+			&jobsched::set_job_prepared($self);
 		    } else {
 			&jobsched::set_job_prepared($self);
 		    }

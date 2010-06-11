@@ -124,7 +124,7 @@ sub make_jobscript_body {
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
     ## Job script body
     # Chdir to the job's working directory
-    my $wkdir_str = $self->{workdir};
+    my $wkdir_str = File::Spec->catfile($self->{env}->{wd}, $self->{workdir});
     if (defined ($cfg{jobscript_workdir})) {
         my $js_wkdir = $cfg{jobscript_workdir};
         unless ( ref($js_wkdir) ) {
@@ -134,8 +134,8 @@ sub make_jobscript_body {
         } else {
             warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
         }
+	push (@body, "cd $wkdir_str");
     }
-    push (@body, "cd $wkdir_str");
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
@@ -186,10 +186,10 @@ sub make_after_in_job_script {
 sub update_script_file {
     my $self = shift;
     my $file_base = shift;
-    my $file = $file_base;
+    my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
     if ($self->{env}->{location} eq 'remote') {
-	&rmt_put(File::Spec->catfile($self->{workdir}, $file), $self->{env});
+	&rmt_put($file, $self->{env});
 	unlink $file;
     }
 }

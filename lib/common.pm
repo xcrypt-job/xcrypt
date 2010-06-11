@@ -316,10 +316,10 @@ sub rmt_get {
 }
 
 sub rmt_put {
-    my ($base, $env) = @_;
+    my ($base, $env, $dir) = @_;
     if ($env->{location} eq 'remote') {
 	unless ($xcropt::options{shared}) {
-	    my $file = File::Spec->catfile($env->{wd}, $base);
+	    my $file = File::Spec->catfile($env->{wd}, $dir, $base);
 	    my $ssh = $Host_Ssh_Hash{$env->{host}};
 	    $ssh->scp_put(\%ssh_opts, "$base", "$file") or die "put failed: " . $ssh->error;
 	    unlink $base;
