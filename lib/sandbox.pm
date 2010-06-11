@@ -64,9 +64,9 @@ sub start {
     if ( $stat eq 'done' ) {
         print "Skipping " . $self->{id} . " because already $stat.\n";
     } else {
-	chdir $self->{id};
+        $self->{workdir} = File::Spec->catfile($self->{workdir}, $self->{id});
+        &core::qsub_make($self);
         $self->{request_id} = &core::qsub($self);
-	chdir '..';
     }
 }
 

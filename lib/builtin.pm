@@ -144,7 +144,7 @@ sub add_env {
     }
 =comment
     unless (defined $env{wd}) {
-	my @wd = &xcr_qx('echo $HOME', '.', \%env);
+	my @wd = &xcr_qx('echo $HOME', \%env);
 	chomp($wd[0]);
 	unless ($wd[0] eq '') {
 	    $env{wd} = $wd[0];
@@ -154,7 +154,7 @@ sub add_env {
     }
 =cut
     unless (defined $env{p5l}) {
-	my @p5l = &xcr_qx('echo $PERL5LIB', '.', \%env);
+	my @p5l = &xcr_qx('echo $PERL5LIB', \%env);
 	chomp($p5l[0]);
 	unless ($p5l[0] eq '') {
 	    $env{p5l} = $p5l[0];
@@ -163,7 +163,7 @@ sub add_env {
 	}
     }
     unless (defined $env{sched}) {
-	my @sched = &xcr_qx('echo $XCRJOBSCHED', '.', \%env);
+	my @sched = &xcr_qx('echo $XCRJOBSCHED', \%env);
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
 	    $env{sched} = $sched[0];
@@ -172,7 +172,7 @@ sub add_env {
 	}
     }
     unless (defined $env{xd}) {
-	    my @xd = &xcr_qx('echo $XCRYPT', '.', \%env);
+	    my @xd = &xcr_qx('echo $XCRYPT', \%env);
 	    chomp($xd[0]);
 	    unless ($xd[0] eq '') {
 		$env{xd} = $xd[0];

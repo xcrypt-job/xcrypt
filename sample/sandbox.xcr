@@ -1,10 +1,10 @@
-use base qw(sandbox core);
+use base qw(core);
 
 %template = (
-    'id' => 'job6',
+    'id' => 'job2',
     'exe' => './fib',
     'arg0' => 40,
-    'arg1' => '> job6_out1',
+    'arg1' => '> job2_out1',
     'linkedfile0' => 'bin/fib',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034'

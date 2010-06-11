@@ -7,6 +7,7 @@ any_to_string any_to_string_nl any_to_string_spc write_string_array
 rmt_get rmt_put
 rmt_system rmt_qx rmt_exist rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_system xcr_qx xcr_exist xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
+xcr_chdir_qx
 get_all_envs
 );
 
@@ -146,14 +147,26 @@ sub rmt_qx {
 }
 
 ##
-sub xcr_qx {
+sub xcr_chdir_qx {
     my ($cmd, $dir, $env) = @_;
+    my @ret;
+    if ($env->{location} eq 'remote') {
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $cmd";
+	@ret = &rmt_qx("$tmp", $env);
+    } else {
+	@ret = qx/cd $dir; $cmd/;
+    }
+    return @ret;
+}
+
+sub xcr_qx {
+    my ($cmd, $env) = @_;
     my @ret;
     if ($env->{location} eq 'remote') {
 	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
 	@ret = &rmt_qx("$tmp", $env);
     } else {
-	@ret = qx/cd $dir; $cmd/;
+	@ret = qx/$cmd/;
     }
     return @ret;
 }
