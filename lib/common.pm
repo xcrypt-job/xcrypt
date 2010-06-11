@@ -60,7 +60,6 @@ sub cmd_executable {
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{location} eq 'remote') {
 	my $ssh = $Host_Ssh_Hash{$env->{host}};
-print "$cmd $env->{host} \n";
 	my $tmp = $ssh->system("which $cmd0[0]") or die "remote command failed: " . $ssh->error;
 	if ($tmp == 0) {
 	    return 0;

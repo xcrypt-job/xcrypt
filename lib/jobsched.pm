@@ -24,7 +24,6 @@ use common;
 use xcropt;
 use jsconfig;
 
-my $rsh_command = $xcropt::options{rsh};
 ##################################################
 
 ### Inventory
@@ -224,7 +223,7 @@ sub invoke_watch_by_file {
     # 監視スレッドの処理
     $watch_thread = async_pool
     {
-        my $interval = 0.5;
+        my $interval = 1;
         while (1) {
 	    &wait_and_get_file ($interval);
 	    my $CLIENT_IN;
@@ -279,14 +278,6 @@ sub invoke_watch_by_file {
 	}
     }
 }
-
-my %ssh_opts = (
-    copy_attrs => 1,     # -pと同じ。オリジナルの情報を保持
-    recursive => 1,       # -rと同じ。再帰的にコピー
-    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
-    glob => 1,               # ファイル名に「*」を使えるようにする。
-    quiet => 1,              # 進捗を表示する
-    );
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 
