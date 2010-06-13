@@ -134,8 +134,8 @@ sub make_jobscript_body {
         } else {
             warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
         }
-	push (@body, "cd $wkdir_str");
     }
+    push (@body, "cd $wkdir_str");
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
@@ -189,7 +189,7 @@ sub update_script_file {
     my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
     if ($self->{env}->{location} eq 'remote') {
-	&rmt_put($file, $self->{env});
+	&rmt_put($self->{env}, $file, '.');
 	unlink $file;
     }
 }
@@ -296,7 +296,7 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
 
-	my @qsub_output = &xcr_chdir_qx("$cmdline", $self->{workdir}, $self->{env});
+	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
         if ( @qsub_output == 0 ) { die "qsub command failed."; }
 
         # Get request ID from qsub's output

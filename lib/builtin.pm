@@ -139,7 +139,7 @@ sub add_env {
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
 	    $common::Host_Ssh_Hash{$env{host}} = $ssh;
 #	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
-	    &rmt_mkdir($xcropt::options{inventory_path}, \%env);
+	    &rmt_mkdir(\%env, $xcropt::options{inventory_path});
 	}
     }
 =comment
@@ -154,7 +154,7 @@ sub add_env {
     }
 =cut
     unless (defined $env{p5l}) {
-	my @p5l = &xcr_qx('echo $PERL5LIB', \%env);
+	my @p5l = &xcr_qx(\%env, 'echo $PERL5LIB');
 	chomp($p5l[0]);
 	unless ($p5l[0] eq '') {
 	    $env{p5l} = $p5l[0];
@@ -163,7 +163,7 @@ sub add_env {
 	}
     }
     unless (defined $env{sched}) {
-	my @sched = &xcr_qx('echo $XCRJOBSCHED', \%env);
+	my @sched = &xcr_qx(\%env, 'echo $XCRJOBSCHED');
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
 	    $env{sched} = $sched[0];
@@ -172,7 +172,7 @@ sub add_env {
 	}
     }
     unless (defined $env{xd}) {
-	    my @xd = &xcr_qx('echo $XCRYPT', \%env);
+	    my @xd = &xcr_qx(\%env, 'echo $XCRYPT');
 	    chomp($xd[0]);
 	    unless ($xd[0] eq '') {
 		$env{xd} = $xd[0];

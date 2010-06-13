@@ -1,13 +1,19 @@
 use base qw(sandbox core);
 
+my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
+		     'wd'   => '/home/spara/abet/xcrypt/sample' );
+my $env1 = &add_env( 'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
+		     'wd'   => '/home/b/b30331/xcrypt/sample' );
+
 %template = (
     'id' => 'job2',
     'exe' => './fib',
-    'arg0' => 40,
+    'arg0@' => [40, 41],
     'arg1' => '> job2_out1',
     'linkedfile0' => 'bin/fib',
     'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034'
-);
+    'JS_group' => 'gh10034',
+    'env@'  => sub { if ($_[0] == 0) { $env0; } else { $env1; } }
+    );
 
 &prepare_submit_sync(%template);
