@@ -1,4 +1,4 @@
-use base qw(sandbox core);
+use base qw(core);
 
 my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 		     'wd'   => '/home/spara/abet/xcrypt/sample' );
@@ -12,5 +12,5 @@ my $env1 = &add_env( 'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'env@'  => sub { if ($_[0] == 0) { $env0; } else { $env1; } }
-);
+    );
 &prepare_submit_sync(%template);

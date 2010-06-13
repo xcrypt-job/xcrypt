@@ -22,7 +22,7 @@ sub new {
     }
 =cut
     mkdir $self->{workdir}, 0755;
-    &xcr_mkdir($self->{workdir}, $self->{env});
+    &xcr_mkdir($self->{env}, $self->{workdir});
 
     for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
 	# ここからリモート実行未対応
@@ -33,7 +33,7 @@ sub new {
 	    closedir(DIR);
 	    foreach (@params) {
 		my $tmp = File::Spec->catfile($copied, $_);
-		my $temp = File::Spec->catfile($self->{id}, $_);
+		my $temp = File::Spec->catfile($self->{workdir}, $_);
 		rcopy $tmp, $temp;
 	    }
 	}
@@ -41,17 +41,18 @@ sub new {
 
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    my $ex = &xcr_exist('-f', $copied, $self->{env});
+	    my $ex = &xcr_exist($self->{env}, '-f', $copied);
 	    if ($ex) {
-		&xcr_copy($copied, $self->{id}, $self->{env});
+		&xcr_copy($self->{env}, $copied, $self->{workdir});
 	    } else {
 			warn "Can't copy $copied\n";
 	    }
 	    }
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
-	    &xcr_symlink($self->{id}, File::Spec->catfile($file),
-			 File::Spec->catfile(basename($file)), $self->{env});
+	    &xcr_symlink($self->{env}, $self->{workdir},
+			 File::Spec->catfile($file),
+			 File::Spec->catfile(basename($file)));
 	}
     }
     return bless $self, $class;

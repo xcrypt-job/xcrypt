@@ -108,7 +108,7 @@ sub qstat {
 	    warn "$command_string not executable";
 	    return ();
 	}
-	my @qstat_out = &xcr_qx($command_string, $env);
+	my @qstat_out = &xcr_qx($env, $command_string, '.');
 	my @tmp_ids = &$extractor(@qstat_out);
 	foreach (@tmp_ids) {
 	    push(@ids, "$env->{host}"."$_");
@@ -124,7 +124,7 @@ sub inventory_write {
     my ($self, $stat) = @_;
     my $cmdline = inventory_write_cmdline($self, $stat);
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_system("$cmdline", '.', $self->{env});
+    &xcr_system($self->{env}, "$cmdline", '.');
 
     ## Use the following when $watch_thread is a Coro.
     # {
@@ -271,8 +271,8 @@ sub invoke_watch_by_file {
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
 	    }
-	    &rmt_put($ACK_TMPFILE, $handled_job->{env}, '.');
-	    &xcr_rename($ACK_TMPFILE, $ACKFILE, $handled_job->{env});
+	    &rmt_put($handled_job->{env}, $ACK_TMPFILE, '.');
+	    &xcr_rename($handled_job->{env}, $ACK_TMPFILE, $ACKFILE);
 	    unlink $OPENED_FILE;
 	    Coro::AnyEvent::sleep ($interval);
 	}
@@ -661,10 +661,11 @@ sub wait_and_get_file {
   LABEL: while (1) {
       foreach my $env (@envs) {
 	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist('-e', $REQFILE, $env);
+	      my $tmp = &rmt_exist($env, '-e', $REQFILE);
 	      if ($tmp) {
-		  &rmt_rename($REQFILE, $OPENED_FILE, $env);
-		  &rmt_get($OPENED_FILE, $env);
+		  &rmt_rename($env, $REQFILE, $OPENED_FILE);
+		  &rmt_get($env, $OPENED_FILE, '.');
+		  &rmt_unlink($env, $OPENED_FILE);
 		  last LABEL;
 	      }
 	  } else {

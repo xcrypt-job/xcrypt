@@ -5,8 +5,8 @@ our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 rmt_get rmt_put
-rmt_system rmt_qx rmt_exist rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
-xcr_system xcr_qx xcr_exist xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
+rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
+xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 xcr_chdir_qx
 get_all_envs
 );
@@ -117,219 +117,164 @@ sub write_string_array {
     close ($out);
 }
 
-sub rmt_system {
-    my ($cmd, $env) = @_;
+sub get_all_envs {
+    return @Env;
+}
+
+sub rmt_cmd {
+    my $cmd = shift;
+    my $env = shift;
     my $ssh = $Host_Ssh_Hash{$env->{host}};
-    my @ret;
-    @ret = $ssh->system("$cmd") or die "remote command failed: ". $ssh->error;
-    return @ret;
-}
-
-##
-sub xcr_system {
-    my ($cmd, $dir, $env) = @_;
-    my @ret;
-    if ($env->{location} eq 'remote') {
-	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
-	@ret = &rmt_system("$tmp", $env);
-    } else {
-	@ret = system("cd $dir; $cmd/");
-    }
-    return @ret;
-}
-
-sub rmt_qx {
-    my ($cmd, $env) = @_;
-    my $ssh = $Host_Ssh_Hash{$env->{host}};
-    my @ret;
-    @ret = $ssh->capture("$cmd") or die "remote command failed: ". $ssh->error;
-    return @ret;
-}
-
-##
-sub xcr_chdir_qx {
-    my ($cmd, $dir, $env) = @_;
-    my @ret;
-    if ($env->{location} eq 'remote') {
-	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $cmd";
-	@ret = &rmt_qx("$tmp", $env);
-    } else {
-	@ret = qx/cd $dir; $cmd/;
-    }
-    return @ret;
-}
-
-sub xcr_qx {
-    my ($cmd, $env) = @_;
-    my @ret;
-    if ($env->{location} eq 'remote') {
-	my $tmp = 'cd ' . $env->{wd} . "; $cmd";
-	@ret = &rmt_qx("$tmp", $env);
-    } else {
-	@ret = qx/$cmd/;
-    }
-    return @ret;
-}
-
-sub rmt_exist {
-    my ($type, $file, $env) = @_;
-    my @flags;
-
-    my $fullpath = File::Spec->catfile($env->{wd}, $file);
-    my $ssh = $Host_Ssh_Hash{$env->{host}};
-    @flags = $ssh->capture("test $type $fullpath && echo 1");
-    chomp($flags[0]);
-
-    return $flags[0];
-}
-
-sub xcr_exist {
-    my ($type, $file, $env) = @_;
-    my $flag;
-    if ($env->{location} eq 'remote') {
-	$flag = &rmt_exist($type, $file, $env);
-    } else {
-	if (-e $file) { $flag = 1; }
-    }
-    return $flag;
-}
-
-sub rmt_mkdir {
-    my ($dir, $env) = @_;
-    my $flag = &rmt_exist('-d', $dir, $env);
-    unless ($flag) {
-	if ($env->{location} eq 'remote') {
-	    my $rdir = File::Spec->catfile($env->{wd}, $dir);
-	    &rmt_system("mkdir $rdir", $env);
+    if ($cmd eq 'qx') {
+	my ($command, $dir) = @_;
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+	my @ret = $ssh->capture("$tmp") or die "remote command failed: $ssh->error";
+	return @ret;
+    } elsif ($cmd eq 'system') {
+	my ($command, $dir) = @_;
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+	my $flag = $ssh->system("$tmp") or die "remote command failed: $ssh->error";
+	return $flag;
+    } elsif ($cmd eq 'exist') {
+	my ($type, $file) = @_;
+	my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	my @flags = $ssh->capture("test $type $fullpath && echo 1");
+	chomp($flags[0]);
+	return $flags[0];
+    } elsif ($cmd eq 'mkdir') {
+	my ($dir) = @_;
+	my $flag = &rmt_cmd('exist', $env, '-d', $dir);
+	unless ($flag) {
+	    my $fullpath = File::Spec->catfile($env->{wd}, $dir);
+	    &rmt_cmd('system', $env, "mkdir $fullpath");
 	}
-    }
-}
-
-sub xcr_mkdir {
-    my ($dir, $env) = @_;
-    my $flag = &xcr_exist('-d', $dir, $env);
-    unless ($flag) {
-	if ($env->{location} eq 'remote') {
-	    &rmt_mkdir($dir, $env);
-	} else {
-	    mkdir $dir, 0755;
+    } elsif ($cmd eq 'copy') {
+	my ($copied, $dir) = @_;
+	unless ($xcropt::options{shared}) {
+	    my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
+	    my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
+	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
 	}
-    }
-}
-
-sub rmt_copy {
-    my ($copied, $dir, $env) = @_;
-    unless ($xcropt::options{shared}) {
-	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
-	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_system("cp -f $fp_copied $fp_dir", $env);
-    }
-}
-
-sub xcr_copy {
-    my ($copied, $dir, $env) = @_;
-    if ($env->{location} eq 'remote') {
-	&rmt_copy($copied, $dir, $env);
-    } else {
-	fcopy($copied, $dir);
-    }
-}
-
-sub rmt_rename {
-    my ($file0, $file1, $env) = @_;
-    my $flag = &rmt_exist('-f', $file0, $env);
-    if ($flag) {
-	my $tmp0 = File::Spec->catfile($env->{wd}, $file0);
-	my $tmp1 = File::Spec->catfile($env->{wd}, $file1);
-	&rmt_system("mv -f $tmp0 $tmp1", $env);
-    }
-}
-
-sub xcr_rename {
-    my ($file0, $file1, $env) = @_;
-    if ($env->{location} eq 'remote') {
-	&rmt_rename($file0, $file1, $env);
-    } else {
-	rename $file0, $file1;
-    }
-}
-
-sub rmt_symlink {
-    my ($dir, $file, $link, $env) = @_;
-    my $ex0 = &rmt_exist('-f', $file, $env);
-    my $ex1 = &rmt_exist('-h', File::Spec->catfile($dir, $link), $env);
-    if ($ex0 && !$ex1) {
-	unless ($ex1) {
-	    my $tmp = File::Spec->catfile($env->{wd}, $dir, $link);
-	    my $file1 = File::Spec->catfile($env->{wd}, $file);
-	    &rmt_system("ln -s $file1 $tmp", $env);
-	}
-    } else {
-	warn "Can't link to $file";
-    }
-}
-
-sub xcr_symlink {
-    my ($dir, $file, $link, $env) = @_;
-    if ($env->{location} eq 'remote') {
-	&rmt_symlink($dir, $file, $link, $env);
-    } else {
-	if (-f $file) {
-	    unless (-e $link) {
-		symlink(File::Spec->rel2abs($file),
-			File::Spec->catfile($dir, $link));
+    } elsif ($cmd eq 'rename') {
+	my ($renamed, $file) = @_;
+	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
+	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
+	&rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+    } elsif ($cmd eq 'symlink') {
+	my ($dir, $file, $link) = @_;
+	my $ex0 = &rmt_cmd('exist', $env, '-f', $file, $env);
+	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
+	if ($ex0 && !$ex1) {
+	    unless ($ex1) {
+		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
+		my $tmp1 = File::Spec->catfile($env->{wd}, $file);
+		&rmt_cmd('system', $env, "ln -s $tmp1 $tmp0");
 	    }
 	} else {
 	    warn "Can't link to $file";
 	}
-    }
-}
-
-sub rmt_unlink {
-    my ($file, $env) = @_;
-    my $flag = &rmt_exist('-f', $file, $env);
-    if ($flag) {
-	my $tmp = File::Spec->catfile($env->{wd}, $file);
-	&rmt_system("rm -f $tmp", $env);
-    }
-}
-
-sub xcr_unlink {
-    my ($file, $env) = @_;
-    if ($env->{location} eq 'remote') {
-	&rmt_unlink($file, $env);
+    } elsif ($cmd eq 'unlink') {
+	my ($file) = @_;
+	my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	&rmt_cmd('system', $env, "rm -f $fullpath");
+    } elsif ($cmd eq 'get') {
+	my ($file, $to) = @_;
+	my $flag = &rmt_cmd('exist', $env, '-f', $file);
+	if ($flag) {
+	    unless ($xcropt::options{shared}) {
+		my $fullpath = File::Spec->catfile($env->{wd}, $file);
+		$ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or die "get failed: $ssh->error";
+	    }
+	}
+    } elsif ($cmd eq 'put') {
+	my ($file, $to) = @_;
+	if (-e $file) {
+	    unless ($xcropt::options{shared}) {
+		my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
+		$ssh->scp_put(\%ssh_opts, $file, $fullpath) or die "put failed: $ssh->error";
+	    }
+	}
     } else {
-	unlink $file;
+	foreach(%$cmd){print $_, "\n";}
+	die "$cmd doesn't match";
     }
 }
 
-sub rmt_get {
-    my ($base, $env) = @_;
+sub xcr_cmd {
+    my $cmd =shift;
+    my $env =shift;
     if ($env->{location} eq 'remote') {
-	unless ($xcropt::options{shared}) {
-	    my $file = File::Spec->catfile($env->{wd}, $base);
-	    my $ssh = $Host_Ssh_Hash{$env->{host}};
-	    $ssh->scp_get(\%ssh_opts, "$file", "$base") or die "get failed: " . $ssh->error;
-	    &rmt_unlink($base, $env);
+	rmt_cmd($cmd, $env, @_);
+    } elsif ($env->{location} eq 'local') {
+	if ($cmd eq 'exist') {
+	    my $flag = 0;
+	    if (-e $file) {
+		$flag = 1;
+	    }
+	    return $flag;
+	} elsif ($cmd eq 'qx') {
+	    my ($command, $dir) = @_;
+	    my @ret = qx/cd $dir; $command/;
+	    return @ret;
+	} elsif ($cmd eq 'system') {
+	    my ($command, $dir) = @_;
+	    my $flag = system("cd $dir; $command");
+	    return $flag;
+	} elsif ($cmd eq 'mkdir') {
+	    my ($dir) = @_;
+	    if (-d $dir) {
+		mkdir $dir, 0755;
+	    }
+	} elsif ($cmd eq 'copy') {
+	    my ($copied, $dir) = @_;
+	    if (-d $copied) {
+		fcopy($copied, $dir);
+	    }
+	} elsif ($cmd eq 'rename') {
+	    my ($renamed, $file) = @_;
+	    if (-e $renamed) {
+		rename $renamed, $file;
+	    }
+	} elsif ($cmd eq 'symlink') {
+	    my ($dir, $file, $link) = @_;
+	    if (-f $file) {
+		unless (-e $link) {
+		    symlink(File::Spec->rel2abs($file),
+			    File::Spec->catfile($dir, $link));
+		}
+	    } else {
+		warn "Can't link to $file";
+	    }
+	} elsif ($cmd eq 'unlink') {
+	    my ($file) = @_;
+	    unlink $file;
+	} else {
+	    die ;
 	}
+    } else {
+	die ;
     }
 }
 
-sub rmt_put {
-    my ($base, $env, $dir) = @_;
-    if ($env->{location} eq 'remote') {
-	unless ($xcropt::options{shared}) {
-	    my $file = File::Spec->catfile($env->{wd}, $dir, $base);
-	    my $ssh = $Host_Ssh_Hash{$env->{host}};
-	    $ssh->scp_put(\%ssh_opts, "$base", "$file") or die "put failed: " . $ssh->error;
-	    unlink $base;
-	}
-    }
-}
+sub rmt_exist   { my $flag = rmt_cmd('exist',   @_);  return $flag; }
+sub rmt_qx      { my @ret  = rmt_cmd('qx',      @_);  return @ret;  }
+sub rmt_system  { my $flag = rmt_cmd('system',  @_);  return $flag; }
+sub rmt_mkdir   {            rmt_cmd('mkdir',   @_);                }
+sub rmt_copy    {            rmt_cmd('copy',    @_);                }
+sub rmt_rename  {            rmt_cmd('rename',  @_);                }
+sub rmt_symlink {            rmt_cmd('symlink', @_);                }
+sub rmt_unlink  {            rmt_cmd('unlink',  @_);                }
+sub rmt_get     {            rmt_cmd('get',     @_);                }
+sub rmt_put     {            rmt_cmd('put',     @_);                }
 
-sub get_all_envs {
-    return @Env;
-}
+sub xcr_exist   { my $flag = xcr_cmd('exist',   @_);  return $flag; }
+sub xcr_qx      { my @ret  = xcr_cmd('qx',      @_);  return @ret;  }
+sub xcr_system  { my $flag = xcr_cmd('system',  @_);  return $flag; }
+sub xcr_mkdir   {            xcr_cmd('mkdir',   @_);                }
+sub xcr_copy    {            xcr_cmd('copy',    @_);                }
+sub xcr_rename  {            xcr_cmd('rename',  @_);                }
+sub xcr_symlink {            xcr_cmd('symlink', @_);                }
+sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 1;
 
