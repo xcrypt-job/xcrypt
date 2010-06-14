@@ -412,6 +412,8 @@ sub get_job_last_update {
 sub set_job_status {
     my ($self, $stat, $tim) = @_;
     status_name_to_level ($stat); # 有効な名前かチェック
+    unless ($tim) { $tim = time(); }
+    warn_if_illegal_transition ($self, $stat, $tim);
     print "$self->{id} <= $stat\n";
     {
         $self->{status} = $stat;
@@ -427,95 +429,68 @@ sub set_job_status {
 }
 sub set_job_initialized  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
-        set_job_status ($self, "initialized", $tim);
-    }
+    set_job_status ($self, "initialized", $tim);
 }
 sub set_job_prepared  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "prepared", "initialized") ) {
-        set_job_status ($self, "prepared", $tim);
-    }
+    set_job_status ($self, "prepared", $tim);
 }
 sub set_job_submitted {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "submitted", "prepared") ) {
-        set_job_status ($self, "submitted", $tim);
-    }
+    set_job_status ($self, "submitted", $tim);
 }
 sub set_job_queued {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "queued", "submitted" ) ) {
-        set_job_status ($self, "queued", $tim);
-    }
+    set_job_status ($self, "queued", $tim);
 }
 sub set_job_running  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-#    if (do_set_p ($self, $tim, "running", "queued" ) ) {
-        set_job_status ($self, "running", $tim);
-#    }
+    set_job_status ($self, "running", $tim);
 }
 sub set_job_done   {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    # finished→done はリトライのときに有り得る
-    if (do_set_p ($self, $tim, "done", "running", "finished" ) ) {
-        set_job_status ($self, "done", $tim);
-    }
+    set_job_status ($self, "done", $tim);
 }
 sub set_job_finished {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "finished", "done" ) ) {
-        set_job_status ($self, "finished", $tim);
-    }
+    set_job_status ($self, "finished", $tim);
 }
 sub set_job_aborted  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    my $curstat = get_job_status ($self);
-    if (do_set_p ($self, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
-        && $curstat ne "done" && $curstat ne "finished" ) {
-        set_job_status ($self, "aborted", $tim);
-    }
+    set_job_status ($self, "aborted", $tim);
 }
+
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
-sub do_set_p {
-  my ($self, $tim, $stat, @e_stats) = @_;
-  my $who = "set_job_$stat";
+my %Expected_Previous_Status = (
+    "initialized" => ["initialized"],
+    "prepared" => ["initialized"],
+    "submitted" => ["prepared"],
+    "queued" => ["submitted"],
+    "running" => ["queued"],
+    "done" => ["running"],
+    "finished" => ["done"],
+    "aborted" => ["initialized", "prepared", "submitted", "queued", "running"],
+    );
+
+sub warn_if_illegal_transition {
+  my ($self, $stat, $tim) = @_;
+  # check update time
   my $last_update = get_job_last_update ($self);
-  # print "$self->{id}: cur=$tim, last=$last_update\n";
-  if ( $tim > $last_update ) {
-      expect_job_stat ($who, $self, 1, @e_stats);
-      return 1;
-  } elsif ( $tim == $last_update ) {
-      if ( $stat eq get_job_status($self) ) {
-          return 0;
-      } else {
-          return expect_job_stat ($who, $self, 0, @e_stats);
-      }
-  } else {
-      return 0;
+  if ( $tim < $last_update ) {
+      warn "[$self->{id}] transition to $stat at $tim but the last_update is $last_update.";
   }
-}
-# ジョブ$selfの状態が，$whoによる状態遷移の期待するもの（@e_statsのどれか）であるかをチェック
-sub expect_job_stat {
-    my ($who, $self, $do_warn, @e_stats) = @_;
-    my $stat = get_job_status($self);
-    foreach my $es (@e_stats) {
-        if ( $stat eq $es ) {
-            return 1;
-        }
-    }
-    if ( $do_warn ) {
-        print "$who expects $self->{id} is (or @e_stats), but $stat.\n";
-    }
-    return 0;
+  # check whether the correct transition order
+  my $ok=0;
+  my $last_stat = get_job_status ($self);
+  my @expect_stats = @{$Expected_Previous_Status{$stat}};
+  foreach my $es (@expect_stats) {
+      if ( $last_stat eq $es ) {
+          $ok = 1; last;
+      }
+  }
+  if ( $ok == 0 ) {
+      warn "[$self->{id}] transition to $stat at $tim but the previous status is $last_stat (expects one of @expect_stats).";
+  }
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
