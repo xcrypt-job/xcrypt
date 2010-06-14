@@ -129,59 +129,62 @@ sub repeat {
 }
 
 sub add_env {
-    my %env = @_;
-    unless (defined $env{location}) {
-	$env{location} = 'remote';
+    my ($env) = @_;
+    unless (defined $env->{location}) {
+	$env->{location} = 'remote';
     }
-    if ($env{location} eq 'remote') {
-	unless (exists $common::Host_Ssh_Hash{$env{host}}) {
-	    my ($user, $host) = split(/@/, $env{host});
+    if ($env->{location} eq 'remote') {
+	unless (exists $common::Host_Ssh_Hash{$env->{host}}) {
+	    my ($user, $host) = split(/@/, $env->{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $common::Host_Ssh_Hash{$env{host}} = $ssh;
+	    $common::Host_Ssh_Hash{$env->{host}} = $ssh;
 #	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
-	    &rmt_mkdir(\%env, $xcropt::options{inventory_path});
 	}
     }
-=comment
-    unless (defined $env{wd}) {
-	my @wd = &xcr_qx('echo $HOME', \%env);
+    unless (defined $env->{wd}) {
+	my @wd = &xcr_qx($env, 'echo $HOME');
 	chomp($wd[0]);
+	print $wd[0], "\n";
 	unless ($wd[0] eq '') {
-	    $env{wd} = $wd[0];
+	    $env->{wd} = $wd[0];
 	} else {
-	    die "Set the key wd\n";
+	    die "Set the key wd at $env->{host}\n";
 	}
     }
-=cut
-    unless (defined $env{p5l}) {
-	my @p5l = &xcr_qx(\%env, 'echo $PERL5LIB');
+    if ($env->{location} eq 'remote') {
+	unless ($xcropt::options{shared}) {
+	    &rmt_mkdir($env, $xcropt::options{inventory_path});
+	}
+    }
+    unless (defined $env->{p5l}) {
+	my @p5l = &xcr_qx($env, 'echo $PERL5LIB');
 	chomp($p5l[0]);
 	unless ($p5l[0] eq '') {
-	    $env{p5l} = $p5l[0];
+	    $env->{p5l} = $p5l[0];
 	} else {
-	    die "Set the environment varialble \$PERL5LIB\n";
+	    die "Set the environment varialble \$PERL5LIB at $env->{host}\n";
 	}
     }
-    unless (defined $env{sched}) {
-	my @sched = &xcr_qx(\%env, 'echo $XCRJOBSCHED');
+    unless (defined $env->{sched}) {
+	my @sched = &xcr_qx($env, 'echo $XCRJOBSCHED');
 	chomp($sched[0]);
 	unless ($sched[0] eq '') {
-	    $env{sched} = $sched[0];
+	    $env->{sched} = $sched[0];
 	} else {
-	    die "Set the environment varialble \$XCRJOBSCHED\n";
+	    die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
 	}
     }
-    unless (defined $env{xd}) {
-	    my @xd = &xcr_qx(\%env, 'echo $XCRYPT');
+    unless (defined $env->{xd}) {
+	    my @xd = &xcr_qx($env, 'echo $XCRYPT');
 	    chomp($xd[0]);
 	    unless ($xd[0] eq '') {
-		$env{xd} = $xd[0];
+		$env->{xd} = $xd[0];
 	    } else {
-		die "Set the environment varialble \$XCRYPT\n";
+		die "Set the environment varialble \$XCRYPT at $env->{host}\n";
 	    }
     }
-    push(@common::Env, \%env);
-    return \%env;
+    push(@common::Env, $env);
+    return $env;
 }
 
 sub add_key {

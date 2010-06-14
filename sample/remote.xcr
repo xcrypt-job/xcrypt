@@ -1,16 +1,18 @@
 use base qw(core);
 
-my $env0 = &add_env( 'host' => 'abet@super.para.media.kyoto-u.ac.jp',
-		     'wd'   => '/home/spara/abet/xcrypt/sample' );
-my $env1 = &add_env( 'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
-		     'wd'   => '/home/b/b30331/xcrypt/sample' );
+my $env0 = &add_env({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
+'wd' => '/home/spara/abet/xcrypt/sample'});
+my $env1 = &add_env({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
+'wd' => '/home/b/b30331/xcrypt/sample'});
 
 %template = (
     'id' => 'job4',
     'exe0@' => sub { 'bin/fib ' . (40 + $_[0]) . " > out_$_[0]"},
-    'RANGE0' => [0,1],
+    'RANGE0' => [0,1,2],
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'env@'  => sub { if ($_[0] == 0) { $env0; } else { $env1; } }
+    'env@'  => sub { if ($_[0] == 0) { $env0;
+		     } elsif ($_[0] == 1) { $env1;
+		     } else { $default_env0; } }
     );
 &prepare_submit_sync(%template);
