@@ -40,6 +40,9 @@ my $Opened_File = $Reqfile . '.opened';
 my $Ack_Tmpfile = $Ackfile . '.tmp';  # not required?
 my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 
+# Log File
+my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
+
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
 # The signal to broadcast that a job status is updated.
@@ -422,6 +425,7 @@ sub set_job_status {
     status_name_to_level ($stat); # 有効な名前かチェック
     unless ($tim) { $tim = time(); }
     warn_if_illegal_transition ($self, $stat, $tim);
+    write_log "$tim $self->{id} $stat\n";
     print "$self->{id} <= $stat\n";
     {
         $self->{status} = $stat;
@@ -499,6 +503,20 @@ sub warn_if_illegal_transition {
   if ( $ok == 0 ) {
       warn "[$self->{id}] transition to $stat at $tim but the previous status is $last_stat (expects one of @expect_stats).";
   }
+}
+
+# Logging
+sub write_log {
+    my ($str) = @_;
+    open (my $LOG, $Logfile, '>>');
+    unless ($LOG) {
+        warn "Failed to open the log file $Logfile";
+        return 0;
+    } else {
+        print $LOG "$str";
+        close $LOG;
+        return 1;
+    }
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
