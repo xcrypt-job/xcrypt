@@ -402,7 +402,7 @@ sub get_job_status {
     if ( exists $self->{status} ) {
         return $self->{status};
     } else {
-        return "initialized";
+        return "uninitialized";
     }
 }
 # Get the last time when the status of the job updated.
@@ -470,7 +470,7 @@ sub set_job_aborted  {
 
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
 my %Expected_Previous_Status = (
-    "initialized" => ["initialized"],
+    "initialized" => ["uninitialized"],
     "prepared" => ["initialized"],
     "submitted" => ["prepared"],
     "queued" => ["submitted"],
