@@ -1,4 +1,4 @@
-use base qw(n_section_method core);
+use base qw(sandbox n_section_method core);
 use Data_Generation;
 use Data_Extraction;
 
@@ -6,8 +6,7 @@ $n_section_method::del_extra_jobs = 0;
 
 %job = (
     'id' => 'job0',
-    'exe0' => './minushalf.pl',
-    'arg0_0' => 'template.dat',
+    'exe' => './minushalf.pl template.dat',
     'linkedfile0' => 'bin/minushalf.pl',
     'JS_group' => 'gh10034',
     'JS_queue' => 'gh10034',
