@@ -150,19 +150,27 @@ sub rmt_cmd {
 	}
     } elsif ($cmd eq 'copy') {
 	my ($copied, $dir) = @_;
-	unless ($xcropt::options{shared}) {
-	    my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
-	    my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
+	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
+	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
+	my $ex = &rmt_cmd('exist', $env, '-f', $fp_copied);
+	if ($ex) {
 	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
+	} else {
+	    warn "Can't copy $fp_copied $fp_dir";
 	}
     } elsif ($cmd eq 'rename') {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
 	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-	&rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+	my $ex = &rmt_cmd('exist', $env, '-f', $tmp0);
+	if ($ex) {
+	    &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+	} else {
+	    warn "Can't rename $tmp0 to $tmp1";
+	}
     } elsif ($cmd eq 'symlink') {
 	my ($dir, $file, $link) = @_;
-	my $ex0 = &rmt_cmd('exist', $env, '-f', $file, $env);
+	my $ex0 = &rmt_cmd('exist', $env, '-f', $file);
 	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
 	if ($ex0 && !$ex1) {
 	    unless ($ex1) {
@@ -171,7 +179,7 @@ sub rmt_cmd {
 		&rmt_cmd('system', $env, "ln -s $tmp1 $tmp0");
 	    }
 	} else {
-	    warn "Can't link to $file";
+	    warn "Can't link $tmp1 to $tmp0";
 	}
     } elsif ($cmd eq 'unlink') {
 	my ($file) = @_;
