@@ -425,7 +425,7 @@ sub set_job_status {
     status_name_to_level ($stat); # 有効な名前かチェック
     unless ($tim) { $tim = time(); }
     warn_if_illegal_transition ($self, $stat, $tim);
-    write_log "$tim $self->{id} $stat\n";
+    write_log ("$tim $self->{id} $stat\n");
     print "$self->{id} <= $stat\n";
     {
         $self->{status} = $stat;
@@ -508,7 +508,7 @@ sub warn_if_illegal_transition {
 # Logging
 sub write_log {
     my ($str) = @_;
-    open (my $LOG, $Logfile, '>>');
+    open (my $LOG, '>>', $Logfile);
     unless ($LOG) {
         warn "Failed to open the log file $Logfile";
         return 0;
