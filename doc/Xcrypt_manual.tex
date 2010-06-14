@@ -690,7 +690,21 @@ sync(@jobs);
 \end{alltt}
 \end{boxnote}
 
-\section{\texttt{add\_host\_wd}}
+\section{\texttt{add\_env}}
+
+\begin{boxnote}
+\begin{alltt}
+add_key(\|\|%\textit{env});
+\end{alltt}
+\end{boxnote}
+
+\begin{boxnote}
+\begin{alltt}
+$env = add_env(\{'host' => '\textit{foo@bar}', 'wd' => '\textit{/home/foo}'\});
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'env' => $env);
+\end{alltt}
+\end{boxnote}
+
 
 \section{\texttt{add\_key}}
 

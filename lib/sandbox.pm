@@ -42,12 +42,8 @@ sub new {
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
 	    my $ex = &xcr_exist($self->{env}, '-f', $copied);
-	    if ($ex) {
-		&xcr_copy($self->{env}, $copied, $self->{workdir});
-	    } else {
-			warn "Can't copy $copied\n";
-	    }
-	    }
+	    &xcr_copy($self->{env}, $copied, $self->{workdir});
+	}
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
 	    &xcr_symlink($self->{env}, $self->{workdir},
