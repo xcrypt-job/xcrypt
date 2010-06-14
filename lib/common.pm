@@ -152,7 +152,7 @@ sub rmt_cmd {
 	my ($copied, $dir) = @_;
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	my $ex = &rmt_cmd('exist', $env, '-f', $fp_copied);
+	my $ex = &rmt_cmd('exist', $env, '-f', $copied);
 	if ($ex) {
 	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
 	} else {
@@ -162,7 +162,7 @@ sub rmt_cmd {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
 	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-	my $ex = &rmt_cmd('exist', $env, '-f', $tmp0);
+	my $ex = &rmt_cmd('exist', $env, '-f', $renamed);
 	if ($ex) {
 	    &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
 	} else {
