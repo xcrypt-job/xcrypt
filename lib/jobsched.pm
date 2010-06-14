@@ -271,8 +271,13 @@ sub invoke_watch_by_file {
 		print $CLIENT_OUT ":failed\n";
 		close($CLIENT_OUT);
 	    }
-	    &rmt_put($handled_job->{env}, $ACK_TMPFILE, '.');
-	    &xcr_rename($handled_job->{env}, $ACK_TMPFILE, $ACKFILE);
+	    if ($handled_job->{env}->{location} eq 'remote') {
+		&rmt_put($handled_job->{env}, $ACK_TMPFILE, '.');
+		&rmt_rename($handled_job->{env}, $ACK_TMPFILE, $ACKFILE);
+		unlink $ACK_TMPFILE;
+	    } elsif ($handled_job->{env}->{location} eq 'local') {
+		rename $ACK_TMPFILE, $ACKFILE;
+	    }
 	    unlink $OPENED_FILE;
 	    Coro::AnyEvent::sleep ($interval);
 	}
