@@ -27,18 +27,21 @@ use jsconfig;
 ##################################################
 
 ### Inventory
-my $inventory_host = $xcropt::options{localhost};
-my $inventory_port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
-my $inventory_path = $xcropt::options{inventory_path};
+my $Inventory_Host = $xcropt::options{localhost};
+my $Inventory_Port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
+my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 
 my $Inventory_Write_Cmd = 'inventory_write.pl';
 
 # for inventory_write_file
-my $REQFILE = File::Spec->catfile($inventory_path, 'inventory_req');
-my $ACKFILE = File::Spec->catfile($inventory_path, 'inventory_ack');
-my $OPENED_FILE = $REQFILE . '.opened';
-my $ACK_TMPFILE = $ACKFILE . '.tmp';  # not required?
-my $LOCKDIR = File::Spec->catfile($inventory_path, 'inventory_lock');
+my $Reqfile = File::Spec->catfile($Inventory_Path, 'inventory_req');
+my $Ackfile = File::Spec->catfile($Inventory_Path, 'inventory_ack');
+my $Opened_File = $Reqfile . '.opened';
+my $Ack_Tmpfile = $Ackfile . '.tmp';  # not required?
+my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
+
+# Log File
+my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -54,12 +57,13 @@ my %Signaled_Jobs = ();
 my $All_Jobs_Signaled = undef;
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
-my $watch_thread = undef;    # accessed from bin/xcrypt
+my $Watch_Thread = undef;    # accessed from bin/xcrypt
 # ジョブがabortedになってないかチェックするスレッド
-my $abort_check_thread = undef;
-my $abort_check_interval = $xcropt::options{abort_check_interval};
+my $Abort_Check_Thread = undef;
+my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
-our $periodic_thread = undef; # accessed from bin/xcrypt
+# Now obsoleted because it is implemented in builtin.pm?
+our $Periodic_Thread = undef; # accessed from bin/xcrypt
 
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
@@ -126,7 +130,7 @@ sub inventory_write {
     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
     &xcr_system($self->{env}, "$cmdline", '.');
 
-    ## Use the following when $watch_thread is a Coro.
+    ## Use the following when $Watch_Thread is a Coro.
     # {
     #     my $pid = common::exec_async ($cmdline);
     #     ## polling for checking the child process finished.
@@ -141,12 +145,12 @@ sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
     my $write_command=File::Spec->catfile($self->{env}->{xd}, 'bin', $Inventory_Write_Cmd);
-    if ( $inventory_port > 0 ) {
-        return "$write_command $self->{id} $stat sock $inventory_host $inventory_port";
+    if ( $Inventory_Port > 0 ) {
+        return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port";
     } else {
-	my $dir = File::Spec->catfile($self->{env}->{wd}, $LOCKDIR);
-	my $req = File::Spec->catfile($self->{env}->{wd}, $REQFILE);
-	my $ack = File::Spec->catfile($self->{env}->{wd}, $ACKFILE);
+	my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
+	my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
+	my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
 	return "$write_command $self->{id} $stat file $dir $req $ack";
     }
 }
@@ -206,11 +210,11 @@ sub handle_inventory {
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
     # インベントリファイルの置き場所ディレクトリを作成
-    unless (-d "$inventory_path") {
-	mkdir $inventory_path, 0755;
+    unless (-d "$Inventory_Path") {
+	mkdir $Inventory_Path, 0755;
     }
     # 起動
-    if ( $inventory_port > 0 ) {   # TCP/IP通信で通知を受ける
+    if ( $Inventory_Port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
     } else {                       # NFS経由で通知を受ける
         invoke_watch_by_file ();
@@ -221,79 +225,80 @@ sub invoke_watch {
 my $slp = 1;
 sub invoke_watch_by_file {
     # 監視スレッドの処理
-    $watch_thread = async_pool
+    $Watch_Thread = async_pool
     {
         my $interval = 1;
         while (1) {
-	    &wait_and_get_file ($interval);
-	    my $CLIENT_IN;
-	    open($CLIENT_IN, '<', $OPENED_FILE) || next;
-	    my $inv_text = '';
-	    my $handle_inventory_ret = 0;
-	    my $handled_job; my $handled_jobname;
-	    # クライアントからのメッセージは
-	    # (0行以上のメッセージ行)+(":end"で始まる行)
-	    while (<$CLIENT_IN>) {
-		if ( $_ =~ /^:/ ) {
-		    if ( $_ =~ /^:end/ ) {
-			# print STDERR "received :end\n";
-			last;
-		    }
-		} else {
-		    # ':' で始まる行を除いてinventory_fileに保存する
-		    $inv_text .= $_;
-		}
-		# 一度エラーがでたら以降のhandle_inventoryはとばす
-		if ( $handle_inventory_ret >= 0 ) {
-		    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
-		}
-	    }
-	    close($CLIENT_IN);
-	    ###
-	    my $CLIENT_OUT = undef;
-	    until ($CLIENT_OUT) {
-		open($CLIENT_OUT, '>', $ACK_TMPFILE) or die "Can't open\n";
-		unless ($CLIENT_OUT) {
-		    warn ("Failed to make ackfile $ACK_TMPFILE");
-		    sleep $slp;
-		}
-	    }
-	    if ($handle_inventory_ret >= 0) {
-		# エラーがなければinventoryファイルにログを書き込んで:ackを返す
-		my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
-		open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
-		print $SAVE $inv_text;
-		close($SAVE);
-		print $CLIENT_OUT ":ack\n";
-		close($CLIENT_OUT);
-	    } else {
-		# エラーがあれば:failedを返す（inventory fileには書き込まない）
-		print $CLIENT_OUT ":failed\n";
-		close($CLIENT_OUT);
-	    }
-	    if ($handled_job->{env}->{location} eq 'remote') {
-		&rmt_put($handled_job->{env}, $ACK_TMPFILE, '.');
-		&rmt_rename($handled_job->{env}, $ACK_TMPFILE, $ACKFILE);
-		unlink $ACK_TMPFILE;
-	    } elsif ($handled_job->{env}->{location} eq 'local') {
-		rename $ACK_TMPFILE, $ACKFILE;
-	    }
-	    unlink $OPENED_FILE;
-	    Coro::AnyEvent::sleep ($interval);
-	}
+            &wait_and_get_file ($interval);
+            my $CLIENT_IN;
+            open($CLIENT_IN, '<', $Opened_File) || next;
+            my $inv_text = '';
+            my $handle_inventory_ret = 0;
+            my $handled_job; my $handled_jobname;
+            # クライアントからのメッセージは
+            # (0行以上のメッセージ行)+(":end"で始まる行)
+            while (<$CLIENT_IN>) {
+                if ( $_ =~ /^:/ ) {
+                    if ( $_ =~ /^:end/ ) {
+                        # print STDERR "received :end\n";
+                        last;
+                    }
+                } else {
+                    # ':' で始まる行を除いてinventory_fileに保存する
+                    $inv_text .= $_;
+                }
+                # 一度エラーがでたら以降のhandle_inventoryはとばす
+                if ( $handle_inventory_ret >= 0 ) {
+                    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
+                }
+            }
+            close($CLIENT_IN);
+            ###
+            my $CLIENT_OUT = undef;
+            until ($CLIENT_OUT) {
+                open($CLIENT_OUT, '>', $Ack_Tmpfile) or die "Can't open\n";
+                unless ($CLIENT_OUT) {
+                    warn ("Failed to make ackfile $Ack_Tmpfile");
+                    sleep $slp;
+                }
+            }
+            if ($handle_inventory_ret >= 0) {
+                # エラーがなければinventoryファイルにログを書き込んで:ackを返す
+                my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
+                open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
+                print $SAVE $inv_text;
+                close($SAVE);
+                print $CLIENT_OUT ":ack\n";
+                close($CLIENT_OUT);
+            } else {
+                # エラーがあれば:failedを返す（inventory fileには書き込まない）
+                print $CLIENT_OUT ":failed\n";
+                close($CLIENT_OUT);
+            }
+            if ($handled_job->{env}->{location} eq 'remote') {
+                &rmt_put($handled_job->{env}, $Ack_Tmpfile, '.');
+                &rmt_rename($handled_job->{env}, $Ack_Tmpfile, $Ackfile);
+                unlink $Ack_Tmpfile;
+            } elsif ($handled_job->{env}->{location} eq 'local') {
+                rename $Ack_Tmpfile, $Ackfile;
+            }
+            unlink $Opened_File;
+            Coro::AnyEvent::sleep ($interval);
+        }
     }
+    return $Watch_Thread;
 }
 
 # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 
 sub invoke_watch_by_socket {
-    my $listen_socket = Coro::Socket->new (LocalAddr => $inventory_host,
-                                           LocalPort => $inventory_port,
+    my $listen_socket = Coro::Socket->new (LocalAddr => $Inventory_Host,
+                                           LocalPort => $Inventory_Port,
                                            Listen => 10,
                                            Proto => 'tcp',
                                            ReuseAddr => 1);
     unless ($listen_socket) { die "Can't bind : $@\n"; }
-    $watch_thread = async_pool
+    $Watch_Thread = async_pool
     {
         my $socket;
         while (1) {
@@ -324,7 +329,7 @@ sub invoke_watch_by_socket {
             }
             if ($handle_inventory_ret >= 0) {
                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($inventory_path, $handled_jobname);
+                my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
                 open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
                 print SAVE $inv_text;
                 close (SAVE);
@@ -337,13 +342,14 @@ sub invoke_watch_by_socket {
             }
             $socket->close();
        }
-   };
+    };
+    return $Watch_Thread;
 }
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
 sub load_inventory {
     my ($jobname) = @_;
-    my $invfile = File::Spec->catfile($inventory_path, $jobname);
+    my $invfile = File::Spec->catfile($Inventory_Path, $jobname);
     if ( -e $invfile ) {
 	open ( IN, "< $invfile" )
 	    or warn "Can't open $invfile: $!\n";
@@ -399,7 +405,7 @@ sub get_job_status {
     if ( exists $self->{status} ) {
         return $self->{status};
     } else {
-        return "initialized";
+        return "uninitialized";
     }
 }
 # Get the last time when the status of the job updated.
@@ -417,6 +423,9 @@ sub get_job_last_update {
 sub set_job_status {
     my ($self, $stat, $tim) = @_;
     status_name_to_level ($stat); # 有効な名前かチェック
+    unless ($tim) { $tim = time(); }
+    warn_if_illegal_transition ($self, $stat, $tim);
+    write_log ("$tim $self->{id} $stat\n");
     print "$self->{id} <= $stat\n";
     {
         $self->{status} = $stat;
@@ -432,95 +441,82 @@ sub set_job_status {
 }
 sub set_job_initialized  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "initialized", "initialized", "submitted", "queued", "running", "aborted") ) {
-        set_job_status ($self, "initialized", $tim);
-    }
+    set_job_status ($self, "initialized", $tim);
 }
 sub set_job_prepared  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "prepared", "initialized") ) {
-        set_job_status ($self, "prepared", $tim);
-    }
+    set_job_status ($self, "prepared", $tim);
 }
 sub set_job_submitted {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "submitted", "prepared") ) {
-        set_job_status ($self, "submitted", $tim);
-    }
+    set_job_status ($self, "submitted", $tim);
 }
 sub set_job_queued {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "queued", "submitted" ) ) {
-        set_job_status ($self, "queued", $tim);
-    }
+    set_job_status ($self, "queued", $tim);
 }
 sub set_job_running  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-#    if (do_set_p ($self, $tim, "running", "queued" ) ) {
-        set_job_status ($self, "running", $tim);
-#    }
+    set_job_status ($self, "running", $tim);
 }
 sub set_job_done   {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    # finished→done はリトライのときに有り得る
-    if (do_set_p ($self, $tim, "done", "running", "finished" ) ) {
-        set_job_status ($self, "done", $tim);
-    }
+    set_job_status ($self, "done", $tim);
 }
 sub set_job_finished {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    if (do_set_p ($self, $tim, "finished", "done" ) ) {
-        set_job_status ($self, "finished", $tim);
-    }
+    set_job_status ($self, "finished", $tim);
 }
 sub set_job_aborted  {
     my ($self, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    my $curstat = get_job_status ($self);
-    if (do_set_p ($self, $tim, "aborted", "initialized", "prepared", "submitted", "queued", "running" )
-        && $curstat ne "done" && $curstat ne "finished" ) {
-        set_job_status ($self, "aborted", $tim);
-    }
+    set_job_status ($self, "aborted", $tim);
 }
+
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
-sub do_set_p {
-  my ($self, $tim, $stat, @e_stats) = @_;
-  my $who = "set_job_$stat";
+my %Expected_Previous_Status = (
+    "initialized" => ["uninitialized"],
+    "prepared" => ["initialized"],
+    "submitted" => ["prepared"],
+    "queued" => ["submitted"],
+    "running" => ["queued"],
+    "done" => ["running"],
+    "finished" => ["done"],
+    "aborted" => ["initialized", "prepared", "submitted", "queued", "running"],
+    );
+
+sub warn_if_illegal_transition {
+  my ($self, $stat, $tim) = @_;
+  # check update time
   my $last_update = get_job_last_update ($self);
-  # print "$self->{id}: cur=$tim, last=$last_update\n";
-  if ( $tim > $last_update ) {
-      expect_job_stat ($who, $self, 1, @e_stats);
-      return 1;
-  } elsif ( $tim == $last_update ) {
-      if ( $stat eq get_job_status($self) ) {
-          return 0;
-      } else {
-          return expect_job_stat ($who, $self, 0, @e_stats);
+  if ( $tim < $last_update ) {
+      warn "[$self->{id}] transition to $stat at $tim but the last_update is $last_update.";
+  }
+  # check whether the correct transition order
+  my $ok=0;
+  my $last_stat = get_job_status ($self);
+  my @expect_stats = @{$Expected_Previous_Status{$stat}};
+  foreach my $es (@expect_stats) {
+      if ( $last_stat eq $es ) {
+          $ok = 1; last;
       }
-  } else {
-      return 0;
+  }
+  if ( $ok == 0 ) {
+      warn "[$self->{id}] transition to $stat at $tim but the previous status is $last_stat (expects one of @expect_stats).";
   }
 }
-# ジョブ$selfの状態が，$whoによる状態遷移の期待するもの（@e_statsのどれか）であるかをチェック
-sub expect_job_stat {
-    my ($who, $self, $do_warn, @e_stats) = @_;
-    my $stat = get_job_status($self);
-    foreach my $es (@e_stats) {
-        if ( $stat eq $es ) {
-            return 1;
-        }
+
+# Logging
+sub write_log {
+    my ($str) = @_;
+    open (my $LOG, '>>', $Logfile);
+    unless ($LOG) {
+        warn "Failed to open the log file $Logfile";
+        return 0;
+    } else {
+        print $LOG "$str";
+        close $LOG;
+        return 1;
     }
-    if ( $do_warn ) {
-        print "$who expects $self->{id} is (or @e_stats), but $stat.\n";
-    }
-    return 0;
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
@@ -631,7 +627,7 @@ sub check_and_write_aborted {
 # 定期的実行文字列が登録されている配列
 # our %periodicfuns;
 # sub invoke_periodic {
-#     $periodic_thread = Coro::async_pool {
+#     $Periodic_Thread = Coro::async_pool {
 #        while (1) {
 # # ユーザ定義の定期的実行文字列
 #            foreach my $i (keys(%periodicfuns)) {
@@ -645,9 +641,9 @@ sub check_and_write_aborted {
 
 sub invoke_abort_check {
     # print "invoke_abort_check.\n";
-    $abort_check_thread = Coro::async_pool {
+    $Abort_Check_Thread = Coro::async_pool {
         while (1) {
-            Coro::AnyEvent::sleep $abort_check_interval;
+            Coro::AnyEvent::sleep $Abort_Check_Interval;
             check_and_write_aborted();
 
             # print_all_job_status();
@@ -657,6 +653,7 @@ sub invoke_abort_check {
         }
     };
     # print "invoke_abort_check done.\n";
+    return $Abort_Check_Thread;
 }
 
 ##
@@ -666,16 +663,16 @@ sub wait_and_get_file {
   LABEL: while (1) {
       foreach my $env (@envs) {
 	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist($env, '-e', $REQFILE);
+	      my $tmp = &rmt_exist($env, '-e', $Reqfile);
 	      if ($tmp) {
-		  &rmt_rename($env, $REQFILE, $OPENED_FILE);
-		  &rmt_get($env, $OPENED_FILE, '.');
-		  &rmt_unlink($env, $OPENED_FILE);
+		  &rmt_rename($env, $Reqfile, $Opened_File);
+		  &rmt_get($env, $Opened_File, '.');
+		  &rmt_unlink($env, $Opened_File);
 		  last LABEL;
 	      }
 	  } else {
-	      if (-e $REQFILE) {
-		  rename $REQFILE, $OPENED_FILE;
+	      if (-e $Reqfile) {
+		  rename $Reqfile, $Opened_File;
 		  last LABEL;
 	      }
 	  }
