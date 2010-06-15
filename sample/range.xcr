@@ -8,7 +8,7 @@ use base qw(limit core);
     'arg0' => '40',
     'arg1' => '> out0',
 #    'JS_queue' => 'gh10034',
-#    'JS_queue' => 'S004' # for TOKYO
+#    'JS_queue' => 'S004' # for TOKYO, but don't use because S004 is pipe-only
 #    'JS_cpu' => '1',
 #    'JS_group' => 'gh10034' # for KYOTO
 #    'JS_group' => 'ESCIENCE' # for TSUKUBA

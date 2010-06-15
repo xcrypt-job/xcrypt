@@ -1,15 +1,23 @@
 # Config file for Tokyo Hitachi NQS
+use config_common;
+use File::Spec;
+
 $jsconfig::jobsched_config{"TOKYO"} = {
+    # commands
     qsub_command => "/opt/hitachi/nqs/bin/qsub",
     qdel_command => "/opt/hitachi/nqs/bin/qdel",
     qstat_command => "/opt/hitachi/nqs/bin/qstat",
-#    jobscript_queue => '#@$-q ',
-    jobscript_stdout => '#@$-o ',
-    jobscript_stderr => '#@$-e ',
-#    jobscript_proc => '# @$-J ',
+    # standard options
+    jobscript_option_stdout => workdir_file_option('#@$-o ', 'stdout'),
+    jobscript_option_stderr => workdir_file_option('#@$-e ', 'stderr'),
+    jobscript_option_memory => '#@$-lM ',
+    jobscript_option_queue => '#@$-q ',
+    jobscript_option_group => ' ',
+    jobscript_proc => '#@$-J ',
 #    jobscript_cpu => '# @$-lp ',
-    jobscript_memory => '#@$-lm ',
-    jobscript_stack => '#@$-ls ',
+    jobscript_option_limit_time => '#@$-lT ',
+    # non-standard options
+    jobscript_option_stack => '#@$-ls ',
 #    jobscript_workdir => '', # OK ad hok (since 'cd $PWD' is described)
     extract_req_id_from_qsub_output => sub {
         my (@lines) = @_;
