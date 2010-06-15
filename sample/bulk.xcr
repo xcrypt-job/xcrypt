@@ -1,0 +1,16 @@
+use base qw(bulk core);
+
+&bulk::initialize();
+
+%template = (
+    'id' => 'job6',
+    'exe@' => sub { 'bin/fib ' . ($_[0] + $_[1]) . " > out_$_[0]_$_[1]"},
+    'RANGE0' => [31..33],
+    'RANGE1' => [0,9],
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034'
+);
+
+my @jobs = &prepare(%template);
+my @bulk = &bulk(@jobs);
+&submit_sync(@bulk);

@@ -24,7 +24,7 @@ use Cwd;
 use common;
 
 # id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
+my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env', 'JS_queue', 'JS_group');
 my @premembers = ('exe');
 
 my $nilchar = 'nil';
