@@ -33,7 +33,8 @@ my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that syst
 
 my $Inventory_Write_Cmd = 'inventory_write.pl';
 
-# for inventory_write_file
+# Administrative files for inventory_write.pl file communication mode.
+# Relative path from working directories.
 my $Reqfile = File::Spec->catfile($Inventory_Path, 'inventory_req');
 my $Ackfile = File::Spec->catfile($Inventory_Path, 'inventory_ack');
 my $Opened_File = $Reqfile . '.opened';
@@ -145,13 +146,14 @@ sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
     my $write_command=File::Spec->catfile($self->{env}->{xd}, 'bin', $Inventory_Write_Cmd);
+    my $timeout = $xcropt::options{comm_timeout};
     if ( $Inventory_Port > 0 ) {
-        return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port";
+        return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port $timeout";
     } else {
-	my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
-	my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
-	my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
-	return "$write_command $self->{id} $stat file $dir $req $ack";
+        my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
+        my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
+        my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
+        return "$write_command $self->{id} $stat file $dir $req $ack $timeout";
     }
 }
 
