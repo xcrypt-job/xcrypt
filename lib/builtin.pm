@@ -533,14 +533,33 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
               }
-            ## before(), start()
-            $self->EVERY::before();
-            $self->{request_id} = $self->start();
+            ## before()
+            unless ( jobsched::job_proceeded_last_time ($self, "submitted") ) {
+                $self->EVERY::before();
+            }
+
+            ## start()
+            unless ( jobsched::job_proceeded_last_time ($self, "queued")
+                     && jobsched::request_id_last_time ($self) ) {
+                $self->{request_id} = $self->start();
+            } else {
+                # skip the start() method invocation
+                print "$self->{id}: skip the start() method invocation\n";
+                &jobsched::set_job_submitted($self);
+                $self->{request_id} = jobsched::request_id_last_time ($self);
+            }
             &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
             &jobsched::set_job_queued($self);
 
             ## Waiting for the job "done"
-	    &jobsched::wait_job_done ($self);
+            unless ( jobsched::job_proceeded_last_time ($self, "done") ) {
+                &jobsched::wait_job_done ($self);
+            } else {
+                # skip the wait_job_done()
+                print "$self->{id}: skip the wait_job_done()\n";
+                &jobsched::set_job_running ($self);
+                &jobsched::set_job_done ($self);
+            }
 
             ## after()
 	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
@@ -555,7 +574,12 @@ sub submit {
 	    }
 =cut
 
-	    $self->EVERY::LAST::after();
+            unless ( jobsched::job_proceeded_last_time ($self, "finished") ) {
+                $self->EVERY::LAST::after();
+            } else {
+                # skip the after() methods invocation
+                print "$self->{id}: the after() methods invocation.\n";
+            }
 	    &jobsched::set_job_finished($self);
 	} $self;
         # push (@coros, $job_coro);
