@@ -6,11 +6,11 @@ use lib $Bin;
 use xcrypt_comm;
 
 if ( @ARGV < 3
-     || !(($ARGV[2] eq 'sock' && @ARGV == 5)
-          || $ARGV[2] eq 'file' && @ARGV == 6))
+     || !(($ARGV[2] eq 'sock' && @ARGV == 6)
+          || $ARGV[2] eq 'file' && @ARGV == 7))
 {
-    print STDERR "usage: $0 [jobname] [status] sock [hostname] [port]\n";
-    print STDERR "       $0 [jobname] [status] file [lockdir] [sendfile] [ackfile]\n";
+    print STDERR "usage: $0 [jobname] [status] sock [hostname] [port] [timeout]\n";
+    print STDERR "       $0 [jobname] [status] file [lockdir] [sendfile] [ackfile] [timeout]\n";
     exit -1;
 }
 
@@ -27,17 +27,10 @@ while ($RETRY_P) {
     $handler = xcrypt_comm_start (@Comm_Start_Args);
     ###
     my $time_now = time();
-    #  my @times = localtime($time_now);
-    # my ($year, $mon, $mday, $hour, $min, $sec, $wday) = ($times[5] + 1900, $times[4] + 1, $times[3], $times[2], $times[1], $times[0], $times[6]);
-    # my $timestring = sprintf("%04d%02d%02d_%02d:%02d:%02d", $year, $mon, $mday, $hour, $min, $sec);
     my $ackline = xcrypt_comm_send ($handler,
                                     ":transition $Jobname $Status $time_now\n",
-                                    # "spec: $Jobname\n".
-                                    # "status: $Status\n".
-                                    # "date_$Status: $timestring\n".
-                                    # "time_$Status: $time_now\n",
-                                    1);
-    xcrypt_comm_finish ($handler);
+                                    1); # 1 means an ack is necessary.
+    xcrypt_comm_finish ($handler)
     if ( $ackline =~ /^:ack/ ) {
         $RETRY_P = 0;
     } elsif ( $ackline =~ /^:failed/ ) {

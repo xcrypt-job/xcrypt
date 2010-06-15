@@ -106,6 +106,9 @@ sub xcrypt_comm_start_sock
 {
     my $host = shift; # arg1: hostname where Xcrypt is running
     my $port = shift; # arg2: TCP port number which Xcypt accepts
+    my $timeout = shift; # arg3: timeout
+    my $start_time = time();
+    my $limit_time = $start_time + $timeout;
     my $socket = 0;
     until ($socket) {
         $socket = IO::Socket::INET->new (PeerAddr => $host,
@@ -113,7 +116,7 @@ sub xcrypt_comm_start_sock
                                          Proto => 'tcp',
         );
         unless ($socket) {
-            my $slp = 0.1+rand(1.0);
+            my $slp = 1.0+rand(1.0);
             xcrypt_comm_log ("Failed to connect $host:$port. Retry after $slp seconds.\n");
             Time::HiRes::sleep $slp;
         }
