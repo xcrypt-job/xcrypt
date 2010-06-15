@@ -41,6 +41,7 @@ GetOptions
      #
      'inventory_path=s',
      'port=i',
+     'comm_timeout=i',
      'abort_check_interval=i',
      #
      'verbose=i',
