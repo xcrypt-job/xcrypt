@@ -577,6 +577,15 @@ sub job_proceeded_last_time {
              && status_name_to_level ($Last_State{$job->{id}}) > status_name_to_level($stat) );
 }
 
+# Get the job's request ID in the last Xcrypt execution.
+sub request_id_last_time {
+    my ($job) = @_;
+    if ( $Last_Request_ID{$job->{id}} ) {
+        return $Last_Request_ID{$job->{id}};
+    } else {
+        return undef;
+    }
+}
 
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
