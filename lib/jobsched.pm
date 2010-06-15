@@ -602,7 +602,6 @@ sub check_and_write_aborted {
             %unchecked = %Running_Jobs;
         }
         print "check_and_write_aborted:\n";
-foreach my $j ( keys %Running_Jobs ) { print "$j $Running_Jobs{$j}->{status}\n"; }
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
@@ -619,7 +618,6 @@ foreach my $j ( keys %Running_Jobs ) { print "$j $Running_Jobs{$j}->{status}\n";
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
 	    my $status = get_job_status($aborted_job);
-print $status, "\n";
 	    unless (($status eq 'done') || ($status eq 'finished')) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
 		set_job_aborted ($aborted_job);

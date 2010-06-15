@@ -2,20 +2,18 @@ use base qw(core);
 
 my $env0 = &add_env({'host' => 'abet@super.para.media.kyoto-u.ac.jp'});
 my $env1 = &add_env({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
-#my $env2 = &add_env({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp'});
+my $env2 = &add_env({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp'});
 
 %template = (
     'id' => 'job4',
-    'exe0@' => sub { 'echo ' . (40 + $_[0]) . " > job4_$_[0]_out"},
+    'exe0@' => sub { 'sleep 20 ' . (40 + $_[0]) . " > job4_$_[0]_out"},
     'RANGE0' => [0,1,2,3],
     'JS_queue@' => [' ', 'gh10034', 'short', ' '],
     'JS_group@' => [' ', 'gh10034', ' ', ' '],
     'JS_cpu' => '1',
-    'JS_memory' => '1MB',
-    'JS_limit_time@' => [' ', '2', '0:00:02', ' '],
     'env@'  => sub { if ($_[0] == 0) { $env0;
 		     } elsif ($_[0] == 1) { $env1;
-		     } elsif ($_[0] == 2) { $env0;
+		     } elsif ($_[0] == 2) { $env2;
 		     } else { $default_env; } }
     );
 &prepare_submit_sync(%template);
