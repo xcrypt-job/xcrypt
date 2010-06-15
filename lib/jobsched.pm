@@ -287,7 +287,7 @@ sub invoke_watch_by_file {
             unlink $Opened_File;
             Coro::AnyEvent::sleep ($interval);
         }
-    }
+    };
     return $Watch_Thread;
 }
 
@@ -427,7 +427,7 @@ sub set_job_status {
     status_name_to_level ($stat); # 有効な名前かチェック
     unless ($tim) { $tim = time(); }
     warn_if_illegal_transition ($self, $stat, $tim);
-    write_log ("$tim $self->{id} $stat\n");
+    write_log (":transition $self->{id} $stat $tim\n");
     print "$self->{id} <= $stat\n";
     {
         $self->{status} = $stat;

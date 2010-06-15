@@ -10,7 +10,7 @@ if [ "x$XCR_CPAN_BASE" = "x" ]; then
   exit 99
 fi
 
-LIBS="Data-Dumper-2.125 File-Copy-Recursive-0.38 EV-3.9 Event-1.13 AnyEvent-5.24 common-sense-3.0 Guard-1.021 Coro-5.21-without-conftest Net-OpenSSH-0.47"
+LIBS="Data-Dumper-2.125 File-Copy-Recursive-0.38 EV-3.9 Event-1.13 AnyEvent-5.24 common-sense-3.0 Guard-1.021 Coro-5.21-without-conftest Net-OpenSSH-0.47 Error-0.17016"
 
 echo "Removing CPAN working directories."
 for i in $LIBS
