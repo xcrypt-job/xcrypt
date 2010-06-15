@@ -535,7 +535,9 @@ sub submit {
               }
             ## before(), start()
             $self->EVERY::before();
-            $self->start();
+            $self->{request_id} = $self->start();
+            &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
+            &jobsched::set_job_queued($self);
 
             ## Waiting for the job "done"
 	    &jobsched::wait_job_done ($self);
