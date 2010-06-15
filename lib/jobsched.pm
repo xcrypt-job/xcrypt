@@ -285,7 +285,7 @@ sub invoke_watch_by_file {
             unlink $Opened_File;
             Coro::AnyEvent::sleep ($interval);
         }
-    }
+    };
     return $Watch_Thread;
 }
 
@@ -433,9 +433,9 @@ sub set_job_status {
         $Job_Status_Signal->broadcast();
     }
     # 実行中ジョブ一覧に登録／削除
-    if ( $stat eq "running" ) {
+    if ( $stat eq "queued" ) {
         entry_running_job ($self);
-    } else {
+    } elsif ( ($stat eq "aborted") || ($stat eq "done") || ($stat eq "finished")) {
         delete_running_job ($self);
     }
 }
@@ -602,7 +602,7 @@ sub check_and_write_aborted {
             %unchecked = %Running_Jobs;
         }
         print "check_and_write_aborted:\n";
-        # foreach my $j ( keys %Running_Jobs ) { print " " . $Running_Jobs{$j} . "($j)"; }
+foreach my $j ( keys %Running_Jobs ) { print "$j $Running_Jobs{$j}->{status}\n"; }
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
@@ -618,8 +618,12 @@ sub check_and_write_aborted {
     foreach my $req_id ( keys %unchecked ) {
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
-            print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
-            set_job_aborted ($aborted_job);
+	    my $status = get_job_status($aborted_job);
+print $status, "\n";
+	    unless (($status eq 'done') || ($status eq 'finished')) {
+		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
+		set_job_aborted ($aborted_job);
+	    }
         }
     }
 }

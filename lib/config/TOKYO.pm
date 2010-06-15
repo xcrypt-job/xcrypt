@@ -12,7 +12,6 @@ $jsconfig::jobsched_config{"TOKYO"} = {
     jobscript_option_stderr => workdir_file_option('#@$-e ', 'stderr'),
     jobscript_option_memory => '#@$-lM ',
     jobscript_option_queue => '#@$-q ',
-    jobscript_option_group => ' ',
     jobscript_proc => '#@$-J ',
 #    jobscript_cpu => '# @$-lp ',
     jobscript_option_limit_time => '#@$-lT ',

@@ -24,7 +24,7 @@ use Cwd;
 use common;
 
 # id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env', 'JS_queue', 'JS_group');
+my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @premembers = ('exe');
 
 my $nilchar = 'nil';
@@ -445,6 +445,10 @@ sub expand_and_make {
                 print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
+            if ($key =~ /^JS_/) {
+		my ($before_exp_char , $after_exp_char) = split(/@/, $key);
+		push(@allkeys, $before_exp_char);
+	    }
         }
         $exist = 0;
     }
