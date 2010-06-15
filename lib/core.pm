@@ -313,6 +313,7 @@ sub qsub {
         # Remember request ID
 	$self->{request_id} = $req_id;
         # Set job's status "queued"
+        &jobsched::write_log (":reqID $self->{id} $req_id\n");
 	&jobsched::set_job_queued($self);
         return $req_id;
     } else {

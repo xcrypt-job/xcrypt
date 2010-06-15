@@ -43,6 +43,10 @@ my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
+# Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
+my %Last_State = (); 
+# Hash table (key,val)=(job ID, the request ID saved in the $Logfile)
+my %Last_Request_ID = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -53,7 +57,7 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
-# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
+# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(job ID,signal_val)
 my %Signaled_Jobs = ();
 my $All_Jobs_Signaled = undef;
 
@@ -187,15 +191,22 @@ sub handle_inventory {
                     $flag = -1;
                 }
             } elsif ($status eq 'done') {
-                set_job_done ($job, $tim); $flag=1;
+                # まだrunningになっていなければ書き込まず，-1を返すことで再連絡を促す．
+                # ここでwaitせずに再連絡させるのはデッドロック防止のため
+                my $cur_stat = get_job_status ($job);
+                if ( $cur_stat eq 'running' ) {
+                    set_job_done ($job, $tim); $flag=1;
+                } else {
+                    $flag = -1;
+                }
             } elsif ($status eq 'finished') {
                 set_job_finished ($job, $tim); $flag=1;
             } elsif ($status eq 'aborted') {
                 set_job_aborted ($job, $tim); $flag=1;
             }
-        } else {
-            warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
-            $flag = 0;
+        } else { # The job is not found
+            # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
+            $flag = -1;
         }
     } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
         my $job = find_job_by_id ($1);
@@ -393,11 +404,15 @@ sub find_job_by_id {
 ##############################
 # ジョブ状態名→状態レベル数
 sub status_name_to_level {
-    my ($name) = @_;
+    my ($name, $allow_invalid) = @_;
     if ( exists ($Status_Level{$name}) ) {
         return $Status_Level{$name};
     } else {
-        die "status_name_to_runlevel: unexpected status name \"$name\"\n";
+        if ($allow_invalid) {
+            return -1;
+        } else {
+            die "status_name_to_level: unexpected status name \"$name\"\n";
+        }
     }
 }
 
@@ -512,7 +527,7 @@ sub write_log {
     my ($str) = @_;
     open (my $LOG, '>>', $Logfile);
     unless ($LOG) {
-        warn "Failed to open the log file $Logfile";
+        warn "Failed to open the log file $Logfile in write mode";
         return 0;
     } else {
         print $LOG "$str";
@@ -520,6 +535,49 @@ sub write_log {
         return 1;
     }
 }
+# Invoked once initially (see bin/xcrypt)
+sub read_log {
+    if (-e $Logfile) {
+        open (my $LOG, '<', $Logfile);
+        unless ($LOG) {
+            warn "Failed to open the log file $Logfile in read mode.";
+            return 0;
+        }
+        print "Reading the log file $Logfile\n";
+        while (<$LOG>) {
+            chomp;
+            if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
+                my ($id, $stat, $time) = ($1, $2, $3);
+                my $prev_stat = $Last_State{$id};
+                if ( !$prev_stat
+                     || status_name_to_level ($stat) > status_name_to_level ($prev_stat)) {
+                    $Last_State{$id} = $stat
+                }
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
+                my ($id, $req_id) = ($1, $2);
+                $Last_Request_ID{$id} = $req_id;
+            }
+        }
+        foreach my $id (keys %Last_State) {
+            print "$id = $Last_State{$id}";
+            if ( $Last_Request_ID{$id} ) {
+                print " (request_ID=$Last_Request_ID{$id})";
+            }
+            print "\n";
+        }
+        close ($LOG);
+        print "Finished reading the log file $Logfile\n";
+    }
+}
+
+# The job proceeded than (or to) $stat in the last Xcrypt execution?
+sub job_proceeded_last_time {
+    my ($job, $stat) = @_;
+    return ( $Last_State{$job->{id}}
+             && status_name_to_level ($Last_State{$job->{id}}) > status_name_to_level($stat) );
+}
+
+
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
 sub wait_job_status {
