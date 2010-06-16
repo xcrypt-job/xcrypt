@@ -216,6 +216,7 @@ sub xcr_cmd {
     } elsif ($env->{location} eq 'local') {
 	if ($cmd eq 'exist') {
 	    my $flag = 0;
+            my ($file) = @_;
 	    if (-e $file) {
 		$flag = 1;
 	    }

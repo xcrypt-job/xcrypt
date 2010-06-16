@@ -18,7 +18,7 @@ if ( @ARGV < 3
 my $Job_ID = shift (@ARGV);
 my $Status = shift (@ARGV);
 my $Logfile = "${Job_ID}_invwrite.log";
-my $Left_Msg_File = "${Job_ID}_is_$Status";
+my $Left_Msg_File = "${Job_ID}_is_$Status";   # Must be eq to jobsched::left_message_file_name
 my @Comm_Start_Args = @ARGV;
 my $Handler = undef;
 

@@ -66,6 +66,9 @@ my $Watch_Thread = undef;    # accessed from bin/xcrypt
 # ジョブがabortedになってないかチェックするスレッド
 my $Abort_Check_Thread = undef;
 my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
+# The thread that checks messages that inventory_write.pl leaves when communication failed
+my $Left_Message_Check_Thread = undef;
+my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
 # Now obsoleted because it is implemented in builtin.pm?
 our $Periodic_Thread = undef; # accessed from bin/xcrypt
@@ -574,7 +577,7 @@ sub read_log {
 sub job_proceeded_last_time {
     my ($job, $stat) = @_;
     return ( $Last_State{$job->{id}}
-             && status_name_to_level ($Last_State{$job->{id}}) > status_name_to_level($stat) );
+             && status_name_to_level ($Last_State{$job->{id}}) >= status_name_to_level($stat) );
 }
 
 # Get the job's request ID in the last Xcrypt execution.
@@ -586,7 +589,6 @@ sub request_id_last_time {
         return undef;
     }
 }
-
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
 sub wait_job_status {
@@ -687,7 +689,8 @@ sub check_and_write_aborted {
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
 	    my $status = get_job_status($aborted_job);
-	    unless (($status eq 'done') || ($status eq 'finished')) {
+	    unless (($status eq 'done') || ($status eq 'finished')
+                    || common::xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
 		set_job_aborted ($aborted_job);
 	    }
@@ -725,6 +728,36 @@ sub invoke_abort_check {
     };
     # print "invoke_abort_check done.\n";
     return $Abort_Check_Thread;
+}
+
+# Check messages that inventory_write.pl leaves when the communication failed.
+sub left_message_file_name {
+    my ($job, $stat) = @_;
+    return "$job->{id}_is_$stat";   # must be eq to inventory_write.pl $Left_Message_File
+}
+sub invoke_left_message_check {
+    $Left_Message_Check_Thread = Coro::async_pool {
+        while (1) {
+            print "left_message_check:\n";
+            foreach my $req_id (keys %Running_Jobs) {
+                my $job = $Running_Jobs{$req_id};
+                if ( get_job_status($job) eq 'queued') {
+                    print "check if ". left_message_file_name($job, 'running'). " exists at $job->{env}->{location}\n";
+                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
+                        set_job_running ($job);
+                    }
+                } 
+                if ( get_job_status($job) eq 'running') {
+                    print "check if ". left_message_file_name($job, 'done'). " exists at $job->{env}->{location}.\n";
+                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
+                        set_job_done ($job);
+                    }
+                }
+            }
+            Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+        }
+    };
+    return $Left_Message_Check_Thread;
 }
 
 ##
