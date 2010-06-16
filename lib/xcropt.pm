@@ -16,7 +16,7 @@ our %options = (
     'p5l' => $ENV{PERL5LIB},
     'sched' => $ENV{XCRJOBSCHED},
     #
-    'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
+    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由
     'comm_timeout' => 60, # timeout for inventory_write.pl
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
     'left_message_check_interval' => 30, # inventory_write.pl が残したメッセージをチェックする間隔(sec)

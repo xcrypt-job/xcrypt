@@ -29,14 +29,14 @@ my %ssh_opts = (
     );
 
 our %Host_Ssh_Hash;
-our $default_env;
-$default_env = { 'host'     => $xcropt::options{localhost},
+our $env_d;
+$env_d = { 'host'     => $xcropt::options{localhost},
 		 'wd'       => $xcropt::options{wd},
 		 'sched'    => $xcropt::options{sched},
 		 'xd'       => $xcropt::options{xd},
 		 'p5l'      => $xcropt::options{p5l},
 		 'location' => 'local' };
-our @Env = ($default_env);
+our @Env = ($env_d);
 ##
 sub mkarray ($) {
     my $x = shift;
