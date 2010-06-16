@@ -36,7 +36,7 @@ print TMP 'sub after  {my $self = shift;if ($self->{after}) {&{$self->{after}}($
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
-print TMP 'if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $common::default_env = &add_env({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $common::default_env = &add_env({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }' . "\n";
+print TMP 'if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $common::env_d = &add_env({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $common::env_d = &add_env({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 print TMP '&jobsched::check_and_write_aborted();' . "\n";

@@ -6,7 +6,7 @@ use common;
 use File::Basename;
 use core;
 
-&add_keys('linkedfile', 'copiedfile', 'copieddir');
+&add_indexed_key('linkedfile', 'copiedfile', 'copieddir');
 
 sub new {
     my $class = shift;

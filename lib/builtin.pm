@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_env add_key add_keys
+add_env add_key add_indexed_key
 repeat
 );
 
@@ -210,7 +210,7 @@ sub add_key {
     }
 }
 
-sub add_keys {
+sub add_indexed_key {
     my $exist = 0;
     foreach my $i (@_) {
         foreach my $j ((@allkeys, 'id')) {
