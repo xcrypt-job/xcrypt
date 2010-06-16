@@ -19,6 +19,7 @@ our %options = (
     'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
     'comm_timeout' => 60, # timeout for inventory_write.pl
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
+    'left_message_check_interval' => 30, # inventory_write.pl が残したメッセージをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
     #
     'verbose' => 0,               # verbose level
@@ -39,10 +40,11 @@ GetOptions
      'p5l=s',
      'sched=s',
      #
-     'inventory_path=s',
      'port=i',
      'comm_timeout=i',
      'abort_check_interval=i',
+     'left_message_check_interval=i',
+     'inventory_path=s',
      #
      'verbose=i',
      'stack_size=i',
