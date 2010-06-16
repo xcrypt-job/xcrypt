@@ -17,6 +17,7 @@ our %options = (
     'sched' => $ENV{XCRJOBSCHED},
     #
     'port' => 9999, # インベントリ通知待ち受けポート．0ならNFS経由
+    'comm_timeout' => 60, # timeout for inventory_write.pl
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
     #
@@ -40,6 +41,7 @@ GetOptions
      #
      'inventory_path=s',
      'port=i',
+     'comm_timeout=i',
      'abort_check_interval=i',
      #
      'verbose=i',
