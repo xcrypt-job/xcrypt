@@ -1,6 +1,6 @@
 use base qw(core);
 
-#my $env0 = &add_env({'host' => 'abet@super.para.media.kyoto-u.ac.jp'});
+my $env0 = &add_env({'host' => 'abet@super.para.media.kyoto-u.ac.jp'});
 my $env1 = &add_env({'host' => 'abet@t2k.ccs.tsukuba.ac.jp'});
 #my $env2 = &add_env({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp'});
 my $env3 = &add_env({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
