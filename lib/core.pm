@@ -22,7 +22,7 @@ sub new {
     set_member_if_empty ($self, 'workdir', '.');
 
     # default env
-    set_member_if_empty ($self, 'env', $common::default_env);
+    set_member_if_empty ($self, 'env', $common::env_d);
 
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', "$self->{id}_stdout");
