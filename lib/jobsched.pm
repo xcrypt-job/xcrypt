@@ -43,6 +43,10 @@ my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
+# Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
+my %Last_State = (); 
+# Hash table (key,val)=(job ID, the request ID saved in the $Logfile)
+my %Last_Request_ID = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -53,7 +57,7 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
-# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(jobname,signal_val)
+# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(job ID,signal_val)
 my %Signaled_Jobs = ();
 my $All_Jobs_Signaled = undef;
 
@@ -62,6 +66,9 @@ my $Watch_Thread = undef;    # accessed from bin/xcrypt
 # ジョブがabortedになってないかチェックするスレッド
 my $Abort_Check_Thread = undef;
 my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
+# The thread that checks messages that inventory_write.pl leaves when communication failed
+my $Left_Message_Check_Thread = undef;
+my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
 # ユーザ定義のタイム割り込み関数を実行するスレッド
 # Now obsoleted because it is implemented in builtin.pm?
 our $Periodic_Thread = undef; # accessed from bin/xcrypt
@@ -187,15 +194,22 @@ sub handle_inventory {
                     $flag = -1;
                 }
             } elsif ($status eq 'done') {
-                set_job_done ($job, $tim); $flag=1;
+                # まだrunningになっていなければ書き込まず，-1を返すことで再連絡を促す．
+                # ここでwaitせずに再連絡させるのはデッドロック防止のため
+                my $cur_stat = get_job_status ($job);
+                if ( $cur_stat eq 'running' ) {
+                    set_job_done ($job, $tim); $flag=1;
+                } else {
+                    $flag = -1;
+                }
             } elsif ($status eq 'finished') {
                 set_job_finished ($job, $tim); $flag=1;
             } elsif ($status eq 'aborted') {
                 set_job_aborted ($job, $tim); $flag=1;
             }
-        } else {
-            warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
-            $flag = 0;
+        } else { # The job is not found
+            # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
+            $flag = -1;
         }
     } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
         my $job = find_job_by_id ($1);
@@ -393,11 +407,15 @@ sub find_job_by_id {
 ##############################
 # ジョブ状態名→状態レベル数
 sub status_name_to_level {
-    my ($name) = @_;
+    my ($name, $allow_invalid) = @_;
     if ( exists ($Status_Level{$name}) ) {
         return $Status_Level{$name};
     } else {
-        die "status_name_to_runlevel: unexpected status name \"$name\"\n";
+        if ($allow_invalid) {
+            return -1;
+        } else {
+            die "status_name_to_level: unexpected status name \"$name\"\n";
+        }
     }
 }
 
@@ -512,12 +530,63 @@ sub write_log {
     my ($str) = @_;
     open (my $LOG, '>>', $Logfile);
     unless ($LOG) {
-        warn "Failed to open the log file $Logfile";
+        warn "Failed to open the log file $Logfile in write mode";
         return 0;
     } else {
         print $LOG "$str";
         close $LOG;
         return 1;
+    }
+}
+# Invoked once initially (see bin/xcrypt)
+sub read_log {
+    if (-e $Logfile) {
+        open (my $LOG, '<', $Logfile);
+        unless ($LOG) {
+            warn "Failed to open the log file $Logfile in read mode.";
+            return 0;
+        }
+        print "Reading the log file $Logfile\n";
+        while (<$LOG>) {
+            chomp;
+            if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
+                my ($id, $stat, $time) = ($1, $2, $3);
+                my $prev_stat = $Last_State{$id};
+                if ( !$prev_stat
+                     || status_name_to_level ($stat) > status_name_to_level ($prev_stat)) {
+                    $Last_State{$id} = $stat
+                }
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
+                my ($id, $req_id) = ($1, $2);
+                $Last_Request_ID{$id} = $req_id;
+            }
+        }
+        foreach my $id (keys %Last_State) {
+            print "$id = $Last_State{$id}";
+            if ( $Last_Request_ID{$id} ) {
+                print " (request_ID=$Last_Request_ID{$id})";
+            }
+            print "\n";
+        }
+        close ($LOG);
+        print "Finished reading the log file $Logfile\n";
+    }
+}
+
+# The job proceeded than (or to) $stat in the last Xcrypt execution?
+sub job_proceeded_last_time {
+    my ($job, $stat) = @_;
+    return ( $Last_State{$job->{id}}
+             && status_name_to_level ($Last_State{$job->{id}}) >= status_name_to_level($stat) );
+}
+
+# Get the job's request ID in the last Xcrypt execution.
+sub request_id_last_time {
+    my ($job) = @_;
+    if ( $Last_Request_ID{$job->{id}} ) {
+        return $Last_Request_ID{$job->{id}};
+    } else {
+        return undef;
     }
 }
 
@@ -620,7 +689,8 @@ sub check_and_write_aborted {
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
 	    my $status = get_job_status($aborted_job);
-	    unless (($status eq 'done') || ($status eq 'finished')) {
+	    unless (($status eq 'done') || ($status eq 'finished')
+                    || common::xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
 		set_job_aborted ($aborted_job);
 	    }
@@ -658,6 +728,36 @@ sub invoke_abort_check {
     };
     # print "invoke_abort_check done.\n";
     return $Abort_Check_Thread;
+}
+
+# Check messages that inventory_write.pl leaves when the communication failed.
+sub left_message_file_name {
+    my ($job, $stat) = @_;
+    return "$job->{id}_is_$stat";   # must be eq to inventory_write.pl $Left_Message_File
+}
+sub invoke_left_message_check {
+    $Left_Message_Check_Thread = Coro::async_pool {
+        while (1) {
+            print "left_message_check:\n";
+            foreach my $req_id (keys %Running_Jobs) {
+                my $job = $Running_Jobs{$req_id};
+                if ( get_job_status($job) eq 'queued') {
+                    print "check if ". left_message_file_name($job, 'running'). " exists at $job->{env}->{location}\n";
+                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
+                        set_job_running ($job);
+                    }
+                } 
+                if ( get_job_status($job) eq 'running') {
+                    print "check if ". left_message_file_name($job, 'done'). " exists at $job->{env}->{location}.\n";
+                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
+                        set_job_done ($job);
+                    }
+                }
+            }
+            Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+        }
+    };
+    return $Left_Message_Check_Thread;
 }
 
 ##

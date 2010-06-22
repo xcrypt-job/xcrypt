@@ -50,8 +50,8 @@ sub start {
     } else {
         # print "$self->{id}: calling qsub.\n";
         &qsub_make($self);
-        $self->{request_id} = &qsub($self);
-        # print "$self->{id}: qsub finished.\n";
+        # Returns request ID
+        return (&qsub($self));
     }
 }
 
@@ -313,7 +313,6 @@ sub qsub {
         # Remember request ID
 	$self->{request_id} = $req_id;
         # Set job's status "queued"
-	&jobsched::set_job_queued($self);
         return $req_id;
     } else {
         die "$qsub_command is not executable";
