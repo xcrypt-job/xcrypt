@@ -142,10 +142,13 @@ sub make_jobscript_body {
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
-    foreach my $j (0..$user::max_exe) {
+
+    my $max_index_of_exe = &builtin::get_max_index_of_exe(%$self);
+    my $max_index_of_second = &builtin::get_max_index_of_second_arg_of_arg(%$self);
+    foreach my $j (0..$max_index_of_exe) {
 	if ($self->{"exe$j"}) {
 	    my @args = ();
-	    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
+	    for ( my $i = 0; $i <= $max_index_of_second; $i++ ) {
 		if ($self->{"arg$j".'_'."$i"}) {
 		    push(@args, $self->{"arg$j".'_'."$i"});
 		}

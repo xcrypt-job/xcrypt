@@ -24,7 +24,7 @@ sub new {
     mkdir $self->{workdir}, 0755;
     &xcr_mkdir($self->{env}, $self->{workdir});
 
-    for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
+    for ( my $i = 0; $i <= $builtin::max_index_of_added_key; $i++ ) {
 	# ここからリモート実行未対応
 	if ($self->{"copieddir$i"}) {
 	    my $copied = $self->{"copieddir$i"};

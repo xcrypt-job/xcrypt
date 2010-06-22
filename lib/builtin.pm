@@ -24,8 +24,9 @@ use Cwd;
 use common;
 
 # id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('exe', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
-my @premembers = ('exe');
+my @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'env');
+my $max_index_of_added_key = 15;
+my @premembers = ();
 
 my $nilchar = 'nil';
 my $argument_name = 'R';
@@ -243,20 +244,81 @@ sub rm_tailnis {
     }
 }
 
+sub max {
+    my @array = @_;
+    my $max = -1;
+    until (@array == ()) {
+	my $tmp = shift(@array);
+	if ($tmp > $max) {
+	    $max = $tmp;
+	}
+    }
+    return $max;
+}
+sub get_max_index {
+    my $arg = shift;
+    my %job = @_;
+    my @ret;
+    my $pat0;
+    my $pat1;
+    my $pat2;
+    if ($arg eq 'range') {
+	$pat0 = '\ARANGE[0-9]+\Z';
+	$pat1 = '[0-9]+\Z';
+    } elsif ($arg eq 'exe') {
+	$pat0 = '\Aexe[0-9]+';
+	$pat1 = '[0-9]+';
+    } elsif ($arg eq 'arg') {
+	$pat0 = '\Aarg[0-9]+';
+	$pat1 = '[0-9]+';
+    } elsif ($arg eq 'first') {
+	$pat0 = '\Aarg[0-9]+_[0-9]+';
+	$pat1 = '[0-9]+';
+    } elsif ($arg eq 'second') {
+	$pat0 = '\Aarg[0-9]+_[0-9]+';
+	$pat1 = '[0-9]+_';
+    }
+    foreach my $key (keys(%job)) {
+	if ($key =~ /$pat0/) {
+	    if ($key =~ /$pat1/) {
+		if ($arg eq 'second') {
+		    push(@ret, $'); #'
+		} else {
+		    push(@ret, $&);
+		}
+	    }
+	}
+    }
+    my $max = &max(@ret);
+    return $max;
+}
+sub get_max_index_of_range { return &get_max_index('range', @_); }
+sub get_max_index_of_exe { return &get_max_index('exe', @_); }
+sub get_max_index_of_arg { return &get_max_index('arg', @_); }
+sub get_max_index_of_first_arg_of_arg { return &get_max_index('first', @_); }
+sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
+
 sub add_user_customizable_core_members {
     my %job = @_;
-    for ( my $i = 0; $i <= $user::max_exe; $i++ ) {
+    my $max_index_of_exe    = &get_max_index_of_exe(%job);
+    my $max_index_of_first  = &get_max_index_of_first_arg_of_arg(%job);
+    my $max_index_of_second = &get_max_index_of_second_arg_of_arg(%job);
+    for ( my $i = 0; $i <= $max_index_of_added_key; $i++ ) {
         foreach (@premembers) {
             my $name = $_ . $i;
             push(@allkeys, "$name");
         }
     }
-    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
+    for ( my $i = 0; $i <= $max_index_of_exe; $i++ ) {
+	my $name = 'exe' . $i;
+	push(@allkeys, "$name");
+    }
+    for ( my $i = 0; $i <= $max_index_of_first; $i++ ) {
             my $name = 'arg' . $i;
             push(@allkeys, "$name");
     }
-    for ( my $i = 0; $i <= $user::max_arg; $i++ ) {
-	for ( my $j = 0; $j <= $user::max_arg; $j++ ) {
+    for ( my $i = 0; $i <= $max_index_of_first; $i++ ) {
+	for ( my $j = 0; $j <= $max_index_of_second; $j++ ) {
             my $name = 'arg' . $i . '_' . $j;
             push(@allkeys, "$name");
 	}
@@ -287,12 +349,13 @@ sub generate {
 
     $job{id} = join($user::separator, ($job{id}, @ranges));
     &add_user_customizable_core_members(%job);
+    my $max_index_of_range = &get_max_index_of_range(%job);
     foreach (@allkeys) {
         my $members = "$_" . $user::expanding_char;
         if ( exists($job{"$members"}) ) {
             # 「ジョブ定義ハッシュ@」の値がスカラである時
             unless ( ref($job{"$members"}) ) {
-                for ( my $i = 0; $i < $user::max_range; $i++ ) {
+                for ( my $i = 0; $i <= $max_index_of_range; $i++ ) {
                     my $arg = $argument_name . $i;
 #                   no strict 'refs';
                     my $tmp = eval "$ranges[$i];";
@@ -407,20 +470,23 @@ sub expand_and_make {
     # aliases
     if ($job{exe}) {
 	$job{exe0} = $job{exe};
-#	delete($job{exe});
+	delete($job{exe});
     }
     if ($job{"exe$user::expanding_char"}) {
 	$job{"exe0$user::expanding_char"} = $job{"exe$user::expanding_char"};
+	delete($job{"exe$user::expanding_char"});
     }
-    foreach my $i (0..$user::max_arg) {
+    my $max_index_of_arg = &get_max_index_of_arg(%job);
+    foreach my $i (0..$max_index_of_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
-#	    delete($job{"arg$i"});
+	    delete($job{"arg$i"});
 	}
     }
-    foreach my $i (0..$user::max_arg) {
+    foreach my $i (0..$max_index_of_arg) {
 	if ($job{"arg$i$user::expanding_char"}) {
 	    $job{"arg0_$i$user::expanding_char"} = $job{"arg$i$user::expanding_char"};
+	    delete($job{"arg$i$user::expanding_char"});
 	}
     }
     &add_user_customizable_core_members(%job);
@@ -434,14 +500,16 @@ sub expand_and_make {
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys, 'id') {
-            if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
+            if (($key eq $ukey) || ($key eq ($ukey . "$user::expanding_char"))) {
                 $exist = 1;
             }
         }
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
+                    || ($key =~ /\ARANGES\Z/)
                     || ($key =~ /^JS_/))        # for jobscheduler options
             {
+		print $key, "\n";
                 print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
@@ -453,35 +521,28 @@ sub expand_and_make {
         $exist = 0;
     }
 
-    my $exist_of_RANGE = 0;
-    for ( my $i = 0; $i < $user::max_range; $i++ ) {
-        if ( exists($job{"RANGE$i"}) ) {
-            if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
-                my $tmp = @{$job{"RANGE$i"}};
-                $exist_of_RANGE = $exist_of_RANGE + $tmp;
-            } else {
-                warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
-            }
-        }
-    }
-    for ( my $i = 0; $i < $user::max_range; $i++ ) {
-        unless ( exists($job{"RANGE$i"}) ) {
-            my @tmp = ($nilchar);
-            $job{"RANGE$i"} = \@tmp;
-        }
-    }
-
+    my $max_index_of_range = &get_max_index_of_range(%job);
     my @objs;
-    if ( $exist_of_RANGE ) {
+    if (defined $job{'RANGES'}) {
+	my @range = &times(@{$job{'RANGES'}});
+        foreach (@range) {
+            my $self = &generate(\%job, @{$_});
+            push(@objs, $self);
+        }
+    } elsif ( $max_index_of_range != -1 ) {
         my @ranges = ();
-        for ( my $i = 0; $i < $user::max_range; $i++ ) {
+        for ( my $i = 0; $i <= $max_index_of_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
                 if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                     push(@ranges, $job{"RANGE$i"});
                 } else {
                     warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
                 }
-            }
+            } else {
+		my @temp = ($nilchar);
+		$job{"RANGE$i"} = \@temp;
+		push(@ranges, $job{"RANGE$i"});
+	    }
         }
         my @tmp = &rm_tail(@ranges);
         my @range = &times(@tmp);
