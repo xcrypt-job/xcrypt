@@ -511,15 +511,12 @@ sub do_prepared {
 	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
 	    &jobsched::inventory_write ($self, "aborted");
 	    &jobsched::delete_signaled_job ($self);
-	} elsif ( $last_stat eq 'done' || $last_stat eq 'finished' ) {
+	} elsif ( $last_stat eq 'finished' ) {
 	    # Skip if the job is 'done' or 'finished'
-	    if ( $last_stat eq 'finished' ) {
-		&jobsched::inventory_write ($self, "done");
-	    }
+	    &jobsched::inventory_write ($self, "done");
+	} elsif ( $last_stat eq 'done') {
 	} else {
-	    unless ( $last_stat eq 'done' ||
-		     $last_stat eq 'finished' ||
-		     $last_stat eq 'aborted' ) {
+	    unless ( $last_stat eq 'aborted' ) {
 		# xcryptdelされていたら状態をabortedにして処理をとばす
 		if (jobsched::is_signaled_job($self)) {
 		    &jobsched::inventory_write($self, "aborted");
@@ -527,11 +524,7 @@ sub do_prepared {
 #		push (@coros, undef);
 		    next;
 		} else {
-		    if (defined $self->{env}->{host}) {
-			&jobsched::set_job_prepared($self);
-		    } else {
-			&jobsched::set_job_prepared($self);
-		    }
+		    &jobsched::set_job_prepared($self);
 		}
 	    }
 	}
