@@ -505,6 +505,7 @@ sub expand_and_make {
 sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
+=comment
 	my $last_stat = &jobsched::get_job_status ($self);
 
 	if ( jobsched::is_signaled_job ($self) ) {
@@ -528,6 +529,8 @@ sub do_prepared {
 		}
 	    }
 	}
+=cut
+        &jobsched::set_job_prepared($self);
     }
 }
 
@@ -555,12 +558,39 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
               }
-            ## before(), start()
-            $self->EVERY::before();
-            $self->start();
+            ## before()
+            unless ( jobsched::job_proceeded_last_time ($self, 'submitted') ) {
+                $self->EVERY::before();
+            } else {
+                print "$self->{id}: skip the before() method invocation\n";
+            }
 
+            ## start()
+            unless ( jobsched::job_proceeded_last_time ($self, 'queued')
+                     && jobsched::request_id_last_time ($self) ) {
+                $self->{request_id} = $self->start();
+            } else {
+                # skip the start() method invocation
+                print "$self->{id}: skip the start() method invocation\n";
+                &jobsched::set_job_submitted($self);
+                $self->{request_id} = jobsched::request_id_last_time ($self);
+            }
+            &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
+            &jobsched::set_job_queued($self);
+
+            # If the job was 'running' in the last execution, set it's status to 'running'.
+            if ( jobsched::job_proceeded_last_time ($self, 'running') ) {
+                &jobsched::set_job_running($self);
+            }
+            
             ## Waiting for the job "done"
-	    &jobsched::wait_job_done ($self);
+            unless ( jobsched::job_proceeded_last_time ($self, 'done') ) {
+                &jobsched::wait_job_done ($self);
+            } else {
+                # skip the wait_job_done()
+                print "$self->{id}: skip the wait_job_done()\n";
+                &jobsched::set_job_done ($self);
+            }
 
             ## after()
 	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
@@ -575,7 +605,12 @@ sub submit {
 	    }
 =cut
 
-	    $self->EVERY::LAST::after();
+            unless ( jobsched::job_proceeded_last_time ($self, 'finished') ) {
+                $self->EVERY::LAST::after();
+            } else {
+                # skip the after() methods invocation
+                print "$self->{id}: the after() methods invocation.\n";
+            }
 	    &jobsched::set_job_finished($self);
 	} $self;
         # push (@coros, $job_coro);

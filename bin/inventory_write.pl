@@ -18,7 +18,7 @@ if ( @ARGV < 3
 my $Job_ID = shift (@ARGV);
 my $Status = shift (@ARGV);
 my $Logfile = "${Job_ID}_invwrite.log";
-my $Left_Msg_File = "${Job_ID}_left_msg";
+my $Left_Msg_File = "${Job_ID}_is_$Status";   # Must be eq to jobsched::left_message_file_name
 my @Comm_Start_Args = @ARGV;
 my $Handler = undef;
 
@@ -27,10 +27,10 @@ sub message {
     return ":transition $Job_ID $Status $tim\n";
 }
 
-my $RETRY_P = 1;
+my $Retry = 1; my $Retry_Max = 300;
 xcrypt_comm_log_start ($Logfile, "$Job_ID\[$Status\]: ");
 try {
-    while ($RETRY_P) {
+    while ($Retry) {
         $Handler = xcrypt_comm_start (@Comm_Start_Args);
         unless ($Handler) { throw Error::Simple ("xcrypt_comm_start failed."); }
         ###
@@ -39,12 +39,14 @@ try {
         xcrypt_comm_finish ($Handler);
         $Handler = undef;
         if ( $ackline =~ /^:ack/ ) {
-            $RETRY_P = 0;
+            $Retry = 0;
         } elsif ( $ackline =~ /^:failed/ ) {
+            $Retry++;
+            if ( $Retry > $Retry_Max ) { throw Error::Simple ("Too many :failed messages.");}
             my $slp = 0.1+rand(1.0);
             Time::HiRes::sleep $slp;
         } else {
-            throw Error::Simple (-text => "Unexpected ack message: $ackline");
+            throw Error::Simple ("Unexpected ack message: $ackline");
         }
     }
     xcrypt_comm_log ("successfully done\n");
