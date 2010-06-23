@@ -25,15 +25,15 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'env');
-my $max_index_of_added_key = 15;
+my $max_of_added_key = 15;
 my @premembers = ();
 
-my $nilchar = 'nil';
+my $nil = 'nil';
 my $argument_name = 'R';
 
+=comment
 my $current_directory=Cwd::getcwd();
 my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-=comment
 my $time_running : shared = undef;
 my $time_done_now = undef;
 sub get_elapsed_time {
@@ -193,17 +193,19 @@ sub add_key {
     foreach my $i (@_) {
         foreach my $j ((@allkeys, 'id')) {
             if (($i eq $j)
-                || ($i =~ /\Aexe[0-9]*/)
-                || ($i =~ /\Aarg[0-9]*/)
-                || ($i =~ /\Aarg[0-9]*_[0-9]*/)
+                || ($i =~ /\Aexe[0-9]*\Z/)
+                || ($i =~ /\Aarg[0-9]*\Z/)
+                || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
+                || ($i =~ /\ARANGE[0-9]*\Z/)
+                || ($i =~ /\ARANGES\Z/)
                 ) {
                 $exist = 1;
             }
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expanding_char"\Z/) {
-            die "Can't use $i as key since $i has $user::expanding_char at its tail.\n";
+        } elsif ($i =~ /"$user::expander"\Z/) {
+            die "Can't use $i as key since $i has $user::expander at its tail.\n";
         } else {
             push(@allkeys, $i);
         }
@@ -216,31 +218,23 @@ sub add_indexed_key {
     foreach my $i (@_) {
         foreach my $j ((@allkeys, 'id')) {
             if (($i eq $j)
-                || ($i =~ /\Aexe[0-9]*/)
-                || ($i =~ /\Aarg[0-9]*/)
-                || ($i =~ /\Aarg[0-9]*_[0-9]*/)
+                || ($i =~ /\Aexe[0-9]*\Z/)
+                || ($i =~ /\Aarg[0-9]*\Z/)
+                || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
+                || ($i =~ /\ARANGE[0-9]*\Z/)
+                || ($i =~ /\ARANGES\Z/)
                 ) {
                 $exist = 1;
             }
         }
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expanding_char"\Z/) {
-            die "Can't use $i as key since $i has $user::expanding_char at its tail.\n";
+        } elsif ($i =~ /"$user::expander"\Z/) {
+            die "Can't use $i as key since $i has $user::expander at its tail.\n";
         } else {
             push(@premembers, $i);
         }
         $exist = 0;
-    }
-}
-
-sub rm_tailnis {
-    my @str = @_;
-    if ($str[$#str] eq $nilchar) {
-        pop(@str);
-        &rm_tailnis(@str);
-    } else {
-        return @str;
     }
 }
 
@@ -292,76 +286,34 @@ sub get_max_index {
     my $max = &max(@ret);
     return $max;
 }
-sub get_max_index_of_range { return &get_max_index('range', @_); }
-sub get_max_index_of_exe { return &get_max_index('exe', @_); }
-sub get_max_index_of_arg { return &get_max_index('arg', @_); }
-sub get_max_index_of_first_arg_of_arg { return &get_max_index('first', @_); }
+sub get_max_index_of_range             { return &get_max_index('range',  @_); }
+sub get_max_index_of_exe               { return &get_max_index('exe',    @_); }
+sub get_max_index_of_arg               { return &get_max_index('arg',    @_); }
+sub get_max_index_of_first_arg_of_arg  { return &get_max_index('first',  @_); }
 sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
 
-sub add_user_customizable_core_members {
-    my %job = @_;
-    my $max_index_of_exe    = &get_max_index_of_exe(%job);
-    my $max_index_of_first  = &get_max_index_of_first_arg_of_arg(%job);
-    my $max_index_of_second = &get_max_index_of_second_arg_of_arg(%job);
-    for ( my $i = 0; $i <= $max_index_of_added_key; $i++ ) {
-        foreach (@premembers) {
-            my $name = $_ . $i;
-            push(@allkeys, "$name");
-        }
-    }
-    for ( my $i = 0; $i <= $max_index_of_exe; $i++ ) {
-	my $name = 'exe' . $i;
-	push(@allkeys, "$name");
-    }
-    for ( my $i = 0; $i <= $max_index_of_first; $i++ ) {
-            my $name = 'arg' . $i;
-            push(@allkeys, "$name");
-    }
-    for ( my $i = 0; $i <= $max_index_of_first; $i++ ) {
-	for ( my $j = 0; $j <= $max_index_of_second; $j++ ) {
-            my $name = 'arg' . $i . '_' . $j;
-            push(@allkeys, "$name");
-	}
-    }
-    foreach my $key (keys(%job)) {
-        if ($key =~ /\A:/) {
-            if ($key =~ /"$user::expanding_char"\Z/) {
-                $/ = $user::expanding_char;
-                chomp $key;
-                push(@allkeys, $key);
-            } else {
-                push(@allkeys, $key);
-            }
-        }
-    }
-}
-
-sub generate {
+sub do_initialized {
     my %job = %{$_[0]};
     shift;
-
+    my @ranges = @_;
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
             die "Can't support $user::separator as \$separator.\n";
         }
     }
-    my @ranges = &rm_tailnis(@_);
 
     $job{id} = join($user::separator, ($job{id}, @ranges));
-    &add_user_customizable_core_members(%job);
-    my $max_index_of_range = &get_max_index_of_range(%job);
+    my $max_of_range = &get_max_index_of_range(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expanding_char;
+        my $members = "$_" . $user::expander;
         if ( exists($job{"$members"}) ) {
-            # 「ジョブ定義ハッシュ@」の値がスカラである時
             unless ( ref($job{"$members"}) ) {
-                for ( my $i = 0; $i <= $max_index_of_range; $i++ ) {
+                for ( my $i = 0; $i <= $max_of_range; $i++ ) {
                     my $arg = $argument_name . $i;
-#                   no strict 'refs';
                     my $tmp = eval "$ranges[$i];";
                     eval "our \$$arg = $tmp;";
                 }
-                my $tmp = eval($job{"$members"}); # 「引数をとるものについては文字列をエバる」方式はR0のみをサポートしている（$_[0]は未サポート）
+                my $tmp = eval($job{"$members"});
                 $job{"$_"} = $tmp;
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
@@ -373,42 +325,11 @@ sub generate {
             }
         }
     }
-
-=comment
-    foreach my $key (keys(%job)) {
-        my $exist = 0;
-        foreach my $ukey (@allkeys, 'id') {
-            if (($key eq $ukey) || ($key eq ($ukey . '@'))) {
-                $exist = 1;
-            }
-        }
-        if ($exist == 0) {
-            unless (($key =~ /\ARANGE[0-9]+\Z/)) {
-                print "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
-                delete $job{"$key"};
-            }
-        }
-        $exist = 0;
-    }
-=cut
     my $self = user->new(\%job);
     &jobsched::entry_job_id ($self);
     &jobsched::set_job_initialized($self);
     # &jobsched::load_inventory ($self->{id});
     return $self;
-}
-
-sub rm_tail {
-    my @args = @_;
-  JUMP: until ($#args == 0) {
-      my $tmp = $args[$#args];
-      if ($tmp eq $nilchar) {
-	  pop(@args);
-      } else {
-	  last JUMP;
-      }
-  }
-    return @args;
 }
 
 sub times {
@@ -432,9 +353,8 @@ sub MAX {
     my %job = @_;
     my $num = 0;
 
-    &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expanding_char;
+        my $members = "$_" . $user::expander;
         if ( exists($_[0]{"$members"}) ) {
             if (ref($_[0]{"$members"}) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -449,9 +369,8 @@ sub MIN {
     my %job = @_;
     my $num = 0;
 
-    &add_user_customizable_core_members(%job);
     foreach (@allkeys) {
-        my $members = "$_" . $user::expanding_char;
+        my $members = "$_" . $user::expander;
         if ( exists($_[0]{"$members"}) ) {
             if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -472,24 +391,47 @@ sub expand_and_make {
 	$job{exe0} = $job{exe};
 	delete($job{exe});
     }
-    if ($job{"exe$user::expanding_char"}) {
-	$job{"exe0$user::expanding_char"} = $job{"exe$user::expanding_char"};
-	delete($job{"exe$user::expanding_char"});
+    if ($job{"exe$user::expander"}) {
+	$job{"exe0$user::expander"} = $job{"exe$user::expander"};
+	delete($job{"exe$user::expander"});
     }
-    my $max_index_of_arg = &get_max_index_of_arg(%job);
-    foreach my $i (0..$max_index_of_arg) {
+    my $max_of_arg = &get_max_index_of_arg(%job);
+    foreach my $i (0..$max_of_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
 	    delete($job{"arg$i"});
 	}
     }
-    foreach my $i (0..$max_index_of_arg) {
-	if ($job{"arg$i$user::expanding_char"}) {
-	    $job{"arg0_$i$user::expanding_char"} = $job{"arg$i$user::expanding_char"};
-	    delete($job{"arg$i$user::expanding_char"});
+    foreach my $i (0..$max_of_arg) {
+	if ($job{"arg$i$user::expander"}) {
+	    $job{"arg0_$i$user::expander"} = $job{"arg$i$user::expander"};
+	    delete($job{"arg$i$user::expander"});
 	}
     }
-    &add_user_customizable_core_members(%job);
+
+    # add_key
+    my $max_of_exe    = &get_max_index_of_exe(%job);
+    my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
+    my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
+    for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
+	foreach (@premembers) { push(@allkeys, "$_"."$i"); }
+    }
+    for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
+    for ( my $i = 0; $i <= $max_of_first; $i++ ) { push(@allkeys, "arg$i"); }
+    for ( my $i = 0; $i <= $max_of_first; $i++ ) {
+	for ( my $j = 0; $j <= $max_of_second; $j++ ) {
+            push(@allkeys, "arg$i".'_'."$j");
+	}
+    }
+    foreach my $key (keys(%job)) {
+        if ($key =~ /\A:/) {
+            if ($key =~ /"$user::expander"\Z/) {
+                $/ = $user::expander;
+                chomp $key;
+            }
+	    push(@allkeys, $key);
+        }
+    }
 =comment
     foreach my $key (keys(%job)) {
         unless (&belong($key, 'id', @allkeys)) {
@@ -500,7 +442,7 @@ sub expand_and_make {
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys, 'id') {
-            if (($key eq $ukey) || ($key eq ($ukey . "$user::expanding_char"))) {
+            if (($key eq $ukey) || ($key eq ($ukey . "$user::expander"))) {
                 $exist = 1;
             }
         }
@@ -521,17 +463,18 @@ sub expand_and_make {
         $exist = 0;
     }
 
-    my $max_index_of_range = &get_max_index_of_range(%job);
+    # expand
+    my $max_of_range = &get_max_index_of_range(%job);
     my @objs;
     if (defined $job{'RANGES'}) {
 	my @range = &times(@{$job{'RANGES'}});
         foreach (@range) {
-            my $self = &generate(\%job, @{$_});
+            my $self = &do_initialized(\%job, @{$_});
             push(@objs, $self);
         }
-    } elsif ( $max_index_of_range != -1 ) {
+    } elsif ( $max_of_range != -1 ) {
         my @ranges = ();
-        for ( my $i = 0; $i <= $max_index_of_range; $i++ ) {
+        for ( my $i = 0; $i <= $max_of_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
                 if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                     push(@ranges, $job{"RANGE$i"});
@@ -539,25 +482,24 @@ sub expand_and_make {
                     warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
                 }
             } else {
-		my @temp = ($nilchar);
+		my @temp = ($nil);
 		$job{"RANGE$i"} = \@temp;
 		push(@ranges, $job{"RANGE$i"});
 	    }
         }
-        my @tmp = &rm_tail(@ranges);
-        my @range = &times(@tmp);
+        my @range = &times(@ranges);
         foreach (@range) {
-            my $self = &generate(\%job, @{$_});
+            my $self = &do_initialized(\%job, @{$_});
             push(@objs, $self);
         }
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
-            my $self = &generate(\%job, $_);
+            my $self = &do_initialized(\%job, $_);
             push(@objs, $self);
         }
     } else {
-        my $self = &generate(\%job);
+        my $self = &do_initialized(\%job);
         push(@objs, $self);
     }
     return @objs;
@@ -643,7 +585,7 @@ sub submit {
             if ( jobsched::job_proceeded_last_time ($self, 'running') ) {
                 &jobsched::set_job_running($self);
             }
-            
+
             ## Waiting for the job "done"
             unless ( jobsched::job_proceeded_last_time ($self, 'done') ) {
                 &jobsched::wait_job_done ($self);
@@ -704,7 +646,7 @@ sub belong {
     my $c = 0;
     foreach (@b) {
         if (($a eq $_) ||
-            ($a eq ("$_" . "$user::expanding_char")) ||
+            ($a eq ("$_" . "$user::expander")) ||
             ($a =~ /\ARANGE[0-9]+\Z/)
             ) {
             $c = 1;

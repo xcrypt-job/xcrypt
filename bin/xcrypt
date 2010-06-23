@@ -22,7 +22,7 @@ print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
 print TMP 'use Coro;' . "\n";
 print TMP 'use jobsched;' . "\n";
-print TMP 'our $expanding_char = \'@\';' . "\n";
+print TMP 'our $expander = \'@\';' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
 print TMP 'sub before {my $self = shift;if ($self->{before}) {&{$self->{before}}($self)};}' . "\n";
