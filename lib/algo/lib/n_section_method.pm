@@ -8,8 +8,10 @@ use autodel;
 
 &add_key('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
-our $del_extra_jobs = 0;
-
+my $del_extra_jobs = 0;
+sub del_extra_job {
+    $del_extra_jobs = 1;
+}
 my $interval_check_done_or_ignored = 3;
 my $inf = (2 ** 31) - 1;
 sub n_section_method {

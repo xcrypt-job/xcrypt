@@ -188,7 +188,8 @@ sub add_env {
     return $env;
 }
 
-sub add_key {
+sub add_key_body {
+    my $indexed = shift;
     my $exist = 0;
     foreach my $i (@_) {
         foreach my $j ((@allkeys, 'id')) {
@@ -205,38 +206,17 @@ sub add_key {
         if ($exist == 1) {
             die "$i has already been added or reserved.\n";
         } elsif ($i =~ /"$user::expander"\Z/) {
-            die "Can't use $i as key since $i has $user::expander at its tail.\n";
-        } else {
-            push(@allkeys, $i);
+            die "Can't use $i as key since $i's tail is $user::expander.\n";
+        } elsif ($indexed eq 'indexed') {
+	    push(@premembers, $i);
+	} elsif ($indexed eq 'noindexed') {
+	    push(@allkeys, $i);
         }
         $exist = 0;
     }
 }
-
-sub add_indexed_key {
-    my $exist = 0;
-    foreach my $i (@_) {
-        foreach my $j ((@allkeys, 'id')) {
-            if (($i eq $j)
-                || ($i =~ /\Aexe[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
-                || ($i =~ /\ARANGE[0-9]*\Z/)
-                || ($i =~ /\ARANGES\Z/)
-                ) {
-                $exist = 1;
-            }
-        }
-        if ($exist == 1) {
-            die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expander"\Z/) {
-            die "Can't use $i as key since $i has $user::expander at its tail.\n";
-        } else {
-            push(@premembers, $i);
-        }
-        $exist = 0;
-    }
-}
+sub add_key         { &add_key_body('noindexed', @_); }
+sub add_indexed_key { &add_key_body('indexed',   @_); }
 
 sub max {
     my @array = @_;
@@ -330,6 +310,31 @@ sub do_initialized {
     &jobsched::set_job_initialized($self);
     # &jobsched::load_inventory ($self->{id});
     return $self;
+}
+
+sub times_loop {
+    if (@_ == ()) { return (); }
+    my @arg = @_;
+    my @ret;
+    until (@arg == ()) {
+	my $head = shift(@arg);
+	if (@ret == ()) {
+	    foreach my $k (@$head) {
+		push(@ret, [$k]);
+	    }
+	} else {
+	    my @tmp;
+	    foreach my $i (@ret) {
+		foreach my $j (@$head) {
+		    my @foo = @$i;
+		    push(@foo, $j);
+		    push(@tmp, \@foo);
+		}
+	    }
+	    @ret = @tmp;
+	}
+    }
+    return @ret;
 }
 
 sub times {
@@ -432,13 +437,7 @@ sub expand_and_make {
 	    push(@allkeys, $key);
         }
     }
-=comment
-    foreach my $key (keys(%job)) {
-        unless (&belong($key, 'id', @allkeys)) {
-            delete($job{"$key"});
-        }
-    }
-=cut
+
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys, 'id') {
@@ -545,7 +544,6 @@ sub prepare{
 
 sub submit {
     my @array = @_;
-#    foreach (@array) {print $_->{host}, "\n";}
     my $slp = 0;
     # my @coros = ();
 
@@ -596,8 +594,8 @@ sub submit {
             }
 
             ## after()
-	    # ジョブスクリプトの最終行の処理を終えたからといってafter()をしてよいとは限らないが，
-	    # さすがに念の入れすぎかもしれない．
+	    # ジョブスクリプトの最終行の処理を終えたからといって
+	    # after()をしてよいとは限らないが念の入れすぎかもしれない．
 =comment
 	    my $flag0 = 0;
 	    my $flag1 = 0;
@@ -607,7 +605,6 @@ sub submit {
 		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env});
 	    }
 =cut
-
             unless ( jobsched::job_proceeded_last_time ($self, 'finished') ) {
                 $self->EVERY::LAST::after();
             } else {
@@ -638,21 +635,6 @@ sub sync {
 	&jobsched::exit_job_id($_);
     }
     return @_;
-}
-
-sub belong {
-    my $a = shift;
-    my @b = @_;
-    my $c = 0;
-    foreach (@b) {
-        if (($a eq $_) ||
-            ($a eq ("$_" . "$user::expander")) ||
-            ($a =~ /\ARANGE[0-9]+\Z/)
-            ) {
-            $c = 1;
-        }
-    }
-    return $c;
 }
 
 sub prepare_submit {
