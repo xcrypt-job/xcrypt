@@ -31,11 +31,11 @@ my %ssh_opts = (
 our %Host_Ssh_Hash;
 our $env_d;
 $env_d = { 'host'     => $xcropt::options{localhost},
-		 'wd'       => $xcropt::options{wd},
-		 'sched'    => $xcropt::options{sched},
-		 'xd'       => $xcropt::options{xd},
-		 'p5l'      => $xcropt::options{p5l},
-		 'location' => 'local' };
+	   'wd'       => $xcropt::options{wd},
+	   'sched'    => $xcropt::options{sched},
+	   'xd'       => $xcropt::options{xd},
+	   'p5l'      => $xcropt::options{p5l},
+	   'location' => 'local' };
 our @Env = ($env_d);
 ##
 sub mkarray ($) {
