@@ -6,7 +6,10 @@ use common;
 use File::Basename;
 use core;
 
-&add_indexed_key('linkedfile', 'copiedfile', 'copieddir');
+my $max_of_added_key = 15;
+foreach (0..15) {
+    &add_key("linkedfile$_", "copiedfile$_", "copieddir$_");
+}
 
 sub new {
     my $class = shift;
@@ -24,7 +27,7 @@ sub new {
     mkdir $self->{workdir}, 0755;
     &xcr_mkdir($self->{env}, $self->{workdir});
 
-    for ( my $i = 0; $i <= $builtin::max_of_added_key; $i++ ) {
+    for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
 	# ここからリモート実行未対応
 	if ($self->{"copieddir$i"}) {
 	    my $copied = $self->{"copieddir$i"};

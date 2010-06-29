@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_env add_key add_indexed_key
+add_env add_key
 repeat
 );
 
@@ -25,8 +25,6 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'env');
-my $max_of_added_key = 15;
-my @premembers = ();
 
 my $nil = 'nil';
 my $argument_name = 'R';
@@ -188,8 +186,7 @@ sub add_env {
     return $env;
 }
 
-sub add_key_body {
-    my $indexed = shift;
+sub add_key {
     my $exist = 0;
     foreach my $i (@_) {
         foreach my $j ((@allkeys, 'id')) {
@@ -207,16 +204,12 @@ sub add_key_body {
             die "$i has already been added or reserved.\n";
         } elsif ($i =~ /"$user::expander"\Z/) {
             die "Can't use $i as key since $i's tail is $user::expander.\n";
-        } elsif ($indexed eq 'indexed') {
-	    push(@premembers, $i);
-	} elsif ($indexed eq 'noindexed') {
+	} else {
 	    push(@allkeys, $i);
         }
         $exist = 0;
     }
 }
-sub add_key         { &add_key_body('noindexed', @_); }
-sub add_indexed_key { &add_key_body('indexed',   @_); }
 
 sub max {
     my @array = @_;
@@ -418,9 +411,6 @@ sub expand_and_make {
     my $max_of_exe    = &get_max_index_of_exe(%job);
     my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
-    for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
-	foreach (@premembers) { push(@allkeys, "$_"."$i"); }
-    }
     for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
     for ( my $i = 0; $i <= $max_of_first; $i++ ) { push(@allkeys, "arg$i"); }
     for ( my $i = 0; $i <= $max_of_first; $i++ ) {
