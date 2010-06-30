@@ -276,13 +276,6 @@ sub do_initialized {
         }
     }
 
-=comment
-		foreach my $i (0..($#ranges)) {
-                    my $arg = $argument_name . $i;
-                    my $tmp = eval "$ranges[$i];";
-                    eval "our \$$arg = $tmp;";
-                }
-=cut
     # generate job objects
     unless (defined $job{"id$user::expander"}) {
 	$job{id} = join($user::separator, ($job{id}, @_));
@@ -292,6 +285,13 @@ sub do_initialized {
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members";
+=comment
+		foreach my $i (0..($#ranges)) {
+                    my $arg = $argument_name . $i;
+                    my $tmp = eval "$ranges[$i];";
+                    eval "our \$$arg = $tmp;";
+                }
+=cut
 #		$job{"$_"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
                 $job{"$_"} = &{$job{"$members"}}(@_);
@@ -416,7 +416,7 @@ sub expand_and_make {
 	}
     }
 
-    # add_key for built-in keys "exe*" and "arg*"
+    # add_key for built-in keys "exe*", "arg*" and ":*"
     my $max_of_exe    = &get_max_index_of_exe(%job);
     my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
@@ -538,7 +538,7 @@ sub do_prepared {
 
 sub prepare{
     my @objs = &expand_and_make(@_);
-    my $count = 0;
+    $count = 0;
     &do_prepared(@objs);
     return @objs;
 }
