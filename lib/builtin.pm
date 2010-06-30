@@ -27,7 +27,9 @@ use common;
 my @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'env');
 
 my $nil = 'nil';
-my $argument_name = 'R';
+#my $argument_name = 'R';
+
+my $count = 0;
 
 =comment
 my $current_directory=Cwd::getcwd();
@@ -268,33 +270,36 @@ sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
 sub do_initialized {
     my %job = %{$_[0]};
     shift;
-    my @ranges = @_;
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
             die "Can't support $user::separator as \$separator.\n";
         }
     }
 
-    $job{id} = join($user::separator, ($job{id}, @ranges));
-    my $max_of_range = &get_max_index_of_range(%job);
-    foreach (@allkeys) {
-        my $members = "$_" . $user::expander;
-        if ( exists($job{"$members"}) ) {
-            unless ( ref($job{"$members"}) ) {
-                for ( my $i = 0; $i <= $max_of_range; $i++ ) {
+=comment
+		foreach my $i (0..($#ranges)) {
                     my $arg = $argument_name . $i;
                     my $tmp = eval "$ranges[$i];";
                     eval "our \$$arg = $tmp;";
                 }
-                my $tmp = eval($job{"$members"});
-                $job{"$_"} = $tmp;
+=cut
+    # generate job objects
+    $job{id} = join($user::separator, ($job{id}, @_));
+    foreach (@allkeys) {
+        my $members = "$_" . $user::expander;
+        if ( exists($job{"$members"}) ) {
+            unless ( ref($job{"$members"}) ) {
+		warn "Can't dereference the value of $members, instead evaluate it";
+                $job{"$_"} = eval($job{"$members"});
+            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
+                $job{"$_"} = &{$job{"$members"}}(@_);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
-                $job{"$_"} = $tmp[$_[0]];
-            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-                $job{"$_"} = &{$job{"$members"}}(@ranges);
+                $job{"$_"} = $tmp[$count];
+            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+                $job{"$_"} = ${$job{"$members"}};
             } else {
-                die "Can't take " . ref($job{"$members"}) . " at prepare.\n";
+                die "Can't interpre the value of $members \n";
             }
         }
     }
@@ -347,6 +352,7 @@ sub times {
     return @result;
 }
 
+=comment
 sub MAX {
     my %job = @_;
     my $num = 0;
@@ -380,6 +386,7 @@ sub MIN {
     }
     return $num;
 }
+=cut
 
 sub expand_and_make {
     my %job = @_;
@@ -407,7 +414,7 @@ sub expand_and_make {
 	}
     }
 
-    # add_key
+    # add_key for built-in keys "exe*" and "arg*"
     my $max_of_exe    = &get_max_index_of_exe(%job);
     my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
@@ -428,6 +435,7 @@ sub expand_and_make {
         }
     }
 
+    # disble keys without by add_key
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys, 'id') {
@@ -441,7 +449,7 @@ sub expand_and_make {
                     || ($key =~ /^JS_/))        # for jobscheduler options
             {
 		print $key, "\n";
-                print STDOUT "Warning: $key doesn't work.  Use :$key or &add_key(\'$key\').\n";
+                warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
             if ($key =~ /^JS_/) {
@@ -459,6 +467,7 @@ sub expand_and_make {
 	my @range = &times(@{$job{'RANGES'}});
         foreach (@range) {
             my $self = &do_initialized(\%job, @{$_});
+	    $count++;
             push(@objs, $self);
         }
     } elsif ( $max_of_range != -1 ) {
@@ -468,7 +477,7 @@ sub expand_and_make {
                 if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
                     push(@ranges, $job{"RANGE$i"});
                 } else {
-                    warn "X must be an ARRAY reference at \&prepare(\.\.\.\, \'RANGE$i\'\=\> X\,\.\.\.)";
+                    warn "The value of RANGE$i must be an ARRAY reference";
                 }
             } else {
 		my @temp = ($nil);
@@ -479,14 +488,17 @@ sub expand_and_make {
         my @range = &times(@ranges);
         foreach (@range) {
             my $self = &do_initialized(\%job, @{$_});
+	    $count++;
             push(@objs, $self);
         }
+=comment
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
             my $self = &do_initialized(\%job, $_);
             push(@objs, $self);
         }
+=cut
     } else {
         my $self = &do_initialized(\%job);
         push(@objs, $self);
@@ -528,6 +540,7 @@ sub do_prepared {
 
 sub prepare{
     my @objs = &expand_and_make(@_);
+    my $count = 0;
     &do_prepared(@objs);
     return @objs;
 }
