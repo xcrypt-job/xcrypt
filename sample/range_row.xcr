@@ -1,12 +1,12 @@
 use base qw(core);
 
 %template = (
-    'id' => 'job6',
+    'id@' => sub { "job6_$_[0]$_[1]"; },
     'exe' => 'bin/fib',
     'RANGE0' => [31,32],
     'RANGE1' => [0,1],
     'arg0@' => sub { ($_[0] + $_[1]) },
-    'arg1@' => sub { "> out$_[0]_$_[1]" }
+    'arg1@' => sub { "> out_$_[0]_$_[1]" }
 );
 
 &prepare_submit_sync(%template);
