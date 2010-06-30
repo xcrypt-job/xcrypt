@@ -24,7 +24,7 @@ use Cwd;
 use common;
 
 # id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('before', 'before_in_job', 'after_in_job', 'after', 'env');
+my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 
 my $nil = 'nil';
 #my $argument_name = 'R';
@@ -191,7 +191,7 @@ sub add_env {
 sub add_key {
     my $exist = 0;
     foreach my $i (@_) {
-        foreach my $j ((@allkeys, 'id')) {
+        foreach my $j ((@allkeys)) {
             if (($i eq $j)
                 || ($i =~ /\Aexe[0-9]*\Z/)
                 || ($i =~ /\Aarg[0-9]*\Z/)
@@ -284,20 +284,23 @@ sub do_initialized {
                 }
 =cut
     # generate job objects
-    $job{id} = join($user::separator, ($job{id}, @_));
+#    $job{id} = join($user::separator, ($job{id}, @_));
     foreach (@allkeys) {
         my $members = "$_" . $user::expander;
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
+		if ("$_" eq 'id') {
+		    warn "$_" . "s may possily conflict\n";
+		}
 		warn "Can't dereference the value of $members, instead evaluate it";
-                $job{"$_"} = eval($job{"$members"});
+		$job{"$_"} = eval($job{"$members"});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
                 $job{"$_"} = &{$job{"$members"}}(@_);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
                 $job{"$_"} = $tmp[$count];
             } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-                $job{"$_"} = ${$job{"$members"}};
+		$job{"$_"} = ${$job{"$members"}};
             } else {
                 die "Can't interpre the value of $members \n";
             }
@@ -419,8 +422,8 @@ sub expand_and_make {
     my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
     for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
-    for ( my $i = 0; $i <= $max_of_first; $i++ ) { push(@allkeys, "arg$i"); }
     for ( my $i = 0; $i <= $max_of_first; $i++ ) {
+	push(@allkeys, "arg$i");
 	for ( my $j = 0; $j <= $max_of_second; $j++ ) {
             push(@allkeys, "arg$i".'_'."$j");
 	}
@@ -438,7 +441,7 @@ sub expand_and_make {
     # disble keys without by add_key
     foreach my $key (keys(%job)) {
         my $exist = 0;
-        foreach my $ukey (@allkeys, 'id') {
+        foreach my $ukey (@allkeys) {
             if (($key eq $ukey) || ($key eq ($ukey . "$user::expander"))) {
                 $exist = 1;
             }
@@ -463,14 +466,13 @@ sub expand_and_make {
     # expand
     my $max_of_range = &get_max_index_of_range(%job);
     my @objs;
+    my @range;
+    my $self;
     if (defined $job{'RANGES'}) {
-	my @range = &times(@{$job{'RANGES'}});
-        foreach (@range) {
-            my $self = &do_initialized(\%job, @{$_});
-	    $count++;
-            push(@objs, $self);
-        }
+	unless (defined $job{'id@'}) { warn "ids may possily conflict\n"; }
+	@range = &times(@{$job{'RANGES'}});
     } elsif ( $max_of_range != -1 ) {
+	unless (defined $job{"id@"}) { warn "ids may possily conflict\n"; }
         my @ranges = ();
         for ( my $i = 0; $i <= $max_of_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
@@ -485,12 +487,7 @@ sub expand_and_make {
 		push(@ranges, $job{"RANGE$i"});
 	    }
         }
-        my @range = &times(@ranges);
-        foreach (@range) {
-            my $self = &do_initialized(\%job, @{$_});
-	    $count++;
-            push(@objs, $self);
-        }
+        @range = &times(@ranges);
 =comment
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
@@ -500,8 +497,12 @@ sub expand_and_make {
         }
 =cut
     } else {
-        my $self = &do_initialized(\%job);
-        push(@objs, $self);
+        @range = ([]);
+    }
+    foreach (@range) {
+	$self = &do_initialized(\%job, @{$_});
+	$count++;
+	push(@objs, $self);
     }
     return @objs;
 }
