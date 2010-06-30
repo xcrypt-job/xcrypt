@@ -284,16 +284,15 @@ sub do_initialized {
                 }
 =cut
     # generate job objects
-#    $job{id} = join($user::separator, ($job{id}, @_));
+    unless (defined $job{"id$user::expander"}) {
+	$job{id} = join($user::separator, ($job{id}, @_));
+    }
     foreach (@allkeys) {
         my $members = "$_" . $user::expander;
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
-		if ("$_" eq 'id') {
-		    warn "$_" . "s may possily conflict\n";
-		}
-		warn "Can't dereference the value of $members, instead evaluate it";
-		$job{"$_"} = eval($job{"$members"});
+		warn "$members isn't a reference.";
+#		$job{"$_"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
                 $job{"$_"} = &{$job{"$members"}}(@_);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
@@ -469,10 +468,8 @@ sub expand_and_make {
     my @range;
     my $self;
     if (defined $job{'RANGES'}) {
-	unless (defined $job{'id@'}) { warn "ids may possily conflict\n"; }
 	@range = &times(@{$job{'RANGES'}});
     } elsif ( $max_of_range != -1 ) {
-	unless (defined $job{"id@"}) { warn "ids may possily conflict\n"; }
         my @ranges = ();
         for ( my $i = 0; $i <= $max_of_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
