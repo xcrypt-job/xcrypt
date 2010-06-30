@@ -291,7 +291,7 @@ sub do_initialized {
         my $members = "$_" . $user::expander;
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
-		warn "$members isn't a reference.";
+		warn "Can't dereference $members";
 #		$job{"$_"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
                 $job{"$_"} = &{$job{"$members"}}(@_);
