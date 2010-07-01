@@ -270,6 +270,7 @@ sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
 sub do_initialized {
     my %job = %{$_[0]};
     shift;
+    my @range = @_;
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
             die "Can't support $user::separator as \$separator.\n";
@@ -280,8 +281,8 @@ sub do_initialized {
     unless (defined $job{"id$user::expander"}) {
 	$job{id} = join($user::separator, ($job{id}, @_));
     }
-    foreach (@allkeys) {
-        my $members = "$_" . $user::expander;
+    foreach my $k (@allkeys) {
+        my $members = "$k" . $user::expander;
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members";
@@ -292,14 +293,15 @@ sub do_initialized {
                     eval "our \$$arg = $tmp;";
                 }
 =cut
-#		$job{"$_"} = eval($job{$members});
+		@_ = @range;
+		$job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-                $job{"$_"} = &{$job{"$members"}}(@_);
+                $job{"$k"} = &{$job{"$members"}}(@range);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
-                $job{"$_"} = $tmp[$count];
+                $job{"$k"} = $tmp[$count];
             } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-		$job{"$_"} = ${$job{"$members"}};
+		$job{"$k"} = ${$job{"$members"}};
             } else {
                 die "Can't interpre the value of $members \n";
             }
