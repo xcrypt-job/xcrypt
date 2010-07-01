@@ -51,9 +51,10 @@ job, and supports users to process jobs easily.
 Xcrypt requires a superset of Bourne shell, Perl 5.10.0 or any later
 version, and Perl/Tk 8.4 for GUI.
 
-Xcrypt also requires the following outer modules:
+Xcrypt also requires the following outer modules (bundled with Xcrypt):
 \begin{itemize}
 \item Marc Lehmann's Coro (where conftest.c is not contained), EV,
+\item Graham Barr's Error,
 \item Joshua Nathaniel Pritikin's Event,
 \item Salvador Fandino's Net-OpenSSH,
 \item Daniel Muey's Recursive,
@@ -98,9 +99,9 @@ The details of the modules are described in Chapter~\ref{chapmodule}.
 
 Commonly-used modules can be loaded as follows,
 \begin{boxnote}
-\begin{verbatim}
-use builtin;
-\end{verbatim}
+\begin{alltt}
+use \textit{mymodule};
+\end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
 \noindent
@@ -121,13 +122,7 @@ Xcrypt's templates are implemented as Perl's hashes.  For example,
 \begin{alltt}
 %myjob = (
     'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe}',
-    'arg0' => '100',
-    'arg1' => '\textit{myinput}',
-    'stdofile' => '\textit{myout}',
-    'stdefile' => '\textit{myerr}',
-    'queue' => '\textit{myqueue}',
-    'option' => '\textit{myoption}'
+    'exe' => './\textit{myexe}'
 );
 \end{alltt}
 \end{boxnote}
@@ -154,16 +149,9 @@ $separator = '-';
 
 %myjob = (
     'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe}',
-    'arg0' => '100',
-    'arg1' => '\textit{myinput}',
-    'stdofile' => '\textit{myout}',
-    'stdefile' => '\textit{myerr}',
-    'queue' => '\textit{myqueue}',
-    'option' => '\textit{myoption}'
+    'exe' => './\textit{myexe}',
 );
-&prepare_submit_sync(%myjob, 'arg0@' => [2,4]);
-
+&prepare_submit_sync(%myjob);
 \end{alltt}
 \end{boxnote}
 
@@ -224,10 +212,8 @@ Finally, execute Xcrypt with the script:
 \texttt{\$ \$XCRYPT/bin/xcryptstat}
 \end{screen}
 \begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptdel myjob}
+\texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob}
 \end{screen}
-
-
 
 \section{Product}\label{sec:created}
 
@@ -246,7 +232,7 @@ and \texttt{linkedfile}\textit{i}) are copied and created in the job
 working directory, respectively.
 \fi
 
-\subsection*{\textit{myjob}\_\texttt{\$XCRJOBSCHED.sh} or \texttt{sh.sh}}
+\subsection*{\textit{myjob}\_\texttt{\$XCRJOBSCHED.sh}}
 
 is a job script passed to a job scheduler or a Bourne shell script
 executed, regarding OS as a job scheduler, respectively.
@@ -260,6 +246,10 @@ is defined, the file is renamed as its value.
 
 is a file storing the job's standard error.  When \texttt{stdefile}
 is defined, the file is renamed as its value.
+
+\subsection*{\texttt{inv\_watch}}
+
+is a directory containing log, lock, and other files.
 
 \part{Details}
 
@@ -283,12 +273,22 @@ In this chapter, we introduce some modules available in Xcrypt scripts.
 This module is the Xcrypt core module, and required to be read in
 order to use anything particular to Xcrypt.
 
-It creates a directory of the name
+It creates a job script file of the name \texttt{\$myjob->\{id\}.sh}
+under the job working directory, where \texttt{\%myjob} is a template.
+
+\section{\texttt{sandbox}}
+
+directory
+
 \begin{center}
  \texttt{\$myjob->\{id\}} \texttt{\$separator}
  \texttt{\$myjob->\{arg0\}} \texttt{\$separator} ...
 \end{center}
-under the job working directory, where \texttt{\%myjob} is a template.
+
+is created for each job (called a \textit{job working directory}).  It is
+named by the value of the job hash's key \texttt{id}.  Job-processing
+is done in the job working directory.
+
 The default of \texttt{\$separator} is \texttt{\_}.  In order to
 redefine \texttt{\$separator} to be \texttt{-}, for example, it is
 enough to write as follows,
@@ -310,14 +310,6 @@ which becomes available in Xcrypt scripts.  When the value of
 $\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips a check of
 whether \texttt{\$separator} consists of only available characters or not.
 The default is $0$.
-
-\section{\texttt{sandbox}}
-
-directory
-
-is created for each job (called a \textit{job working directory}).  It is
-named by the value of the job hash's key \texttt{id}.  Job-processing
-is done in the job working directory.
 
 
 \texttt{linkedfile}\textit{i}
@@ -450,21 +442,19 @@ printable characters except
 \end{center}
 is available.
 
-\section{\texttt{exe}}
+\section{\texttt{exe}\textit{i}}
 
 Its value denotes a command.  The command is executed as follows,
 \begin{screen}
-\texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
+\texttt{\$ } \textit{myexe0 myarg0\_0 ...}\\
+\texttt{\$ } \textit{myexe1 myarg1\_0 ...}\\
+\vdots
 \end{screen}
 with \texttt{arg}\textit{i} explained below.
 
-\section{\texttt{arg}\textit{i}}
+\section{\texttt{arg}\textit{i}\_\textit{j}}
 
-Its values are arguments of a command.  The command is executed as
-follows,
-\begin{screen}
-\texttt{\$ } \textit{myexe myarg0 myarg1 ... myarg255}
-\end{screen}
+Its values are arguments of a command.
 
 \section{\texttt{stdofile}}
 
@@ -476,6 +466,9 @@ The default is \texttt{stdout}.
 The standard error is stored in the indicated file.
 The default is \texttt{stderr}.
 
+\section{\texttt{JS}\_\textit{key}}
+
+\if0
 \section{\texttt{queue}}
 
 Its values is a name of a queue.
@@ -495,6 +488,7 @@ Its value is an option of a job scheduler.
 \section{\texttt{successor}}
 
 Its values' jobs are generated after the job is done.
+\fi
 
 \chapter{Built-in Function}\label{chapfun}
 
@@ -516,14 +510,14 @@ objects are generated by \texttt{RANGE}\textit{i} as described later.
 \begin{boxnote}
 \begin{alltt}
 prepare(\textit{%template}
-        [,'RANGE0' => \verb+\+@\textit{myparam0s}]...[,'RANGE255' => \verb+\+@\textit{myparam255s}]
+        [,'RANGE0' => \verb+\+@\textit{myparam0s}]...]
         [,'\textit{key}@' => \verb+\+@\textit{myparams}]...);
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
 \noindent
 where \textit{key}\texttt{@} denotes the one whose postfix is the
-character \texttt{@} (e.g., \texttt{arg0@}).
+character \texttt{@} (e.g., \texttt{exe0@}).
 
 Any word of ASCII printable characters except
 \begin{center}
