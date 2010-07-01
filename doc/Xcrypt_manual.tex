@@ -443,11 +443,6 @@ where \texttt{strategy1}, \texttt{strategy2}, and
 In this chapter, we introduce keys and values available in templates
 by default.
 
-\texttt{@} means
-
-values are array references or function references 
-
-
 \section{\texttt{RANGE}\textit{i}}
 
 \texttt{\$expander} is customizable
@@ -461,6 +456,11 @@ Any word of ASCII printable characters except
 \verb*+@ "$%&'/:;<=>?[\]`{|}+        % " for highlight
 \end{center}
 is available for \texttt{RANGE}\textit{i}'s values.
+
+\texttt{@} means
+
+values are array references, function references, (or scalar although
+not recommended).
 
 \section{\texttt{id}}
 
