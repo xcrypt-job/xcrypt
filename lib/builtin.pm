@@ -285,14 +285,7 @@ sub do_initialized {
         my $members = "$k" . $user::expander;
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
-		warn "Can't dereference $members";
-=comment
-		foreach my $i (0..($#ranges)) {
-                    my $arg = $argument_name . $i;
-                    my $tmp = eval "$ranges[$i];";
-                    eval "our \$$arg = $tmp;";
-                }
-=cut
+		warn "Can't dereference $members.  Instead evaluate $members";
 		@_ = @range;
 		$job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
@@ -303,7 +296,7 @@ sub do_initialized {
             } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
 		$job{"$k"} = ${$job{"$members"}};
             } else {
-                die "Can't interpre the value of $members \n";
+                die "Can't interpret $members \n";
             }
         }
     }
