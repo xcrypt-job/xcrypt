@@ -174,9 +174,10 @@ sub rmt_cmd {
 #	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
 #	if ($ex0 && !$ex1) {
 #	    unless ($ex1) {
-		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
-		my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-		&rmt_cmd('system', $env, "ln -s $tmp1 $tmp0");
+#		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
+#		my $tmp1 = File::Spec->catfile($env->{wd}, $file);
+		my $tmp0 = File::Spec->catfile($dir, $link);
+		&rmt_cmd('system', $env, "ln -s $file $tmp0");
 #	    }
 #	} else {
 #	    warn "Can't link $tmp1 to $tmp0";
@@ -248,9 +249,8 @@ sub xcr_cmd {
 	    my ($dir, $file, $link) = @_;
 #	    if (-f $file) {
 #		unless (-e $link) {
-		    symlink(File::Spec->rel2abs($file),
-#		    symlink("../$file",
-			    File::Spec->catfile($dir, $link));
+#		    symlink(File::Spec->rel2abs($file),
+		    symlink($file, File::Spec->catfile($dir, $link));
 #		}
 #	    } else {
 #		warn "Can't link to $file";

@@ -50,7 +50,7 @@ sub new {
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
 	    &xcr_symlink($self->{env}, $self->{workdir},
-			 File::Spec->catfile($file),
+			 File::Spec->catfile('..', $file),
 			 File::Spec->catfile(basename($file)));
 	}
     }
