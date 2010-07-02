@@ -152,12 +152,12 @@ sub rmt_cmd {
 	my ($copied, $dir) = @_;
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	my $ex = &rmt_cmd('exist', $env, '-f', $copied);
-	if ($ex) {
+#	my $ex = &rmt_cmd('exist', $env, '-f', $copied);
+#	if ($ex) {
 	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
-	} else {
-	    warn "Can't copy $fp_copied $fp_dir";
-	}
+#	} else {
+#	    warn "Can't copy $fp_copied $fp_dir";
+#	}
     } elsif ($cmd eq 'rename') {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
@@ -170,17 +170,17 @@ sub rmt_cmd {
 	}
     } elsif ($cmd eq 'symlink') {
 	my ($dir, $file, $link) = @_;
-	my $ex0 = &rmt_cmd('exist', $env, '-f', $file);
-	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
-	if ($ex0 && !$ex1) {
-	    unless ($ex1) {
+#	my $ex0 = &rmt_cmd('exist', $env, '-f', $file);
+#	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
+#	if ($ex0 && !$ex1) {
+#	    unless ($ex1) {
 		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
 		my $tmp1 = File::Spec->catfile($env->{wd}, $file);
 		&rmt_cmd('system', $env, "ln -s $tmp1 $tmp0");
-	    }
-	} else {
-	    warn "Can't link $tmp1 to $tmp0";
-	}
+#	    }
+#	} else {
+#	    warn "Can't link $tmp1 to $tmp0";
+#	}
     } elsif ($cmd eq 'unlink') {
 	my ($file) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
@@ -236,9 +236,9 @@ sub xcr_cmd {
 	    }
 	} elsif ($cmd eq 'copy') {
 	    my ($copied, $dir) = @_;
-	    if (-d $copied) {
+#	    if (-d $copied) {
 		fcopy($copied, $dir);
-	    }
+#	    }
 	} elsif ($cmd eq 'rename') {
 	    my ($renamed, $file) = @_;
 	    if (-e $renamed) {
@@ -246,14 +246,15 @@ sub xcr_cmd {
 	    }
 	} elsif ($cmd eq 'symlink') {
 	    my ($dir, $file, $link) = @_;
-	    if (-f $file) {
-		unless (-e $link) {
+#	    if (-f $file) {
+#		unless (-e $link) {
 		    symlink(File::Spec->rel2abs($file),
+#		    symlink("../$file",
 			    File::Spec->catfile($dir, $link));
-		}
-	    } else {
-		warn "Can't link to $file";
-	    }
+#		}
+#	    } else {
+#		warn "Can't link to $file";
+#	    }
 	} elsif ($cmd eq 'unlink') {
 	    my ($file) = @_;
 	    unlink $file;
