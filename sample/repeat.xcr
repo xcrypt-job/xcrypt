@@ -10,4 +10,3 @@ my @jobs = &prepare_submit(%template);
 $hoge = 'hoge';
 &repeat(sub {print STDOUT "$hoge\n";}, 3);
 &sync(@jobs);
-

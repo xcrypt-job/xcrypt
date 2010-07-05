@@ -296,7 +296,7 @@ sub do_initialized {
             } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
 		$job{"$k"} = ${$job{"$members"}};
             } else {
-                die "Can't interpret $members \n";
+                die "Can't interpret $members\n";
             }
         }
     }
