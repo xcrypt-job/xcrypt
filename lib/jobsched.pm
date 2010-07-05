@@ -767,7 +767,7 @@ sub wait_and_get_file {
   LABEL: while (1) {
       foreach my $env (@envs) {
 	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist($env, '-e', $Reqfile);
+	      my $tmp = &rmt_exist($env, $Reqfile);
 	      if ($tmp) {
 		  &rmt_rename($env, $Reqfile, $Opened_File);
 		  &rmt_get($env, $Opened_File, '.');
