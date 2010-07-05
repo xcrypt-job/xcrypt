@@ -143,65 +143,37 @@ sub rmt_cmd {
 	return $flags[0];
     } elsif ($cmd eq 'mkdir') {
 	my ($dir) = @_;
-#	my $flag = &rmt_cmd('exist', $env, $dir);
-#	unless ($flag) {
-	    my $fullpath = File::Spec->catfile($env->{wd}, $dir);
-	    &rmt_cmd('system', $env, "mkdir $fullpath");
-#	}
+	my $fullpath = File::Spec->catfile($env->{wd}, $dir);
+	&rmt_cmd('system', $env, "mkdir $fullpath");
     } elsif ($cmd eq 'copy') {
 	my ($copied, $dir) = @_;
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-#	my $ex = &rmt_cmd('exist', $env, $copied);
-#	if ($ex) {
-	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
-#	} else {
-#	    warn "Can't copy $fp_copied $fp_dir";
-#	}
+	&rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
     } elsif ($cmd eq 'rename') {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
 	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-#	my $ex = &rmt_cmd('exist', $env, $renamed);
-#	if ($ex) {
-	    &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
-#	} else {
-#	    warn "Can't rename $tmp0 to $tmp1";
-#	}
+	&rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
     } elsif ($cmd eq 'symlink') {
 	my ($dir, $file, $link) = @_;
-#	my $ex0 = &rmt_cmd('exist', $env, $file);
-#	my $ex1 = &rmt_cmd('exist', $env, File::Spec->catfile($dir, $link));
-#	if ($ex0 && !$ex1) {
-#	    unless ($ex1) {
-#		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
-#		my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-		my $tmp0 = File::Spec->catfile($dir, $link);
-		&rmt_cmd('system', $env, "ln -s $file $tmp0");
-#	    }
-#	} else {
-#	    warn "Can't link $tmp1 to $tmp0";
-#	}
+	my $tmp = File::Spec->catfile($dir, $link);
+	&rmt_cmd('system', $env, "ln -s $file $tmp");
     } elsif ($cmd eq 'unlink') {
 	my ($file) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
 	&rmt_cmd('system', $env, "rm -f $fullpath");
     } elsif ($cmd eq 'get') {
 	my ($file, $to) = @_;
-#	my $flag = &rmt_cmd('exist', $env, $file);
-#	if ($flag) {
-	    unless ($xcropt::options{shared}) {
-		my $fullpath = File::Spec->catfile($env->{wd}, $file);
-		$ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or die "get failed: $ssh->error";
-	    }
-#	}
+	unless ($xcropt::options{shared}) {
+	    my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	    $ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or die "get failed: $ssh->error";
+	}
     } elsif ($cmd eq 'put') {
 	my ($file, $to) = @_;
-	if (-e $file) {
-	    unless ($xcropt::options{shared}) {
-		my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-		$ssh->scp_put(\%ssh_opts, $file, $fullpath) or die "put failed: $ssh->error";
-	    }
+	unless ($xcropt::options{shared}) {
+	    my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
+	    $ssh->scp_put(\%ssh_opts, $file, $fullpath) or die "put failed: $ssh->error";
 	}
     } else {
 	foreach(%$cmd){print $_, "\n";}
@@ -237,9 +209,7 @@ sub xcr_cmd {
 	    }
 	} elsif ($cmd eq 'copy') {
 	    my ($copied, $dir) = @_;
-#	    if (-d $copied) {
-		fcopy($copied, $dir);
-#	    }
+	    fcopy($copied, $dir);
 	} elsif ($cmd eq 'rename') {
 	    my ($renamed, $file) = @_;
 	    if (-e $renamed) {
@@ -247,14 +217,7 @@ sub xcr_cmd {
 	    }
 	} elsif ($cmd eq 'symlink') {
 	    my ($dir, $file, $link) = @_;
-#	    if (-f $file) {
-#		unless (-e $link) {
-#		    symlink(File::Spec->rel2abs($file),
-		    symlink($file, File::Spec->catfile($dir, $link));
-#		}
-#	    } else {
-#		warn "Can't link to $file";
-#	    }
+	    symlink($file, File::Spec->catfile($dir, $link));
 	} elsif ($cmd eq 'unlink') {
 	    my ($file) = @_;
 	    unlink $file;

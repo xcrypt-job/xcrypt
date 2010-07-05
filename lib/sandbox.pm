@@ -44,7 +44,6 @@ sub new {
 
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-#	    my $ex = &xcr_exist($self->{env}, $copied);
 	    &xcr_copy($self->{env}, $copied, $self->{workdir});
 	}
 	if ($self->{"linkedfile$i"}) {

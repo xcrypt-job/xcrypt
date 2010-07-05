@@ -3,11 +3,10 @@ use base qw(sandbox core);
 %template = (
     'id' => 'job2',
     'exe' => './fib',
-    'arg0@' => [40, 41],
+    'arg0@' => [40,41],
     'arg1' => '> job2_out1',
+    'RANGE0' => [0,1],
     'linkedfile0' => 'bin/fib',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
     );
 
 &prepare_submit_sync(%template);
