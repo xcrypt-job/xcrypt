@@ -597,8 +597,8 @@ sub submit {
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 0.1;
-		    $flag0 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env});
-		    $flag1 = &xcr_exist('-f', $self->{JS_stdout}, $self->{env});
+		    $flag0 = &xcr_exist($self->{env}, $self->{JS_stdout});
+		    $flag1 = &xcr_exist($self->{env}, $self->{JS_stdout});
 	    }
 =cut
             unless ( jobsched::job_proceeded_last_time ($self, 'finished') ) {

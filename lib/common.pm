@@ -136,23 +136,23 @@ sub rmt_cmd {
 	my $flag = $ssh->system("$tmp") or die "remote command failed: $ssh->error";
 	return $flag;
     } elsif ($cmd eq 'exist') {
-	my ($type, $file) = @_;
+	my ($file) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	my @flags = $ssh->capture("test $type $fullpath && echo 1");
+	my @flags = $ssh->capture("test -e $fullpath && echo 1");
 	chomp($flags[0]);
 	return $flags[0];
     } elsif ($cmd eq 'mkdir') {
 	my ($dir) = @_;
-	my $flag = &rmt_cmd('exist', $env, '-d', $dir);
-	unless ($flag) {
+#	my $flag = &rmt_cmd('exist', $env, $dir);
+#	unless ($flag) {
 	    my $fullpath = File::Spec->catfile($env->{wd}, $dir);
 	    &rmt_cmd('system', $env, "mkdir $fullpath");
-	}
+#	}
     } elsif ($cmd eq 'copy') {
 	my ($copied, $dir) = @_;
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-#	my $ex = &rmt_cmd('exist', $env, '-f', $copied);
+#	my $ex = &rmt_cmd('exist', $env, $copied);
 #	if ($ex) {
 	    &rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
 #	} else {
@@ -162,16 +162,16 @@ sub rmt_cmd {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
 	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-	my $ex = &rmt_cmd('exist', $env, '-f', $renamed);
-	if ($ex) {
+#	my $ex = &rmt_cmd('exist', $env, $renamed);
+#	if ($ex) {
 	    &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
-	} else {
-	    warn "Can't rename $tmp0 to $tmp1";
-	}
+#	} else {
+#	    warn "Can't rename $tmp0 to $tmp1";
+#	}
     } elsif ($cmd eq 'symlink') {
 	my ($dir, $file, $link) = @_;
-#	my $ex0 = &rmt_cmd('exist', $env, '-f', $file);
-#	my $ex1 = &rmt_cmd('exist', $env, '-h', File::Spec->catfile($dir, $link));
+#	my $ex0 = &rmt_cmd('exist', $env, $file);
+#	my $ex1 = &rmt_cmd('exist', $env, File::Spec->catfile($dir, $link));
 #	if ($ex0 && !$ex1) {
 #	    unless ($ex1) {
 #		my $tmp0 = File::Spec->catfile($env->{wd}, $dir, $link);
@@ -188,13 +188,13 @@ sub rmt_cmd {
 	&rmt_cmd('system', $env, "rm -f $fullpath");
     } elsif ($cmd eq 'get') {
 	my ($file, $to) = @_;
-	my $flag = &rmt_cmd('exist', $env, '-f', $file);
-	if ($flag) {
+#	my $flag = &rmt_cmd('exist', $env, $file);
+#	if ($flag) {
 	    unless ($xcropt::options{shared}) {
 		my $fullpath = File::Spec->catfile($env->{wd}, $file);
 		$ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or die "get failed: $ssh->error";
 	    }
-	}
+#	}
     } elsif ($cmd eq 'put') {
 	my ($file, $to) = @_;
 	if (-e $file) {
