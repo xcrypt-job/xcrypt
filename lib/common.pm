@@ -209,7 +209,7 @@ sub xcr_cmd {
 	    }
 	} elsif ($cmd eq 'copy') {
 	    my ($copied, $dir) = @_;
-	    fcopy($copied, $dir);
+	    rcopy($copied, $dir);
 	} elsif ($cmd eq 'rename') {
 	    my ($renamed, $file) = @_;
 	    if (-e $renamed) {

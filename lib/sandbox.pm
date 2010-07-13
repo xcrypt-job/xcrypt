@@ -44,7 +44,7 @@ sub new {
 
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    &xcr_copy($self->{env}, $copied, $self->{workdir});
+	    &xcr_copy($self->{env}, $copied, File::Spec->catfile($self->{workdir}, File::Spec->catfile(basename($copied))));
 	}
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
