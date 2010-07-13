@@ -2,11 +2,13 @@ use base qw(sandbox core);
 
 %template = (
     'id' => 'job2',
+#    'exe' => './fib',
     'exe' => 'bin/fib',
     'arg0@' => [40,41],
     'arg1' => '> job2_out1',
     'RANGE0' => [0,1],
 #    'linkedfile0' => 'bin/fib',
+#    'copiedfile0' => 'bin/fib',
     'copiedfile0' => 'bin',
     );
 
