@@ -28,23 +28,11 @@ sub new {
     &xcr_mkdir($self->{env}, $self->{workdir});
 
     for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
-	# ここからリモート実行未対応
-	if ($self->{"copieddir$i"}) {
-	    my $copied = $self->{"copieddir$i"};
-	    opendir(DIR, $copied);
-	    my @params = grep { !m/^(\.|\.\.)/g } readdir(DIR);
-	    closedir(DIR);
-	    foreach (@params) {
-		my $tmp = File::Spec->catfile($copied, $_);
-		my $temp = File::Spec->catfile($self->{workdir}, $_);
-		rcopy $tmp, $temp;
-	    }
-	}
-	# ここまでリモート実行未対応
-
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    &xcr_copy($self->{env}, $copied, File::Spec->catfile($self->{workdir}, File::Spec->catfile(basename($copied))));
+	    &xcr_copy($self->{env}, $copied,
+		      File::Spec->catfile($self->{workdir},
+					  File::Spec->catfile(basename($copied))));
 	}
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};

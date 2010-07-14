@@ -144,12 +144,13 @@ sub rmt_cmd {
     } elsif ($cmd eq 'mkdir') {
 	my ($dir) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_cmd('system', $env, "mkdir $fullpath");
+	&rmt_cmd('system', $env, "test -e $fullpath || mkdir $fullpath");
     } elsif ($cmd eq 'copy') {
 	my ($copied, $dir) = @_;
 	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
 	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_cmd('system', $env, "cp -f $fp_copied $fp_dir");
+	&rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_dir");
+	&rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_dir");
     } elsif ($cmd eq 'rename') {
 	my ($renamed, $file) = @_;
 	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
@@ -204,9 +205,7 @@ sub xcr_cmd {
 	    return $flag;
 	} elsif ($cmd eq 'mkdir') {
 	    my ($dir) = @_;
-	    if (-d $dir) {
-		mkdir $dir, 0755;
-	    }
+	    mkdir $dir, 0755;
 	} elsif ($cmd eq 'copy') {
 	    my ($copied, $dir) = @_;
 	    rcopy($copied, $dir);
