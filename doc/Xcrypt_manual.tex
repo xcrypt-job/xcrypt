@@ -641,14 +641,159 @@ submit(@jobs);
 sync(@jobs);
 \end{alltt}
 \end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_exist}}
+
+This function returns 1 if \texttt{\$file} exists (0 unless) at
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_exist(\|\|%\textit{env}, $file);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_qx}}
+
+This function returns \texttt{\$command}'s standard output at
+\texttt{\$env\{location\}} as an array.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_qx(\|\|%\textit{env}, $command);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_system}}
+
+This function returns \texttt{\$command}'s return value at
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_system(\|\|%\textit{env}, $command);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_mkdir}}
+
+This function makes a directory of the name \texttt{\$dir} at
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_mkdir(\|\|%\textit{env}, $dir);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_copy}}
+
+This function copies \texttt{\$file\_or\_dir0} to
+\texttt{\$file\_or\_dir1} at \texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_copy(\|\|%\textit{env}, $file_or_dir0, $file_or_dir1);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_rename}}
+
+This function rename \texttt{\$file0} to \texttt{\$file1} at
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_rename(\|\|%\textit{env}, $file0, $file1);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_symlink}}
+
+This function links \texttt{\$file} as \texttt{\$link} in
+\texttt{\$dir} at \texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_symlink(\|\|%\textit{env}, $file, $dir, $link);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{xcr\_unlink}}
+
+This function removes \texttt{\$file} at \texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+xcr_unlink(\|\|%\textit{env}, $file);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{get\_from}}
+
+This function gets \texttt{\$file} from \texttt{\$env\{wd\}} in
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+get_from(\|\|%\textit{env}, $file);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{put\_into}}
+
+This function puts \texttt{\$file} into \texttt{\$env\{wd\}} in
+\texttt{\$env\{location\}}.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+put_into(\|\|%\textit{env}, $file);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
 
 \section{\texttt{add\_env}}
+
+\subsubsection{\format}
 
 \begin{boxnote}
 \begin{alltt}
 add_key(\|\|%\textit{env});
 \end{alltt}
 \end{boxnote}
+
+\subsubsection{\example}
 
 \begin{boxnote}
 \begin{alltt}
