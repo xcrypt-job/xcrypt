@@ -192,7 +192,7 @@ sub update_script_file {
     my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
     if ($self->{env}->{location} eq 'remote') {
-	&rmt_put($self->{env}, $file, '.');
+	&put_into($self->{env}, $file, '.');
 	unlink $file;
     }
 }

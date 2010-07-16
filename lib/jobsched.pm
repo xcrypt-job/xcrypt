@@ -292,7 +292,7 @@ sub invoke_watch_by_file {
                 close($CLIENT_OUT);
             }
             if ($handled_job->{env}->{location} eq 'remote') {
-                &rmt_put($handled_job->{env}, $Ack_Tmpfile, '.');
+                &put_into($handled_job->{env}, $Ack_Tmpfile, '.');
                 &rmt_rename($handled_job->{env}, $Ack_Tmpfile, $Ackfile);
                 unlink $Ack_Tmpfile;
             } elsif ($handled_job->{env}->{location} eq 'local') {
@@ -770,7 +770,7 @@ sub wait_and_get_file {
 	      my $tmp = &rmt_exist($env, $Reqfile);
 	      if ($tmp) {
 		  &rmt_rename($env, $Reqfile, $Opened_File);
-		  &rmt_get($env, $Opened_File, '.');
+		  &get_from($env, $Opened_File, '.');
 		  &rmt_unlink($env, $Opened_File);
 		  last LABEL;
 	      }

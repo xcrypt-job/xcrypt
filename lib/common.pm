@@ -4,10 +4,9 @@ use base qw(Exporter);
 our @EXPORT = qw(mkarray set_member_if_empty get_job_ids
 cmd_executable exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
-rmt_get rmt_put
+get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-xcr_chdir_qx
 get_all_envs
 );
 
@@ -236,8 +235,9 @@ sub rmt_copy    {            rmt_cmd('copy',    @_);                }
 sub rmt_rename  {            rmt_cmd('rename',  @_);                }
 sub rmt_symlink {            rmt_cmd('symlink', @_);                }
 sub rmt_unlink  {            rmt_cmd('unlink',  @_);                }
-sub rmt_get     {            rmt_cmd('get',     @_);                }
-sub rmt_put     {            rmt_cmd('put',     @_);                }
+
+sub get_from     {            rmt_cmd('get',     @_);                }
+sub put_into     {            rmt_cmd('put',     @_);                }
 
 sub xcr_exist   { my $flag = xcr_cmd('exist',   @_);  return $flag; }
 sub xcr_qx      { my @ret  = xcr_cmd('qx',      @_);  return @ret;  }
