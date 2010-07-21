@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_env add_key
+add_host add_key
 repeat
 );
 
@@ -129,7 +129,7 @@ sub repeat {
     return $new_coro;
 }
 
-sub add_env {
+sub add_host {
     my ($env) = @_;
     unless (defined $env->{location}) {
 	$env->{location} = 'remote';
