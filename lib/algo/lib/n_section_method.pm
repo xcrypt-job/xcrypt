@@ -4,7 +4,7 @@ use Coro;
 use Coro::AnyEvent;
 use jobsched;
 use builtin;
-use autodel;
+use common;
 
 &add_key('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
@@ -49,12 +49,12 @@ sub n_section_method {
 		foreach my $j (@jobs) {
 		    my $jx = $j->{'x'};
 		    my $jid = $j->{'id'};
-		    my $status = &jobsched::get_job_status($jid);
+		    my $status = &jobsched::get_job_status($j);
 		    if (($status eq 'done' || $status eq 'finished') && ($done_or_ignored{"$jid"} == 0)) {
 			&sync($j);
 			$done_or_ignored{"$jid"} = 1;
 
-			&autodel::del(sub {
+			&common::del(sub {
 			    my $k = shift;
 			    my $kid = $k->{'id'};
 			    return (0 < ($j->{'y'}) * $inc_or_dec * ($k->{'x'} - $j->{'x'})) && ($done_or_ignored{"$kid"} == 0);

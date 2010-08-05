@@ -8,6 +8,7 @@ get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 get_all_envs
+del
 );
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
@@ -18,6 +19,7 @@ use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
 use xcropt;
+use jobsched;
 
 my %ssh_opts = (
     copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
@@ -247,6 +249,23 @@ sub xcr_copy    {            xcr_cmd('copy',    @_);                }
 sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
+
+sub del {
+    my $cond = shift;
+    my $after = shift;
+    my @jobs = @_;
+    foreach my $l (@jobs) {
+	my $lid = $l->{id};
+	if (&{$cond}($l)) {
+	    if ($lid) {
+#		system("xcryptdel $lid");
+		&jobsched::qdel($l);
+		&jobsched::delete_signaled_job($l);
+		&{$after}($l);
+	    }
+	}
+    }
+}
 
 1;
 

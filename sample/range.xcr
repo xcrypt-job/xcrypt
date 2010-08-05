@@ -8,6 +8,43 @@ use base qw(core);
 #    'RANGES' => [[20..22],[0],[0,3]],
 );
 
+&prepare_submit_sync(%template1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=comment
+
 %template2 = (
     'id@' => sub { "job6_$_[0]_$_[1]"; },
 #    'id' => 'job6',
@@ -17,6 +54,6 @@ use base qw(core);
     'arg0@' => '$_[0] + $_[1]',
     'arg1@' => sub { "> out_$_[0]_$_[1]" }
 );
-
-#&prepare_submit_sync(%template1);
 &prepare_submit_sync(%template2);
+
+=cut

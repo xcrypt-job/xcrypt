@@ -2,7 +2,7 @@ use base qw(sandbox n_section_method core);
 use Data_Generation;
 use Data_Extraction;
 
-#&n_section_method::del_extra_job();
+&n_section_method::del_extra_job();
 %job = (
     'id' => 'job0',
     'exe' => './minushalf.pl template.dat',
@@ -17,11 +17,14 @@ use Data_Extraction;
 	$input->do();
     },
     'after'  => sub {
-	my $tmp1 = "$ENV{'PWD'}/".$_[0]->{'id'}."/output.dat";
-	my $tmp2 = EF("file:$tmp1");
-	$tmp2->ED('L/E');
-	my @output = $tmp2->ER();
-	$_[0]->{'y'} = $output[0];
+	my $stat = &jobsched::get_job_status($_[0]);
+	if ($stat eq 'done') {
+	    my $tmp1 = "$ENV{'PWD'}/".$_[0]->{'id'}."/output.dat";
+	    my $tmp2 = EF("file:$tmp1");
+	    $tmp2->ED('L/E');
+	    my @output = $tmp2->ER();
+	    $_[0]->{'y'} = $output[0];
+	}
     }
     );
 # 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
