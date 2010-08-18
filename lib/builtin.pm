@@ -138,8 +138,8 @@ sub add_host {
 	unless (exists $common::Host_Ssh_Hash{$env->{host}}) {
 	    my ($user, $host) = split(/@/, $env->{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
+	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
 	    $common::Host_Ssh_Hash{$env->{host}} = $ssh;
-#	    $ssh->error and die "Unable to establish SFTP connection: " . $ssh->error;
 	}
     }
     unless (defined $env->{wd}) {
