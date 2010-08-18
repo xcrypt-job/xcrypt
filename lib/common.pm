@@ -62,25 +62,7 @@ sub cmd_executable {
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{location} eq 'remote') {
 	my $ssh = $Host_Ssh_Hash{$env->{host}};
-
-	# 成功するまで繰り返し
-	my $tmp;
-	my $success = 0;
-	my $count = 0;
-	until ($success || ($count > 5)) {
-	    $tmp = $ssh->system("which $cmd0[0]") or die "remote command failed: " . $ssh->error;
-	    $ssh->error or $success = 1;
-	    if ($success == 0) {
-		my ($user, $host) = split(/@/, $env->{host});
-		my $ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    }
-	    sleep(5);
-	    $count++;
-	}
-	#
-
+	my $tmp = $ssh->system("which $cmd0[0]") or warn $ssh->error;
 	if ($tmp == 0) {
 	    return 0;
 	} else {
@@ -140,15 +122,7 @@ sub get_all_envs {
     return @Env;
 }
 
-sub rmt_cmd {
-    my $cmd = shift;
-    my $env = shift;
-    my $ssh = $Host_Ssh_Hash{$env->{host}};
-    if ($cmd eq 'qx') {
-	my ($command, $dir) = @_;
-	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-
-	# 成功するまで繰り返し
+=comment
 	my @ret;
 	my $success = 0;
 	my $count = 0;
@@ -160,58 +134,30 @@ sub rmt_cmd {
 		my $ssh = Net::OpenSSH->new($host, (user => $user));
 		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
 		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
+		sleep(1);
 	    }
-	    sleep(5);
 	    $count++;
 	}
-	#
+=cut
 
+sub rmt_cmd {
+    my $cmd = shift;
+    my $env = shift;
+    my $ssh = $Host_Ssh_Hash{$env->{host}};
+    if ($cmd eq 'qx') {
+	my ($command, $dir) = @_;
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+	my @ret = $ssh->capture("$tmp") or warn $ssh->error;
 	return @ret;
     } elsif ($cmd eq 'system') {
 	my ($command, $dir) = @_;
 	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-
-	# 成功するまで繰り返し
-	my $flag;
-	my $success = 0;
-	my $count = 0;
-	until ($success || ($count > 5)) {
-	    $flag = $ssh->system("$tmp");
-	    $ssh->error or $success = 1;
-	    if ($success == 0) {
-		my ($user, $host) = split(/@/, $env->{host});
-		my $ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    }
-	    sleep(5);
-	    $count++;
-	}
-	#
-
+	my $flag = $ssh->system("$tmp") or warn $ssh->error;
 	return $flag;
     } elsif ($cmd eq 'exist') {
 	my ($file) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-
-	# 成功するまで繰り返し
-	my @flags;
-	my $success = 0;
-	my $count = 0;
-	until ($success || ($count > 5)) {
-	    @flags = $ssh->capture("test -e $fullpath && echo 1");
-	    $ssh->error or $success = 1;
-	    if ($success == 0) {
-		my ($user, $host) = split(/@/, $env->{host});
-		my $ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    }
-	    sleep(5);
-	    $count++;
-	}
-	#
-
+	my @flags = $ssh->capture("test -e $fullpath && echo 1") or warn $ssh->error;
 	chomp($flags[0]);
 	return $flags[0];
     } elsif ($cmd eq 'mkdir') {
@@ -241,47 +187,13 @@ sub rmt_cmd {
 	my ($file, $to) = @_;
 	unless ($xcropt::options{shared}) {
 	    my $fullpath = File::Spec->catfile($env->{wd}, $file);
-
-	# 成功するまで繰り返し
-	my $success = 0;
-	my $count = 0;
-	until ($success || ($count > 5)) {
-	    $ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or die "get failed: $ssh->error";
-	    $ssh->error or $success = 1;
-	    if ($success == 0) {
-		my ($user, $host) = split(/@/, $env->{host});
-		my $ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    }
-	    sleep(5);
-	    $count++;
-	}
-	#
-
+	    $ssh->scp_get(\%ssh_opts, $fullpath, File::Spec->catfile($to, $file)) or warn $ssh->error;
 	}
     } elsif ($cmd eq 'put') {
 	my ($file, $to) = @_;
 	unless ($xcropt::options{shared}) {
 	    my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-
-	# 成功するまで繰り返し
-	my $success = 0;
-	my $count = 0;
-	until ($success || ($count > 5)) {
-	    $ssh->scp_put(\%ssh_opts, $file, $fullpath) or die "put failed: $ssh->error";
-	    $ssh->error or $success = 1;
-	    if ($success == 0) {
-		my ($user, $host) = split(/@/, $env->{host});
-		my $ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-		$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    }
-	    sleep(5);
-	    $count++;
-	}
-	#
-
+	    $ssh->scp_put(\%ssh_opts, $file, $fullpath) or warn $ssh->error;
 	}
     } else {
 	foreach(%$cmd){print $_, "\n";}
