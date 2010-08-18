@@ -1,17 +1,17 @@
 use base qw(sandbox core);
 
+my $default = &get_localhost();
 my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 'wd' => '/home/spara/abet/xcrypt/sample'});
 #my $env1 = &add_host({'host' => 'abet@t2k.ccs.tsukuba.ac.jp'});
 #my $env2 = &add_host({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp'});
 #my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 
-
 %template = (
 'id'             => 'job4',
 'exe@'           => sub { 'echo ' . (40 + $_[0]) . " > job4_$_[0]_out"},
 'RANGE0'         => [0,      1,          2,         3,         4     ],
-'env@'           => [$env0, $env_d,      $env_d,    $env_d,     $env_d],
+'env@'           => [$env0,  $default,   $default,  $default,  $default],
 'JS_cpu'         => '1',
 'JS_queue@'      => [' ',    ' ',        'short',   'qh10183', ' '   ],
 'JS_group@'      => [' ',    'ESCIENCE', ' ',       'qh10183', ' '   ],

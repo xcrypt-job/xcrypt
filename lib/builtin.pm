@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-add_host add_key
+get_localhost add_host add_key
 repeat
 );
 
@@ -127,6 +127,10 @@ sub repeat {
         print ")\n";
     }
     return $new_coro;
+}
+
+sub get_localhost {
+    return $common::env_d;
 }
 
 sub add_host {
