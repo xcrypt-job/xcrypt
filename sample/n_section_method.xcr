@@ -27,9 +27,9 @@ use Data_Extraction;
 	}
     }
     );
-# 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
+# 6-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
-    %job, 'partition' => 12, 'epsilon' => 0.01,
+    %job, 'partition' => 6, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
     );
