@@ -62,7 +62,8 @@ sub cmd_executable {
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{location} eq 'remote') {
 	my $ssh = $Host_Ssh_Hash{$env->{host}};
-	my $tmp = $ssh->system("which $cmd0[0]") or warn $ssh->error;
+	my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
+	my $tmp = $flags[0];
 	if ($tmp == 0) {
 	    return 0;
 	} else {
@@ -123,31 +124,27 @@ sub get_all_envs {
 }
 
 sub ssh_command {
-    my ($ssh, $command, $str0, $str1)= @_;
+    my ($env, $ssh, $command, $str0, $str1)= @_;
+
+    $ssh->system("true");
+    while ($ssh->error) {
+	my ($user, $host) = split(/@/, $env->{host});
+	$ssh = Net::OpenSSH->new($host, (user => $user));
+	$ssh->error and warn $ssh->error;
+	$common::Host_Ssh_Hash{$env->{host}} = $ssh;
+	sleep(5);
+    }
+
     my @flags;
-    my $success = 0;
-    my $count = 0;
-    until ($success || ($count > 5)) {
-	if ($command eq 'capture') {
-	    @flags = $ssh->capture("$str0"); # or warn $ssh->error;
-	} elsif ($command eq 'system') {
-	    my $flag = $ssh->system("$str0") or warn $ssh->error;
-	    @flags = ($flag);
-	} elsif ($command eq 'get') {
-	    $ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
-	} elsif ($command eq 'put') {
-	    $ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
-	}
-	$ssh->error or $success = 1;
-	$ssh->system("true");
-	if ($success == 0 && $ssh->error) {
-	    my ($user, $host) = split(/@/, $env->{host});
-	    my $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-	    $common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	    sleep(1);
-	    }
-	$count++;
+    if ($command eq 'capture') {
+	@flags = $ssh->capture("$str0"); # or warn $ssh->error;
+    } elsif ($command eq 'system') {
+	my $flag = $ssh->system("$str0") or warn $ssh->error;
+	@flags = ($flag);
+    } elsif ($command eq 'get') {
+	$ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+    } elsif ($command eq 'put') {
+	$ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
     }
     return @flags;
 }
@@ -159,17 +156,17 @@ sub rmt_cmd {
     if ($cmd eq 'qx') {
 	my ($command, $dir) = @_;
 	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-	my @flags = &ssh_command($ssh, 'capture', "$tmp");
+	my @flags = &ssh_command($env, $ssh,'capture', "$tmp");
 	return @flags;
     } elsif ($cmd eq 'system') {
 	my ($command, $dir) = @_;
 	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-	my @flags = &ssh_command($ssh, 'system', "$tmp");
+	my @flags = &ssh_command($env, $ssh, 'system', "$tmp");
 	return $flag[0];
     } elsif ($cmd eq 'exist') {
 	my ($file) = @_;
 	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	my @flags = &ssh_command($ssh, 'capture', "test -e $fullpath && echo 1");
+	my @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath && echo 1");
 	chomp($flags[0]);
 	return $flags[0];
     } elsif ($cmd eq 'mkdir') {
@@ -199,13 +196,13 @@ sub rmt_cmd {
 	my ($file, $to) = @_;
 	unless ($xcropt::options{shared}) {
 	    my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	    &ssh_command($ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+	    &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
 	}
     } elsif ($cmd eq 'put') {
 	my ($file, $to) = @_;
 	unless ($xcropt::options{shared}) {
 	    my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-	    &ssh_command($ssh, 'put', $file, $fullpath);
+	    &ssh_command($env, $ssh, 'put', $file, $fullpath);
 	}
     } else {
 	foreach(%$cmd){print $_, "\n";}
