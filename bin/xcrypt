@@ -25,9 +25,9 @@ print TMP 'use jobsched;' . "\n";
 print TMP 'our $expander = \'@\';' . "\n";
 print TMP 'our $separator_nocheck = \'0\';' . "\n";
 print TMP 'our $separator = \'_\';' . "\n";
-print TMP 'sub before {our $self = shift;if ($self->{before}) {&{$self->{before}}(@{$self->{VALUES}})};}' . "\n";
+print TMP 'sub before {local $self = shift;if ($self->{before}) {&{$self->{before}}(@{$self->{VALUES}})};}' . "\n";
 print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
-print TMP 'sub after  {our $self = shift;if ($self->{after})  { &{$self->{after}}(@{$self->{VALUES}})};}' . "\n";
+print TMP 'sub after  {local $self = shift;if ($self->{after})  { &{$self->{after}}(@{$self->{VALUES}})};}' . "\n";
 
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
 print TMP '&jobsched::read_log();' . "\n";
