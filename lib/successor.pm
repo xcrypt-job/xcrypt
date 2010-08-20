@@ -18,9 +18,7 @@ sub start {
     $self->NEXT::start();
 }
 
-sub before {
-    my $self = shift;
-}
+sub before {}
 
 sub after {
     my $self = shift;

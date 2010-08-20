@@ -31,7 +31,6 @@ sub before {
     }
 }
 
-sub after {
-}
+sub after {}
 
 1;

@@ -9,7 +9,7 @@ my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 
 %template = (
 'id'             => 'job4',
-'exe@'           => sub { 'echo ' . (40 + $_[0]) . " > job4_$_[0]_out"},
+'exe0@'          => sub { 'echo ' . (40 + $_[0]) . " > job4_$_[0]_out"},
 'RANGE0'         => [0,      1,          2,         3,         4     ],
 'env@'           => [$env0,  $default,   $default,  $default,  $default],
 'JS_cpu'         => '1',
