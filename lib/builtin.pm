@@ -202,6 +202,7 @@ sub add_key {
                 || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
                 || ($i =~ /\ARANGE[0-9]*\Z/)
                 || ($i =~ /\ARANGES\Z/)
+                || ($i =~ /\AVALUES\Z/)
                 ) {
                 $exist = 1;
             }
@@ -275,6 +276,12 @@ sub do_initialized {
     my %job = %{$_[0]};
     shift;
     my @range = @_;
+    $job{'VALUES'} = \@range;
+    my $count = 0;
+    foreach (@range) {
+	$job{"VALUE$count"} = $_;
+	$count++;
+    }
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
             die "Can't support $user::separator as \$separator.\n";
@@ -395,23 +402,23 @@ sub expand_and_make {
     # aliases
     if ($job{exe}) {
 	$job{exe0} = $job{exe};
-	delete($job{exe});
+#	delete($job{exe});
     }
     if ($job{"exe$user::expander"}) {
 	$job{"exe0$user::expander"} = $job{"exe$user::expander"};
-	delete($job{"exe$user::expander"});
+#	delete($job{"exe$user::expander"});
     }
     my $max_of_arg = &get_max_index_of_arg(%job);
     foreach my $i (0..$max_of_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
-	    delete($job{"arg$i"});
+#	    delete($job{"arg$i"});
 	}
     }
     foreach my $i (0..$max_of_arg) {
 	if ($job{"arg$i$user::expander"}) {
 	    $job{"arg0_$i$user::expander"} = $job{"arg$i$user::expander"};
-	    delete($job{"arg$i$user::expander"});
+#	    delete($job{"arg$i$user::expander"});
 	}
     }
 
@@ -447,6 +454,7 @@ sub expand_and_make {
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
                     || ($key =~ /\ARANGES\Z/)
+                    || ($key =~ /\AVALUES\Z/)
                     || ($key =~ /^JS_/))        # for jobscheduler options
             {
 		print $key, "\n";
@@ -561,7 +569,7 @@ sub submit {
               }
             ## before()
             unless ( jobsched::job_proceeded_last_time ($self, 'submitted') ) {
-                $self->EVERY::before();
+                $self->EVERY::before(@{$self->{VALUES}});
             } else {
                 print "$self->{id}: skip the before() method invocation\n";
             }
@@ -606,7 +614,7 @@ sub submit {
 	    }
 =cut
             unless ( jobsched::job_proceeded_last_time ($self, 'finished') ) {
-                $self->EVERY::LAST::after();
+                $self->EVERY::LAST::after(@{$self->{VALUES}});
             } else {
                 # skip the after() methods invocation
                 print "$self->{id}: the after() methods invocation.\n";
