@@ -128,11 +128,11 @@ sub ssh_command {
 
     $ssh->system("true");
     while ($ssh->error) {
+	sleep(60);
 	my ($user, $host) = split(/@/, $env->{host});
 	$ssh = Net::OpenSSH->new($host, (user => $user));
 	$ssh->error and warn $ssh->error;
 	$common::Host_Ssh_Hash{$env->{host}} = $ssh;
-	sleep(5);
     }
 
     my @flags;
@@ -276,23 +276,6 @@ sub xcr_copy    {            xcr_cmd('copy',    @_);                }
 sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
-
-sub del {
-    my $cond = shift;
-    my $after = shift;
-    my @jobs = @_;
-    foreach my $l (@jobs) {
-	my $lid = $l->{id};
-	if (&{$cond}($l)) {
-	    if ($lid) {
-#		system("xcryptdel $lid");
-		&jobsched::qdel($l);
-		&jobsched::delete_signaled_job($l);
-		&{$after}($l);
-	    }
-	}
-    }
-}
 
 1;
 

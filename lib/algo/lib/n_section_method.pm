@@ -4,7 +4,6 @@ use Coro;
 use Coro::AnyEvent;
 use jobsched;
 use builtin;
-use common;
 
 &add_key('x','y','partition','x_left','y_left','x_right','y_right','epsilon');
 
@@ -14,6 +13,7 @@ sub del_extra_job {
 }
 my $interval_check_done_or_ignored = 3;
 my $inf = (2 ** 31) - 1;
+my %done_or_ignored;
 sub n_section_method {
     my %arg = @_;
     my $num = $arg{'partition'};
@@ -24,7 +24,6 @@ sub n_section_method {
     my $inc_or_dec = $y_right - $y_left;
     my $x;
     my $y;
-    my %done_or_ignored;
     my $count = -1;
     do {
 	$count++;
@@ -52,17 +51,15 @@ sub n_section_method {
 		    my $status = &jobsched::get_job_status($j);
 		    if (($status eq 'done' || $status eq 'finished') && ($done_or_ignored{"$jid"} == 0)) {
 			&sync($j);
-			$done_or_ignored{"$jid"} = 1;
-
-			&common::del(sub {
-			    my $k = shift;
-			    my $kid = $k->{'id'};
-			    return (0 < ($j->{'y'}) * $inc_or_dec * ($k->{'x'} - $j->{'x'})) && ($done_or_ignored{"$kid"} == 0);
-				      }, sub {
-					  my $k = shift;
-					  my $kid = $k->{'id'};
-					  $done_or_ignored{"$kid"} = 1;
-				      }, @jobs);
+			foreach my $l (@jobs) {
+			    if ($l->{id}) {
+				if ((0 < ($j->{'y'}) * $inc_or_dec * ($l->{'x'} - $j->{'x'})) && ($done_or_ignored{$l->{id}} == 0)) {
+				    &jobsched::qdel($l);
+				    &jobsched::delete_signaled_job($l);
+				    $done_or_ignored{$l->{id}} = 1;
+				}
+			    }
+			}
 		    }
 		}
 		$flag = 1;
@@ -78,7 +75,7 @@ sub n_section_method {
 	}
 	($x_left, $y_left, $x_right, $y_right)
 	    = &across_zero($x_left, $y_left, $x_right, $y_right, @jobs);
-	print $x_left, "\n";
+print $x_left, "\n";
 print $y_left, "\n";
 print $x_right, "\n";
 print $y_right, "\n";
@@ -91,6 +88,10 @@ print $y_right, "\n";
 	}
     } until (abs($y) < $arg{'epsilon'});
     return ($x, $y);
+}
+
+sub after {
+
 }
 
 sub across_zero {
@@ -129,6 +130,9 @@ sub start {
 }
 
 sub before {}
-sub after {}
+sub after {
+    my $self = shift;
+    $done_or_ignored{$self->{id}} = 1;
+}
 
 1;
