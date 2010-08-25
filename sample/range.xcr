@@ -33,19 +33,6 @@ use base qw(core);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 =comment
 
 %template2 = (

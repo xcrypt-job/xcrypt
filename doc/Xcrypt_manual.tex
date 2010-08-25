@@ -282,7 +282,7 @@ directory
 
 \begin{center}
  \texttt{\$myjob->\{id\}} \texttt{\$separator}
- \texttt{\$myjob->\{arg0\}} \texttt{\$separator} ...
+ \texttt{\$myjob->\{RANGES\}}
 \end{center}
 
 is created for each job (called a \textit{job working directory}).  It is
@@ -415,13 +415,13 @@ The following is a sample script:
     'linkedfile1' => 'strategy1',
     'linkedfile2' => 'strategy2',
     'linkedfile3' => 'strategy3',
-    'arg0'        => '9',               # depth of lookahead
-    'arg1'        => '0',               # position
-    'arg2'        => 'getchildren'      # get next positions
+    'arg0_0'        => '9',               # depth of lookahead
+    'arg0_1'        => '0',               # position
+    'arg0_2'        => 'getchildren'      # get next positions
 );
 
 &prepare_submit_sync(%myjob,
-                     'arg3@' => ['strategy1', 'strategy2', 'strategy3']);
+                     'arg0_3@' => ['strategy1', 'strategy2', 'strategy3']);
 \end{verbatim}
 \end{boxnote}
 \noindent
@@ -470,7 +470,7 @@ Its value denotes a command.  The command is executed as follows,
 \texttt{\$ } \textit{myexe1 myarg1\_0 ...}\\
 \vdots
 \end{screen}
-with \texttt{arg}\textit{i} explained below.
+with \texttt{arg}\textit{i}\_\textit{j} explained below.
 
 \section{\texttt{arg}\textit{i}\_\textit{j}}
 
@@ -881,9 +881,9 @@ This function is an abbreviation of \texttt{prepare\_submit} and
 %myjob = (
     'id' => '\textit{myjob}',
     'exe' => '\textit{./myexe}',
-    'arg0@' => [0,1],
-    'arg1' => 100,
-    'arg2@' => [\textit{myoutput}0,\textit{myoutput}1]
+    'arg0_0@' => [0,1],
+    'arg0_1' => 100,
+    'arg0_2@' => [\textit{myoutput}0,\textit{myoutput}1]
 );
 \end{alltt}
 \end{boxnote}
