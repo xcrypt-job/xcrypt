@@ -304,6 +304,7 @@ sub qsub {
 
         # Get request ID from qsub's output
         my $req_id;
+        # Call an extractor defined in a configuration file
         if ( defined ($cfg{extract_req_id_from_qsub_output}) ) {
             unless ( ref $cfg{extract_req_id_from_qsub_output} eq 'CODE' ) {
                 die "Error in $sched.pm: extract_req_id_from_qsub_output must be a function";
@@ -320,6 +321,60 @@ sub qsub {
     } else {
         die "$qsub_command is not executable";
     }
+}
+
+##################################################
+# qdelコマンドを実行して指定されたジョブを殺す
+# リモート実行未対応
+sub qdel {
+    my ($self) = @_;
+    # qdelコマンドをconfigから獲得
+    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
+    unless ( defined $qdel_command ) {
+        die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
+    }
+    my $req_id = $self->{request_id};
+    if ($req_id) {
+        # execute qdel
+        my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
+        if (common::cmd_executable ($command_string, $self->{env})) {
+            print "Deleting $self->{id} (request ID: $req_id)\n";
+            common::exec_async ($command_string);
+        } else {
+            warn "$command_string not executable.";
+        }
+    }
+}
+
+sub qdel_if_queued_or_running {
+    my ($self) = @_;
+    my $stat = get_job_status ($self);
+    if ( $stat eq 'queued' || $stat eq 'running' ) {
+        $self->qdel();
+    }
+}
+
+
+### Abort, cancel, or invalidate jobs
+# Stop the job. The job is restarted when Xcrypt is executed again.
+sub abort {
+    my ($self) = @_;
+    $self->qdel_if_queued_or_running();
+    $self->{signal} = 'sig_abort';
+}
+
+# Same as abort except that the method is named for finished or deleted jobs.
+sub cancel {
+    my ($self) = @_;
+    $self->qdel_if_queued_or_running();
+    $self->{signal} = 'sig_cancel';
+}
+
+# Stop the job. The job is never executed until reset is invoked.
+sub invalidate {
+    my ($self) = @_;
+    $self->qdel_if_queued_or_running();
+    $self->{signal} = 'sig_invalidate';
 }
 
 1;
