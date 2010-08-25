@@ -259,7 +259,7 @@ sub del {
 	if (&{$cond}($l)) {
 	    if ($lid) {
 #		system("xcryptdel $lid");
-		&jobsched::qdel($l);
+		$l->qdel();
 		&jobsched::delete_signaled_job($l);
 		&{$after}($l);
 	    }

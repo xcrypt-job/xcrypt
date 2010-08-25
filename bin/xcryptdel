@@ -15,16 +15,21 @@ my %Opts;
 my $tmp = qx/hostname/;
 chomp($tmp);
 $Opts{host} = $tmp;
-$Opts{port} = 9999;
+$Opts{port} = 0;
 if ( -e '_invwrite.log' ) {
     $Opts{logfile} = '_invwrite.log';
 }
 $Opts{inventory_path} = 'inv_watch';  # be the same to xcropt.pm
-GetOptions( \%Opts, 'all', 'host=s', 'port=i', 'logfile=s', 'inventory_path=s');
+GetOptions( \%Opts, 'all', 'host=s', 'port=i', 'logfile=s', 'inventory_path=s', 'timeout=i');
 my $Inventory_Path = $Opts{inventory_path};
 my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock'); # be the same to jobsched.pm
 my $Sendfile = File::Spec->catfile($Inventory_Path, 'inventory_req'); # be the same to jobsched.pm
 my $Ackfile = File::Spec->catfile($Inventory_Path, 'inventory_ack');  # be the same to jobsched.pm
+
+my @Comm_Start_Args
+    = ($Opts{port} > 0)
+    ? ('sock', $Opts{host}, $Opts{port}, $Opts{timeout})
+    : ('file', $Lockdir, $Sendfile, $Ackfile, $Opts{timeout});
 
 if ( $Opts{logfile} ) {
     xcrypt_comm_log_start ($Opts{logfile}, "xcryptdel: ");
@@ -35,12 +40,12 @@ my $trial_limit = 10;
 while ($retry) {
     my $handler;
     if ( $Opts{port} > 0 ) {
-        $handler = xcrypt_comm_start ('sock', $Opts{host}, $Opts{port});
+        $handler = xcrypt_comm_start ('sock', $Opts{host}, $Opts{port}, $Opts{timeout});
     } else {
         unless ( -d $Inventory_Path ) {
             die "$Inventory_Path not exists (be sure to run xcryptdel in the directory where xcrypt is executed)";
         }
-        $handler = xcrypt_comm_start ('file', $Lockdir, $Sendfile, $Ackfile);
+        $handler = xcrypt_comm_start ('file', $Lockdir, $Sendfile, $Ackfile, $Opts{timeout});
     }
     ###
     my $ackline;
