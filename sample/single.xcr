@@ -12,6 +12,4 @@ use base qw (core);
 #    'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
     'after_in_job' => 'print STDOUT $self->{exe}. "\n";',
     );
-@jobs=&prepare_submit (%template);
-$jobs[0]->cancel();
-sync (@jobs);
+@jobs=&prepare_submit_sync (%template);
