@@ -417,11 +417,14 @@ sub get_job_last_update {
 
 # Update the status of the job, broadcast the signal
 # and, if necessary, entry the job into the "running_job" hash table.
+our $Warn_illegal_transition = 1;
 sub set_job_status {
     my ($self, $stat, $tim) = @_;
     status_name_to_level ($stat); # 有効な名前かチェック
     unless ($tim) { $tim = time(); }
-    warn_if_illegal_transition ($self, $stat, $tim);
+    if ($Warn_illegal_transition) {
+        warn_if_illegal_transition ($self, $stat, $tim);
+    }
     write_log (":transition $self->{id} $stat $tim\n");
     print "$self->{id} <= $stat\n";
     {
@@ -467,6 +470,23 @@ sub set_job_finished {
 sub set_job_aborted  {
     my ($self, $tim) = @_;
     set_job_status ($self, "aborted", $tim);
+}
+
+# Set job's status to 'aborted' or 'finished' accordign to the job's signal status.
+# Do nothing if the job is not signaled.
+sub set_job_status_according_to_signal {
+    my $self = shift;
+    my $sig = $self->{signal};
+    if ($sig eq 'sig_abort' || $sig eq 'sig_cancel') {
+        set_job_aborted ($self);
+        return 'aborted';
+    } elsif ($sig eq 'sig_invalidate') {
+        local $Warn_illegal_transition = 0;
+        set_job_finished ($self);
+        return 'finished';
+    } else {
+        return undef;
+    }
 }
 
 # 更新時刻情報や状態遷移の順序をもとにsetを実行してよいかを判定
@@ -587,7 +607,7 @@ sub wait_job_done      { wait_job_status ($_[0], "done"); }
 sub wait_job_finished  { wait_job_status ($_[0], "finished"); }
 sub wait_job_aborted   { wait_job_status ($_[0], "aborted"); }
 
-# すべてのジョブの状態を出力（デバッグ用）
+# Print all the jobs's statuses (for debugging)
 sub print_all_job_status {
     foreach my $jn (keys %Job_ID_Hash) {
         print "$jn:" . get_job_status (find_job_by_id ($jn)) . " ";
@@ -627,7 +647,7 @@ sub check_signal_string {
 sub set_signal {
     my ($self, $sig) = @_;
     unless ( check_signal_string ($sig) ) {
-        warn "'$sig' is not available signal name.";
+        warn "'$sig' is not available as a signal name.";
         return undef;
     }
     $self->{signal} = $sig;
@@ -636,7 +656,7 @@ sub set_signal {
 sub get_signal_status {
     my $self = shift;
     my $sig = $self->{signal};
-    if ( check_signal_string ($$sig) ) {
+    if ( check_signal_string ($sig) ) {
         return $sig;
     } else {
         return undef;
@@ -657,19 +677,20 @@ sub get_signal_status {
 sub check_and_write_aborted {
     my %unchecked;
     {
-        # %Running_Jobs のうち，qstatで表示されなかったジョブが%uncheckedに残る
-        {
-            %unchecked = %Running_Jobs;
-        }
+        # %unchecked <- ($job, $job_ID) that is included in %Running_Jobs but not displayed by qstat
+        %unchecked = %Running_Jobs;
         print "check_and_write_aborted:\n";
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
+            # Delete from %unchecked if the job is displayed by qstat.
             delete ($unchecked{$_});
             # If the job exists but is signaled, qdel it.
-            if ($job && is_signaled_job($job)) {
-                delete_signaled_job($job);
-                $job->qdel ();
+            if ($job && get_signal_status($job)) {
+                if ($job->qdel_if_queued_or_running()) {
+                    # set to 'aborted' or 'finished'
+                    set_job_status_according_to_signal ($job);
+                }
             }
         }
     }
@@ -681,7 +702,12 @@ sub check_and_write_aborted {
 	    unless (($status eq 'done') || ($status eq 'finished')
                     || common::xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
-		set_job_aborted ($aborted_job);
+                if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
+                    local $Warn_illegal_transition = 0;
+                    set_job_finished ($aborted_job);
+                } else {
+                    set_job_aborted ($aborted_job);
+                }
 	    }
         }
     }
