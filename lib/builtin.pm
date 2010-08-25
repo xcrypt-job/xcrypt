@@ -200,8 +200,9 @@ sub add_key {
                 || ($i =~ /\Aexe[0-9]*\Z/)
                 || ($i =~ /\Aarg[0-9]*\Z/)
                 || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
-                || ($i =~ /\ARANGE[0-9]*\Z/)
+                || ($i =~ /\ARANGE[0-9]+\Z/)
                 || ($i =~ /\ARANGES\Z/)
+#                || ($i =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
                 || ($i =~ /\AVALUES\Z/)
                 ) {
                 $exist = 1;
@@ -312,6 +313,18 @@ sub do_initialized {
         }
     }
     my $self = user->new(\%job);
+
+    # aliases
+    if (defined $self->{exe0}) {
+	$self->{exe} = $self->{exe0};
+    }
+    my $max_of_arg = &get_max_index_of_arg(%job);
+    foreach my $i (0..$max_of_arg) {
+	if (defined $self->{"arg0_$i"}) {
+	    $self->{"arg$i"} = $self->{"arg0_$i"};
+	}
+    }
+
     &jobsched::entry_job_id ($self);
     &jobsched::set_job_initialized($self);
     # &jobsched::load_inventory ($self->{id});
@@ -402,23 +415,23 @@ sub expand_and_make {
     # aliases
     if ($job{exe}) {
 	$job{exe0} = $job{exe};
-#	delete($job{exe});
+	delete($job{exe});
     }
     if ($job{"exe$user::expander"}) {
 	$job{"exe0$user::expander"} = $job{"exe$user::expander"};
-#	delete($job{"exe$user::expander"});
+	delete($job{"exe$user::expander"});
     }
     my $max_of_arg = &get_max_index_of_arg(%job);
     foreach my $i (0..$max_of_arg) {
 	if ($job{"arg$i"}) {
 	    $job{"arg0_$i"} = $job{"arg$i"};
-#	    delete($job{"arg$i"});
+	    delete($job{"arg$i"});
 	}
     }
     foreach my $i (0..$max_of_arg) {
 	if ($job{"arg$i$user::expander"}) {
 	    $job{"arg0_$i$user::expander"} = $job{"arg$i$user::expander"};
-#	    delete($job{"arg$i$user::expander"});
+	    delete($job{"arg$i$user::expander"});
 	}
     }
 
@@ -453,6 +466,7 @@ sub expand_and_make {
         }
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
+#		    || ($key =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
                     || ($key =~ /\ARANGES\Z/)
                     || ($key =~ /\AVALUES\Z/)
                     || ($key =~ /^JS_/))        # for jobscheduler options
