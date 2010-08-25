@@ -6,9 +6,9 @@ use common;
 use File::Basename;
 use core;
 
-my $max_of_added_key = 15;
-foreach (0..15) {
-    &add_key("linkedfile$_", "copiedfile$_", "copieddir$_");
+my $max_of_added_key = 63;
+foreach (0..$max_of_added_key) {
+    &add_key("linkedfile$_", "copiedfile$_");
 }
 
 sub new {
@@ -30,9 +30,7 @@ sub new {
     for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
 	if ($self->{"copiedfile$i"}) {
 	    my $copied = $self->{"copiedfile$i"};
-	    &xcr_copy($self->{env}, $copied,
-		      File::Spec->catfile($self->{workdir},
-					  File::Spec->catfile(basename($copied))));
+	    &xcr_copy($self->{env}, $copied, File::Spec->catfile($self->{workdir}, File::Spec->catfile(basename($copied))));
 	}
 	if ($self->{"linkedfile$i"}) {
 	    my $file = $self->{"linkedfile$i"};
