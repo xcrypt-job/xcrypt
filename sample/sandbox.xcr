@@ -9,7 +9,7 @@ use base qw(sandbox core);
     'RANGE0' => [0,1],
 #    'linkedfile0' => 'bin/fib',
 #    'copiedfile0' => 'bin/fib',
-    'copiedfile0' => 'bin',
+    'copiedfile20000' => 'bin',
     );
 
 &prepare_submit_sync(%template);

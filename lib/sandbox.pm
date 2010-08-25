@@ -8,7 +8,7 @@ use core;
 
 #my $max_of_added_key = 63;
 #foreach (0..$max_of_added_key) {
-    &add_key_prefix("linkedfile", "copiedfile");
+    &add_prefix_of_key("linkedfile", "copiedfile");
 #}
 
 sub new {

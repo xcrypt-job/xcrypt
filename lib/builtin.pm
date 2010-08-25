@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-get_localhost add_host add_key add_key_prefix
+get_localhost add_host add_key add_prefix_of_key
 repeat
 );
 
@@ -25,7 +25,7 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
-my @allkeys_prefix = ();
+my @allprefixes = ();
 
 my $nil = 'nil';
 #my $argument_name = 'R';
@@ -199,9 +199,9 @@ sub add_key {
     }
 }
 
-sub add_key_prefix {
+sub add_prefix_of_key {
     foreach my $i (@_) {
-	push(@allkeys_prefix, $i);
+	push(@allprefixes, $i);
     }
 }
 
@@ -264,10 +264,10 @@ sub do_initialized {
     shift;
     my @range = @_;
     $job{'VALUES'} = \@range;
-    my $count = 0;
+    my $count_tmp = 0;
     foreach (@range) {
-	$job{"VALUE$count"} = $_;
-	$count++;
+	$job{"VALUE$count_tmp"} = $_;
+	$count_tmp++;
     }
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
@@ -455,7 +455,7 @@ sub expand_and_make {
                 $exist = 1;
             }
         }
-        foreach my $ukey (@allkeys_prefix) {
+        foreach my $ukey (@allprefixes) {
             if ($key =~ $ukey) {
                 $exist = 1;
             }
