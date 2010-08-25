@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-get_localhost add_host add_key add_key_rexp
+get_localhost add_host add_key add_key_prefix
 repeat
 );
 
@@ -25,7 +25,7 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
-my @allkeys_rexp = ();
+my @allkeys_prefix = ();
 
 my $nil = 'nil';
 #my $argument_name = 'R';
@@ -199,9 +199,9 @@ sub add_key {
     }
 }
 
-sub add_key_rexp {
+sub add_key_prefix {
     foreach my $i (@_) {
-	push(@allkeys_rexp, $i);
+	push(@allkeys_prefix, $i);
     }
 }
 
@@ -455,8 +455,8 @@ sub expand_and_make {
                 $exist = 1;
             }
         }
-        foreach my $ukey (@allkeys_rexp) {
-            if (($key =~ $ukey) || ($key =~ ($ukey . "$user::expander"))) {
+        foreach my $ukey (@allkeys_prefix) {
+            if ($key =~ $ukey) {
                 $exist = 1;
             }
         }
