@@ -2,7 +2,7 @@ use base qw(sandbox core);
 
 %template = (
     'id' => 'job1',
-    'exe@' => sub{ "time ./$_[0] $_[1] 0" },
+    'exe0@' => sub{ "time ./$_[0] $_[1] 0" },
     'linkedfile0' => 'bin/minimax',
     'linkedfile1' => 'bin/alphabeta',
 #    'linkedfile2' => 'bin/inversetree',
