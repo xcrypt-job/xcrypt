@@ -346,35 +346,45 @@ sub qdel {
     }
 }
 
+# If the job is 'queued' or 'running', qdel it and returns 1
+# Otherwise returns 0
 sub qdel_if_queued_or_running {
     my ($self) = @_;
-    my $stat = get_job_status ($self);
+    my $stat = jobsched::get_job_status ($self);
     if ( $stat eq 'queued' || $stat eq 'running' ) {
         $self->qdel();
+        return 1;
+    } else {
+        return 0;
     }
 }
-
 
 ### Abort, cancel, or invalidate jobs
 # Stop the job. The job is restarted when Xcrypt is executed again.
 sub abort {
     my ($self) = @_;
-    $self->qdel_if_queued_or_running();
-    $self->{signal} = 'sig_abort';
+    jobsched::set_signal ($self, 'sig_abort');
+    if ($self->qdel_if_queued_or_running()) {
+        jobsched::set_job_status_according_to_signal ($self);
+    }
 }
 
 # Same as abort except that the method is named for finished or deleted jobs.
 sub cancel {
     my ($self) = @_;
-    $self->qdel_if_queued_or_running();
-    $self->{signal} = 'sig_cancel';
+    jobsched::set_signal ($self, 'sig_cancel');
+    if ($self->qdel_if_queued_or_running()) {
+        jobsched::set_job_status_according_to_signal ($self);
+    }
 }
 
 # Stop the job. The job is never executed until reset is invoked.
 sub invalidate {
     my ($self) = @_;
-    $self->qdel_if_queued_or_running();
-    $self->{signal} = 'sig_invalidate';
+    jobsched::set_signal ($self, 'sig_invalidate');
+    if ($self->qdel_if_queued_or_running()) {
+        jobsched::set_job_status_according_to_signal ($self);
+    }
 }
 
 1;
