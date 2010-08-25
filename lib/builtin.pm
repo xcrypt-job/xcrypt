@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-get_localhost add_host add_key
+get_localhost add_host add_key add_key_rexp
 repeat
 );
 
@@ -25,6 +25,7 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
+my @allkeys_rexp = ();
 
 my $nil = 'nil';
 #my $argument_name = 'R';
@@ -193,29 +194,14 @@ sub add_host {
 }
 
 sub add_key {
-    my $exist = 0;
     foreach my $i (@_) {
-        foreach my $j ((@allkeys)) {
-            if (($i eq $j)
-                || ($i =~ /\Aexe[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
-                || ($i =~ /\ARANGE[0-9]+\Z/)
-                || ($i =~ /\ARANGES\Z/)
-#                || ($i =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
-                || ($i =~ /\AVALUES\Z/)
-                ) {
-                $exist = 1;
-            }
-        }
-        if ($exist == 1) {
-            die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expander"\Z/) {
-            die "Can't use $i as key since $i's tail is $user::expander.\n";
-	} else {
-	    push(@allkeys, $i);
-        }
-        $exist = 0;
+	push(@allkeys, $i);
+    }
+}
+
+sub add_key_rexp {
+    foreach my $i (@_) {
+	push(@allkeys_rexp, $i);
     }
 }
 
@@ -293,8 +279,11 @@ sub do_initialized {
     unless (defined $job{"id$user::expander"}) {
 	$job{id} = join($user::separator, ($job{id}, @_));
     }
-    foreach my $k (@allkeys) {
+#    foreach my $k (@allkeys) {
+    foreach my $tmp_k (keys(%job)) {
+	my ($k , $after_k) = split(/@/, $tmp_k);
         my $members = "$k" . $user::expander;
+
         if ( exists($job{"$members"}) ) {
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
@@ -311,6 +300,8 @@ sub do_initialized {
                 die "Can't interpret $members\n";
             }
         }
+
+
     }
     my $self = user->new(\%job);
 
@@ -461,6 +452,11 @@ sub expand_and_make {
         my $exist = 0;
         foreach my $ukey (@allkeys) {
             if (($key eq $ukey) || ($key eq ($ukey . "$user::expander"))) {
+                $exist = 1;
+            }
+        }
+        foreach my $ukey (@allkeys_rexp) {
+            if (($key =~ $ukey) || ($key =~ ($ukey . "$user::expander"))) {
                 $exist = 1;
             }
         }

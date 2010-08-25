@@ -8,15 +8,15 @@ $separator = '-';
 my @jobs = &prepare(
     'id' => 'job2',
     'exe0' => 'echo',
-    'arg0_0@' => "'R0'",
-    ':dry' => 0,
+    'arg0_0@' => sub { "$_[0]"; },
+#    ':dry' => 0,
     'RANGE0' => [0..3],
-    ':auto0' => 0,
-    ':auto1@' => "'$R0'",
+#    ':auto0' => 0,
+#    ':auto1@' => sub { "$_[0]"; },
     'added0' => 100,
-    'added1@' => "'$R0 + 10'",
+    'added1@' => sub { $_[0] + 10; },
     'unadd0' => 200,
-    'unadd1@' => "'$R0 + 20'"
+    'unadd1@' => sub { $_[0] + 20; }
     );
 
 foreach my $i (0..3) {

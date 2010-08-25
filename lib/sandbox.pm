@@ -7,9 +7,9 @@ use File::Basename;
 use core;
 
 my $max_of_added_key = 63;
-foreach (0..$max_of_added_key) {
-    &add_key("linkedfile$_", "copiedfile$_");
-}
+#foreach (0..$max_of_added_key) {
+    &add_key_rexp("linkedfile", "copiedfile");
+#}
 
 sub new {
     my $class = shift;
