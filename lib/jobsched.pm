@@ -623,13 +623,14 @@ sub print_all_job_status {
 sub entry_running_job {
     my ($self) = @_;
     my $req_id = $self->{env}->{host} . $self->{request_id};
+#    my $req_id = $self->{request_id};
     $Running_Jobs{$req_id} = $self;
     # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %Running_Jobs) . "\n";
 }
 sub delete_running_job {
     my ($self) = @_;
-#    my $req_id = $self->{request_id};
     my $req_id = $self->{env}->{host} . $self->{request_id};
+#    my $req_id = $self->{request_id};
     if ($req_id) {
         delete ($Running_Jobs{$req_id});
     }

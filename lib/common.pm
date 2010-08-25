@@ -19,7 +19,7 @@ use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
 use xcropt;
-use jobsched;
+#use jobsched;
 
 my %ssh_opts = (
     copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
@@ -278,4 +278,3 @@ sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 1;
-
