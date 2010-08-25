@@ -57,9 +57,8 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
-# delete依頼を受けたジョブが登録されているハッシュ (key,value)=(job ID,signal_val)
-my %Signaled_Jobs = ();
-my $All_Jobs_Signaled = undef;
+# Signalの種類
+my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
 my $Watch_Thread = undef;    # accessed from bin/xcrypt
@@ -76,29 +75,6 @@ our $Periodic_Thread = undef; # accessed from bin/xcrypt
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
-
-##################################################
-# qdelコマンドを実行して指定されたジョブを殺す
-# リモート実行未対応
-sub qdel {
-    my ($self) = @_;
-    # qdelコマンドをconfigから獲得
-    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
-    unless ( defined $qdel_command ) {
-        die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
-    }
-    my $req_id = $self->{request_id};
-    if ($req_id) {
-        # execute qdel
-        my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (common::cmd_executable ($command_string, $self->{env})) {
-            print "Deleting $self->{id} (request ID: $req_id)\n";
-            common::exec_async ($command_string);
-        } else {
-            warn "$command_string not executable.";
-        }
-    }
-}
 
 # qstatコマンドを実行して表示されたrequest IDの列を返す
 sub qstat {
@@ -213,7 +189,8 @@ sub handle_inventory {
         }
     } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
         my $job = find_job_by_id ($1);
-        entry_signaled_job ($1); $flag = 0;
+        $job->abort();
+        $flag = 0;
     } elsif ($line =~/^:delall/) {              # 全ジョブ削除依頼
         signal_all_jobs (); $flag = 0;
     } else {
@@ -636,23 +613,34 @@ sub delete_running_job {
     }
 }
 
-sub entry_signaled_job {
-    my ($self) = @_;
-    $Signaled_Jobs{$self->{id}} = 1;
-    print "$self->{id} is signaled to be deleted.\n";
-}
-sub signal_all_jobs {
-    $All_Jobs_Signaled = 1;
-    print "All jobs are signaled to be deleted.\n";
-}
-sub delete_signaled_job {
-    my ($self) = @_;
-    if ( exists $Signaled_Jobs{$self->{id}} ) {
-        delete $Signaled_Jobs{$self->{id}};
+# Signal
+sub check_signal_string {
+    my $sig = shift;
+    foreach (@Signals) {
+        if ( $sig eq $_ ) {
+            return 1;
+        }
     }
+    return 0;
 }
-sub is_signaled_job {
-    return ($All_Jobs_Signaled || $Signaled_Jobs{$_[0]});
+
+sub set_signal {
+    my ($self, $sig) = @_;
+    unless ( check_signal_string ($sig) ) {
+        warn "'$sig' is not available signal name.";
+        return undef;
+    }
+    $self->{signal} = $sig;
+    return $sig;
+}
+sub get_signal_status {
+    my $self = shift;
+    my $sig = $self->{signal};
+    if ( check_signal_string ($$sig) ) {
+        return $sig;
+    } else {
+        return undef;
+    }
 }
 
 # Running_Jobsのジョブがabortedになってないかチェック
@@ -681,7 +669,7 @@ sub check_and_write_aborted {
             # If the job exists but is signaled, qdel it.
             if ($job && is_signaled_job($job)) {
                 delete_signaled_job($job);
-                qdel ($job);
+                $job->qdel ();
             }
         }
     }
