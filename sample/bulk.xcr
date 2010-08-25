@@ -4,7 +4,7 @@ use base qw(bulk core);
 
 %template = (
     'id' => 'job6',
-    'exe@' => sub { 'bin/fib ' . ($_[0] + $_[1]) . " > out_$_[0]_$_[1]"},
+    'exe0@' => sub { 'bin/fib ' . ($_[0] + $_[1]) . " > out_$_[0]_$_[1]"},
     'RANGE0' => [31..33],
     'RANGE1' => [0,9],
     'JS_queue' => 'gh10034',
