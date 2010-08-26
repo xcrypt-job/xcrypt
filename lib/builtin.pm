@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-get_localhost add_host add_key add_prefix_of_key
+get_local_env add_host add_key add_prefix_of_key
 repeat
 );
 
@@ -25,7 +25,7 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
-my @allprefixes = ();
+my @allprefixes = ('JS_');
 
 my $nil = 'nil';
 
@@ -129,15 +129,11 @@ sub repeat {
     return $new_coro;
 }
 
-sub get_localhost {
-    return $common::env_d;
-}
+sub get_local_env { return $common::env_d; }
 
 sub add_host {
     my ($env) = @_;
-    unless (defined $env->{location}) {
-	$env->{location} = 'remote';
-    }
+    unless (defined $env->{location}) {	$env->{location} = 'remote'; }
     if ($env->{location} eq 'remote') {
 	unless (exists $common::Host_Ssh_Hash{$env->{host}}) {
 	    my ($user, $host) = split(/@/, $env->{host});
@@ -192,13 +188,8 @@ sub add_host {
     return $env;
 }
 
-sub add_key {
-    foreach my $i (@_) { push(@allkeys, $i); }
-}
-
-sub add_prefix_of_key {
-    foreach my $i (@_) { push(@allprefixes, $i); }
-}
+sub add_key           { foreach my $i (@_) { push(@allkeys,     $i); } }
+sub add_prefix_of_key { foreach my $i (@_) { push(@allprefixes, $i); } }
 
 sub max {
     my @array = @_;
@@ -459,17 +450,18 @@ sub expand_and_make {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
 #		    || ($key =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
                     || ($key =~ /\ARANGES\Z/)
-                    || ($key =~ /\AVALUES\Z/)
-                    || ($key =~ /^JS_/))        # for jobscheduler options
+                    || ($key =~ /\AVALUES\Z/))
             {
 		print $key, "\n";
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
+=comment
             if ($key =~ /^JS_/) {
 		my ($before_exp_char , $after_exp_char) = split(/@/, $key);
 		push(@allkeys, $before_exp_char);
 	    }
+=cut
         }
         $exist = 0;
     }
