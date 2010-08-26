@@ -73,6 +73,10 @@ sub n_section_method {
 	} else {
 	    &sync(@jobs);
 	}
+print $x_left, "\n";
+print $y_left, "\n";
+print $x_right, "\n";
+print $y_right, "\n";
 	($x_left, $y_left, $x_right, $y_right)
 	    = &across_zero($x_left, $y_left, $x_right, $y_right, @jobs);
 print $x_left, "\n";
