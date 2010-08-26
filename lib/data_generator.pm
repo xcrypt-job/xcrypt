@@ -1,6 +1,6 @@
 ############################################
 # ＜＜入力データ生成＞＞                   #
-# Ver=0.3 2010/02/04                       #
+# Ver=0.4 2010/08/23                       #
 ############################################
 package data_generator;
 use strict;
@@ -379,10 +379,15 @@ sub execute{
                             $out_data .= ')';
                         } else {
                             # （カッコなし(実数、単精度実数、倍精度実数、8バイト整数)）
-                            if ($replace_data->{value} =~ /^[\+-]*\d+\.*\d*[DdEeQq\+-_]*\d*$|^[\+-]*\.\d*[DdEeQq\+-_]*\d*$/) {
-                                $out_data = $out_datas1[0].$out_datas1[1].$replace_data->{value};
-                            } else {
+                           #if ($replace_data->{value} =~ /^[\+-]*\d+\.*\d*[DdEeQq\+-_]*\d*$|^[\+-]*\.\d*[DdEeQq\+-_]*\d*$/) {
+                           #    $out_data = $out_datas1[0].$out_datas1[1].$replace_data->{value};
+                           #} else {
+                           #    $out_data = $out_datas1[0].$out_datas1[1].'"'.$replace_data->{value}.'"';
+                           #}
+                            if ($replace_data->{value} =~ /\s/) {
                                 $out_data = $out_datas1[0].$out_datas1[1].'"'.$replace_data->{value}.'"';
+                            } else {
+                                $out_data = $out_datas1[0].$out_datas1[1].$replace_data->{value};
                             }
                         }
                     }
@@ -450,7 +455,7 @@ sub value_evaluation{
     # 変数定義 #
     ############
     my @in_values = ();                                                                       # 入力データ(配列)
-    $in_values[1] = $_[0];                                                                    # 評価対象データ
+    $in_values[2] = $_[0];                                                                    # 評価対象データ
     my $in_value  = undef;                                                                    # 変数名変換後入力データ
     my $in_option = $_[1];                                                                    # 文字列表示書式
     my $out_value = '';                                                                       # 評価後データ
@@ -459,9 +464,10 @@ sub value_evaluation{
     # グローバル変数表記に変更 #
     ############################
     do {
-        @in_values = split /\$/, "$in_values[1]", 2;
+        @in_values = split /[\\]{0}(\$|\$\#|\@)/, "$in_values[2]", 2;
         $in_value .= $in_values[0];
-        if ($in_values[1] ne '') {
+        
+        if ($in_values[2] =~ /^[\{]{,1}[a-zA-Z_]+/) {
             #==============#
             # 変数表記あり #
             #==============#
@@ -472,18 +478,19 @@ sub value_evaluation{
                 my $check_evaluation2 = '';
                 my $check_data        = '';
                 my $out_evaluation    = undef;
-                my $in_value1_first   = substr $in_values[1], 0, 1;
+                my $in_value1_first   = substr $in_values[2], 0, 1;
                 if ($in_value1_first eq '{') {
-                    $in_values[1] = substr $in_values[1], 1;
+                    $in_values[2] = substr $in_values[2], 1;
                 }
-                my @in_evaluations = split /[\$\s\}\,\.\#\%\&\'\"\!\+\-\*\/\;\:\@\\\=\>\<\@\?\(\)]/, "$in_values[1]", 2;
+                my @in_evaluations = split /[\$\s\}\,\.\#\%\&\'\"\!\+\-\*\/\;\:\@\\\=\>\<\@\?\(\)]/, "$in_values[2]", 2;
                 $check_data        = $in_evaluations[0];
-                @in_evaluations    = split /$check_data/, "$in_values[1]", 2;
+                @in_evaluations    = split /$check_data/, "$in_values[2]", 2;
                 my $in_evaluations1_first = substr $in_evaluations[1], 0, 1;
                 if ($in_evaluations1_first eq '}') {
                     $in_evaluations[1] = substr $in_evaluations[1], 1;
                 }
-                $check_evaluation = '${'.$check_data.'};';
+                $check_evaluation = $in_values[1].'{'.$check_data.'};';
+                
                 if (eval ($check_evaluation)) {
                     #===============#
                     # local変数あり #
@@ -491,7 +498,7 @@ sub value_evaluation{
                     $check_evaluation2 = '$out_evaluation = ${'.$check_data.'};';
                     eval ($check_evaluation2);
                     $in_value    .= $out_evaluation;
-                    $in_values[1] = $in_evaluations[1];
+                    $in_values[2] = $in_evaluations[1];
                 } else {
                     #===============#
                     # local変数なし #
@@ -499,11 +506,15 @@ sub value_evaluation{
                     $check_evaluation2 = '$out_evaluation = ${main::'.$check_data.'};';
                     eval ($check_evaluation2);
                     $in_value    .= $out_evaluation;
-                    $in_values[1] = $in_evaluations[1];
+                    $in_values[2] = $in_evaluations[1];
                 }
             }
+        } else {
+            my @in_evaluations = split /(\$)/, "$in_values[2]", 2;
+            $in_value .= $in_values[1].$in_evaluations[0];
+            $in_values[2] = $in_evaluations[1].$in_evaluations[2];
         }
-    } while ($in_values[1] ne '');
+    } while ($in_values[2] ne '');
     
     ################
     # 文字列の評価 # ※計算式の評価場所は、"%"で前後を囲ってある

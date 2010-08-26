@@ -11,7 +11,7 @@ use Data_Extraction;
     %template,
     'RANGE0' => [0..7],
     'exe0@' => '"sleep $R0; echo $R0;"',
-    'after' => sub { if (&good($_[0])) { system("xcryptdel --all"); }},
+    'after' => sub { if (&good($self)) { system("xcryptdel --all"); }},
     );
 
 sub good {
