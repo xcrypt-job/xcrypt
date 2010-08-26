@@ -12,24 +12,24 @@ use Data_Extraction;
 # Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
     'before' => sub {
 	my $input = CF("$ENV{'PWD'}/dat/template.dat",
-		       "$ENV{'PWD'}/" . $_[0]->{'id'});
-	$input->KR("param", $_[0]->{'x'});
+		       "$ENV{'PWD'}/" . $self->{'id'});
+	$input->KR("param", $self->{'x'});
 	$input->do();
     },
     'after'  => sub {
 	my $stat = &jobsched::get_job_status($_[0]);
-	if ($stat eq 'done') {
-	    my $tmp1 = "$ENV{'PWD'}/".$_[0]->{'id'}."/output.dat";
+#	if ($stat eq 'done') {
+	    my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
 	    my $tmp2 = EF("file:$tmp1");
 	    $tmp2->ED('L/E');
 	    my @output = $tmp2->ER();
-	    $_[0]->{'y'} = $output[0];
-	}
+	    $self->{'y'} = $output[0];
+#	}
     }
     );
-# 6-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
+# 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
-    %job, 'partition' => 6, 'epsilon' => 0.01,
+    %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
     );

@@ -4,7 +4,7 @@ use base qw(Exporter);
 our @EXPORT = qw(expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
-get_localhost add_host add_key
+get_local_env add_host add_key add_prefix_of_key
 repeat
 );
 
@@ -25,9 +25,9 @@ use common;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
+my @allprefixes = ('JS_');
 
 my $nil = 'nil';
-#my $argument_name = 'R';
 
 my $count = 0;
 
@@ -129,15 +129,11 @@ sub repeat {
     return $new_coro;
 }
 
-sub get_localhost {
-    return $common::env_d;
-}
+sub get_local_env { return $common::env_d; }
 
 sub add_host {
     my ($env) = @_;
-    unless (defined $env->{location}) {
-	$env->{location} = 'remote';
-    }
+    unless (defined $env->{location}) {	$env->{location} = 'remote'; }
     if ($env->{location} eq 'remote') {
 	unless (exists $common::Host_Ssh_Hash{$env->{host}}) {
 	    my ($user, $host) = split(/@/, $env->{host});
@@ -192,32 +188,8 @@ sub add_host {
     return $env;
 }
 
-sub add_key {
-    my $exist = 0;
-    foreach my $i (@_) {
-        foreach my $j ((@allkeys)) {
-            if (($i eq $j)
-                || ($i =~ /\Aexe[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*\Z/)
-                || ($i =~ /\Aarg[0-9]*_[0-9]*\Z/)
-                || ($i =~ /\ARANGE[0-9]+\Z/)
-                || ($i =~ /\ARANGES\Z/)
-#                || ($i =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
-                || ($i =~ /\AVALUES\Z/)
-                ) {
-                $exist = 1;
-            }
-        }
-        if ($exist == 1) {
-            die "$i has already been added or reserved.\n";
-        } elsif ($i =~ /"$user::expander"\Z/) {
-            die "Can't use $i as key since $i's tail is $user::expander.\n";
-	} else {
-	    push(@allkeys, $i);
-        }
-        $exist = 0;
-    }
-}
+sub add_key           { foreach my $i (@_) { push(@allkeys,     $i); } }
+sub add_prefix_of_key { foreach my $i (@_) { push(@allprefixes, $i); } }
 
 sub max {
     my @array = @_;
@@ -272,64 +244,6 @@ sub get_max_index_of_exe               { return &get_max_index('exe',    @_); }
 sub get_max_index_of_arg               { return &get_max_index('arg',    @_); }
 sub get_max_index_of_first_arg_of_arg  { return &get_max_index('first',  @_); }
 sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
-
-sub do_initialized {
-    my %job = %{$_[0]};
-    shift;
-    my @range = @_;
-    $job{'VALUES'} = \@range;
-    my $count = 0;
-    foreach (@range) {
-	$job{"VALUE$count"} = $_;
-	$count++;
-    }
-    unless ( $user::separator_nocheck) {
-        unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
-            die "Can't support $user::separator as \$separator.\n";
-        }
-    }
-
-    # generate job objects
-    unless (defined $job{"id$user::expander"}) {
-	$job{id} = join($user::separator, ($job{id}, @_));
-    }
-    foreach my $k (@allkeys) {
-        my $members = "$k" . $user::expander;
-        if ( exists($job{"$members"}) ) {
-            unless ( ref($job{"$members"}) ) {
-		warn "Can't dereference $members.  Instead evaluate $members";
-		@_ = @range;
-		$job{"$k"} = eval($job{$members});
-            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-                $job{"$k"} = &{$job{"$members"}}(@range);
-            } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-                my @tmp = @{$job{"$members"}};
-                $job{"$k"} = $tmp[$count];
-            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-		$job{"$k"} = ${$job{"$members"}};
-            } else {
-                die "Can't interpret $members\n";
-            }
-        }
-    }
-    my $self = user->new(\%job);
-
-    # aliases
-    if (defined $self->{exe0}) {
-	$self->{exe} = $self->{exe0};
-    }
-    my $max_of_arg = &get_max_index_of_arg(%job);
-    foreach my $i (0..$max_of_arg) {
-	if (defined $self->{"arg0_$i"}) {
-	    $self->{"arg$i"} = $self->{"arg0_$i"};
-	}
-    }
-
-    &jobsched::entry_job_id ($self);
-    &jobsched::set_job_initialized($self);
-    # &jobsched::load_inventory ($self->{id});
-    return $self;
-}
 
 sub times_loop {
     if (@_ == ()) { return (); }
@@ -409,6 +323,69 @@ sub MIN {
 }
 =cut
 
+sub do_initialized {
+    my %job = %{$_[0]};
+    shift;
+    my @range = @_;
+    $job{'VALUES'} = \@range;
+    my $count_tmp = 0;
+    foreach (@range) {
+	$job{"VALUE$count_tmp"} = $_;
+	$count_tmp++;
+    }
+    unless ( $user::separator_nocheck) {
+        unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
+            die "Can't support $user::separator as \$separator.\n";
+        }
+    }
+
+    # generate job objects
+    unless (defined $job{"id$user::expander"}) {
+	$job{id} = join($user::separator, ($job{id}, @_));
+    }
+#    foreach my $k (@allkeys) {
+    foreach my $tmp_k (keys(%job)) {
+	my ($k , $after_k) = split(/@/, $tmp_k);
+        my $members = "$k" . $user::expander;
+
+        if ( exists($job{"$members"}) ) {
+            unless ( ref($job{"$members"}) ) {
+		warn "Can't dereference $members.  Instead evaluate $members";
+		@_ = @range;
+		$job{"$k"} = eval($job{$members});
+            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
+                $job{"$k"} = &{$job{"$members"}}(@range);
+            } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+                my @tmp = @{$job{"$members"}};
+                $job{"$k"} = $tmp[$count];
+            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+		$job{"$k"} = ${$job{"$members"}};
+            } else {
+                die "Can't interpret $members\n";
+            }
+        }
+
+
+    }
+    my $self = user->new(\%job);
+
+    # aliases
+    if (defined $self->{exe0}) {
+	$self->{exe} = $self->{exe0};
+    }
+    my $max_of_arg = &get_max_index_of_arg(%job);
+    foreach my $i (0..$max_of_arg) {
+	if (defined $self->{"arg0_$i"}) {
+	    $self->{"arg$i"} = $self->{"arg0_$i"};
+	}
+    }
+
+    &jobsched::entry_job_id ($self);
+    &jobsched::set_job_initialized($self);
+    # &jobsched::load_inventory ($self->{id});
+    return $self;
+}
+
 sub expand_and_make {
     my %job = @_;
 
@@ -464,21 +441,27 @@ sub expand_and_make {
                 $exist = 1;
             }
         }
+        foreach my $ukey (@allprefixes) {
+            if ($key =~ $ukey) {
+                $exist = 1;
+            }
+        }
         if ($exist == 0) {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
 #		    || ($key =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
                     || ($key =~ /\ARANGES\Z/)
-                    || ($key =~ /\AVALUES\Z/)
-                    || ($key =~ /^JS_/))        # for jobscheduler options
+                    || ($key =~ /\AVALUES\Z/))
             {
 		print $key, "\n";
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
+=comment
             if ($key =~ /^JS_/) {
 		my ($before_exp_char , $after_exp_char) = split(/@/, $key);
 		push(@allkeys, $before_exp_char);
 	    }
+=cut
         }
         $exist = 0;
     }

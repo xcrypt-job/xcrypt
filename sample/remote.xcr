@@ -1,8 +1,8 @@
 use base qw(sandbox core);
 
-my $default = &get_localhost();
+my $default = &get_local_env();
 my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
-'wd' => '/home/spara/abet/xcrypt/sample'});
+		      'wd' => '/home/spara/abet/xcrypt/sample'});
 #my $env1 = &add_host({'host' => 'abet@t2k.ccs.tsukuba.ac.jp'});
 #my $env2 = &add_host({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp'});
 #my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
