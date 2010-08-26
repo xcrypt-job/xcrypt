@@ -6,10 +6,10 @@ use common;
 use File::Basename;
 use core;
 
-my $max_of_added_key = 63;
-foreach (0..$max_of_added_key) {
-    &add_key("linkedfile$_", "copiedfile$_");
-}
+#my $max_of_added_key = 63;
+#foreach (0..$max_of_added_key) {
+&add_prefix_of_key("linkedfile", "copiedfile");
+#}
 
 sub new {
     my $class = shift;
@@ -27,18 +27,25 @@ sub new {
     mkdir $self->{workdir}, 0755;
     &xcr_mkdir($self->{env}, $self->{workdir});
 
-    for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
-	if ($self->{"copiedfile$i"}) {
-	    my $copied = $self->{"copiedfile$i"};
+#    for ( my $i = 0; $i <= $max_of_added_key; $i++ ) {
+    foreach my $k (keys(%{$self})) {
+	if ($k =~ /\Acopiedfile[0-9]+/) {
+#	if ($self->{"copiedfile$i"}) {
+#	    my $copied = $self->{"copiedfile$i"};
+	    my $copied = $self->{"$k"};
 	    &xcr_copy($self->{env}, $copied, File::Spec->catfile($self->{workdir}, File::Spec->catfile(basename($copied))));
 	}
-	if ($self->{"linkedfile$i"}) {
-	    my $file = $self->{"linkedfile$i"};
+
+	if ($k =~ /\Alinkedfile[0-9]+/) {
+#	if ($self->{"linkedfile$i"}) {
+#	    my $file = $self->{"linkedfile$i"};
+	    my $file = $self->{"$k"};
 	    &xcr_symlink($self->{env}, $self->{workdir},
 			 File::Spec->catfile('..', $file),
 			 File::Spec->catfile(basename($file)));
 	}
     }
+
     return bless $self, $class;
 }
 

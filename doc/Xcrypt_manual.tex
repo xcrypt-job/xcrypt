@@ -785,6 +785,9 @@ put_into(\|\|%\textit{env}, $file);
 
 \section{\texttt{add\_host}}
 
+This function takes a hash that denotes a host (containing its
+environment), and returns a reference that denotes it.
+
 \subsubsection{\format}
 
 \begin{boxnote}
@@ -802,6 +805,28 @@ $env = add_host(\{'host' => '\textit{foo@bar}', 'wd' => '\textit{/home/foo}'\});
 \end{alltt}
 \end{boxnote}
 
+\section{\texttt{get\_local\_env}}
+
+This function returns a reference that denotes the local host
+(containing its environment).
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+get_local_env(\|\|%\textit{env});
+\end{alltt}
+\end{boxnote}
+
+\subsubsection{\example}
+
+\begin{boxnote}
+\begin{alltt}
+$env = get_local_env();
+%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'env' => $env);
+\end{alltt}
+\end{boxnote}
+
 
 \section{\texttt{add\_key}}
 
@@ -813,6 +838,20 @@ definition hashes.
 \begin{boxnote}
 \begin{alltt}
 add_key(@\textit{words});
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{add\_prefix\_of\_key}}
+
+This function takes an array of words and makes it available as
+prefixes of keys in job definition hashes.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+add_prefix_of_key(@\textit{words});
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}

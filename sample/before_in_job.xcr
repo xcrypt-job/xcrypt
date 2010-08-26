@@ -1,4 +1,3 @@
-# Sumit just a single job.
 use base qw (core);
 
 %template = (
@@ -9,7 +8,6 @@ use base qw (core);
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'before_in_job' => 'print STDERR $self->{arg0}. "\n";',
-#    'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
     'after_in_job' => 'print STDOUT $self->{exe}. "\n";',
     );
 @jobs=&prepare_submit_sync (%template);
