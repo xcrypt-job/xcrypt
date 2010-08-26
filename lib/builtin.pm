@@ -528,31 +528,6 @@ sub expand_and_make {
 sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
-=comment
-	my $last_stat = &jobsched::get_job_status ($self);
-
-	if ( jobsched::is_signaled_job ($self) ) {
-	    # If the job is 'xcryptdel'ed, make it 'aborted' and skip
-	    &jobsched::inventory_write ($self, "aborted");
-	    &jobsched::delete_signaled_job ($self);
-	} elsif ( $last_stat eq 'finished' ) {
-	    # Skip if the job is 'done' or 'finished'
-	    &jobsched::inventory_write ($self, "done");
-	} elsif ( $last_stat eq 'done') {
-	} else {
-	    unless ( $last_stat eq 'aborted' ) {
-		# xcryptdelされていたら状態をabortedにして処理をとばす
-		if (jobsched::is_signaled_job($self)) {
-		    &jobsched::inventory_write($self, "aborted");
-		    &jobsched::delete_signaled_job($self);
-#		push (@coros, undef);
-		    next;
-		} else {
-		    &jobsched::set_job_prepared($self);
-		}
-	    }
-	}
-=cut
         &jobsched::set_job_prepared($self);
     }
 }
@@ -564,15 +539,129 @@ sub prepare{
     return @objs;
 }
 
+sub check_status_for_initially {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    unless ($sig) {
+        return 1;
+    } elsif ( $sig eq 'sig_abort' || $sig eq 'sig_cancel' ) {
+        jobsched::delete_record_last_time($self);
+        unset_signal($self);
+        return 1;
+    } elsif ($sig eq 'sig_invalidate') {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    }
+    warn "Unexpected program path in check_status_for_initially($self->{id}).";
+    return 1;
+}
+
+sub check_status_for_before {    
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } elsif ( jobsched::job_proceeded_last_time ($self, 'submitted') ) {
+        print "$self->{id}: skip the before() method invocation\n";
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_start {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } elsif ( jobsched::job_proceeded_last_time ($self, 'queued')
+              && jobsched::request_id_last_time ($self) ) {
+        print "$self->{id}: skip the start() method invocation\n";
+        &jobsched::set_job_submitted($self);
+        $self->{request_id} = jobsched::request_id_last_time ($self);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_set_job_queued {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_set_job_running {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } elsif (jobsched::job_proceeded_last_time ($self, 'running')) {
+        &jobsched::set_job_running($self);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_wait_job_done {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } elsif (jobsched::job_proceeded_last_time ($self, 'done')) {
+        print "$self->{id}: skip the wait_job_done()\n";
+        &jobsched::set_job_done($self);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_after {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } elsif (jobsched::job_proceeded_last_time ($self, 'finished')) {
+        print "$self->{id}: the after() methods invocation.\n";
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+sub check_status_for_set_job_finished {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    if ($sig eq 'sig_cancel' || $sig eq 'sig_invalidate') {
+        jobsched::set_job_status_according_to_signal ($self);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 sub submit {
     my @array = @_;
     my $slp = 0;
     # my @coros = ();
 
     foreach my $self (@array) {
-        # ジョブスレッドを立ち上げる
+        # Create a job thread.
         my $job_coro = Coro::async {
             my $self = $_[0];
+            # Output message on entering/leaving the Coro thread.
             if ( $xcropt::options{verbose} >= 2 ) {
                 Coro::on_enter {
                     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
@@ -581,43 +670,33 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
               }
+            ## initially()
+            unless (check_status_for_initially ($self)) {
+                Coro::terminate();
+            }
+            $self->EVERY::initially(@{$self->{VALUES}});
             ## before()
-            unless ( jobsched::job_proceeded_last_time ($self, 'submitted') ) {
+            if (check_status_for_before ($self)) {
                 $self->EVERY::before(@{$self->{VALUES}});
-            } else {
-                print "$self->{id}: skip the before() method invocation\n";
             }
-
             ## start()
-            unless ( jobsched::job_proceeded_last_time ($self, 'queued')
-                     && jobsched::request_id_last_time ($self) ) {
+            if (check_status_for_start ($self)) {
                 $self->{request_id} = $self->start();
-            } else {
-                # skip the start() method invocation
-                print "$self->{id}: skip the start() method invocation\n";
-                &jobsched::set_job_submitted($self);
-                $self->{request_id} = jobsched::request_id_last_time ($self);
             }
-            &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
-            &jobsched::set_job_queued($self);
-
-            # If the job was 'running' in the last execution, set it's status to 'running'.
-            if ( jobsched::job_proceeded_last_time ($self, 'running') ) {
-                &jobsched::set_job_running($self);
+            ## set_job_queued()
+            if (check_status_for_set_job_queued ($self)) {
+                &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
+                &jobsched::set_job_queued($self);
             }
-
+            ## If the job was 'running' in the last execution, set it's status to 'running'.
+            check_status_for_set_job_running ($self);
             ## Waiting for the job "done"
-            unless ( jobsched::job_proceeded_last_time ($self, 'done') ) {
+            if (check_status_for_wait_job_done ($self)) {
                 &jobsched::wait_job_done ($self);
-            } else {
-                # skip the wait_job_done()
-                print "$self->{id}: skip the wait_job_done()\n";
-                &jobsched::set_job_done ($self);
             }
 
-            ## after()
-	    # ジョブスクリプトの最終行の処理を終えたからといって
-	    # after()をしてよいとは限らないが念の入れすぎかもしれない．
+	    ## ジョブスクリプトの最終行の処理を終えたからといって
+	    ## after()をしてよいとは限らないが念の入れすぎかもしれない．
 =comment
 	    my $flag0 = 0;
 	    my $flag1 = 0;
@@ -627,13 +706,15 @@ sub submit {
 		    $flag1 = &xcr_exist($self->{env}, $self->{JS_stdout});
 	    }
 =cut
-            unless ( jobsched::job_proceeded_last_time ($self, 'finished') ) {
+
+            ## after()
+            if (check_status_for_after ($self)) {
                 $self->EVERY::LAST::after(@{$self->{VALUES}});
-            } else {
-                # skip the after() methods invocation
-                print "$self->{id}: the after() methods invocation.\n";
             }
-	    &jobsched::set_job_finished($self);
+            $self->EVERY::LAST::finally(@{$self->{VALUES}});
+            if (check_status_for_set_job_finished ($self)) {
+                &jobsched::set_job_finished($self);
+            }
 	} $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
