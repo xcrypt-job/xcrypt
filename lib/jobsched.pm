@@ -45,8 +45,10 @@ my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
 my %Last_State = (); 
-# Hash table (key,val)=(job ID, the request ID saved in the $Logfile)
+# Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
 my %Last_Request_ID = ();
+# Hash table (key,val)=(job ID, the signal name set in the previous Xcrypt execution)
+my %Last_Signal = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -485,7 +487,7 @@ sub set_job_status_according_to_signal {
         return 'aborted';
     } elsif ($sig eq 'sig_invalidate') {
         unless ( $stat eq 'finished' ) {
-            local $Warn_illegal_transition = 0;
+            local $Warn_illegal_transition = undef;
             set_job_finished ($self, $tim);
         }
         return 'finished';
@@ -503,7 +505,7 @@ my %Expected_Previous_Status = (
     "running" => ["queued"],
     "done" => ["running"],
     "finished" => ["done"],
-    "aborted" => ["initialized", "prepared", "submitted", "queued", "running"],
+    "aborted" => ["initialized", "prepared", "submitted", "queued", "running", "done", "finished"],
     );
 
 sub warn_if_illegal_transition {
@@ -553,14 +555,17 @@ sub read_log {
             chomp;
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
-                my $prev_stat = $Last_State{$id};
-                if ( !$prev_stat
-                     || status_name_to_level ($stat) > status_name_to_level ($prev_stat)) {
-                    $Last_State{$id} = $stat
-                }
+                $Last_State{$id} = $stat;
             } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $req_id) = ($1, $2);
                 $Last_Request_ID{$id} = $req_id;
+            } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
+                my ($id, $sig) = ($1, $2);
+                if ( $sig eq 'unset' ) {
+                    delete ($Last_Signal{$id});
+                } else {
+                    $Last_Signal{$id} = $sig;
+                }
             }
         }
         foreach my $id (keys %Last_State) {
@@ -579,6 +584,7 @@ sub read_log {
 sub job_proceeded_last_time {
     my ($job, $stat) = @_;
     return ( $Last_State{$job->{id}}
+             && !($Last_State{$job->{id}} eq 'aborted')
              && status_name_to_level ($Last_State{$job->{id}}) >= status_name_to_level($stat) );
 }
 
@@ -597,6 +603,17 @@ sub delete_record_last_time {
     my ($job) = @_;
     delete ($Last_State{$job->{id}});
     delete ($Last_Request_ID{$job->{id}});
+}
+
+sub resume_signal_last_time {
+    my ($job) = @_;
+    my $sig = $Last_Signal{$job->{id}};
+    if ($sig) {
+        delete ($Last_Signal{$job->{id}});
+        return set_signal($job, $sig);
+    } else {
+        return undef;
+    }
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
@@ -663,11 +680,13 @@ sub set_signal {
         return undef;
     }
     $self->{signal} = $sig;
+    write_log (":signal $self->{id} $sig\n");
     return $sig;
 }
 sub unset_signal {
-    my ($self);
+    my $self = shift;
     delete ($self->{signal});
+    write_log (":signal $self->{id} unset\n");
 }
 sub get_signal_status {
     my $self = shift;
@@ -719,7 +738,7 @@ sub check_and_write_aborted {
                     || common::xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
                 if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
-                    local $Warn_illegal_transition = 0;
+                    local $Warn_illegal_transition = undef;
                     set_job_finished ($aborted_job);
                 } else {
                     set_job_aborted ($aborted_job);

@@ -526,10 +526,22 @@ sub check_status_for_initially {
     my $self = shift;
     my $sig = jobsched::get_signal_status($self);
     unless ($sig) {
-        return 1;
+        if (jobsched::job_proceeded_last_time ($self, 'finished')) {
+            local $jobsched::Warn_illegal_transition = undef;
+            &jobsched::set_job_finished($self);
+            return 0;
+        } else {
+            return 1;
+        }
+    } elsif ( $sig eq 'sig_abort'
+              && jobsched::job_proceeded_last_time ($self, 'finished')) {
+        jobsched::unset_signal($self);
+        local $jobsched::Warn_illegal_transition = undef;
+        &jobsched::set_job_finished($self);
+        return 0;
     } elsif ( $sig eq 'sig_abort' || $sig eq 'sig_cancel' ) {
         jobsched::delete_record_last_time($self);
-        unset_signal($self);
+        jobsched::unset_signal($self);
         return 1;
     } elsif ($sig eq 'sig_invalidate') {
         jobsched::set_job_status_according_to_signal ($self);
@@ -627,7 +639,7 @@ sub check_status_for_after {
 sub check_status_for_set_job_finished {
     my $self = shift;
     my $sig = jobsched::get_signal_status($self);
-    if ($sig eq 'sig_cancel' || $sig eq 'sig_invalidate') {
+    if ($sig) {
         jobsched::set_job_status_according_to_signal ($self);
         return 0;
     } else {
@@ -653,6 +665,8 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
               }
+            ## Resume signal
+            jobsched::resume_signal_last_time ($self);
             ## initially()
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
