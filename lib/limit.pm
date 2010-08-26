@@ -27,12 +27,12 @@ sub start {
 #     return ($smph>0);
 # }
 
-sub before {
+sub initially {
     # $smph--;
     $smph->down;
 }
 
-sub after {
+sub finally {
     # $smph++;
     $smph->up;
 }

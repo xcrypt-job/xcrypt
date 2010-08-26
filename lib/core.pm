@@ -373,7 +373,8 @@ sub abort {
 sub cancel {
     my ($self) = @_;
     jobsched::set_signal ($self, 'sig_cancel');
-    if ($self->qdel_if_queued_or_running()) {
+    if ($self->qdel_if_queued_or_running()
+        || jobsched::get_job_status($self) eq 'finished') {
         jobsched::set_job_status_according_to_signal ($self);
     }
 }

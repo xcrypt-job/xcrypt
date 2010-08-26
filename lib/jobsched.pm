@@ -152,20 +152,16 @@ sub handle_inventory {
         my ($status, $tim) = ($2, $3);
         $job = find_job_by_id ($job_id);
         if ($job) {
-            if ($status eq 'initialized') {
-                set_job_initialized ($job, $tim); $flag=1;
-            } elsif ($status eq 'prepared') {
-                set_job_prepared ($job, $tim); $flag=1;
-            } elsif ($status eq 'submitted') {
-                set_job_submitted ($job, $tim); $flag=1;
-            } elsif ($status eq 'queued') {
-                set_job_queued ($job, $tim); $flag=1;
-            } elsif ($status eq 'running') {
+            if ($status eq 'running') {
                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
                 my $cur_stat = get_job_status ($job);
                 if ( $cur_stat eq 'queued' ) {
-                    set_job_running ($job, $tim); $flag=1;
+                    unless (get_signal_status($job)) {
+                        set_job_running ($job, $tim); $flag=1;
+                    } else {
+                        set_job_status_according_to_signal($job);
+                    }
                 } else {
                     $flag = -1;
                 }
@@ -174,14 +170,18 @@ sub handle_inventory {
                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
                 my $cur_stat = get_job_status ($job);
                 if ( $cur_stat eq 'running' ) {
-                    set_job_done ($job, $tim); $flag=1;
+                    unless (get_signal_status($job)) {
+                        set_job_done ($job, $tim);
+                    } else {
+                        set_job_status_according_to_signal($job);
+                    }
+                    $flag=1;
                 } else {
                     $flag = -1;
                 }
-            } elsif ($status eq 'finished') {
-                set_job_finished ($job, $tim); $flag=1;
-            } elsif ($status eq 'aborted') {
-                set_job_aborted ($job, $tim); $flag=1;
+            } else {
+                warn "unexpected transition: \"$line\"\n";
+                $flag = -1;
             }
         } else { # The job is not found
             # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
@@ -475,14 +475,19 @@ sub set_job_aborted  {
 # Set job's status to 'aborted' or 'finished' accordign to the job's signal status.
 # Do nothing if the job is not signaled.
 sub set_job_status_according_to_signal {
-    my $self = shift;
-    my $sig = $self->{signal};
+    my ($self, $tim) = @_;
+    my $sig = get_signal_status ($self);
+    my $stat = get_job_status ($self);
     if ($sig eq 'sig_abort' || $sig eq 'sig_cancel') {
-        set_job_aborted ($self);
+        unless ( $stat eq 'aborted' ) { 
+            set_job_aborted ($self, $tim);
+        }
         return 'aborted';
     } elsif ($sig eq 'sig_invalidate') {
-        local $Warn_illegal_transition = 0;
-        set_job_finished ($self);
+        unless ( $stat eq 'finished' ) {
+            local $Warn_illegal_transition = 0;
+            set_job_finished ($self, $tim);
+        }
         return 'finished';
     } else {
         return undef;
@@ -587,6 +592,13 @@ sub request_id_last_time {
     }
 }
 
+# Delete the job's record in the last Xcrypt execution.
+sub delete_record_last_time {
+    my ($job) = @_;
+    delete ($Last_State{$job->{id}});
+    delete ($Last_Request_ID{$job->{id}});
+}
+
 # ジョブ$selfの状態が$stat以上になるまで待つ
 sub wait_job_status {
     my ($self, $stat) = @_;
@@ -652,6 +664,10 @@ sub set_signal {
     }
     $self->{signal} = $sig;
     return $sig;
+}
+sub unset_signal {
+    my ($self);
+    delete ($self->{signal});
 }
 sub get_signal_status {
     my $self = shift;
