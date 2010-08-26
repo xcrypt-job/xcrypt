@@ -3,7 +3,7 @@ use base qw (core);
 
 %template = (
     'id' => 'job0',
-    'exe' => 'sleep 30; bin/fib-file', # or exe0
+    'exe' => 'bin/fib-file', # or exe0
     'arg0' => "dat/num40",   # or arg0_0
     'arg1' => "out_0",       # or arg0_1
     'JS_queue' => 'gh10034',
