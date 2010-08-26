@@ -28,7 +28,6 @@ my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @allprefixes = ();
 
 my $nil = 'nil';
-#my $argument_name = 'R';
 
 my $count = 0;
 
@@ -194,15 +193,11 @@ sub add_host {
 }
 
 sub add_key {
-    foreach my $i (@_) {
-	push(@allkeys, $i);
-    }
+    foreach my $i (@_) { push(@allkeys, $i); }
 }
 
 sub add_prefix_of_key {
-    foreach my $i (@_) {
-	push(@allprefixes, $i);
-    }
+    foreach my $i (@_) { push(@allprefixes, $i); }
 }
 
 sub max {
@@ -258,69 +253,6 @@ sub get_max_index_of_exe               { return &get_max_index('exe',    @_); }
 sub get_max_index_of_arg               { return &get_max_index('arg',    @_); }
 sub get_max_index_of_first_arg_of_arg  { return &get_max_index('first',  @_); }
 sub get_max_index_of_second_arg_of_arg { return &get_max_index('second', @_); }
-
-sub do_initialized {
-    my %job = %{$_[0]};
-    shift;
-    my @range = @_;
-    $job{'VALUES'} = \@range;
-    my $count_tmp = 0;
-    foreach (@range) {
-	$job{"VALUE$count_tmp"} = $_;
-	$count_tmp++;
-    }
-    unless ( $user::separator_nocheck) {
-        unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
-            die "Can't support $user::separator as \$separator.\n";
-        }
-    }
-
-    # generate job objects
-    unless (defined $job{"id$user::expander"}) {
-	$job{id} = join($user::separator, ($job{id}, @_));
-    }
-#    foreach my $k (@allkeys) {
-    foreach my $tmp_k (keys(%job)) {
-	my ($k , $after_k) = split(/@/, $tmp_k);
-        my $members = "$k" . $user::expander;
-
-        if ( exists($job{"$members"}) ) {
-            unless ( ref($job{"$members"}) ) {
-		warn "Can't dereference $members.  Instead evaluate $members";
-		@_ = @range;
-		$job{"$k"} = eval($job{$members});
-            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-                $job{"$k"} = &{$job{"$members"}}(@range);
-            } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-                my @tmp = @{$job{"$members"}};
-                $job{"$k"} = $tmp[$count];
-            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-		$job{"$k"} = ${$job{"$members"}};
-            } else {
-                die "Can't interpret $members\n";
-            }
-        }
-
-
-    }
-    my $self = user->new(\%job);
-
-    # aliases
-    if (defined $self->{exe0}) {
-	$self->{exe} = $self->{exe0};
-    }
-    my $max_of_arg = &get_max_index_of_arg(%job);
-    foreach my $i (0..$max_of_arg) {
-	if (defined $self->{"arg0_$i"}) {
-	    $self->{"arg$i"} = $self->{"arg0_$i"};
-	}
-    }
-
-    &jobsched::entry_job_id ($self);
-    &jobsched::set_job_initialized($self);
-    # &jobsched::load_inventory ($self->{id});
-    return $self;
-}
 
 sub times_loop {
     if (@_ == ()) { return (); }
@@ -399,6 +331,69 @@ sub MIN {
     return $num;
 }
 =cut
+
+sub do_initialized {
+    my %job = %{$_[0]};
+    shift;
+    my @range = @_;
+    $job{'VALUES'} = \@range;
+    my $count_tmp = 0;
+    foreach (@range) {
+	$job{"VALUE$count_tmp"} = $_;
+	$count_tmp++;
+    }
+    unless ( $user::separator_nocheck) {
+        unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
+            die "Can't support $user::separator as \$separator.\n";
+        }
+    }
+
+    # generate job objects
+    unless (defined $job{"id$user::expander"}) {
+	$job{id} = join($user::separator, ($job{id}, @_));
+    }
+#    foreach my $k (@allkeys) {
+    foreach my $tmp_k (keys(%job)) {
+	my ($k , $after_k) = split(/@/, $tmp_k);
+        my $members = "$k" . $user::expander;
+
+        if ( exists($job{"$members"}) ) {
+            unless ( ref($job{"$members"}) ) {
+		warn "Can't dereference $members.  Instead evaluate $members";
+		@_ = @range;
+		$job{"$k"} = eval($job{$members});
+            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
+                $job{"$k"} = &{$job{"$members"}}(@range);
+            } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
+                my @tmp = @{$job{"$members"}};
+                $job{"$k"} = $tmp[$count];
+            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
+		$job{"$k"} = ${$job{"$members"}};
+            } else {
+                die "Can't interpret $members\n";
+            }
+        }
+
+
+    }
+    my $self = user->new(\%job);
+
+    # aliases
+    if (defined $self->{exe0}) {
+	$self->{exe} = $self->{exe0};
+    }
+    my $max_of_arg = &get_max_index_of_arg(%job);
+    foreach my $i (0..$max_of_arg) {
+	if (defined $self->{"arg0_$i"}) {
+	    $self->{"arg$i"} = $self->{"arg0_$i"};
+	}
+    }
+
+    &jobsched::entry_job_id ($self);
+    &jobsched::set_job_initialized($self);
+    # &jobsched::load_inventory ($self->{id});
+    return $self;
+}
 
 sub expand_and_make {
     my %job = @_;

@@ -8,7 +8,7 @@ use core;
 
 #my $max_of_added_key = 63;
 #foreach (0..$max_of_added_key) {
-    &add_prefix_of_key("linkedfile", "copiedfile");
+&add_prefix_of_key("linkedfile", "copiedfile");
 #}
 
 sub new {
@@ -31,24 +31,19 @@ sub new {
     foreach my $k (keys(%{$self})) {
 	if ($k =~ /\Acopiedfile[0-9]+/) {
 #	if ($self->{"copiedfile$i"}) {
-	if ($self->{"$k"}) {
 #	    my $copied = $self->{"copiedfile$i"};
 	    my $copied = $self->{"$k"};
 	    &xcr_copy($self->{env}, $copied, File::Spec->catfile($self->{workdir}, File::Spec->catfile(basename($copied))));
 	}
-	}
 
 	if ($k =~ /\Alinkedfile[0-9]+/) {
 #	if ($self->{"linkedfile$i"}) {
-	if ($self->{"$k"}) {
 #	    my $file = $self->{"linkedfile$i"};
 	    my $file = $self->{"$k"};
 	    &xcr_symlink($self->{env}, $self->{workdir},
 			 File::Spec->catfile('..', $file),
 			 File::Spec->catfile(basename($file)));
 	}
-	}
-
     }
 
     return bless $self, $class;
