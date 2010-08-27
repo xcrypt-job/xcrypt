@@ -162,7 +162,7 @@ sub handle_inventory {
                     unless (get_signal_status($job)) {
                         set_job_running ($job, $tim);
                     } else {
-                        set_job_status_according_to_signal($job);
+                        set_job_status_according_to_signal($job, $tim);
                     }
                     $flag=1;
                 } else {
@@ -176,7 +176,7 @@ sub handle_inventory {
                     unless (get_signal_status($job)) {
                         set_job_done ($job, $tim);
                     } else {
-                        set_job_status_according_to_signal($job);
+                        set_job_status_according_to_signal($job, $tim);
                     }
                     $flag=1;
                 } else {
@@ -796,7 +796,7 @@ sub invoke_left_message_check {
                     print "check if ". left_message_file_name($job, 'running'). " exists at $job->{env}->{location}\n";
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
                         unless (get_signal_status($job)) {
-                            set_job_running ($job, $tim);
+                            set_job_running ($job);
                         } else {
                             set_job_status_according_to_signal($job);
                             $job->qdel();
@@ -807,7 +807,7 @@ sub invoke_left_message_check {
                     print "check if ". left_message_file_name($job, 'done'). " exists at $job->{env}->{location}.\n";
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
                         unless (get_signal_status($job)) {
-                            set_job_done ($job, $tim);
+                            set_job_done ($job);
                         } else {
                             set_job_status_according_to_signal($job);
                             $job->qdel();
