@@ -277,7 +277,6 @@ sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
-my %all_job_states_from_left_messages; # ('job0' => 'running', ...)
 sub get_job_states_from_left_messages {
     foreach my $env (@Env) {
 	my @ret = &xcr_qx($env, '\ls -1', 'inv_watch');
@@ -285,13 +284,12 @@ sub get_job_states_from_left_messages {
 	    if ($l =~ /_is_/) {
 		my ($id , $state) = split(/_is_/, $l);
 		chomp $state;
-		if (defined $all_job_states_from_left_messages{$id}) {
-		    if ($jobsched::Status_Level{$all_job_states_from_left_messages{$id}}
-			< $jobsched::Status_Level{$state}) {
-			$all_job_states_from_left_messages{"$id"} = "$state";
+		if (exists $jobsched::Job_ID_Hash{$id}->{status}) {
+		    if ($jobsched::Status_Level{$jobsched::Job_ID_Hash{$id}->{status}} < $jobsched::Status_Level{$state}) {
+			$jobsched::Job_ID_Hash{$id}->{status}} = "$state";
 		    }
 		} else {
-		    $all_job_states_from_left_messages{"$id"} = "$state";
+		    $jobsched::Job_ID_Hash{$id}->{status} = "$state";
 		}
 	    }
 	}
