@@ -20,7 +20,7 @@ sub n_section_method {
     my $y_left = $arg{'y_left'};
     my $x_right = $arg{'x_right'};
     my $y_right = $arg{'y_right'};
-    my $inc_or_dec = $y_right - $y_left;
+    my $sgn = $y_right - $y_left;
     my $x;
     my $y;
     my $count = -1;
@@ -48,8 +48,11 @@ sub n_section_method {
 		    my $status = &jobsched::get_job_status($j);
 		    if ($status eq 'finished') {
 			foreach my $l (@jobs) {
-			    if ((0 < ($j->{'y'}) * $inc_or_dec * ($l->{'x'} - $j->{'x'}))) {
-				$l->invalidate();
+			    if (0 < $j->{'y'} * $sgn * ($l->{'x'} - $j->{'x'})){
+		    my $stat = &jobsched::get_job_status($l);
+unless ($stat eq 'finished') {
+    $l->invalidate();
+}
 			    }
 			}
 		    }
@@ -82,9 +85,7 @@ print $y_right, "\n";
     return ($x, $y);
 }
 
-sub after {
-
-}
+sub after {}
 
 sub across_zero {
     my $x_left = shift;
