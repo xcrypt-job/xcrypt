@@ -51,7 +51,7 @@ my %Last_Request_ID = ();
 my %Last_Signal = ();
 
 # Hash table (key,val)=(job ID, job objcect)
-my %Job_ID_Hash = ();
+our %Job_ID_Hash = ();
 # The signal to broadcast that a job status is updated.
 my $Job_Status_Signal = new Coro::Signal;
 # ジョブの状態→ランレベル

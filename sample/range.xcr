@@ -14,9 +14,7 @@ use base qw(common core);
 );
 
 my @jobs = &prepare(%template1);
-&common::get_job_states_from_left_messages();
 &submit(@jobs);
-&common::get_job_states_from_left_messages();
 &sync(@jobs);
 
 
