@@ -642,7 +642,7 @@ sub check_status_for_set_job_finished {
     if ($sig) {
         jobsched::set_job_status_according_to_signal ($self);
         return 0;
-    } else (jobsched::get_job_status ($self) eq 'aborted') {
+    } elsif (jobsched::get_job_status ($self) eq 'aborted') {
         return 0;
     } else {
         return 1;
