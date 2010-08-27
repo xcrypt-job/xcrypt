@@ -22,7 +22,7 @@ sub new {
     set_member_if_empty ($self, 'workdir', '.');
 
     # default env
-    set_member_if_empty ($self, 'env', $common::env_d);
+    set_member_if_empty ($self, 'env', $builtin::env_d);
 
     # stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', "$self->{id}_stdout");
@@ -293,7 +293,7 @@ sub qsub {
     }
 
     my $flag;
-    $flag = common::cmd_executable ($qsub_command, $self->{env});
+    $flag = cmd_executable ($qsub_command, $self->{env});
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
@@ -337,9 +337,9 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (common::cmd_executable ($command_string, $self->{env})) {
+        if (cmd_executable ($command_string, $self->{env})) {
             print "Deleting $self->{id} (request ID: $req_id)\n";
-            common::exec_async ($command_string);
+            exec_async ($command_string);
         } else {
             warn "$command_string not executable.";
         }
