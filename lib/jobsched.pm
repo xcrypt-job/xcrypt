@@ -807,7 +807,10 @@ sub invoke_left_message_check {
             foreach my $req_id (keys %Running_Jobs) {
                 my $job = $Running_Jobs{$req_id};
                 if ( get_job_status($job) eq 'queued') {
-                    print "check if ". left_message_file_name($job, 'running'). " exists at $job->{env}->{location}\n";
+                    if ( $xcropt::options{verbose} >= 2 ) {
+                        print "check if ". left_message_file_name($job, 'running')
+                            . " exists at $job->{env}->{location}\n";
+                    }
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
                         unless (get_signal_status($job)) {
                             set_job_running ($job);
@@ -818,7 +821,10 @@ sub invoke_left_message_check {
                     }
                 } 
                 if ( get_job_status($job) eq 'running') {
-                    print "check if ". left_message_file_name($job, 'done'). " exists at $job->{env}->{location}.\n";
+                    if ( $xcropt::options{verbose} >= 2 ) {
+                        print "check if ". left_message_file_name($job, 'done')
+                            . " exists at $job->{env}->{location}.\n";
+                    }
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
                         unless (get_signal_status($job)) {
                             set_job_done ($job);
