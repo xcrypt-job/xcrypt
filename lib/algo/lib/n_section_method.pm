@@ -13,7 +13,6 @@ sub del_extra_job {
 }
 my $interval_check_done_or_ignored = 3;
 my $inf = (2 ** 31) - 1;
-my %done_or_ignored;
 sub n_section_method {
     my %arg = @_;
     my $num = $arg{'partition'};
@@ -46,37 +45,26 @@ sub n_section_method {
 #		sleep $interval_check_done_or_ignored;
                 Coro::AnyEvent::sleep $interval_check_done_or_ignored;
 		foreach my $j (@jobs) {
-		    my $jx = $j->{'x'};
-		    my $jid = $j->{'id'};
 		    my $status = &jobsched::get_job_status($j);
-		    if (($status eq 'done' || $status eq 'finished') && ($done_or_ignored{"$jid"} == 0)) {
-			&sync($j);
+		    if ($status eq 'finished') {
 			foreach my $l (@jobs) {
-			    if ($l->{id}) {
-				if ((0 < ($j->{'y'}) * $inc_or_dec * ($l->{'x'} - $j->{'x'})) && ($done_or_ignored{$l->{id}} == 0)) {
-				    &jobsched::qdel($l);
-				    &jobsched::delete_signaled_job($l);
-				    $done_or_ignored{$l->{id}} = 1;
-				}
+			    if ((0 < ($j->{'y'}) * $inc_or_dec * ($l->{'x'} - $j->{'x'}))) {
+				$l->invalidate();
 			    }
 			}
 		    }
 		}
 		$flag = 1;
 		foreach my $j (@jobs) {
-		    my $jid = $j->{'id'};
-		    if ($done_or_ignored{"$jid"} == 0) {
+		    my $status = &jobsched::get_job_status($j);
+		    unless ($status eq 'finished') {
+#			print "$j->{id}: $status\n";
 			$flag = 0 * $flag;
 		    }
 		}
 	    }
-	} else {
-	    &sync(@jobs);
 	}
-print $x_left, "\n";
-print $y_left, "\n";
-print $x_right, "\n";
-print $y_right, "\n";
+	&sync(@jobs);
 	($x_left, $y_left, $x_right, $y_right)
 	    = &across_zero($x_left, $y_left, $x_right, $y_right, @jobs);
 print $x_left, "\n";
@@ -134,9 +122,6 @@ sub start {
 }
 
 sub before {}
-sub after {
-    my $self = shift;
-    $done_or_ignored{$self->{id}} = 1;
-}
+sub after {}
 
 1;
