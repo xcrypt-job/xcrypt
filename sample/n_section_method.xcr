@@ -2,7 +2,7 @@ use base qw(sandbox n_section_method core);
 use Data_Generation;
 use Data_Extraction;
 
-#&n_section_method::del_extra_job();
+&n_section_method::del_extra_job();
 %job = (
     'id' => 'job0',
     'exe' => './minushalf.pl template.dat',
