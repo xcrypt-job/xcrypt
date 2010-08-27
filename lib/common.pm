@@ -7,7 +7,7 @@ any_to_string any_to_string_nl any_to_string_spc write_string_array
 get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-get_all_envs
+get_all_envs get_job_states_from_left_messages
 del
 );
 
@@ -276,5 +276,27 @@ sub xcr_copy    {            xcr_cmd('copy',    @_);                }
 sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
+
+my %all_job_states_from_left_messages; # ('job0' => 'running', ...)
+sub get_job_states_from_left_messages {
+    my @ret;
+    foreach (@Env) {
+	@ret = &xcr_qx($_, '\ls -1', 'inv_watch');
+    }
+    foreach (@ret) {
+	if ($_ =~ /_is_/) {
+	    my ($id , $state) = split(/_is_/, $_);
+	    chomp $state;
+	    if (defined $all_job_states_from_left_messages{$id}) {
+		if ($jobsched::Status_Level{$all_job_states_from_left_messages{$id}}
+		    < $jobsched::Status_Level{$state}) {
+		    $all_job_states_from_left_messages{"$id"} = "$state";
+		}
+	    } else {
+		$all_job_states_from_left_messages{"$id"} = "$state";
+	    }
+	}
+    }
+}
 
 1;

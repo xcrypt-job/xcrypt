@@ -1,4 +1,4 @@
-use base qw(core);
+use base qw(common core);
 
 %template1 = (
     'id@' => sub { "job6_$_[0]_$_[2]" },
@@ -13,8 +13,11 @@ use base qw(core);
     'before' => sub { print $_[0], "\n"; print $self->{exe0}, "\n"; }
 );
 
-&prepare_submit_sync(%template1);
-
+my @jobs = &prepare(%template1);
+&common::get_job_states_from_left_messages();
+&submit(@jobs);
+&common::get_job_states_from_left_messages();
+&sync(@jobs);
 
 
 
