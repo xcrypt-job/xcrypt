@@ -798,7 +798,7 @@ sub invoke_abort_check {
 # Check messages that inventory_write.pl leaves when the communication failed.
 sub left_message_file_name {
     my ($job, $stat) = @_;
-    return "$job->{id}_is_$stat";   # must be eq to inventory_write.pl $Left_Message_File
+    return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");   # must be eq to inventory_write.pl $Left_Message_File
 }
 sub invoke_left_message_check {
     $Left_Message_Check_Thread = Coro::async_pool {
