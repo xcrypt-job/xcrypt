@@ -74,6 +74,10 @@ my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
 # Now obsoleted because it is implemented in builtin.pm?
 our $Periodic_Thread = undef; # accessed from bin/xcrypt
 
+# Warning option (can be bound dynamically using a local declaration)
+our $Warn_job_not_found_by_id = 1;
+our $Warn_illegal_transition = 1;
+
 # 出力をバッファリングしない（STDOUT & STDERR）
 $|=1;
 select(STDERR); $|=1; select(STDOUT);
@@ -144,7 +148,7 @@ sub inventory_write_cmdline {
 
 ##############################
 # watchの出力一行を処理
-# for scalar contexts: set_job_statusを行ったら1，そうでなければ0，エラーなら-1を返す
+# for scalar contexts: set_job_statusを行ったら1，そうでなければ0，エラー（再通知を促す）なら-1を返す
 # for list contexts: returns (status(the same to scalar contexts), last_job, last_jobname)
 sub handle_inventory {
     my ($line) = @_;
@@ -152,7 +156,10 @@ sub handle_inventory {
     if ($line =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/) {
         $job_id = $1;
         my ($status, $tim) = ($2, $3);
-        $job = find_job_by_id ($job_id);
+        {
+            local $Warn_job_not_found_by_id = undef;
+            $job = find_job_by_id ($job_id);
+        }
         if ($job) {
             if ($status eq 'running') {
                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
@@ -184,21 +191,27 @@ sub handle_inventory {
                 }
             } else {
                 warn "unexpected transition: \"$line\"\n";
-                $flag = -1;
+                $flag = 0;
             }
         } else { # The job is not found
             # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
-            $flag = -1;
+            $flag = 0;
         }
-    } elsif ($line =~/^:del\s+(\S+)/) {         # ジョブ削除依頼
+    } elsif ($line =~/^:abort\s+(\S+)/) {         # request to abort()
         my $job = find_job_by_id ($1);
-        $job->abort();
+        if ($job) { $job->abort(); }
         $flag = 0;
-    } elsif ($line =~/^:delall/) {              # 全ジョブ削除依頼
-        signal_all_jobs (); $flag = 0;
+    } elsif ($line =~/^:cancel\s+(\S+)/) {        # request to cancel()
+        my $job = find_job_by_id ($1);
+        if ($job) { $job->cancel(); }
+        $flag = 0;
+    } elsif ($line =~/^:invalidate\s+(\S+)/) {    # request to invalidate()
+        my $job = find_job_by_id ($1);
+        if ($job) { $job->invalidate(); }
+        $flag = 0;
     } else {
         warn "unexpected inventory: \"$line\"\n";
-        $flag = -1;
+        $flag = 0;
     }
     wantarray ? return ($flag, $job, $job_id) : return $flag;
 }
@@ -379,7 +392,9 @@ sub find_job_by_id {
     if ( $Job_ID_Hash{$id} ) {
         return $Job_ID_Hash{$id};
     } else {
-        warn "No job named $id found.";
+        if ($Warn_job_not_found_by_id) {
+            warn "No job named $id found.";
+        }
         return undef;
     }
 }
@@ -420,7 +435,6 @@ sub get_job_last_update {
 
 # Update the status of the job, broadcast the signal
 # and, if necessary, entry the job into the "running_job" hash table.
-our $Warn_illegal_transition = 1;
 sub set_job_status {
     my ($self, $stat, $tim) = @_;
     status_name_to_level ($stat); # 有効な名前かチェック
