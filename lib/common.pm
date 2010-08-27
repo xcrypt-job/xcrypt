@@ -279,21 +279,20 @@ sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 my %all_job_states_from_left_messages; # ('job0' => 'running', ...)
 sub get_job_states_from_left_messages {
-    my @ret;
-    foreach (@Env) {
-	@ret = &xcr_qx($_, '\ls -1', 'inv_watch');
-    }
-    foreach (@ret) {
-	if ($_ =~ /_is_/) {
-	    my ($id , $state) = split(/_is_/, $_);
-	    chomp $state;
-	    if (defined $all_job_states_from_left_messages{$id}) {
-		if ($jobsched::Status_Level{$all_job_states_from_left_messages{$id}}
-		    < $jobsched::Status_Level{$state}) {
+    foreach my $env (@Env) {
+	my @ret = &xcr_qx($env, '\ls -1', 'inv_watch');
+	foreach my $l (@ret) {
+	    if ($l =~ /_is_/) {
+		my ($id , $state) = split(/_is_/, $l);
+		chomp $state;
+		if (defined $all_job_states_from_left_messages{$id}) {
+		    if ($jobsched::Status_Level{$all_job_states_from_left_messages{$id}}
+			< $jobsched::Status_Level{$state}) {
+			$all_job_states_from_left_messages{"$id"} = "$state";
+		    }
+		} else {
 		    $all_job_states_from_left_messages{"$id"} = "$state";
 		}
-	    } else {
-		$all_job_states_from_left_messages{"$id"} = "$state";
 	    }
 	}
     }
