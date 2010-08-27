@@ -160,10 +160,11 @@ sub handle_inventory {
                 my $cur_stat = get_job_status ($job);
                 if ( $cur_stat eq 'queued' ) {
                     unless (get_signal_status($job)) {
-                        set_job_running ($job, $tim); $flag=1;
+                        set_job_running ($job, $tim);
                     } else {
                         set_job_status_according_to_signal($job);
                     }
+                    $flag=1;
                 } else {
                     $flag = -1;
                 }
@@ -794,13 +795,23 @@ sub invoke_left_message_check {
                 if ( get_job_status($job) eq 'queued') {
                     print "check if ". left_message_file_name($job, 'running'). " exists at $job->{env}->{location}\n";
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
-                        set_job_running ($job);
+                        unless (get_signal_status($job)) {
+                            set_job_running ($job, $tim);
+                        } else {
+                            set_job_status_according_to_signal($job);
+                            $job->qdel();
+                        }
                     }
                 } 
                 if ( get_job_status($job) eq 'running') {
                     print "check if ". left_message_file_name($job, 'done'). " exists at $job->{env}->{location}.\n";
                     if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
-                        set_job_done ($job);
+                        unless (get_signal_status($job)) {
+                            set_job_done ($job, $tim);
+                        } else {
+                            set_job_status_according_to_signal($job);
+                            $job->qdel();
+                        }
                     }
                 }
             }
