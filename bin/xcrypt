@@ -6,6 +6,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use Getopt::Long;
+use builtin;
 
 my $xcrfile = shift @ARGV;
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
@@ -34,7 +35,7 @@ print TMP '&jobsched::read_log();' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
 print TMP '&jobsched::invoke_left_message_check();' . "\n";
 print TMP '&jobsched::invoke_watch();' . "\n";
-print TMP 'if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $common::env_d = &add_host({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $common::env_d = &add_host({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }' . "\n";
+print TMP 'if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 print TMP '&jobsched::check_and_write_aborted();' . "\n";

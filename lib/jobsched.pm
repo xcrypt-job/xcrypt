@@ -19,7 +19,7 @@ use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use Net::OpenSSH;
 
-#use builtin;
+use builtin;
 use common;
 use xcropt;
 use jsconfig;
@@ -98,7 +98,7 @@ sub qstat {
 	    die "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
-	unless (common::cmd_executable ($command_string, $env)) {
+	unless (cmd_executable ($command_string, $env)) {
 	    warn "$command_string not executable";
 	    return ();
 	}
@@ -122,7 +122,7 @@ sub inventory_write {
 
     ## Use the following when $Watch_Thread is a Coro.
     # {
-    #     my $pid = common::exec_async ($cmdline);
+    #     my $pid = exec_async ($cmdline);
     #     ## polling for checking the child process finished.
     #     ## DO NOT USE blocking waitpid(*,0) for Coros.
     #     # print "Waiting for $pid finished.\n";
@@ -753,7 +753,7 @@ sub check_and_write_aborted {
             my $aborted_job = $Running_Jobs{$req_id};
 	    my $status = get_job_status($aborted_job);
 	    unless (($status eq 'done') || ($status eq 'finished')
-                    || common::xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
+                    || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
                 if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
                     local $Warn_illegal_transition = undef;
@@ -814,7 +814,7 @@ sub invoke_left_message_check {
                         print "check if ". left_message_file_name($job, 'running')
                             . " exists at $job->{env}->{location}\n";
                     }
-                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
+                    if ( xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
                         unless (get_signal_status($job)) {
                             set_job_running ($job);
                         } else {
@@ -828,7 +828,7 @@ sub invoke_left_message_check {
                         print "check if ". left_message_file_name($job, 'done')
                             . " exists at $job->{env}->{location}.\n";
                     }
-                    if ( common::xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
+                    if ( xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
                         unless (get_signal_status($job)) {
                             set_job_done ($job);
                         } else {
@@ -870,15 +870,16 @@ sub wait_and_get_file {
 }
 
 sub get_job_states_from_left_messages {
-    foreach my $env (@common::Env) {
-	my @ret = &common::xcr_qx($env, '\ls -1', 'inv_watch');
+    my @envs = &get_all_envs();
+    foreach my $env (@envs) {
+	my @ret = &xcr_qx($env, '\ls -1', 'inv_watch');
 	foreach my $l (@ret) {
 	    if ($l =~ /_is_/) {
 		my ($id , $state) = split(/_is_/, $l);
 		chomp $state;
 		if (exists $Job_ID_Hash{$id}->{status}) {
 		    if ($Status_Level{$jobsched::Job_ID_Hash{$id}->{status}} < $Status_Level{$state}) {
-			$Job_ID_Hash{$id}->{status}} = "$state";
+			$Job_ID_Hash{$id}->{status} = "$state";
 		    }
 		} else {
 		    $Job_ID_Hash{$id}->{status} = "$state";

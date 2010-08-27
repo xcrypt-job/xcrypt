@@ -1,7 +1,11 @@
 package builtin;
 
 use base qw(Exporter);
-our @EXPORT = qw(expand_and_make
+our @EXPORT = qw(cmd_executable
+get_from put_into get_all_envs
+rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
+xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
+expand_and_make
 prepare submit sync
 prepare_submit submit_sync prepare_submit_sync
 get_local_env add_host add_key add_prefix_of_key
@@ -18,10 +22,14 @@ use Data::Dumper;
 use File::Basename;
 use Net::OpenSSH;
 
-use jobsched;
+#use jobsched;
 use xcropt;
 use Cwd;
 use common;
+
+use File::Copy::Recursive qw(fcopy dircopy rcopy);
+use File::Spec;
+use xcropt;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
@@ -30,6 +38,200 @@ my @allprefixes = ('JS_');
 my $nil = 'nil';
 
 my $count = 0;
+
+my %ssh_opts = (
+    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
+    recursive => 1,    # -rと同じ。再帰的にコピー
+    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
+    glob => 1,         # ファイル名に「*」を使えるようにする。
+    quiet => 1,        # 進捗を表示する
+    );
+
+my %Host_Ssh_Hash;
+our $env_d;
+$env_d = { 'host'     => $xcropt::options{localhost},
+	   'wd'       => $xcropt::options{wd},
+	   'sched'    => $xcropt::options{sched},
+	   'xd'       => $xcropt::options{xd},
+	   'p5l'      => $xcropt::options{p5l},
+	   'location' => 'local' };
+my @Env = ($env_d);
+sub get_local_env { return $env_d; }
+sub get_all_envs { return @Env; }
+##
+sub cmd_executable {
+    my ($cmd, $env) = @_;
+    my @cmd0 = split(/\s+/,$cmd);
+    if ($env->{location} eq 'remote') {
+	my $ssh = $Host_Ssh_Hash{$env->{host}};
+	my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
+	my $tmp = $flags[0];
+	if ($tmp == 0) {
+	    return 0;
+	} else {
+	    return 1;
+	}
+    } else {
+	qx/which $cmd0[0]/;
+    }
+    my $ex_code = $? >> 8;
+    # print "$? $ex_code ";
+    return ($ex_code==0)? 1 : 0;
+}
+
+sub ssh_command {
+    my ($env, $ssh, $command, $str0, $str1)= @_;
+
+    $ssh->system("true");
+    while ($ssh->error) {
+	sleep(60);
+	my ($user, $host) = split(/@/, $env->{host});
+	$ssh = Net::OpenSSH->new($host, (user => $user));
+	$ssh->error and warn $ssh->error;
+	$Host_Ssh_Hash{$env->{host}} = $ssh;
+    }
+
+    my @flags;
+    if ($command eq 'capture') {
+	@flags = $ssh->capture("$str0"); # or warn $ssh->error;
+    } elsif ($command eq 'system') {
+	my $flag = $ssh->system("$str0") or warn $ssh->error;
+	@flags = ($flag);
+    } elsif ($command eq 'get') {
+	$ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+    } elsif ($command eq 'put') {
+	$ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+    }
+    return @flags;
+}
+
+sub rmt_cmd {
+    my $cmd = shift;
+    my $env = shift;
+    my $ssh = $Host_Ssh_Hash{$env->{host}};
+    if ($cmd eq 'qx') {
+	my ($command, $dir) = @_;
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+	my @flags = &ssh_command($env, $ssh,'capture', "$tmp");
+	return @flags;
+    } elsif ($cmd eq 'system') {
+	my ($command, $dir) = @_;
+	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+	my @flags = &ssh_command($env, $ssh, 'system', "$tmp");
+	return $flags[0];
+    } elsif ($cmd eq 'exist') {
+	my ($file) = @_;
+	my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	my @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath && echo 1");
+	chomp($flags[0]);
+	return $flags[0];
+    } elsif ($cmd eq 'mkdir') {
+	my ($dir) = @_;
+	my $fullpath = File::Spec->catfile($env->{wd}, $dir);
+	&rmt_cmd('system', $env, "test -e $fullpath || mkdir $fullpath");
+    } elsif ($cmd eq 'copy') {
+	my ($copied, $dir) = @_;
+	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
+	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
+	&rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_dir");
+	&rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_dir");
+    } elsif ($cmd eq 'rename') {
+	my ($renamed, $file) = @_;
+	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
+	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
+	&rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+    } elsif ($cmd eq 'symlink') {
+	my ($dir, $file, $link) = @_;
+	my $tmp = File::Spec->catfile($dir, $link);
+	&rmt_cmd('system', $env, "ln -s $file $tmp");
+    } elsif ($cmd eq 'unlink') {
+	my ($file) = @_;
+	my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	&rmt_cmd('system', $env, "rm -f $fullpath");
+    } elsif ($cmd eq 'get') {
+	my ($file, $to) = @_;
+	unless ($xcropt::options{shared}) {
+	    my $fullpath = File::Spec->catfile($env->{wd}, $file);
+	    &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+	}
+    } elsif ($cmd eq 'put') {
+	my ($file, $to) = @_;
+	unless ($xcropt::options{shared}) {
+	    my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
+	    &ssh_command($env, $ssh, 'put', $file, $fullpath);
+	}
+    } else {
+	foreach(%$cmd){print $_, "\n";}
+	die "$cmd doesn't match";
+    }
+}
+
+sub xcr_cmd {
+    my $cmd =shift;
+    my $env =shift;
+    if ($env->{location} eq 'remote') {
+	rmt_cmd($cmd, $env, @_);
+    } elsif ($env->{location} eq 'local') {
+	if ($cmd eq 'exist') {
+	    my $flag = 0;
+            my ($file) = @_;
+	    if (-e $file) {
+		$flag = 1;
+	    }
+	    return $flag;
+	} elsif ($cmd eq 'qx') {
+	    my ($command, $dir) = @_;
+	    my @ret = qx/cd $dir; $command/;
+	    return @ret;
+	} elsif ($cmd eq 'system') {
+	    my ($command, $dir) = @_;
+	    my $flag = system("cd $dir; $command");
+	    return $flag;
+	} elsif ($cmd eq 'mkdir') {
+	    my ($dir) = @_;
+	    mkdir $dir, 0755;
+	} elsif ($cmd eq 'copy') {
+	    my ($copied, $dir) = @_;
+	    rcopy($copied, $dir);
+	} elsif ($cmd eq 'rename') {
+	    my ($renamed, $file) = @_;
+	    if (-e $renamed) {
+		rename $renamed, $file;
+	    }
+	} elsif ($cmd eq 'symlink') {
+	    my ($dir, $file, $link) = @_;
+	    symlink($file, File::Spec->catfile($dir, $link));
+	} elsif ($cmd eq 'unlink') {
+	    my ($file) = @_;
+	    unlink $file;
+	} else {
+	    die ;
+	}
+    } else {
+	die ;
+    }
+}
+
+sub rmt_exist   { my $flag = rmt_cmd('exist',   @_);  return $flag; }
+sub rmt_qx      { my @ret  = rmt_cmd('qx',      @_);  return @ret;  }
+sub rmt_system  { my $flag = rmt_cmd('system',  @_);  return $flag; }
+sub rmt_mkdir   {            rmt_cmd('mkdir',   @_);                }
+sub rmt_copy    {            rmt_cmd('copy',    @_);                }
+sub rmt_rename  {            rmt_cmd('rename',  @_);                }
+sub rmt_symlink {            rmt_cmd('symlink', @_);                }
+sub rmt_unlink  {            rmt_cmd('unlink',  @_);                }
+
+sub get_from     {            rmt_cmd('get',     @_);                }
+sub put_into     {            rmt_cmd('put',     @_);                }
+
+sub xcr_exist   { my $flag = xcr_cmd('exist',   @_);  return $flag; }
+sub xcr_qx      { my @ret  = xcr_cmd('qx',      @_);  return @ret;  }
+sub xcr_system  { my $flag = xcr_cmd('system',  @_);  return $flag; }
+sub xcr_mkdir   {            xcr_cmd('mkdir',   @_);                }
+sub xcr_copy    {            xcr_cmd('copy',    @_);                }
+sub xcr_rename  {            xcr_cmd('rename',  @_);                }
+sub xcr_symlink {            xcr_cmd('symlink', @_);                }
+sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 =comment
 my $current_directory=Cwd::getcwd();
@@ -129,17 +331,15 @@ sub repeat {
     return $new_coro;
 }
 
-sub get_local_env { return $common::env_d; }
-
 sub add_host {
     my ($env) = @_;
     unless (defined $env->{location}) {	$env->{location} = 'remote'; }
     if ($env->{location} eq 'remote') {
-	unless (exists $common::Host_Ssh_Hash{$env->{host}}) {
+	unless (exists $Host_Ssh_Hash{$env->{host}}) {
 	    my ($user, $host) = split(/@/, $env->{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
 	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-	    $common::Host_Ssh_Hash{$env->{host}} = $ssh;
+	    $Host_Ssh_Hash{$env->{host}} = $ssh;
 	}
     }
     unless (defined $env->{wd}) {
@@ -184,7 +384,7 @@ sub add_host {
 		die "Set the environment varialble \$XCRYPT at $env->{host}\n";
 	    }
     }
-    push(@common::Env, $env);
+    push(@Env, $env);
     return $env;
 }
 
