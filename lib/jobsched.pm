@@ -51,11 +51,11 @@ my %Last_Request_ID = ();
 my %Last_Signal = ();
 
 # Hash table (key,val)=(job ID, job objcect)
-our %Job_ID_Hash = ();
+my %Job_ID_Hash = ();
 # The signal to broadcast that a job status is updated.
 my $Job_Status_Signal = new Coro::Signal;
 # ジョブの状態→ランレベル
-our %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
+my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
@@ -867,6 +867,25 @@ sub wait_and_get_file {
       }
       Coro::AnyEvent::sleep ($interval);
   }
+}
+
+sub get_job_states_from_left_messages {
+    foreach my $env (@common::Env) {
+	my @ret = &common::xcr_qx($env, '\ls -1', 'inv_watch');
+	foreach my $l (@ret) {
+	    if ($l =~ /_is_/) {
+		my ($id , $state) = split(/_is_/, $l);
+		chomp $state;
+		if (exists $Job_ID_Hash{$id}->{status}) {
+		    if ($Status_Level{$jobsched::Job_ID_Hash{$id}->{status}} < $Status_Level{$state}) {
+			$Job_ID_Hash{$id}->{status}} = "$state";
+		    }
+		} else {
+		    $Job_ID_Hash{$id}->{status} = "$state";
+		}
+	    }
+	}
+    }
 }
 
 1;
