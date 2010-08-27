@@ -55,7 +55,7 @@ my %Job_ID_Hash = ();
 # The signal to broadcast that a job status is updated.
 my $Job_Status_Signal = new Coro::Signal;
 # ジョブの状態→ランレベル
-my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
+our %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3,
                     "running"=>4, "done"=>5, "finished"=>6, "aborted"=>7);
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
