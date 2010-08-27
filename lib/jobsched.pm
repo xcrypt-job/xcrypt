@@ -290,7 +290,10 @@ sub invoke_watch_by_file {
                 unlink $Ack_Tmpfile;
             } elsif ($handled_job->{env}->{location} eq 'local') {
                 rename $Ack_Tmpfile, $Ackfile;
-            }
+            } else {
+                unlink $Ack_Tmpfile;
+                rmdir $Lockdir;
+	    }
             unlink $Opened_File;
             Coro::AnyEvent::sleep ($interval);
         }
