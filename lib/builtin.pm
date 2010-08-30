@@ -2,14 +2,12 @@ package builtin;
 
 use base qw(Exporter);
 our @EXPORT = qw(cmd_executable
-get_from put_into get_all_envs
+get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-expand_and_make
-prepare submit sync
-prepare_submit submit_sync prepare_submit_sync
-get_local_env add_host add_key add_prefix_of_key
-repeat
+expand_and_make do_initialized do_prepared
+prepare submit sync prepare_submit submit_sync prepare_submit_sync
+get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 );
 
 use strict;
@@ -29,15 +27,12 @@ use common;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
-use xcropt;
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @allprefixes = ('JS_');
 
 my $nil = 'nil';
-
-my $count = 0;
 
 my %ssh_opts = (
     copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
@@ -523,15 +518,16 @@ sub MIN {
 }
 =cut
 
+my $count = 0;
 sub do_initialized {
     my %job = %{$_[0]};
     shift;
     my @range = @_;
     $job{'VALUES'} = \@range;
-    my $count_tmp = 0;
+    my $tmp = 0;
     foreach (@range) {
-	$job{"VALUE$count_tmp"} = $_;
-	$count_tmp++;
+	$job{"VALUE$tmp"} = $_;
+	$tmp++;
     }
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
