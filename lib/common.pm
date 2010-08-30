@@ -12,7 +12,7 @@ use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
-use xcropt;
+#use xcropt;
 #use jobsched;
 
 ##

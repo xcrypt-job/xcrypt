@@ -1,0 +1,18 @@
+# Sumit multiple jobs sequentially
+use base qw (limit core);
+limit::initialize(1);
+
+%template = (
+    'id' => 'job', 
+    'RANGE0' => [40..45],      
+    'exe@' => sub {"./bin/fib $_[0] > out$_[0]"},
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034',
+    'before' => sub {
+        print "Submitting $self->{id}\n";
+    },
+    'after' => sub {
+        print "$self->{id} finished\n";
+    } 
+    );
+prepare_submit_sync (%template);
