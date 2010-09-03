@@ -32,6 +32,7 @@ our %options = (
 
 GetOptions
     (\%options,
+     'cleanup',
      'shared',
      #
      'localhost=s',

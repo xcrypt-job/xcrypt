@@ -1,4 +1,4 @@
-use base qw(common core);
+use base qw(core);
 
 %template1 = (
     'id@' => sub { "job6_$_[0]_$_[2]" },

@@ -8,13 +8,22 @@ use File::Basename;
 use Getopt::Long;
 use builtin;
 
-my $xcrfile = shift @ARGV;
+my $xcrfile;
+if ($xcropt::options{cleanup}) {
+    $xcrfile = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cleanup.xcr');
+} else {
+    $xcrfile = shift @ARGV;
+}
+
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     die "The first argument should be an Xcrypt script.\n";
 }
 
 my $xcrplfile = "$xcrfile" . '.pl';
-if ( -e $xcrplfile ) { unlink $xcrplfile; }
+if ( -e $xcrplfile ) {
+    print "The old $xcrplfile replaced by the new $xcrplfile\n";
+    unlink $xcrplfile;
+}
 
 open(USER , "< $xcrfile") or die "Can't open $xcrfile\n";
 open(TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
