@@ -1,2 +1,2 @@
 #!/bin/sh
-xcrypt ${XCRYPT}/lib/clean.xcr
+xcrypt ${XCRYPT}/lib/clean.xcr "$*"
