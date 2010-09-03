@@ -16,39 +16,7 @@ foreach my $file (@tmp) {
 }
 
 my $count = 0;
-while (-e 'inv_watch.' . $count) {
+while (-e "$xcropt::options{inventory_path}.$count") {
     $count++;
 }
-rename 'inv_watch', 'inv_watch.' . $count;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=comment
-
-%template2 = (
-    'id@' => sub { "job6_$_[0]_$_[1]"; },
-#    'id' => 'job6',
-    'exe' => 'bin/fib',
-    'RANGE0' => [31,32],
-    'RANGE1' => [0,2],
-    'arg0@' => '$_[0] + $_[1]',
-    'arg1@' => sub { "> out_$_[0]_$_[1]" }
-);
-&prepare_submit_sync(%template2);
-
-=cut
+rename $xcropt::options{inventory_path}, "$xcropt::options{inventory_path}.$count";
