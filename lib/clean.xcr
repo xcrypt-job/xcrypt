@@ -1,6 +1,5 @@
 use base qw(core);
 
-#print $xcropt::options{inventory_path} , "\n";
 =comment
 my @postfixes = ('after_in_job.pl',
 		 'before_in_job.pl',
