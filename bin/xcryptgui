@@ -197,7 +197,7 @@ sub sizechange {
 my $tool = $menu->Menu();
 $menu->entryconfigure( 'Tool', -menu => $tool );
 $tool->add( 'command', -label => 'Clean',
-	    -command => sub { system( "./cleanup.sh" ); } );
+	    -command => sub { system( "xcrypt -- clean" ); } );
 $tool->add( 'command', -label => 'Monitor', -command => [\&monitor, 0] );
 $tool->add( 'command', -label => 'Monitor & Delete', -command => [\&monitor, 1] );
 
