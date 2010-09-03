@@ -889,4 +889,8 @@ sub get_job_states_from_left_messages {
     }
 }
 
+sub get_last_ids {
+    return keys(%Last_State);
+}
+
 1;

@@ -1,0 +1,54 @@
+use base qw(core);
+
+my @postfixes = ('after_in_job.pl',
+		 'before_in_job.pl',
+		 'invwrite.log',
+		 'sh.sh',
+		 'stderr',
+		 'stdout');
+my @tmp = &jobsched::get_last_ids();
+foreach my $file (@tmp) {
+    foreach my $postfix (@postfixes) {
+	if (-e "$file" . '_' . "$postfix") {
+	    unlink "$file" . '_' . "$postfix";
+	}
+    }
+}
+
+my $count = 0;
+while (-e 'inv_watch.' . $count) {
+    $count++;
+}
+rename 'inv_watch', 'inv_watch.' . $count;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=comment
+
+%template2 = (
+    'id@' => sub { "job6_$_[0]_$_[1]"; },
+#    'id' => 'job6',
+    'exe' => 'bin/fib',
+    'RANGE0' => [31,32],
+    'RANGE1' => [0,2],
+    'arg0@' => '$_[0] + $_[1]',
+    'arg1@' => sub { "> out_$_[0]_$_[1]" }
+);
+&prepare_submit_sync(%template2);
+
+=cut
