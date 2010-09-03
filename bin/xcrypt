@@ -9,8 +9,8 @@ use Getopt::Long;
 use builtin;
 
 my $xcrfile;
-if ($xcropt::options{cleanup}) {
-    $xcrfile = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cleanup.xcr');
+if ($xcropt::options{clean}) {
+    $xcrfile = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'clean.xcr');
 } else {
     $xcrfile = shift @ARGV;
 }
