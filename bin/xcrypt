@@ -8,12 +8,7 @@ use File::Basename;
 use Getopt::Long;
 use builtin;
 
-my $xcrfile;
-if ($xcropt::options{clean}) {
-    $xcrfile = File::Spec->catfile($ENV{XCRYPT}, 'lib', 'clean.xcr');
-} else {
-    $xcrfile = shift @ARGV;
-}
+my $xcrfile = shift @ARGV;
 
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     die "The first argument should be an Xcrypt script.\n";
@@ -55,7 +50,3 @@ close(USER);
 chmod 0755, $xcrplfile or die "Can't chmod $xcrplfile\n";
 my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
 unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
-
-if ($xcropt::options{clean}) {
-    unlink $xcrplfile;
-}

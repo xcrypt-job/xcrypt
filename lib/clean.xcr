@@ -1,5 +1,7 @@
 use base qw(core);
 
+#print $xcropt::options{inventory_path} , "\n";
+=comment
 my @postfixes = ('after_in_job.pl',
 		 'before_in_job.pl',
 		 'invwrite.log',
@@ -9,11 +11,13 @@ my @postfixes = ('after_in_job.pl',
 my @tmp = &jobsched::get_last_ids();
 foreach my $file (@tmp) {
     foreach my $postfix (@postfixes) {
+#    print "$file" . '_' . "$postfix\n";
 	if (-e "$file" . '_' . "$postfix") {
 	    unlink "$file" . '_' . "$postfix";
 	}
     }
 }
+=cut
 
 my $count = 0;
 while (-e "$xcropt::options{inventory_path}.$count") {

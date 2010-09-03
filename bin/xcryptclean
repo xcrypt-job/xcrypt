@@ -1,0 +1,2 @@
+#!/bin/sh
+xcrypt ${XCRYPT}/lib/clean.xcr
