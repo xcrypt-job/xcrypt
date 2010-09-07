@@ -14,7 +14,9 @@ use base qw(core);
 );
 
 my @jobs = &prepare(%template1);
+print &jobsched::get_job_status($jobs[0]), "\n";
 &submit(@jobs);
+print &jobsched::get_job_status($jobs[0]), "\n";
 &sync(@jobs);
 
 
