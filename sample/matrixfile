@@ -1,0 +1,626 @@
+# ===========================================================================
+# 記述ルール
+# ===========================================================================
+#   ○○と同時に指定する必要がります                    -a,&(-b)
+#   ○○と同時に指定できません                          -a,-(-b)
+#   ○○および△△が指定された場合と等価です            -a,=(-b)
+#   ○○が有効な場合、本オプションは無効になります      -a,-(-b)
+#   ○○が有効な場合に意味があります                    -a,&(-b)
+#   ○○も同時に有効になります                          -a,+(-b)
+#   ○○を無効にします                                  -a,-(-b)
+#   ○○＝△△で指定した値は無効になります              -a,-(-b=*)
+#   -On以上が有効な場合、有効になります                 -On,+(-a) && -O1<-O2<-O3
+#   -On以上が有効な場合、意味があります                 -On,&(-a) && -O1<-O2<-O3
+#   デフォルトは○○です                                ,+(-a)
+#   -On以上が有効な場合のデフォルト値は○○です         -On,+(-a) && -O1<-O2<-O3
+#   ○○より後に指定していれば有効になります            -a,=>(-b)
+# ===========================================================================
+
+# 共有オプション（必要そうなもの）
+-O0<-O1<-O2<-O3
+,+(-O2)
+-g,+(-O0)
+
+# ===========================================================================
+# 以下、最適化オプションのマトリックス
+# ===========================================================================
+#
+# arraypad_const[=N] 1 ≦ N ≦ 2147483647
+#   1 次元目が明示上下限であり、かつその上下限式が定数式の配列に対してN 要素のパディングを
+#   行います。N が省略された場合、対象の配列ごとにコンパイラがパディングの量を決めます。パ
+#   ディングとは、配列の内部に隙間を作ることです。-Karraypad_expr=N オプションと同時には指定
+#   できません。
+-Karraypad_const,-(-Karraypad_expr=*)
+-Karraypad_const=*,-(-Karraypad_expr=*)
+
+# arraypad_expr=N 1 ≦ N ≦ 2147483647
+#   上下限式が定数式かどうかにかかわらず、1 次元目が明示上下限の配列に対してN 要素のパディ
+#  ングを行います。-Karraypad_const[=N] オプションと同時には指定できません。
+-Karraypad_expr=*,-(-Karraypad_const,-Karraypad_const=*)
+
+# array_merge
+#   本オプションは、-Karray_merge_local および-Karray_merge_common オプションが指定された場合
+#   と等価です。
+-Karray_merge,=(-Karray_merge_local,-Karray_merge_common)
+
+# array_merge_common[=name]
+#   共通ブロック内の複数配列をマージすることを指示します。-g または-H オプションが有効な場合
+#   は、-Karray_merge_common[=name] オプションを無効とします。
+#   name には、共通ブロック名を指定できます。
+#   name を省略した場合、すべての共通ブロック内の配列が対象となります。
+-g,-(-Karray_merge_common,-Karray_merge_common=*)
+-H,-(-Karray_merge_common,-Karray_merge_common=*)
+
+# array_merge_local
+#   ローカル配列の複数配列をマージすることを指示します。-g または-H オプションが有効な場合
+#   は、-Karray_merge_local オプションを無効とします。-Karray_merge_local_size=1000000 も同時に有
+#   効になります。
+-g,-(-Karray_merge_local)
+-H,-(-Karray_merge_local)
+-Karray_merge_local,+(-Karray_merge_local_size=1000000)
+
+# array_merge_local_size=N 2 ≦ N ≦ 2147483647
+#   マージ対象とするローカル配列の大きさが、N バイト以上であることを指示します。
+#   -Karray_merge_local オプションが有効な場合に意味があります。
+-Karray_merge_local_size=*,&(-Karray_merge_local)
+
+# { array_private | noarray_private }
+#   ループ内のプライベート化可能な配列に対して、プライベート化するかどうかを指示します。本
+#   オプションは、-Kparallel オプションが有効な場合に意味があります。デフォルトは、
+#   -Knoarray_private です。
+#   array_private
+#     ループ内のプライベート化可能な配列に対して、プライベート化を行います。
+#   noarray_private
+#     ループ内のプライベート化可能な配列に対して、プライベート化を行いません。
+,+(-Knoarray_private)
+-Karray_private,&(-Kparallel)
+
+# array_subscript
+#   4 次元以上の割付け配列および最終次元の要素が10 以下で、最終次元以外の要素が100 以上の4
+#   次元以上の配列に対して配列の次元移動を行うことを指示します。本オプションを指定する場合
+#   の注意事項については、“9.17　配列宣言の次元移動”を参照してください。-g または-H オプショ
+#   ンが有効な場合は、-Karray_subscript オプションを無効とします。
+#   -Karray_subscript_element=100,array_subscript_elementlast=10,array_subscript_rank=4 も同時に有効に
+#   なります。
+-Karray_subscript,-(-g,-H)
+-Karray_subscript,+(-Karray_subscript_element=100,-Karray_subscript_elementlast=10,-Karray_subscript_rank=4)
+
+# array_subscript_element=N 2 ≦ N ≦ 2147483647
+#   本オプションが指定された場合、配列の次元移動の対象となる配列の最終次元以外の要素数がN
+#   以上であることを指示します。本オプションは、-Karray_subscript オプションが有効な場合に意味
+#   があります。ただし、割付け配列では、本オプションの意味はありません。
+-Karray_subscript_element=*,&(-Karray_subscript)
+-Karray_subscript_element=*,&(-Karray_transform)
+
+# array_subscript_elementlast=N 2 ≦ N ≦ 2147483647
+#   本オプションが指定された場合、配列の次元移動の対象となる配列の最終次元の要素数がN 以下
+#   であることを指示します。本オプションは、-Karray_subscript オプションが有効な場合に意味があ
+#   ります。ただし、割付け配列では、本オプションの意味はありません。
+-Karray_subscript_elementlast=*,&(-Karray_subscript)
+-Karray_subscript_elementlast=*,&(-Karray_transform)
+
+# array_subscript_rank=N 2 ≦ N ≦ 30
+#   本オプションが指定された場合、配列の次元移動の対象となる配列の次元数がN 次元以上である
+#   ことを指示します。本オプションは、-Karray_subscript オプションが有効な場合に意味があります。
+-Karray_subscript_rank=*,&(-Karray_subscript)
+-Karray_subscript_rank=*,&(-Karray_transform)
+
+# array_subscript_variable='ary_nm(rank,rank[,rank...])' 1 ≦ rank ≦ 30
+#   'ary_nm(rank,rank[,rank...])' で指定した配列に対して配列の次元移動を行うことを指示します。配
+#   列変数名（次元位置, 次元位置,...）の形式で指定してください。次元位置には、移動させたい次元
+#   の位置を指定します。このとき、同じ次元位置を指定することはできません。本オプションは、
+#   -Karray_subscript オプションが有効な場合に意味があります。本オプションが有効な場合、
+#   -Karray_subscript_element=N,-Karray_subscript_elementlast=N,-Karray_subscript_rank=N で指定した値
+#   は無効になります。
+-Karray_subscript_variable=*,&(-Karray_subscript)
+-Karray_subscript_variable=*,&(-Karray_transform)
+-Karray_subscript_variable=*,-(-Karray_subscript_element=*,-Karray_subscript_elementlast=*,-Karray_subscript_rank=*)
+
+# array_transform
+#   本オプションは、-Karraypad_const、-Karray_merge および-Karray_subscript オプションが指定され
+#   た場合と等価です。
+-Karray_transform,=(-Karraypad_const,-Karray_merge,-Karray_subscript)
+
+# { auto | noauto }
+#   SAVE 属性をもつ変数および初期値をもつ変数を除く局所変数を、automatic 変数にするかどうか
+#   を指示します。automatic 変数は、手続の終了時に不定になります。デフォルトは、-Knoauto です。
+#   auto
+#     SAVE 属性をもつ変数および初期値をもつ変数を除く局所変数を、automatic 変数として扱い、ス
+#     タックに割り付けます。本オプションを指定する場合の注意事項については、“9.14　スタック割
+#     付けの影響”を参照してください。
+#   noauto
+#     SAVE 属性をもつ変数および初期値をもつ変数を除く局所変数を、automatic 変数にしません。
+,+(-Knoauto)
+
+# cmodel=kind kind : { small | medium }
+#   メモリモデルを指示します。kind には、small またはmedium が指定できます。-Kcmodel=medium
+#   オプションが有効な場合、-Kpic および-KPIC オプションを同時に指定することはできません。
+#   デフォルトは、-Kcmodel=medium です。
+#   Small メモリモデルを適用できることが確実であり、実行性能が要件の場合、翻訳時オプション
+#   -Kcmodel=small を指定して、Small メモリモデルを適用する事をお勧めします。
+#   small
+#     コードとデータ領域の合計が2GB 以内として扱います。
+#   medium
+#     コードだけ2GB とし、データの制限はなしとして扱います。
+,+(-Kcmodel=medium)
+-Kcmodel=medium,-(-Kpic,-KPIC)
+
+# { daz | nodaz }
+#   FPU（浮動小数点演算器）をDenormals-Are-Zeros mode で初期化するかどうかを指示します。高速
+#   な性能を得るために、計算前に非正規化数のソースオペランドをゼロにすることがあります。デ
+#   フォルトは -Knodaz です。
+#   daz
+#     FPU をDenormals-Are-Zeros mode で初期化します。
+#   nodaz
+#     FPU をDenormals-Are-Zeros mode で初期化しません。
+,+(-Knodaz)
+
+# { dynamic_iteration | nodynamic_iteration}
+#   多重ループにおいて、外側ループと内側ループの両方で並列化可能な場合、どちらのループで並
+#   列実行するかをスレッド並列数を意識して動的に選択するかどうかを指示します。デフォルトは
+#   -Knodynamic_iteration です。
+#   dynamic_iteration
+#     -Kparallel オプションと同時に指定した場合に有効です。多重ループにおいて、外側ループと内側
+#     ループの両方で並列化可能な場合、どちらのループで並列実行するかをスレッド並列数を意識し
+#     て動的に選択します。なお、対象となるループのネストレベルは２までです。
+#   nodynamic_iteration
+#     多重ループにおいて、外側ループと内側ループの両方で並列化可能な場合、どちらのループで並
+#     列実行するかをスレッド並列数を意識して動的に選択しません。
+,+(-Knodynamic_iteration)
+-Kdynamic_iteration,&(-Kparallel)
+
+# { eval | noeval }
+#   オブジェクトプログラムに対して演算評価方法を変更する最適化を行うかどうかを指示します。
+#   なお、この最適化を行うことで実行結果に副作用を生じることがあるため注意が必要です。デフォ
+#   ルトは、-Knoeval です。
+#   eval
+#     オブジェクトプログラムに対して演算評価方法を変更する最適化を行います。-O1 オプション以
+#     上が有効な場合に意味があります。-Kfsimple および-Kfp_relaxed オプションも同時に有効になり
+#     ます。-Kparallel オプションが有効な場合、-Kreduction オプションも有効になります。
+#   noeval
+#     オブジェクトプログラムに対して演算評価方法を変更する最適化を行いません。本オプションが
+#     指定された場合、-Knofp_relaxed,nofsimple,noreduction オプションも有効になります。
+,+(-Knoeval)
+-Keval,&(-O1)
+-Keval,+(-Kfsimple,-Kfp_relaxed)
+(-eval,-Kparallel),+(-Kreduction)
+# ？？？-Kparallel オプションが有効な場合、-Kreduction オプションも有効になります？？？
+-Knoeval,+(-Knofp_relaxed,-Knofsimple,-Knoreduction)
+
+# { fap | nofap }
+#   実数型、倍精度実数型、4 倍精度実数型、複素数型、倍精度複素数型および4 倍精度複素数型の
+#   変数に対し、値をレジスタに保持して最適化を行うかどうかを指示します。デフォルトは、
+#   -Knofap です。
+#   fap
+#     実数型、倍精度実数型、4 倍精度実数型、複素数型、倍精度複素数型および4 倍精度複素数型の
+#     変数に対し、値をレジスタで保持せず、参照されるごとに変数領域からロードして最適化を行い
+#     ます。これにより、変数の値をレジスタで保持して最適化を行った場合と比較して、発生する演
+#     算結果の精度相違は、少なくなります。-O1 オプション以上が有効な場合に意味があります。た
+#     だし、以下の注意が必要です。
+#       − 実行性能は、-Knofap オプションが有効な場合より低下します。
+#       − -Kfap オプション指定時の結果が、-O0 オプション指定時の演算結果と一致するとは限り
+#          ません。
+#   nofap
+#     実数型、倍精度実数型、4 倍精度実数型、複素数型、倍精度複素数型および4 倍精度複素数型の
+#     変数に対し、可能な限り値をレジスタで保持して最適化を行います。
+,+(-Knofap)
+-Kfap,&(-O1)
+
+# fast
+#   -Kfast オプションが有効な場合、翻訳しているマシン上で高速に実行させることを指示します。こ
+#   れは、-O3 -Komitfp,mfunc および-Keval オプションの指定に加え、-KSSE2、-KSSE3、-KSSE4、
+#   -Kprefetch および -Kcpu オプションを自動的に選択することを意味します。
+-Kfast,+(-O3,-Komitfp,-Kmfunc,-Keval,-KSSE2,-KSSE3,-KSSE4,-Kprefetch,-Kcpu)
+
+# { fp_relaxed | nofp_relaxed }
+#   浮動小数点除算、SQRT 関数について、高速な演算を行うかどうかを指示します。この最適化
+#   を行うことで、通常の演算に比べて、仮数部に1 から2 ビット程度の誤差が生じます。デフォル
+#   トは-Knofp_relaxed です。
+#   fp_relaxed
+#     浮動小数点除算、SQRT 関数について、高速な演算を行うことを指示します。-O1 オプション以上
+#     が有効な場合に意味があります。
+#   nofp_relaxed
+#     浮動小数点除算、SQRT 関数について、通常な演算を行うことを指示します。
+,+(-Knofp_relaxed)
+-Kfp_relaxed,&(-O1)
+
+# { fsimple | nofsimple }
+#   オブジェクトプログラムに対して浮動小数点演算の単純化を行うかどうかを指示します。たとえ
+#   ば、x*0 のような演算は、0 に単純化されます。デフォルトは、-Knofsimple です。この最適化に
+#   より、生成されるコードはIEEE 754 に準拠しなくなります。
+#   simple
+#     オブジェクトプログラムに対して浮動小数点演算の単純化を行います。-O1 オプション以上が有
+#     効な場合に意味があります。
+#   nofsimple
+#     オブジェクトプログラムに対して浮動小数点演算の単純化を行いません。
+,+(-Knofsimple)
+-Kfsimple,&(-O1)
+
+# { fuse | nofuse }
+#   隣接するループを融合するかどうかを指示します。本オプションは、-O2 オプション以上が有効
+#   な場合に意味があります。デフォルトは、-Knofuse です。
+#   fuse
+#     隣接するループを融合します。
+#   nofuse
+#     隣接するループを融合しません。
+,+(-Knofuse)
+-Kfuse,&(-O2)
+
+# independent=pgm_nm
+#   本オプションは、引数pgm_nm で指定された手続が並列化されたDO ループ内で引用されても、逐
+#   次実行のときと動作が変わらないことを指示します。これにより、手続引用のあるDO ループを
+#   自動並列化の対象にします。本オプションは、-Kparallel オプションが有効な場合に意味がありま
+#   す。手続 pgm_nm は、-Kthreadsafe オプションを指定して翻訳しなければなりません。また、
+#   -Kthreadsafe オプションが指定されていない場合、実行結果が保証されないことがあります。
+#   モジュール手続名を指定する場合は、モジュール手続名の前にモジュール名と区切り文字“.”を
+#   付けなければなりません。内部手続名を指定する場合は、内部手続名の前に親の手続名と区切り
+#   文字“.”を付けなければなりません。モジュール手続内の内部手続名については、モジュール名
+#   の指定も必要です。
+#     例：親手続名sub 内の内部手続名insub を指定
+#           % frt -Kparallel,independent=sub.insub a.f90
+#   本オプション使用上の注意事項については、最適化指示子INDEPENDENT と同じです。詳細につ
+#   いては、“12.2.3.3.2 並列処理の入れ子での注意”および“12.2.3.3.4 最適化制御行の使い方の注意”
+#   を参照してください。
+-Kindependent=*,&(-Kparallel)
+
+# instance=N 2 ≦ N ≦ 128
+#   -Kinstance=N オプションは、実行時のスレッド数を指定します。本オプションは-Kparallel オプ
+#   ションが有効な場合に意味があります。
+#   N の値が実行時のスレッド数と異なる場合、実行時に実行を打ち切ります。詳細については、
+#   “12.2.3.3.1　翻訳時オプション-Kparallel,instance=N 指定時の注意”を参照してください。
+-Kinstance=*,&(-Kparallel)
+
+# { loop | noloop }
+#   多重ループの構成変更の最適化を行うかどうかを指示します。本オプションは、-O2 オプション
+#   以上が有効な場合に意味があります。デフォルトは、-Kloop です。
+#   loop
+#     多重ループの構成変更の最適化を行います。
+#   noloop
+#     多重ループの構成変更の最適化を行いません。
+-O0,+(-Knoloop)
+-O2,+(-Kloop)
+-Kloop,&(-O2)
+
+# { mfunc[=level] | nomfunc } level={ 1 | 2 | 3 }
+#   組込み関数および演算をマルチ演算関数に変換する最適化を行うかどうかを指示します。なお、
+#   マルチ演算関数とは、1 回の呼出しで複数の引数に対する同種の組込み関数計算および演算を行
+#   うことにより、実行性能を向上させた関数です。ただし、アルゴリズムが異なることにより精度
+#   の違いを生じる場合があります。本オプションは、-O2 オプション以上の最適化レベルが有効な
+#   場合に意味があります。level には、1、2 および3 が指定できます。level の省略値は1 です。デ
+#   フォルトは、-Knomfunc です。
+#   mfunc=1
+#     引数の多重度を2 または4 としたマルチ演算関数を使用します。
+#   mfunc=2
+#     -Kmfunc=1 の機能に加え、多重度を8 以上としたマルチ演算関数も使用します。本機能は、スタッ
+#     ク領域を多く必要とします。
+#   mfunc=3
+#     -Kmfunc=2 の機能に加え、IF 構文などを含むループに対しても多重度を8 以上としたマルチ演算
+#     関数を使用します。IF 構文の真率が低い場合、-Kmfunc=1 または-Kmfunc=2 より実行性能が低下
+#     することがあるので注意が必要です。また、この最適化を行うことで実行時異常終了となる副作
+#     用を生じることがあるため注意が必要です。副作用については“9.19.2 翻訳時オプション
+#     -Kmfunc=3 の影響”を参照してください。本機能は、スタック領域を多く必要とします。
+#   nomfunc
+#     組込み関数および演算をマルチ演算関数に変換する最適化を行いません。
+,+(-Knomfunc)
+-Kmfunc,=(-Kmfunc=1)
+-Kmfunc,&(-O2)
+-Kmfunc=*,&(-O2)
+
+# { ns | nons }
+#   FPU をnon-standard floating-point mode で初期化するかどうかを指示します。高速な性能を得るた
+#   めに、アンダフローの数値をゼロにすることがあります。デフォルトは、-Kns です。
+#   ns
+#     FPU をnon-standard floating-point mode で初期化します。
+#   nons
+#     FPU をnon-standard floating-point mode で初期化しません。
+,+(-Kns)
+
+# { ntst | nontst }
+#   non-temporal store 命令( キャッシュを介さないstore 命令) を使用したオブジェクトを生成するか
+#   どうかを指示します。本オプションは、-Kpacked オプションが有効な場合に意味があります。デ
+#   フォルトは、-Knontst です。
+#   ntst
+#     non-temporal store 命令を使用したオブジェクトを生成します。
+#   nontst
+#     non-temporal store 命令を使用したオブジェクトを生成しません。
+,+(-Knontst)
+-Kntst,&(-Kpacked)
+
+# { ocl | noocl }
+#   最適化制御行を有効にするかどうかを指示します。最適化制御行については、“9.12　最適化制御
+#   行（OCL）の利用”を参照してください。デフォルトは-Knoocl です。
+#   ocl
+#     最適化制御行を有効にします。-O1 オプション以上が有効な場合に意味があります。
+#   noocl
+#     最適化制御行を無効にします。
+,+(-Knoocl)
+-Kocl,&(-O1)
+
+# { omitfp | noomitfp }
+#   手続呼出しにおけるフレームポインタレジスタを保証するかどうかを指示します。デフォルトは、
+#   -Knoomitfp です。
+#   omitfp
+#     手続呼出しにおけるフレームポインタレジスタを保証しない最適化を行うことを指定します。本
+#     オプションを有効にすると、トレースバック出力情報が保証されません。-O1 オプション以上が
+#     有効な場合に意味があります。
+#   noomitfp
+#     手続呼出しにおけるフレームポインタレジスタを保証することを指定します。
+,+(-Knoomitfp)
+-Komitfp,&(-O1)
+
+# { OMP | NOOMP }
+#   OpenMP Fortran 仕様のディレクティブを有効にするかどうかを指示します。
+#   本機能については“12.3　OpenMP 仕様による並列化”を参照してください。デフォルトは、
+#   -KNOOMP です。
+#   OMP
+#     OpenMP Fortran 仕様のディレクティブを有効にします。-KOMP オプションが有効な場合、
+#     -Kthreadsafe、-Kauto および-D_OPENMP=200505 オプションも有効にします。ただし、主プログ
+#     ラムの局所変数は、-Kauto オプションが有効であってもスタックには割り付けません。
+#     -Knoauto、-Knothreadsafe および-Ar オプションは、-KOMP オプションより後に指定すれば有効に
+#     なります。-Knoauto または-Knothreadsafe オプションを-KOMP オプションと同時に指定する場合
+#     には、注意が必要です（“12.3　OpenMP 仕様による並列化”を参照してください）。
+#     ファイル名の並びにオブジェクトプログラムの名前しか現れない場合（すなわち結合編集のみ行
+#     う場合）でも、-KOMP オプションを指定して翻訳されたオブジェクトプログラムが含まれる場合
+#     は、本オプションを指定する必要があります。
+#   NOOMP
+#     OpenMP Fortran 仕様のディレクティブを注釈として扱います。
+,+(-KNOOMP)
+-KOMP,+(-Kthreadsafe,-Kauto,-D_OPENMP=200505)
+-KOMP,=>(-Knoauto)
+-KOMP,=>(-Knothreadsafe)
+-KOMP,=>(-Ar)
+
+# { packed | nopacked }
+#   パックド命令を利用したオブジェクトを生成するかどうかを指示します。デフォルトは、-Kpacked
+#   です。
+#   packed
+#     パックド命令を利用したオブジェクトを生成することを指示します。-02 オプション以上の場合に
+#     有効となります。
+#   nopacked
+#     パックド命令を利用したオブジェクトを生成しないことを指示します。
+,+(-Knopacked)
+-O2,+(-Kpacked)
+-Kpacked,&(-O2)
+
+# { parallel | noparallel }
+#   自動並列化を行うかどうかを指示します。デフォルトは、-Knoparallel です。
+#   parallel
+#     自動並列化を行います。-O2 -Kfuse オプションが誘導されます。-O0 または-O1 オプションを同時
+#     に指定した場合、指定の順序に関係なく-O2 オプションに変更されます。-O3 オプションを同時
+#     に指定した場合、-O3 オプションが有効になります。-g、-H または-Eg オプションが有効な場合
+#     は、-Kparallel オプションを無効とします。
+#     本機能については“12.2　自動並列化”を参照してください。
+#     ファイル名の並びにオブジェクトプログラムの名前しか現れない場合（すなわち結合編集のみ行
+#     う場合）でも、-Kparallel オプションを指定して翻訳されたオブジェクトプログラムが含まれる場
+#     合には、本オプションを指定する必要があります。
+#   noparallel
+#     自動並列化しないことを指示します。
+,+(-Knoparallel)
+-Kparallel,+(-O2,-Kfuse)
+-g,-(-Kparallel)
+-H,-(-Kparallel)
+-Eg,-(-Kparallel)
+
+# parallel_iteration=N 1 ≦ N ≦ 2147483647
+#   翻訳時に繰返し回数がN以上と判明しているループのみを並列化の対象とすることを指示します。
+#   本オプションは、-Kparallel オプションが有効な場合に意味があります。
+-Kparallel_iteration=*,&(-Kparallel)
+
+# parallel_strong
+#   並列化効果の見積もりを行わず、自動並列化可能と解析されたループをすべて並列化させること
+#   を指示します。-Keval および-Kpreex オプションも同時に有効になります。
+#   上記を除き、機能や注意事項は、-Kparallel オプションと同じです。
+-Kparallel_strong,+(-Keval,-Kpreex)
+-Kparallel_strong,&(-Kparallel)
+
+# parallel_weak
+#   並列化効果が高いと見込まれるループだけを自動並列化させることを指示します。
+#   上記を除き、機能や注意事項は、-Kparallel オプションと同じです。
+-Kparallel_weak,&(-Kparallel)
+
+# { pic | PIC }
+#   -Kpic オプションまたは-KPIC オプションが有効な場合、位置独立コード（PIC）を生成します。
+#   本オプションは、-Kcmodel=small と同時に指定したときに有効となります。-Kcmodel=medium が
+#   有効な場合、-Kpic および-KPIC オプションを同時に指定することはできません。-Kpic オプショ
+#   ンは-KPIC オプションと等価です。
+-Kpic,=(-KPIC)
+-Kpic,&(-Kcmodel=small)
+-KPIC,&(-Kcmodel=small)
+-Kcmodel=medium,-(-Kpic,-KPIC)
+
+# { preex | nopreex }
+#   オブジェクトプログラムに対して不変式の先行評価の最適化を行うかどうかを指示します。なお、
+#   この最適化を行うことで実行結果に副作用を生じることがあるため注意が必要です。利用者は、
+#   翻訳時の診断メッセージの出力により、この最適化が行われたかどうかを知ることができます。
+#   デフォルトは、-Knopreex です。
+#   preex
+#     オブジェクトプログラムに対して不変式の先行評価の最適化を行います。-O1 オプション以上が
+#     有効な場合に意味があります。
+#   nopreex
+#     オブジェクトプログラムに対して不変式の先行評価の最適化を行いません。
+,+(-Knopreex)
+-Kpreex,&(-O1)
+
+# { prefetch | noprefetch }
+#   prefetch 命令を使用したオブジェクトを生成するかどうかを指示します。デフォルトは、
+#   -Knoprefetch です。
+#   prefetch
+#     prefetch 命令を使用したオブジェクトを作成します。-Kprefetch_sequential,prefetch_stride が有効な
+#     場合と等価です。
+#   noprefetch
+#     prefetch 命令を使用したオブジェクトを生成しません。
+,+(-Knoprefetch)
+-Kprefetch,=(-Kprefetch_sequential,-Kprefetch_stride)
+
+# { prefetch_conditional | prefetch_noconditional }
+#   if 構文やcase 構文に含まれるブロックの中で使用される配列データに対してprefetch 命令を生成
+#   するかどうかを指示します。本オプションは、-Kprefetch_sequential、-Kprefetch_stride または
+#   -Kprefetch_indirect が有効な場合に意味があります。デフォルトは、-Kprefetch_noconditional です。
+#   prefetch_conditional
+#     if 構文やcase 構文に含まれるブロックの中で使用される配列データに対して、prefetch 命令を使用
+#     したオブジェクトを生成します。
+#   prefetch_noconditional
+#     if 構文やcase 構文に含まれるブロックの中で使用される配列データに対して、prefetch 命令を使用
+#     したオブジェクトを生成しません。
+,+(-Kprefetch_noconditional)
+-Kprefetch_conditional,&(-Kprefetch_sequential)
+-Kprefetch_conditional,&(-Kprefetch_stride)
+-Kprefetch_conditional,&(-Kprefetch_indirect)
+
+# { prefetch_indirect | prefetch_noindirect }
+#   ループ内で使用される間接的にアクセス（リストアクセス）される配列データに対して、prefetch
+#   命令を使用したオブジェクトを生成するかどうかを指示します。本オプションは、-O1 オプショ
+#   ン以上が有効な場合に意味があります。デフォルトは、-Kprefetch_noindirect です。
+#   prefetch_indirect
+#     ループ内で使用される間接的にアクセス（リストアクセス）される配列データに対して、prefetch
+#     命令を使用したオブジェクトを生成します。
+#   prefetch_noindirect
+#     ループ内で使用される間接的にアクセス（リストアクセス）される配列データに対して、prefetch
+#     命令を使用したオブジェクトを生成しません。
+,+(-Kprefetch_noindirect)
+-Kprefetch_indirect,&(-O1)
+
+# prefetch_iteration=N 1 ≦ N ≦ 2147483647
+#   prefetch 命令を生成する際、ループのN 回転後に引用されるデータを対象とすることを指示しま
+#   す。本オプションは、-Kprefetch_sequential、-Kprefetch_stride または-Kprefetch_indirect が有効な場
+#   合に意味があります。-Kprefetch_line=N オプションと同時には指定できません。
+-Kprefetch_iteration=*,&(-Kprefetch_sequential,-Kprefetch_stride,-Kprefetch_indirect)
+-Kprefetch_iteration=*,-(-Kprefetch_line=*)
+
+# prefetch_line=N 1 ≦ N ≦ 100
+#   prefetch 命令を生成する際、N キャッシュライン先に該当するデータをプリフェッチの対象とする
+#   ことを指示します。本オプションは、-Kprefetch_sequential、-Kprefetch_stride または
+#   -Kprefetch_indirect が有効な場合に意味があります。-Kprefetch_iteration=N オプションと同時には
+#   指定できません。
+-Kprefetch_line=*,&(-Kprefetch_sequential,-Kprefetch_stride,-Kprefetch_indirect)
+-Kprefetch_line=*,-(-Kprefetch_iteration=*)
+
+# { prefetch_sequential | prefetch_nosequential }
+#   ループ内で使用される連続的にアクセスされる配列データに対して、prefetch 命令を使用したオブ
+#   ジェクトを生成するかどうかを指示します。本オプションは、-O1 オプション以上が有効な場合
+#   に意味があります。デフォルトは、-Kprefetch_nosequential です。
+#   prefetch_sequential
+#     ループ内で使用される連続的にアクセスされる配列データに対して、prefetch 命令を使用したオブ
+#     ジェクトを生成します。
+#   prefetch_nosequential
+#     ループ内で使用される連続的にアクセスされる配列データに対して、prefetch 命令を使用したオブ
+#     ジェクトを生成しません。
+,+(-Kprefetch_nosequential)
+-K-Kprefetch_sequential,&(-O1)
+
+# { prefetch_stride | prefetch_nostride }
+#   ループ内で使用されるキャッシュのラインサイズよりも大きなストライドでアクセスされる配列
+#   データに対して、prefetch 命令を使用したオブジェクトを生成するかどうかを指示します。本オプ
+#   ションは、-O1 オプション以上が有効な場合に意味があります。デフォルトは、-Kprefetch_nostride
+#   です。
+#   prefetch_stride
+#     ループ内で使用されるキャッシュのラインサイズよりも大きなストライドでアクセスされる配列
+#     データに対して、prefetch 命令を使用したオブジェクトを生成します。プリフェッチするアドレス
+#     が翻訳時に確定しないループを含みます。
+#   prefetch_nostride
+#     ループ内で使用されるキャッシュのラインサイズよりも大きなストライドでアクセスされる配列
+#     データに対して、prefetch 命令を使用したオブジェクトを生成しません。
+,+(-Kprefetch_nostride)
+-Kprefetch_stride,&(-O1)
+
+# { pureomp | nopureomp }
+#   OpenMP Fortran 仕様のディレクティブによる指示に必ずしも忠実に従わないような最適化を許す
+#   かどうかを指示します。本オプションは、-KOMP オプションが有効な場合に意味があります。本
+#   機能については“12.3　OpenMP 仕様による並列化”を参照してください。デフォルトは、
+#   -Knopureomp です。
+#   pureomp
+#     -Kpureomp オプションは、OpenMP Fortran 仕様のディレクティブに忠実に従います。
+#   nopureomp
+#     -Knopureomp オプションは、OpenMP Fortran 仕様のディレクティブを緩やかに解釈してオブジェ
+#     クトプログラムの効率化を図ります。
+,+(-Knopureomp)
+-Kpureomp,&(-KOMP)
+
+# { reduction | noreduction }
+#   reduction の最適化を行うかどうかを指示します。本オプションは、-Kparallel オプションが有効な
+#   場合に意味があります。デフォルトは、-Knoreduction です。本機能については“第12 章　並列機
+#   能”および“12.2.3.1.8　リダクションによるループスライス”を参照してください。
+#   reduction
+#     reduction の最適化を行います。
+#   noreduction
+#     reduction の最適化を行いません。
+,+(-Knoreduction)
+-Kreduction,&(-Kparallel)
+
+# { SSE2 | SSE3 | SSE4 }
+#   SSE2、SSE3またはSSE4命令を使用した最適化を行うかどうかを指示します。デフォルトは-KSSE2
+#   です。
+#   SSE2
+#     SSE2 命令を使用した最適化を行うことを指示します。-Kns オプションも同時に有効になります。
+#   SSE3
+#     SSE3 命令を使用した最適化を行うことを指示します。-Kns オプションも同時に有効になります。
+#   SSE4
+#     SSE4 命令を使用した最適化を行うことを指示します。-Kns オプションも同時に有効になります。
+,+(-KSSE2)
+-KSSE2,+(-Kns)
+-KSSE3,+(-Kns)
+-KSSE4,+(-Kns)
+
+# { threadheap[=size] | nothreadheap }
+#   局所配列をヒープに割り付けるか、スタックに割り付けるかどうかを指示します。本機能につい
+#   ては“第12 章　並列機能”を参照してください。デフォルトは、-Knothreadheap です。
+#   threadheap[=size] 1 ≦ size ≦ 2147483647
+#     size バイト以上の局所配列をヒープに割り付けます。size の省略値は4096 です。本オプションは、
+#     -Kthreadsafe オプションと同時に指定する必要があります。-Nvarheap を同時に指定する場合は、
+#     size に同じ値を指定しなければなりません。異なる値を指定した場合は、小さい方の値が有効に
+#     なります。
+#   nothreadheap
+#     局所配列をスタックに割り付けます。本オプションは、-Kthreadsafe オプションと同時に指定する
+#     必要があります。
+,+(-Knothreadheap)
+-Kthreadheap,=(-Kthreadheap=4096)
+-Kthreadheap,&(-Kthreadsafe)
+
+# { threadprivate | nothreadprivate }
+#   すべての名前付き共通ブロックをthreadprivate とするかどうかを指示します。本オプションは、
+#   -KOMP オプションが有効な場合に意味があります。本機能については“12.3　OpenMP 仕様によ
+#   る並列化”を参照してください。デフォルトは、-Knothreadprivate です。
+#   threadprivate
+#     すべての名前付き共通ブロックをthreadprivate とします。
+#   nothreadprivate
+#     threadprivate として指定された名前付き共通ブロック以外は、通常の共通ブロックとします。
+,+(-Knothreadprivate)
+-Kthreadprivate,&(-KOMP)
+
+# { threadsafe | nothreadsafe }
+#   マルチスレッドセーフなオブジェクトプログラムを生成するかどうかを指示します。デフォルト
+#   は、-Knothreadsafe です。
+#   threadsafe
+#     マルチスレッドセーフなオブジェクトプログラムを生成します。
+#   nothreadsafe
+#     マルチスレッドセーフでないオブジェクトプログラムを生成します。
+,+(-Knothreadsafe)
+
+# { tiling[=N] | notiling } 2 ≦ N ≦ 9999
+#   ループタイリングの最適化を行うかどうかを指示します。N には、タイルの大きさを指定します。
+#   N の指定を省略した場合、コンパイラが自動的に最良な値を決定します。デフォルトは、-Ktiling
+#   です。
+#   tiling[=N]
+#     ループタイリングの最適化を行います。-O2 オプション以上の場合に有効となります。
+#   notiling
+#     ループタイリングの最適化を行いません。
+-O2,+(-Ktiling)
+-Ktiling,&(-O2)
+
+# { unroll[=N] | nounroll } 2 ≦ N ≦ 100
+#   ループアンローリングの最適化を行うことを指示します。N にはループ展開数の上限を指定しま
+#   す。N の指定を省略した場合、コンパイラが自動的に最良な値を決定します。-O0 または-O1 オ
+#   プションが有効な場合のデフォルトは-Knounroll、-O2 オプション以上が有効な場合のデフォルト
+#   は-Kunroll です。
+#   unroll[=N]
+#     ループアンローリングの最適化を行います。-O1 オプション以上が有効な場合に意味があります。
+#   nounroll
+#     ループアンローリングの最適化を行いません。
+-O0,+(-Knounroll)
+-O2,+(-Kunroll)
+-Kunroll,&(-O1)
+
+# vppocl
+#   最適化指示子NOVREC を最適化指示子NORECURRENCE と同等に扱うことを指示します。本オ
+#   プションは、-Kocl オプションが有効な場合に意味があります。
+-Kvppocl,&(-Kocl)

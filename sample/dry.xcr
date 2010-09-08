@@ -1,0 +1,9 @@
+use base qw(dry core);
+
+%template = (
+    'id'  => 'job6',
+    'exe' => 'bin/fib 40',
+    'dry' => 1
+);
+
+&prepare_submit_sync(%template);
