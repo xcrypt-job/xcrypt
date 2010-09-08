@@ -1,0 +1,22 @@
+use base qw(limit cpoption_searcher sandbox core);
+
+&limit::initialize(10);
+&cpoption_searcher::initialize(
+            'compile_cmd'  => "frt",
+            'output_file'  => "outputfile",
+            'extraction_cond'  => "3",
+            'out_list'     => "10000",
+                 );
+
+%template = (
+    'id' => 'job1',
+    'compile0' => './himenoBMT98s_src.f',
+    'exe' => './himenoBMT98s_src',
+    'arg0' => '30',
+    'arg1' => '> out',
+    'arg1@' => '> out',
+    'linkedfile0' => './source/himenoBMT98s_src.f',
+    'linkedfile1' => './source/param.h',
+);
+
+&cpoption_searcher::cpoption_searcher(%template);
