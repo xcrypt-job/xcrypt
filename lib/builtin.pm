@@ -519,13 +519,13 @@ sub do_initialized {
         my $members = "$k" . $user::expander;
 
         if ( exists($job{"$members"}) ) {
+	    @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
 		@_ = @range;
-foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
 		$job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
+#foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
                 $job{"$k"} = &{$job{"$members"}}(@range);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
