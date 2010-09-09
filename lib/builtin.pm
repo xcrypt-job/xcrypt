@@ -10,7 +10,7 @@ prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 );
 
-use strict;
+#use strict;
 use NEXT;
 use Coro;
 use Coro::Signal;
@@ -229,20 +229,6 @@ sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 =comment
-my $current_directory=Cwd::getcwd();
-my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $time_running : shared = undef;
-my $time_done_now = undef;
-sub get_elapsed_time {
-    my $inventoryfile = File::Spec->catfile ($inventory_path, "$_[0]");
-    $time_done_now = time();
-    &update_running_and_done_now("$inventoryfile");
-    if (defined $time_running) {
-        my $elapsed = $time_done_now - $time_running;
-        return $elapsed;
-    }
-}
-
 sub check_and_alert_elapsed {
     my @job_ids = &jobsched::get_all_job_ids();
 
@@ -275,18 +261,6 @@ sub check_and_alert_elapsed {
     }
 }
 
-sub update_running_and_done_now {
-    open( INV, "$_[0]" ) or die "$!";
-    while (<INV>) {
-        if ($_ =~ /^time_running\:\s*([0-9]*)/) {
-            $time_running = $1;
-        }
-        if ($_ =~ /^time_done\:\s*([0-9]*)/) {
-            $time_done_now = $1;
-        }
-    }
-    close( INV );
-}
 =cut
 
 my $default_period = 10;
@@ -548,8 +522,10 @@ sub do_initialized {
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
 		@_ = @range;
+foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
 		$job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
+foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
                 $job{"$k"} = &{$job{"$members"}}(@range);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
