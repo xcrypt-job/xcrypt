@@ -497,12 +497,14 @@ sub do_initialized {
     my %job = %{$_[0]};
     shift;
     my @range = @_;
-    $job{'VALUES'} = \@range;
+    $job{'VALUE'} = \@range;
     my $tmp = 0;
+=comment
     foreach (@range) {
 	$job{"VALUE$tmp"} = $_;
 	$tmp++;
     }
+=cut
     unless ( $user::separator_nocheck) {
         unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
             die "Can't support $user::separator as \$separator.\n";
@@ -519,7 +521,7 @@ sub do_initialized {
         my $members = "$k" . $user::expander;
 
         if ( exists($job{"$members"}) ) {
-	    @user::VALUE = @range;
+	    local @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
 		@_ = @range;
@@ -622,7 +624,7 @@ sub expand_and_make {
             unless (($key =~ /\ARANGE[0-9]+\Z/)
 #		    || ($key =~ /\ARANGE[0-9]+:[a-zA-Z_0-9]+\Z/)
                     || ($key =~ /\ARANGES\Z/)
-                    || ($key =~ /\AVALUES\Z/))
+                    || ($key =~ /\AVALUE\Z/))
             {
 		print $key, "\n";
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
@@ -845,10 +847,10 @@ sub submit {
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
             }
-            $self->EVERY::initially(@{$self->{VALUES}});
+            $self->EVERY::initially(@{$self->{VALUE}});
             ## before()
             if (check_status_for_before ($self)) {
-                $self->EVERY::before(@{$self->{VALUES}});
+                $self->EVERY::before(@{$self->{VALUE}});
             }
             ## start()
             if (check_status_for_start ($self)) {
@@ -880,9 +882,9 @@ sub submit {
 
             ## after()
             if (check_status_for_after ($self)) {
-                $self->EVERY::LAST::after(@{$self->{VALUES}});
+                $self->EVERY::LAST::after(@{$self->{VALUE}});
             }
-            $self->EVERY::LAST::finally(@{$self->{VALUES}});
+            $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {
                 &jobsched::set_job_finished($self);
             }

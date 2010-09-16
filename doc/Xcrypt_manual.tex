@@ -121,8 +121,8 @@ Xcrypt's templates are implemented as Perl's hashes.  For example,
 \begin{boxnote}
 \begin{alltt}
 %template = (
- 'id@' => sub \{ "\textit{myjob}$_[0]"; \},
- 'exe@' => sub \{ "./\textit{myexe} $_[0]"; \},
+ 'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
+ 'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
  'RANGE0' => [0,1]
 );
 \end{alltt}
@@ -157,8 +157,8 @@ use base qw(limit core);
 $separator = '-';
 
 %template = (
- 'id@' => sub \{ "\textit{myjob}$_[0]"; \},
- 'exe@' => sub \{ "./\textit{myexe} $_[0]"; \},
+ 'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
+ 'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
  'RANGE0' => [0,1]
 );
 
@@ -428,6 +428,10 @@ The following is a sample script:
 where \texttt{strategy1}, \texttt{strategy2}, and
 \texttt{strategy3} are static functions.
 
+\section{\texttt{elapsed\_time}}
+
+
+
 \chapter{Template}\label{chapjobdefhash}
 
 In this chapter, we introduce keys and values available in templates
@@ -510,7 +514,7 @@ Its value is an option of a job scheduler.
 Its values' jobs are generated after the job is done.
 \fi
 
-\chapter{Built-in Function}\label{chapfun}
+\chapter{Function}\label{chapfun}
 
 In this chapter, we introduce built-in functions.
 
@@ -539,8 +543,8 @@ prepare(%template);
 
 \begin{boxnote}
 \begin{alltt}
-@jobs = prepare('id@' => sub \{ "\textit{myjob}$_[0]"; \},
-                'exe@' => sub \{ "./\textit{myexe} $_[0]"; \},
+@jobs = prepare('id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
+                'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
                 'RANGE0' => [0,1]);
 \end{alltt}
 \end{boxnote}
@@ -560,8 +564,8 @@ Declarative description is also available as follows,
 \begin{boxnote}
 \begin{alltt}
 %mytemplate = (
-    'id@' => sub \{ "\textit{myjob}$_[0]"; \},
-    'exe@' => sub \{ "./\textit{myexe} $_[0]"; \},
+    'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
+    'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
     'RANGE0' => [0,1]
 );
 
@@ -578,8 +582,8 @@ For example,
 \begin{boxnote}
 \begin{alltt}
 %mytemplate = (
-    'id@' => sub \{ "\textit{myjob}$_[0]_$_[1]"; \},
-    'exe@' => sub \{ "./\textit{myexe} $_[0] $_[1]"; \},
+    'id@' => sub \{ "\textit{myjob}$VALUE[0]_$VALUE[1]"; \},
+    'exe@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
     'RANGE0' => [0,1],
     'RANGE1' => [2,4]
 );
@@ -978,7 +982,7 @@ This function is an abbreviation of \texttt{prepare\_submit} and
 \begin{alltt}
 %myjob = (
   'id' => '\textit{myjob}',
-  'exe' => sub \{ "\textit{./myexe} $_[0] 100 \textit{myoutput} $_[0]"; \},
+  'exe' => sub \{ "\textit{./myexe} $VALUE[0] 100 \textit{myoutput} $VALUE[0]"; \},
   'RANGE0' => [0,1]
 );
 \end{alltt}
@@ -1002,7 +1006,7 @@ This function is an abbreviation of \texttt{prepare\_submit} and
 \begin{alltt}
 %myjob = (
   'id' => '\textit{myjob}',
-  'exe' => sub \{ "\textit{./myexe} $_[0] $_[1] \textit{myoutput} $_[0]_$_[1]"; \},
+  'exe' => sub \{ "\textit{./myexe} $VALUE[0] $VALUE[1] \textit{myoutput} $VALUE[0]_$VALUE[1]"; \},
   'RANGE0' => [0,1],
   'RANGE1' => [100,101],
 );
