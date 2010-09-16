@@ -4,7 +4,7 @@ use strict;
 use jobsched;
 use builtin;
 
-&add_key('max_time');
+&add_key('kill_at_time');
 
 sub new {
     my $class = shift;
@@ -19,7 +19,7 @@ my $cycle = 5;
 sub start {
     my $self = shift;
 
-    if (defined $self->{max_time}) {
+    if (defined $self->{kill_at_time}) {
 	Coro::async {
 	    &jobsched::wait_job_running ($self);
 	    $time_init = time();
@@ -30,7 +30,7 @@ sub start {
 		$time_now = time();
 		my $elapsed = $time_now - $time_init;
 		print $elapsed, "\n";
-		if ($self->{max_time} < $elapsed) {
+		if ($self->{kill_at_time} < $elapsed) {
 		    $self->invalidate();
 		    $stat = 'done';
 		}

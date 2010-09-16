@@ -5,7 +5,7 @@ use base qw (elapsed_time core);
     'exe0' => 'bin/fib 44 > out_44',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'max_time@' => sub { $_[0] },
+    'kill_at_time@' => sub { $_[0] },
     'RANGE0' => [3,7,20],
 );
 
