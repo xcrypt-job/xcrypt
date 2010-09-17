@@ -521,6 +521,7 @@ sub do_initialized {
         my $members = "$k" . $user::expander;
 
         if ( exists($job{"$members"}) ) {
+	    local $user::SELF = \%job;
 	    local @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
