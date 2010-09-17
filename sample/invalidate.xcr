@@ -1,12 +1,12 @@
-use base qw (elapsed_time core);
+use base qw (invalidate core);
 
 %template = (
     'id@' => sub { "job6_$_[0]" },
     'exe0' => 'bin/fib 44 > out_44',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'kill_at_time@' => sub { $_[0] },
+    'allotted_time@' => sub { $_[0] },
     'RANGE0' => [3,7,20],
 );
 
-@jobs=&prepare_submit_sync (%template);
+&prepare_submit_sync(%template);
