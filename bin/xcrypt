@@ -26,15 +26,12 @@ print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
 print TMP 'use Coro;' . "\n";
 print TMP 'use jobsched;' . "\n";
-print TMP 'our $expander = \'@\';' . "\n";
-print TMP 'our $separator_nocheck = \'0\';' . "\n";
-print TMP 'our $separator = \'_\';' . "\n";
-print TMP 'our @VALUE = \'_\';' . "\n";
+print TMP 'our @VALUE = ();' . "\n";
 #print TMP 'sub before {local $self = shift; foreach my $i (0..$#_) { my $tmp = "RANGE$i"; eval "our \$$tmp = \$_[$i];"; }; if ($self->{before}) {&{$self->{before}}(@{$self->{VALUE}})};}' . "\n";
-print TMP 'sub before {local ($SELF, @VALUE) = @_; if ($SELF->{before}) {&{$SELF->{before}}($SELF, @VALUE)};}' . "\n";
+print TMP 'sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}' . "\n";
 print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 #print TMP 'sub after  {local $self = shift; foreach my $i (0..$#_) { my $tmp = "RANGE$i"; eval "our \$$tmp = \$_[$i];"; }; if ($self->{after} ) {&{$self->{after}}(@{$self->{VALUE}})};}' . "\n";
-print TMP 'sub after  {local ($SELF, @VALUE) = @_; if ($SELF->{after} ) {&{$SELF->{after}}($SELF, @VALUE)};}' . "\n";
+print TMP 'sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}' . "\n";
 
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
 print TMP '&jobsched::read_log();' . "\n";

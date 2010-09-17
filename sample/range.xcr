@@ -10,7 +10,7 @@ use base qw(core);
 #    'RANGES' => [[20..22],[0],[0,3]],
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'before' => sub { print "$SELF->{id}\n";    print "$VALUE[0]\n"; },
+    'before' => sub { print "$_[0]->{id}\n";    print "$VALUE[0]\n"; },
     'after'  => sub { my $self = shift;
 		      print "$self->{exe0}\n";  print "$VALUE[2]\n"; }
 );
