@@ -524,11 +524,11 @@ sub do_initialized {
 	    local @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
-		@_ = @range;
+		@_ = (\%job, @range);
 		$job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
 #foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
-                $job{"$k"} = &{$job{"$members"}}(@range);
+                $job{"$k"} = &{$job{"$members"}}(\%job, @range);
             } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
                 my @tmp = @{$job{"$members"}};
                 $job{"$k"} = $tmp[$count];
