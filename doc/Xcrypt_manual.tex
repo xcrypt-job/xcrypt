@@ -107,13 +107,14 @@ use \textit{mymodule};
 \noindent
 similarly to how to use modules in Perl.
 
+\if0
 Some modules define variables.
 In order to use such variables, it is enough to write e.g.,
 \begin{boxnote}
 \begin{verbatim}
-$separator = '-';
 \end{verbatim}
 \end{boxnote}
+\fi
 
 \section{Template}
 
@@ -154,7 +155,6 @@ An example script is as follows,
 use base qw(limit core);
 
 &limit::initialize(10);
-$separator = '-';
 
 %template = (
  'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
@@ -428,7 +428,7 @@ The following is a sample script:
 where \texttt{strategy1}, \texttt{strategy2}, and
 \texttt{strategy3} are static functions.
 
-\section{\texttt{elapsed\_time}}
+\section{\texttt{invalidate}}
 
 
 
@@ -438,8 +438,6 @@ In this chapter, we introduce keys and values available in templates
 by default.
 
 \section{\texttt{RANGE}\textit{i}}
-
-\texttt{\$expander} is customizable
 
 \textit{key}\texttt{@} denotes the one whose postfix is the
 character \texttt{@} (e.g., \texttt{exe0@}).
@@ -818,7 +816,7 @@ This function returns a reference that denotes the local host
 
 \begin{boxnote}
 \begin{alltt}
-get_local_env(\|\|%\textit{env});
+get_local_env();
 \end{alltt}
 \end{boxnote}
 
@@ -870,6 +868,51 @@ This function takes an Xcrypt's script code (denoted as
 \begin{boxnote}
 \begin{alltt}
 repeat(\textit{mystring}, \textit{i});
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+
+\section{\texttt{set\_expander}}
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+set_expander(\textit{\$string});
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{set\_separator}}
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+set_separator(\textit{\$string});
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{check\_separator}}
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+check_separator();
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
+
+\section{\texttt{nocheck\_separator}}
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+nocheck_separator();
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}

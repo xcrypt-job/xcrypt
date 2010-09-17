@@ -8,6 +8,7 @@ xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 expand_and_make do_initialized do_prepared
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
+set_expander set_separator check_separator nocheck_separator
 );
 
 #use strict;
@@ -31,7 +32,9 @@ use File::Spec;
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @allprefixes = ('JS_');
-
+my $expander = '@';
+my $separator = '_';
+my $separator_check = 1;
 my $nil = 'nil';
 
 my %ssh_opts = (
@@ -54,6 +57,19 @@ my @Env = ($env_d);
 sub get_local_env { return $env_d; }
 sub get_all_envs { return @Env; }
 ##
+sub set_expander {
+    $expander = $_[0];
+}
+sub set_separator {
+    $separator = $_[0];
+}
+sub check_separator {
+    $separator_check = 1;
+}
+sub nocheck_separator {
+    $separator_check = 0;
+}
+#
 sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
@@ -462,7 +478,7 @@ sub MAX {
     my $num = 0;
 
     foreach (@allkeys) {
-        my $members = "$_" . $user::expander;
+        my $members = "$_" . $expander;
         if ( exists($_[0]{"$members"}) ) {
             if (ref($_[0]{"$members"}) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -478,7 +494,7 @@ sub MIN {
     my $num = 0;
 
     foreach (@allkeys) {
-        my $members = "$_" . $user::expander;
+        my $members = "$_" . $expander;
         if ( exists($_[0]{"$members"}) ) {
             if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
                 my $tmp = @{$_[0]{"$members"}};
@@ -505,23 +521,23 @@ sub do_initialized {
 	$tmp++;
     }
 =cut
-    unless ( $user::separator_nocheck) {
-        unless ( $user::separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
-            die "Can't support $user::separator as \$separator.\n";
+    if ($separator_check) {
+        unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
+            die "Can't support $separator as \$separator.\n";
         }
     }
 
     # generate job objects
-    unless (defined $job{"id$user::expander"}) {
-	$job{id} = join($user::separator, ($job{id}, @_));
+    unless (defined $job{"id$expander"}) {
+	$job{id} = join($separator, ($job{id}, @_));
     }
 #    foreach my $k (@allkeys) {
     foreach my $tmp_k (keys(%job)) {
-	my ($k , $after_k) = split(/@/, $tmp_k);
-        my $members = "$k" . $user::expander;
+	my ($k , $after_k) = split(/$expander/, $tmp_k);
+        my $members = "$k" . $expander;
 
         if ( exists($job{"$members"}) ) {
-	    local $user::SELF = \%job;
+	    local $user::self = \%job;
 	    local @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
 		warn "Can't dereference $members.  Instead evaluate $members";
@@ -569,9 +585,9 @@ sub expand_and_make {
 	$job{exe0} = $job{exe};
 	delete($job{exe});
     }
-    if ($job{"exe$user::expander"}) {
-	$job{"exe0$user::expander"} = $job{"exe$user::expander"};
-	delete($job{"exe$user::expander"});
+    if ($job{"exe$expander"}) {
+	$job{"exe0$expander"} = $job{"exe$expander"};
+	delete($job{"exe$expander"});
     }
     my $max_of_arg = &get_max_index_of_arg(%job);
     foreach my $i (0..$max_of_arg) {
@@ -581,9 +597,9 @@ sub expand_and_make {
 	}
     }
     foreach my $i (0..$max_of_arg) {
-	if ($job{"arg$i$user::expander"}) {
-	    $job{"arg0_$i$user::expander"} = $job{"arg$i$user::expander"};
-	    delete($job{"arg$i$user::expander"});
+	if ($job{"arg$i$expander"}) {
+	    $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
+	    delete($job{"arg$i$expander"});
 	}
     }
 
@@ -600,8 +616,8 @@ sub expand_and_make {
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
-            if ($key =~ /"$user::expander"\Z/) {
-                $/ = $user::expander;
+            if ($key =~ /"$expander"\Z/) {
+                $/ = $expander;
                 chomp $key;
             }
 	    push(@allkeys, $key);
@@ -612,7 +628,7 @@ sub expand_and_make {
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys) {
-            if (($key eq $ukey) || ($key eq ($ukey . "$user::expander"))) {
+            if (($key eq $ukey) || ($key eq ($ukey . "$expander"))) {
                 $exist = 1;
             }
         }

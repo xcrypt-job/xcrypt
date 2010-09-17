@@ -1,8 +1,8 @@
 use base qw(limit dry core);
 
 &add_key('added0', 'added1');
-$separator_nocheck = 0;
-$separator = '-';
+&nocheck_separator();
+&set_separator('-');
 &limit::initialize(2);
 
 my @jobs = &prepare(
