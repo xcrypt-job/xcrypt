@@ -5,7 +5,7 @@ our @EXPORT = qw(cmd_executable
 get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-expand_and_make do_initialized do_prepared
+unalias_expand_make do_initialized do_prepared
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander set_separator check_separator nocheck_separator
@@ -373,6 +373,42 @@ sub add_host {
     return $env;
 }
 
+sub expand {
+    my %job = @_;
+    my $max_of_range = &get_max_index_of_range(%job);
+    my @range;
+    if (defined $job{'RANGES'}) {
+	@range = &times(@{$job{'RANGES'}});
+    } elsif ( $max_of_range != -1 ) {
+        my @ranges = ();
+        for ( my $i = 0; $i <= $max_of_range; $i++ ) {
+            if ( exists($job{"RANGE$i"}) ) {
+                if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
+                    push(@ranges, $job{"RANGE$i"});
+                } else {
+                    warn "The value of RANGE$i must be an ARRAY reference";
+                }
+            } else {
+		my @temp = ($nil);
+		$job{"RANGE$i"} = \@temp;
+		push(@ranges, $job{"RANGE$i"});
+	    }
+        }
+        @range = &times(@ranges);
+=comment
+    } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
+        my @params = (0..(&MIN(\%job)-1));
+        foreach (@params) {
+            my $self = &do_initialized(\%job, $_);
+            push(@objs, $self);
+        }
+=cut
+    } else {
+        @range = ([]);
+    }
+    return @range;
+}
+
 sub add_key           { foreach my $i (@_) { push(@allkeys,     $i); } }
 sub add_prefix_of_key { foreach my $i (@_) { push(@allprefixes, $i); } }
 
@@ -577,7 +613,7 @@ sub do_initialized {
     return $self;
 }
 
-sub expand_and_make {
+sub unalias_expand_make {
     my %job = @_;
 
     # aliases
@@ -658,39 +694,9 @@ sub expand_and_make {
     }
 
     # expand
-    my $max_of_range = &get_max_index_of_range(%job);
+    my @range = &expand(%job);
     my @objs;
-    my @range;
     my $self;
-    if (defined $job{'RANGES'}) {
-	@range = &times(@{$job{'RANGES'}});
-    } elsif ( $max_of_range != -1 ) {
-        my @ranges = ();
-        for ( my $i = 0; $i <= $max_of_range; $i++ ) {
-            if ( exists($job{"RANGE$i"}) ) {
-                if ( ref($job{"RANGE$i"}) eq 'ARRAY' ) {
-                    push(@ranges, $job{"RANGE$i"});
-                } else {
-                    warn "The value of RANGE$i must be an ARRAY reference";
-                }
-            } else {
-		my @temp = ($nil);
-		$job{"RANGE$i"} = \@temp;
-		push(@ranges, $job{"RANGE$i"});
-	    }
-        }
-        @range = &times(@ranges);
-=comment
-    } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
-        my @params = (0..(&MIN(\%job)-1));
-        foreach (@params) {
-            my $self = &do_initialized(\%job, $_);
-            push(@objs, $self);
-        }
-=cut
-    } else {
-        @range = ([]);
-    }
     foreach (@range) {
 	$self = &do_initialized(\%job, @{$_});
 	$count++;
@@ -707,7 +713,7 @@ sub do_prepared {
 }
 
 sub prepare{
-    my @objs = &expand_and_make(@_);
+    my @objs = &unalias_expand_make(@_);
     $count = 0;
     &do_prepared(@objs);
     return @objs;
@@ -886,14 +892,14 @@ sub submit {
             }
 
 	    ## ジョブスクリプトの最終行の処理を終えたからといって
-	    ## after()をしてよいとは限らないが念の入れすぎかもしれない．
-=comment
+	    ## after()をしてよいとは限らないが経験的にそうしておく
 	    my $flag0 = 0;
 	    my $flag1 = 0;
+=comment
 	    until ($flag0 && $flag1) {
-		Coro::AnyEvent::sleep 0.1;
+		Coro::AnyEvent::sleep 1;
 		    $flag0 = &xcr_exist($self->{env}, $self->{JS_stdout});
-		    $flag1 = &xcr_exist($self->{env}, $self->{JS_stdout});
+		    $flag1 = &xcr_exist($self->{env}, $self->{JS_stderr});
 	    }
 =cut
 
@@ -927,11 +933,16 @@ sub sync {
     foreach (@jobs) {
 	&jobsched::exit_job_id($_);
     }
-    return @_;
+#    return @_;
+    my %ret;
+    foreach (@jobs) {
+	$ret{$_->{id}} = $_;
+    }
+    return %ret;
 }
 
 sub prepare_submit {
-    my @objs = &expand_and_make(@_);
+    my @objs = &unalias_expand_make(@_);
     foreach (@objs) {
         &do_prepared ($_);
 	&submit($_);
@@ -948,5 +959,7 @@ sub prepare_submit_sync {
     my @objs = &prepare_submit(@_);
     return &sync(@objs);
 }
+
+
 
 1;
