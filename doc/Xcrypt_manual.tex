@@ -107,15 +107,6 @@ use \textit{mymodule};
 \noindent
 similarly to how to use modules in Perl.
 
-\if0
-Some modules define variables.
-In order to use such variables, it is enough to write e.g.,
-\begin{boxnote}
-\begin{verbatim}
-\end{verbatim}
-\end{boxnote}
-\fi
-
 \section{Template}
 
 Xcrypt's templates are implemented as Perl's hashes.  For example,
@@ -281,36 +272,12 @@ under the job working directory, where \texttt{\%myjob} is a template.
 directory
 
 \begin{center}
- \texttt{\$myjob->\{id\}} \texttt{\$separator}
- \texttt{\$myjob->\{RANGES\}}
+ \texttt{\$myjob->\{id\}}\_\texttt{\$myjob->\{RANGES\}}
 \end{center}
 
 is created for each job (called a \textit{job working directory}).  It is
 named by the value of the job hash's key \texttt{id}.  Job-processing
 is done in the job working directory.
-
-The default of \texttt{\$separator} is \texttt{\_}.  In order to
-redefine \texttt{\$separator} to be \texttt{-}, for example, it is
-enough to write as follows,
-\begin{boxnote}
-\begin{verbatim}
-$separator = '-';
-\end{verbatim}
-\end{boxnote}
-\vspace{\baselineskip}
-
-Any word composed of ASCII printable characters except
-\begin{center}
-\verb*+@ "$%&'/:;<=>?[\]`{|}+        % " for highlight
-\end{center}
-is available.
-
-This module also makes the variable $\texttt{\$separator\_nocheck}$,
-which becomes available in Xcrypt scripts.  When the value of
-$\texttt{\$separator\_nocheck}$ is $1$, Xcrypt skips a check of
-whether \texttt{\$separator} consists of only available characters or not.
-The default is $0$.
-
 
 \texttt{linkedfile}\textit{i}
 
