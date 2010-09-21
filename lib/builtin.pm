@@ -892,16 +892,23 @@ sub submit {
             }
 
 	    ## ジョブスクリプトの最終行の処理を終えたからといって
-	    ## after()をしてよいとは限らないが経験的にそうしておく
+	    ## after()をしてよいとは限らないが……
 	    my $flag0 = 0;
 	    my $flag1 = 0;
-=comment
 	    until ($flag0 && $flag1) {
 		Coro::AnyEvent::sleep 1;
-		    $flag0 = &xcr_exist($self->{env}, $self->{JS_stdout});
-		    $flag1 = &xcr_exist($self->{env}, $self->{JS_stderr});
+		    $flag0 = &xcr_exist($self->{env},
+					File::Spec->catfile($self->{workdir},
+							    $self->{JS_stdout})
+			);
+		    $flag1 = &xcr_exist($self->{env},
+					File::Spec->catfile($self->{workdir},
+							    $self->{JS_stderr})
+			);
 	    }
-=cut
+
+	    ## NFS が書き込んでくれる*経験的*待ち時間
+	    sleep 3;
 
             ## after()
             if (check_status_for_after ($self)) {
@@ -933,12 +940,14 @@ sub sync {
     foreach (@jobs) {
 	&jobsched::exit_job_id($_);
     }
-#    return @_;
+    return @_;
+=comment
     my %ret;
     foreach (@jobs) {
 	$ret{$_->{id}} = $_;
     }
     return %ret;
+=cut
 }
 
 sub prepare_submit {
@@ -959,7 +968,5 @@ sub prepare_submit_sync {
     my @objs = &prepare_submit(@_);
     return &sync(@objs);
 }
-
-
 
 1;
