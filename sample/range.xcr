@@ -1,29 +1,29 @@
-use base qw(core);
+use base qw(sandbox core);
 use data_extractor;
 
-&add_key('foo');
 %template1 = (
     'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
-    'exe0@' => sub {
-	'bin/fib '.($VALUE[0] + $VALUE[2])." > $_[0]->{JS_queue}_".$VALUE[0].'_'.$VALUE[2]
-    },
+    'exe0@' => sub { 'bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
+    'arg0_0@' => sub { $_[0]->{JS_queue}.'_'.$VALUE[0].'_'. $VALUE[2]; },
     'RANGE0' => [20..22],
     'RANGE2' => [0,3],
 #    'RANGES' => [[20..22],[0],[0,3]],
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'before' => sub { print "$_[0]->{id}\n";    print "$VALUE[0]\n"; },
+    'copiedfile0' => 'bin',
+    'before' => sub { print "$_[0]->{id}\n";
+		      print "$VALUE[0]\n";
+    },
     'after'  => sub { my $self = shift;
-		      print "$self->{exe0}\n";  print "$VALUE[2]\n";
-		      my $stdout = data_extractor->new( 'file:' . "$ENV{'PWD'}/" . "$self->{JS_queue}_".$VALUE[0].'_'.$VALUE[2]);
-		      $stdout -> extract_line_nn( '1' );
-		      @result = $stdout -> execute( );
+		      print "$self->{exe0} $self->{arg0_0}\n";
+		      print "$VALUE[2]\n";
+		      my $stdout = data_extractor->new( 'file:' . "$ENV{'PWD'}/$self->{workdir}/" . $self->{arg0_0});
+		      $stdout->extract_line_nn( '1' );
+		      @result = $stdout->execute();
 		      $self->{foo} = $result[0];
     }
 );
 
 my @jobs = &prepare(%template1);
 &submit(@jobs);
-my %ret = &sync(@jobs);
-#print $ret{job6_20_0}->{foo}, "\n";
-foreach (values(%ret)) { print $_->{foo}, "\n"; }
+&sync(@jobs);

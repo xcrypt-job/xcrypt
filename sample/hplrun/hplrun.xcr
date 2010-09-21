@@ -3,8 +3,14 @@ use data_generator;
 use data_extractor;
 &limit::initialize(10);
 
+# These lines in HPL.dat are forcely replaced by "1"
+@lines_to_have_one = ( 5, 7, 10, 14, 16, 18, 20, 22, 24 );
+
+# Indicate HPL.dat lines, the parameters of which you want to sweep
+@lines_for_psweep = ( 9, 11 );
+
 %template = (
-    'id@' => sub{ "hpljob_$_[0]_$_[1]_$_[2]"; },
+    'id@' => sub{ "hpljob_" . $VALUE[0] .'_'. $VALUE[1] .'_'. $VALUE[2]; },
     'exe0' => 'cd ./hpl; make arch=Linux_ATHLON_FBLAS clean_arch_all',
     'exe1' => 'make arch=Linux_ATHLON_FBLAS; cd -',
     'exe2' => 'mpiexec -n ${QSUB_VNODES} ./hpl/bin/Linux_ATHLON_FBLAS/xhpl',
@@ -12,6 +18,14 @@ use data_extractor;
     'JS_group' => 'gh10034',
     'JS_cpu' => '1',
     'copiedfile0' => 'hpl',
+# Indicate sweep ranges
+#    'RANGE0'   => ["-Kfast", "-O3"],			# Compile options
+#    'RANGE1'   => [0, 1],				# PMAP process mapping
+#    'RANGE2'   => [1, 2, 4],				# P
+    'RANGE0'   => ["-Kfast"],
+    'RANGE1'   => [0],
+    'RANGE2'   => [2, 4],
+    'JS_node'  => '4',					# P x Q = # of proc.
     'before' => sub{
         # Generate Makefile
         my $hplmake = data_generator
@@ -19,7 +33,7 @@ use data_extractor;
                            "$ENV{'PWD'}/" . $self->{'id'} . "/hpl" );
         $hplmake -> replace_key_value( "TOPdir",
                         "$ENV{'PWD'}/" . $self->{'id'} . "/hpl" );
-        $hplmake -> replace_line_column( "171", "4", $_[0] );
+        $hplmake -> replace_line_column( "171", "4", $VALUE[0] );
         $hplmake -> execute( );
         # Generate input file
         my $hpldat = data_generator
@@ -31,13 +45,12 @@ use data_extractor;
         $rcount = 0;
         foreach $hplline ( @lines_for_psweep ) {
             $rcount = $rcount + 1;
-            $hpldat -> replace_line_column( $hplline, "1", $_[$rcount] );
+            $hpldat -> replace_line_column( $hplline, "1", $VALUE[$rcount] );
         }
+	$hpldat -> replace_line_column( "12", "1", $self->{'JS_node'}/$VALUE[2] );
         $hpldat -> execute( );
     },
     'after' => sub{
-        # Wait for stdout to be outputed
-        sleep(2);
         # Extract performance value
         my $stdout = data_extractor
                   -> new( 'file:' . "$ENV{'PWD'}/" . "$self->{'id'}"
@@ -51,7 +64,7 @@ use data_extractor;
         if ( $result[0] > $max_performance ) {
             $max_performance = $result[0];
             $max_performance_dir = "$ENV{'PWD'}/" . "$self->{'id'}";
-            $coption = $_[0];
+            $coption = $VALUE[0];
             my $stdout = data_extractor
                       -> new( 'file:' . "$ENV{'PWD'}/" . "$self->{'id'}"
                               . '/' . "$self->{'id'}" . '_stdout' );
@@ -62,20 +75,7 @@ use data_extractor;
     },
 );
 
-# These lines in HPL.dat are forcely replaced by "1"
-@lines_to_have_one = ( 5, 7, 10, 14, 16, 18, 20, 22, 24 );
-
-# Indicate HPL.dat lines, the parameters of which you want to sweep
-@lines_for_psweep = ( 6, 9 );
-
-&prepare_submit_sync(%template,
-# Indicate sweep ranges
-        'RANGE0'   => [-Kfast, -O1, -O2, -O3],	# Compile options
-#        'RANGE0'   => [-Kfast],		# Compile options
-        'RANGE1'   => [100, 200],		# Problem size
-        'RANGE2'   => [0, 1],			# PMAP process mapping
-        'JS_node'  => '4',
-);
+&prepare_submit_sync(%template,);
 
 # Output of final result
 print "\n", "-------- RESULT -------- \n\n";
