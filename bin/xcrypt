@@ -10,7 +10,7 @@ use Getopt::Long;
 my $xcrfile = shift @ARGV;
 
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
-    die "The first argument should be an Xcrypt script.\n";
+    warn "The first argument should be an Xcrypt script.\n";
 }
 
 my $xcrplfile = "$xcrfile" . '.pl';

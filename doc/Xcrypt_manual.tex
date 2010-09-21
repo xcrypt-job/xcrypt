@@ -180,6 +180,25 @@ Any job transits to \textit{states} as follows,
 }
 \]
 
+\[
+\entrymodifiers={+[F-:<10pt>]}
+\xymatrix@C=100pt@R=50pt{
+  *{} & *{}               \ar[d]|{\txt{\small job object generated}} & *{}\\
+  *{} & \txt{initialized} \ar[d]|{\txt{\small pre-processing}}
+  \ar[rdd]|{\txt{\small \texttt{\$ xcryptdel}}} \ar[ldd]|{\txt{\small job invalidatedl}}      & *{}\\
+  *{} & \txt{prepared}    \ar[d]|{\txt{\small job submitted}}
+  \ar[rd]|{\txt{\small \texttt{\$ xcryptdel}}} \ar[ld]|{\txt{\small job invalidatedl}}  & *{}\\
+  \txt{finished} & \txt{submitted}   \ar[d]|{\txt{\small job queued}}
+  \ar[r]|{\txt{\small \texttt{qsub} failed}} \ar[l]|{\txt{\small job invalidatedl}}     & \txt{aborted}\\
+  *{} & \txt{queued}      \ar[d]|{\txt{\small job started}}
+  \ar[ru]|{\txt{\small job aborted}} \ar[lu]|{\txt{\small job invalidatedl}}   & *{}\\
+  *{} & \txt{running}     \ar[d]|{\txt{\small job script done}}
+  \ar[ruu]|{\txt{\small job aborted}} \ar[luu]|{\txt{\small job invalidatedl}} & *{}\\
+  *{} & \txt{done}        \ar[luuu]|{\txt{\small post-processing}}
+  \ar[ruuu]|{\txt{\small job aborted}} & *{}
+}
+\]
+
 \section{Execution}
 
 Edit \texttt{xcrypt/source-me.sh} in order to set some environment
@@ -213,9 +232,12 @@ Finally, execute Xcrypt with the script:
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptstat}
 \end{screen}
+shows states of jobs.
+
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob}
 \end{screen}
+makes states of jobs aborted.
 
 \section{Product}\label{sec:created}
 
@@ -269,32 +291,20 @@ under the job working directory, where \texttt{\%myjob} is a template.
 
 \section{\texttt{sandbox}}
 
-directory
-
+A directory
 \begin{center}
- \texttt{\$myjob->\{id\}}\_\texttt{\$myjob->\{RANGES\}}
+ \texttt{\$myjob->\{id\}}\_\texttt{\$VALUE[0]}\_\texttt{\$VALUE[1]}\_$\ldots$
 \end{center}
+is created for each job (called a \textit{job working directory}).
+Job-processing is done in the job working directory.
 
-is created for each job (called a \textit{job working directory}).  It is
-named by the value of the job hash's key \texttt{id}.  Job-processing
-is done in the job working directory.
+The following can be defined in templates.
 
-\texttt{linkedfile}\textit{i}
+\texttt{linkedfile}\textit{i}: a soft link of the file (whose name is
+its value) is created in the job working directory.
 
-A soft link of the file (whose name is its value) is created in the
-job working directory.
-
-\texttt{copiedfile}\textit{i}
-
-The indicated file is copied to the job working directory.
-
-\if0
-\texttt{copieddir}\textit{i}
-
-All files in the indicated directory are copied
-in the job working directory.
-\fi
-
+\texttt{copiedfile}\textit{i}: the indicated file is copied to the job
+working directory.
 
 \section{\texttt{limit}}
 
@@ -397,7 +407,8 @@ where \texttt{strategy1}, \texttt{strategy2}, and
 
 \section{\texttt{invalidate}}
 
-
+This module invalidates jobs of which running time is more than
+\texttt{allotted\_time} (can be defined in templates).
 
 \chapter{Template}\label{chapjobdefhash}
 
