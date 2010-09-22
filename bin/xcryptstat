@@ -2,47 +2,32 @@
 package xcryptstat;
 
 use strict;
-use Cwd;
+use Getopt::Long;
 use File::Basename;
 use File::Spec;
-use common;
-use jsconfig;
 
-foreach ('XCRYPT', 'XCRJOBSCHED','PERL5LIB') {
-    unless (defined $ENV{"$_"}) {
-	die "Set the environment varialble $_\n";
+our %options = (
+    'inventory_path' => 'inv_watch',
+    );
+
+GetOptions
+    (\%options,
+     'inventory_path=s',
+    );
+
+my $Log_File = File::Spec->catfile($options{inventory_path}, 'transitions.log');
+my %id_stat;
+my %id_reqid;
+open(my $fh, $Log_File) or die "$!";
+while (my $line = <$fh>) {
+    my @tmp = split(/ /, $line);
+    if ($tmp[0] eq ':transition') {
+	$id_stat{$tmp[1]} = $tmp[2];
+    } elsif ($tmp[0] eq ':reqID') {
+	chomp($tmp[2]);
+	$id_reqid{$tmp[1]} = $tmp[2];
     }
 }
-
-my $qstat_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qstat_command};
-unless ( defined $qstat_command ) {
-    die "qstat_command is not defined in $ENV{XCRJOBSCHED}.pm";
+foreach (keys(%id_stat)) {
+    print $_ . ' (reqID:'. $id_reqid{$_} .') is ' . $id_stat{$_} , "\n";
 }
-unless (&common::cmd_executable ($qstat_command)) {
-    die "$qstat_command not executable";
-}
-
-my $qstat_extractor = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{extract_req_ids_from_qstat_output};
-unless ( defined $qstat_extractor ) {
-    die "extract_req_ids_from_qstat_output is not defined in $ENV{XCRJOBSCHED}.pm";
-} elsif ( ref ($qstat_extractor) ne 'CODE' ) {
-    die "Error in $ENV{XCRJOBSCHED}.pm: extract_req_ids_from_qstat_output must be a function.";
-}
-
-my $current_directory=Cwd::getcwd();
-my $inventory_path=File::Spec->catfile($current_directory, 'inv_watch');
-my $idfiles = File::Spec->catfile($inventory_path, 'request_ids');
-my @qstat_out = qx/$qstat_command/;
-my @ids = &$qstat_extractor (@qstat_out);
-foreach my $req_id (@ids) {
-    open ( REQIDS, "< $idfiles" );
-    my $reqid_job_ids = <REQIDS>;
-    my @reqid_job_ids_array = split(/ /, $reqid_job_ids);
-    my %reqid_job_ids_hash = @reqid_job_ids_array;
-    close ( REQIDS );
-    if ( defined($reqid_job_ids_hash{$req_id}) ) {
-	my $job_id = $reqid_job_ids_hash{"$req_id"};
-	print "$job_id is waiting or running.\n";
-    }
-}
-#print "--- 8< --- 8< --- 8< ---\n";
