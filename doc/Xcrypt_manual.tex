@@ -7,7 +7,7 @@
 
 \usepackage{tascmac}
 \usepackage{alltt}
-\usepackage[all]{xy}
+%\usepackage[all]{xy}
 
 %
 \def\|{\verb|} %|
@@ -162,8 +162,23 @@ use base qw(limit core);
 
 In this chapter, we introduce how jobs are processed.
 
-\section{Model}\label{sec:states}
+\section{State}\label{sec:states}
 
+Any job has one of the following states:
+\begin{center}
+\begin{tabular}{ll}
+initialized: & the job is initialized or canceled,\\
+prepared: & the job object is generated and being submitted,\\
+submitted: & the job is submitted,\\
+queued: & the job is queued,\\
+running: & the job is running,\\
+done: & the job is done,\\
+finished: & the job is finished or invalidated,\\
+aborted: & the job is aborted.
+\end{tabular}
+\end{center}
+
+\if0
 Any job transits to \textit{states} as follows,
 \[
 \entrymodifiers={+[F-:<10pt>]}
@@ -182,22 +197,24 @@ Any job transits to \textit{states} as follows,
 
 \[
 \entrymodifiers={+[F-:<10pt>]}
-\xymatrix@C=100pt@R=50pt{
-  *{} & *{}               \ar[d]|{\txt{\small job object generated}} & *{}\\
-  *{} & \txt{initialized} \ar[d]|{\txt{\small pre-processing}}
-  \ar[rdd]|{\txt{\small \texttt{\$ xcryptdel}}} \ar[ldd]|{\txt{\small job invalidatedl}}      & *{}\\
-  *{} & \txt{prepared}    \ar[d]|{\txt{\small job submitted}}
-  \ar[rd]|{\txt{\small \texttt{\$ xcryptdel}}} \ar[ld]|{\txt{\small job invalidatedl}}  & *{}\\
-  \txt{finished} & \txt{submitted}   \ar[d]|{\txt{\small job queued}}
-  \ar[r]|{\txt{\small \texttt{qsub} failed}} \ar[l]|{\txt{\small job invalidatedl}}     & \txt{aborted}\\
-  *{} & \txt{queued}      \ar[d]|{\txt{\small job started}}
-  \ar[ru]|{\txt{\small job aborted}} \ar[lu]|{\txt{\small job invalidatedl}}   & *{}\\
-  *{} & \txt{running}     \ar[d]|{\txt{\small job script done}}
-  \ar[ruu]|{\txt{\small job aborted}} \ar[luu]|{\txt{\small job invalidatedl}} & *{}\\
-  *{} & \txt{done}        \ar[luuu]|{\txt{\small post-processing}}
-  \ar[ruuu]|{\txt{\small job aborted}} & *{}
+\xymatrix@C=200pt@R=30pt{
+  *{}               \ar[d]|{\txt{\small job object generated}} & *{}\\
+  \txt{initialized} \ar[d]|{\txt{\small pre-processing}}
+  \ar[rdd]|{\txt{\small \texttt{\$ xcryptdel}}} & *{}\\
+  \txt{prepared}    \ar[d]|{\txt{\small job submitted}}
+  \ar[rd]|{\txt{\small \texttt{\$ xcryptdel}}} & *{}\\
+  \txt{submitted}   \ar[d]|{\txt{\small job queued}}
+  \ar[r]|{\txt{\small \texttt{\$ xcryptdel} or \texttt{qsub} failed}} & \txt{aborted}\\
+  \txt{queued}      \ar[d]|{\txt{\small job started}}
+  \ar[ru]|{\txt{\small \texttt{\$ xcryptdel} or job aborted}} & *{}\\
+  \txt{running}     \ar[d]|{\txt{\small job script done}}
+  \ar[ruu]|{\txt{\small \texttt{\$ xcryptdel} or job aborted}} & *{}\\
+  \txt{done}        \ar[d]|{\txt{\small post-processing}}
+  \ar[ruuu]|{\txt{\small \texttt{\$ xcryptdel}}} & *{}\\
+  \txt{finished} & *{}
 }
 \]
+\fi
 
 \section{Execution}
 
@@ -1301,7 +1318,7 @@ In Xcrypt, a completion notice of a job submitted by the method
 \subsection{\texttt{finally}}
 to be written...
 
-\section{Ordinaly methods}\label{apd-coremethod-developer}
+\section{Ordinary methods}\label{apd-coremethod-developer}
 A developer of Xcrypt modules can add ordinary methods and
 extended preexisting ordinary methods defined in \|core.pm|
 in the manner of the object oriented Perl programming.

@@ -2,32 +2,5 @@
 package xcryptstat;
 
 use strict;
-use Getopt::Long;
-use File::Basename;
-use File::Spec;
-
-our %options = (
-    'inventory_path' => 'inv_watch',
-    );
-
-GetOptions
-    (\%options,
-     'inventory_path=s',
-    );
-
-my $Log_File = File::Spec->catfile($options{inventory_path}, 'transitions.log');
-my %id_stat;
-my %id_reqid;
-open(my $fh, $Log_File) or die "$!";
-while (my $line = <$fh>) {
-    my @tmp = split(/ /, $line);
-    if ($tmp[0] eq ':transition') {
-	$id_stat{$tmp[1]} = $tmp[2];
-    } elsif ($tmp[0] eq ':reqID') {
-	chomp($tmp[2]);
-	$id_reqid{$tmp[1]} = $tmp[2];
-    }
-}
-foreach (keys(%id_stat)) {
-    print $_ . ' (reqID:'. $id_reqid{$_} .') is ' . $id_stat{$_} , "\n";
-}
+use jobsched;
+&jobsched::read_log();
