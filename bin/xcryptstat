@@ -1,6 +1,2 @@
-#!/usr/bin/env perl
-package xcryptstat;
-
-use strict;
-use jobsched;
-&jobsched::read_log();
+#!/bin/sh
+xcrypt ${XCRYPT}/lib/stat.xcr "$*"
