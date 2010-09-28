@@ -20,7 +20,7 @@ if ( -e $xcrplfile ) {
 }
 
 open(USER , "< $xcrfile") or die "Can't open $xcrfile\n";
-open(TMP , "> $xcrplfile") or die "Can't open $xcrplfile\n";
+open(TMP , "> $xcrplfile") or die "Can't open $xcrfile\n";
 print TMP 'package user;' . "\n";
 print TMP 'use xcropt;' . "\n";
 print TMP 'use builtin;' . "\n";
