@@ -9,6 +9,7 @@ unalias_expand_make do_initialized do_prepared
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander set_separator check_separator nocheck_separator
+filter filter_by_VALUE
 );
 
 #use strict;
@@ -967,6 +968,51 @@ sub submit_sync {
 sub prepare_submit_sync {
     my @objs = &prepare_submit(@_);
     return &sync(@objs);
+}
+
+sub filter {
+    my $fun = shift;
+    my @ret;
+    foreach (@_) {
+	if (&$fun($_)) {
+	    push(@ret, $_);
+	}
+    }
+    return @ret;
+}
+
+
+sub filter_by_VALUE_body {
+    my $ref_array0 = shift;
+    my $ref_array1 = shift;
+    my @array0 = @$ref_array0;
+    my @array1 = @$ref_array1;
+    unless ($#array0 == $#array1) {
+	return 0;
+    }
+    my $head0 = shift(@array0);
+    my $head1 = shift(@array1);
+    if ($head0 eq $head1) {
+	if ($#array0 == -1) {
+	    return 1;
+	} else {
+	    &filter_by_VALUE_body(\@array0, \@array1);
+	}
+    } else {
+	return 0;
+    }
+}
+
+sub filter_by_VALUE {
+    my $ref_array = shift;
+    my @jobs = @_;
+    my @ret;
+    foreach my $job (@jobs) {
+	if (&filter_by_VALUE_body($ref_array, $job->{VALUE})) {
+	    push(@ret, $job);
+	}
+    }
+    return @ret;
 }
 
 1;

@@ -41,7 +41,7 @@ print TMP '&jobsched::invoke_watch();' . "\n";
 print TMP 'if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }' . "\n";
 foreach (<USER>) { print TMP "$_"; }
 print TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
-print TMP '&jobsched::check_and_write_aborted();' . "\n";
+#print TMP '&jobsched::check_and_write_aborted();' . "\n";
 #print TMP 'sleep(1);' . "\n";
 close(TMP);
 close(USER);

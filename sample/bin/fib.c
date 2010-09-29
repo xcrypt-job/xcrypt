@@ -11,6 +11,6 @@ int fib (int n)
 int main (int argc, char** argv)
 {
   int n = (argc>1)?(atoi(argv[1])):40;
-  printf ("fib(%d)=%d\n", n, fib(n));
+  printf ("fib(%d) = %d\n", n, fib(n));
   return 0;
 }

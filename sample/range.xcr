@@ -17,10 +17,6 @@ use data_extractor;
     'after'  => sub { my $self = shift;
 		      print "$self->{exe0} $self->{arg0_0}\n";
 		      print "$VALUE[2]\n";
-		      my $stdout = data_extractor->new( 'file:' . "$ENV{'PWD'}/$self->{workdir}/" . $self->{arg0_0});
-		      $stdout->extract_line_nn( '1' );
-		      @result = $stdout->execute();
-		      $self->{foo} = $result[0];
     }
 );
 
