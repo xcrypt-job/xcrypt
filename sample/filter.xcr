@@ -23,14 +23,8 @@ use data_extractor;
 my @jobs = &prepare(%template1);
 &submit(@jobs);
 my @in = &sync(@jobs);
-=comment
 my @out1 = &filter( sub { $_[0]->{foo} > 100000; }, @in );
 foreach (@out1) {
-    print "$_->{id}: $_->{foo} @{$_->{VALUE}}\n";
-}
-=cut
-my @out2 = &filter_by_VALUE( [20, nil, 3], @in );
-foreach (@out2) {
     print "$_->{id}: $_->{foo} @{$_->{VALUE}}\n";
 }
 
