@@ -9,9 +9,10 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 
 %template = (
 'id'             => 'job4',
-'exe0@'          => sub { 'sleep 20; echo ' . (40 + $_[0]) . " > job4_$_[0]_out"},
+'exe0@'          => sub { 'sleep '.(5 * $VALUE[0]).'; echo '.(40 + $VALUE[0])." > job4_$VALUE[0]".'_out'},
 'RANGE0'         => [0,      1,          2,         3,         4     ],
-'env@'           => [$env0,  $default,   $default,  $env3,     $default],
+#'env@'           => [$env0,  $default,   $default,  $env3,     $default],
+'env@'           => [$env0,  $default,   $default,  $default,     $default],
 'JS_cpu'         => '1',
 'JS_queue@'      => [' ',    ' ',        'short',   'gh10034', ' '   ],
 'JS_group@'      => [' ',    'ESCIENCE', ' ',       'gh10034', ' '   ],
