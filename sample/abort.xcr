@@ -1,8 +1,8 @@
 use base qw(core);
 
 %template1 = (
-    'id@' => sub { "jobfib_$_[0]" },
-    'exe0@' => sub { 'bin/fib ' . ($_[0]) . " > out_$_[0]"},
+    'id@' => sub { "jobfib_$VALUE[0]" },
+    'exe0@' => sub { 'bin/fib ' . ($VALUE[0]) . " > out_$VALUE[0]"},
     'RANGE0' => [39..44],
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',

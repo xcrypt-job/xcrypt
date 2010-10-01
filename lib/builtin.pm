@@ -884,11 +884,11 @@ sub submit {
             }
             ## set_job_queued()
             if (check_status_for_set_job_queued ($self)) {
-                &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
-		mkdir File::Spec->catfile($Inventory_Path, $self->{id}), 0755;
-		system('touch ' . File::Spec->catfile($Inventory_Path,
-						      $self->{id},
-						      $self->{id} . '_is_queued'));
+		if ($self->{env}->{location} eq 'local') {
+		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched}\n");
+		} elsif ($self->{env}->{location} eq 'remote') {
+		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched}\n");
+		}
                 &jobsched::set_job_queued($self);
             }
             ## If the job was 'running' in the last execution, set it's status to 'running'.

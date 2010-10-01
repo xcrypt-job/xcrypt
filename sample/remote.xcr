@@ -10,7 +10,7 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 %template = (
 'id'             => 'job4',
 'exe0@'          => sub { 'sleep '.(5 * $VALUE[0]).'; echo '.(40 + $VALUE[0])." > job4_$VALUE[0]".'_out'},
-'RANGE0'         => [0,      1,          2,         3,         4     ],
+'RANGE0'         => [100,      1,          2,         3,         4     ],
 #'env@'           => [$env0,  $default,   $default,  $env3,     $default],
 'env@'           => [$env0,  $default,   $default,  $default,     $default],
 'JS_cpu'         => '1',
@@ -18,4 +18,7 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 'JS_group@'      => [' ',    'ESCIENCE', ' ',       'gh10034', ' '   ],
 'JS_limit_time@' => [' ',    30,         '0:00:02', 30,        ' '   ],
 );
-&prepare_submit_sync(%template);
+my @jobs = &prepare(%template);
+&submit(@jobs);
+&sync(@jobs);
+

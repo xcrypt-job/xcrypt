@@ -21,12 +21,12 @@ use common;
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 
-my @jobs = &read_log();
+my @jobs = &read_log_jobs();
 foreach (@jobs) {
     system("xcryptdel $_");
 }
 
-sub read_log {
+sub read_log_jobs {
     open (my $LOG, '<', $Logfile);
     unless ($LOG) {
 	warn "Failed to open the log file $Logfile in read mode.";
