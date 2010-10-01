@@ -699,11 +699,17 @@ sub unalias_expand_make {
     # expand
     my @range = &expand(%job);
     my @objs;
+    my @job_ids;
     my $self;
     foreach (@range) {
 	$self = &do_initialized(\%job, @{$_});
 	$count++;
 	push(@objs, $self);
+	push(@job_ids, $self->{id});
+    }
+    open(my $fh, '>>', File::Spec->catfile($Inventory_Path, 'job_ids')) or die "$!";
+    foreach (@job_ids) {
+	print $fh "$_ ";
     }
     return @objs;
 }
