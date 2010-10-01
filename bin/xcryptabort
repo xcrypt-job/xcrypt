@@ -1,3 +1,0 @@
-#!/bin/sh
-xcrypt ${XCRYPT}/bin/abort.xcr "$*"
-#perl ${XCRYPT}/bin/abort.xcr.pl "$*"
