@@ -699,17 +699,11 @@ sub unalias_expand_make {
     # expand
     my @range = &expand(%job);
     my @objs;
-    my @job_ids;
     my $self;
     foreach (@range) {
 	$self = &do_initialized(\%job, @{$_});
 	$count++;
 	push(@objs, $self);
-	push(@job_ids, $self->{id});
-    }
-    open(my $fh, '>>', File::Spec->catfile($Inventory_Path, 'job_ids')) or die "$!";
-    foreach (@job_ids) {
-	print $fh "$_ ";
     }
     return @objs;
 }
@@ -892,10 +886,9 @@ sub submit {
             if (check_status_for_set_job_queued ($self)) {
                 &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
 		mkdir File::Spec->catfile($Inventory_Path, $self->{id}), 0755;
-		open(my $fh, '>', File::Spec->catfile($Inventory_Path,
+		system('touch ' . File::Spec->catfile($Inventory_Path,
 						      $self->{id},
-						      $self->{id} . '_is_queued')) or die "$!";
-		print $fh $self->{request_id};
+						      $self->{id} . '_is_queued'));
                 &jobsched::set_job_queued($self);
             }
             ## If the job was 'running' in the last execution, set it's status to 'running'.

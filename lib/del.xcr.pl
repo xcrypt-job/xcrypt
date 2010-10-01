@@ -19,6 +19,7 @@ use builtin;
 use common;
 
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 
 foreach my $id (@ARGV) {
     &abort($id);
@@ -60,10 +61,7 @@ sub qdel {
     unless ( defined $qdel_command ) {
         die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
     }
-    open(my $fh, File::Spec->catfile($Inventory_Path, $id, $id . '_is_queued')) or die "$!";
-    my @request_ids = <$fh>;
-    my $request_id = $request_ids[0];
-	print $request_id, "\n";
+    my $request_id = &read_log($id);
     if ($request_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $request_id);
@@ -76,6 +74,25 @@ sub qdel {
     }
 }
 
+sub read_log {
+    my ($arg) = @_;
+    open (my $LOG, '<', $Logfile);
+    unless ($LOG) {
+	warn "Failed to open the log file $Logfile in read mode.";
+	return 0;
+    }
+    print "Reading the log file $Logfile\n";
+    while (<$LOG>) {
+	chomp;
+	if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
+	    my ($id, $req_id) = ($1, $2);
+	    if ($id eq $arg) {
+		return $req_id;
+	    }
+	}
+    }
+    close ($LOG);
+}
 
 # リモート実行未対応
 =comment
