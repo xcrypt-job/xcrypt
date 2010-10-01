@@ -847,6 +847,7 @@ sub invoke_left_message_check {
 }
 
 ##
+=comment
 sub wait_and_get_file {
     my ($interval) = @_;
     my @envs = &get_all_envs();
@@ -870,6 +871,7 @@ sub wait_and_get_file {
       Coro::AnyEvent::sleep ($interval);
   }
 }
+=cut
 
 sub get_job_states_from_left_messages {
     my @envs = &get_all_envs();
