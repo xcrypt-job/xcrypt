@@ -19,11 +19,28 @@ use builtin;
 use common;
 
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 
-open(my $fh, File::Spec->catfile($Inventory_Path, 'job_ids')) or die "$!";
-my $line = <$fh>;
-my @jobs = split(/ /, $line);
+my @jobs = &read_log();
 foreach (@jobs) {
     system("xcryptdel $_");
+}
+
+sub read_log {
+    open (my $LOG, '<', $Logfile);
+    unless ($LOG) {
+	warn "Failed to open the log file $Logfile in read mode.";
+	return 0;
+    }
+    print "Reading the log file $Logfile\n";
+    while (<$LOG>) {
+	chomp;
+	if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
+	    my ($id, $req_id) = ($1, $2);
+	    push(@ret, $id);
+	}
+    }
+    close ($LOG);
+    return @ret;
 }
 # Up to here your script.  From here Xcrypt's footer.
