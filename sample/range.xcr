@@ -6,7 +6,7 @@ use data_extractor;
     'exe0@' => sub { 'bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
     'arg0_0@' => sub { $_[0]->{JS_queue}.'_'.$VALUE[0].'_'. $VALUE[2]; },
     'RANGE0' => [20..22],
-    'RANGE2' => [0,3],
+    'RANGE2' => [0,33],
 #    'RANGES' => [[20..22],[0],[0,3]],
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',

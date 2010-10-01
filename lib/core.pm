@@ -13,6 +13,7 @@ use xcropt;
 use common;
 use builtin;
 
+my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 
 my $cwd = Cwd::getcwd();
 sub new {
@@ -329,24 +330,29 @@ sub qsub {
 
 ##################################################
 # qdelコマンドを実行して指定されたジョブを殺す
-# リモート実行未対応
 sub qdel {
     my ($self) = @_;
     # qdelコマンドをconfigから獲得
-    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
+#    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
+    my $qdel_command = $jsconfig::jobsched_config{$self->{env}->{sched}}{qdel_command};
     unless ( defined $qdel_command ) {
-        die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
+        die "qdel_command is not defined in $self->{env}->{sched}.pm";
     }
     my $req_id = $self->{request_id};
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-        if (cmd_executable ($command_string, $self->{env})) {
-            print "Deleting $self->{id} (request ID: $req_id)\n";
-            exec_async ($command_string);
-        } else {
-            warn "$command_string not executable.";
-        }
+	if ($self->{env}->{location} eq 'remote') {
+	    print "Deleting $self->{id} (request ID: $req_id)\n";
+	    &xcr_system($self->{env}, $command_string, $self->{env}->{workdir});
+	} elsif ($self->{env}->{location} eq 'local') {
+	    if (cmd_executable ($command_string, $self->{env})) {
+		print "Deleting $self->{id} (request ID: $req_id)\n";
+		exec_async ($command_string);
+	    } else {
+		warn "$command_string not executable.";
+	    }
+	}
     }
 }
 

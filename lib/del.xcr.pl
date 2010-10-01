@@ -17,6 +17,7 @@ use File::Spec;
 use xcropt;
 use builtin;
 use common;
+use Net::OpenSSH;
 
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
@@ -28,15 +29,9 @@ foreach my $id (@ARGV) {
 sub abort {
     my ($id) = @_;
     print "$id is aborted by user.\n";
-    if ((-e File::Spec->catfile($Inventory_Path,
-				$id,
-				$id . '_is_queued')) ||
-	(-e File::Spec->catfile($Inventory_Path,
-				$id,
-				$id . '_is_running'))) {
-	unless (-e File::Spec->catfile($Inventory_Path,
-				       $id,
-				       $id . '_is_done')) {
+    my $last_stat = &read_log_stat($id);
+    if (($last_stat eq 'queued') || ($last_stat eq 'running')) {
+	unless ($last_stat eq 'done') {
 	    &qdel($id);
 	}
     }
@@ -61,33 +56,59 @@ sub qdel {
     unless ( defined $qdel_command ) {
         die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
     }
-    my $request_id = &read_log($id);
+    my ($request_id, $userhost, $sched) = &read_log_reqID_userhost_sched($id);
     if ($request_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $request_id);
-        if (cmd_executable ($command_string, $self->{env})) {
-            print "Deleting $id (request ID: $request_id)\n";
+	if ($host eq 'local') {
+#        if (cmd_executable ($command_string, $self->{env})) {
             exec_async ($command_string);
-        } else {
-            warn "$command_string not executable.";
-        }
+#        } else {
+#            warn "$command_string not executable.";
+#        }
+	} else {
+	    print "Deleting $id (request ID: $request_id)\n";
+	    my ($user, $host) = split(/@/, $userhost);
+	    my $ssh = Net::OpenSSH->new($host, (user => $user));
+	    $ssh->system("$command_string") or warn $ssh->error;
+	}
     }
 }
 
-sub read_log {
+sub read_log_stat {
     my ($arg) = @_;
     open (my $LOG, '<', $Logfile);
     unless ($LOG) {
 	warn "Failed to open the log file $Logfile in read mode.";
 	return 0;
     }
-    print "Reading the log file $Logfile\n";
+    my $last_stat = 'unintialized';
     while (<$LOG>) {
 	chomp;
-	if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
-	    my ($id, $req_id) = ($1, $2);
+	if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
+	    my ($id, $stat, $time) = ($1, $2, $3);
 	    if ($id eq $arg) {
-		return $req_id;
+		$last_stat = $stat;
+	    }
+	}
+    }
+    close ($LOG);
+    return $last_stat;
+}
+
+sub read_log_reqID_userhost_sched {
+    my ($arg) = @_;
+    open (my $LOG, '<', $Logfile);
+    unless ($LOG) {
+	warn "Failed to open the log file $Logfile in read mode.";
+	return 0;
+    }
+    while (<$LOG>) {
+	chomp;
+	if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)/ ) {
+	    my ($id, $req_id, $userhost, $sched) = ($1, $2, $3, $4);
+	    if ($id eq $arg) {
+		return ($req_id, $userhost, $sched);
 	    }
 	}
     }

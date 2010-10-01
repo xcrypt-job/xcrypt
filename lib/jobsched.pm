@@ -817,9 +817,6 @@ sub invoke_left_message_check {
                             . " exists at $self->{env}->{location}\n";
                     }
                     if ( xcr_exist ($self->{env}, left_message_file_name($self, 'running')) ) {
-			system('touch ' . File::Spec->catfile($Inventory_Path,
-							      $self->{id},
-							      $self->{id} . '_is_running'));
                         unless (get_signal_status($self)) {
                             set_job_running ($self);
                         } else {
@@ -834,9 +831,6 @@ sub invoke_left_message_check {
                             . " exists at $self->{env}->{location}.\n";
                     }
                     if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
-			system('touch ' . File::Spec->catfile($Inventory_Path,
-							      $self->{id},
-							      $self->{id} . '_is_done'));
                         unless (get_signal_status($self)) {
                             set_job_done ($self);
                         } else {
