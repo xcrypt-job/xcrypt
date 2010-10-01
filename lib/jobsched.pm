@@ -216,12 +216,9 @@ sub handle_inventory {
     wantarray ? return ($flag, $job, $job_id) : return $flag;
 }
 
+=comment
 # ジョブの状態変化を監視するスレッドを起動
 sub invoke_watch {
-    # インベントリファイルの置き場所ディレクトリを作成
-    unless (-d "$Inventory_Path") {
-	mkdir $Inventory_Path, 0755;
-    }
     # 起動
     if ( $Inventory_Port > 0 ) {   # TCP/IP通信で通知を受ける
         invoke_watch_by_socket ();
@@ -357,6 +354,7 @@ sub invoke_watch_by_socket {
     };
     return $Watch_Thread;
 }
+=cut
 
 # $jobnameに対応するインベントリファイルを読み込んで反映
 sub load_inventory {
@@ -804,36 +802,46 @@ sub left_message_file_name {
     return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");   # must be eq to inventory_write.pl $Left_Message_File
 }
 sub invoke_left_message_check {
+    # インベントリファイルの置き場所ディレクトリを作成
+    unless (-d "$Inventory_Path") {
+	mkdir $Inventory_Path, 0755;
+    }
     $Left_Message_Check_Thread = Coro::async_pool {
         while (1) {
             print "left_message_check:\n";
             foreach my $req_id (keys %Running_Jobs) {
-                my $job = $Running_Jobs{$req_id};
-                if ( get_job_status($job) eq 'queued') {
+                my $self = $Running_Jobs{$req_id};
+                if ( get_job_status($self) eq 'queued') {
                     if ( $xcropt::options{verbose} >= 2 ) {
-                        print "check if ". left_message_file_name($job, 'running')
-                            . " exists at $job->{env}->{location}\n";
+                        print "check if ". left_message_file_name($self, 'running')
+                            . " exists at $self->{env}->{location}\n";
                     }
-                    if ( xcr_exist ($job->{env}, left_message_file_name($job, 'running')) ) {
-                        unless (get_signal_status($job)) {
-                            set_job_running ($job);
+                    if ( xcr_exist ($self->{env}, left_message_file_name($self, 'running')) ) {
+			system('touch ' . File::Spec->catfile($Inventory_Path,
+							      $self->{id},
+							      $self->{id} . '_is_running'));
+                        unless (get_signal_status($self)) {
+                            set_job_running ($self);
                         } else {
-                            set_job_status_according_to_signal($job);
-                            $job->qdel();
+                            set_job_status_according_to_signal($self);
+                            $self->qdel();
                         }
                     }
-                } 
-                if ( get_job_status($job) eq 'running') {
+                }
+                if ( get_job_status($self) eq 'running') {
                     if ( $xcropt::options{verbose} >= 2 ) {
-                        print "check if ". left_message_file_name($job, 'done')
-                            . " exists at $job->{env}->{location}.\n";
+                        print "check if ". left_message_file_name($self, 'done')
+                            . " exists at $self->{env}->{location}.\n";
                     }
-                    if ( xcr_exist ($job->{env}, left_message_file_name($job, 'done')) ) {
-                        unless (get_signal_status($job)) {
-                            set_job_done ($job);
+                    if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
+			system('touch ' . File::Spec->catfile($Inventory_Path,
+							      $self->{id},
+							      $self->{id} . '_is_done'));
+                        unless (get_signal_status($self)) {
+                            set_job_done ($self);
                         } else {
-                            set_job_status_according_to_signal($job);
-                            $job->qdel();
+                            set_job_status_according_to_signal($self);
+                            $self->qdel();
                         }
                     }
                 }

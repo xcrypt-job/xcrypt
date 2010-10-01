@@ -138,7 +138,9 @@ sub make_jobscript_body {
     push (@body, "cd $wkdir_str");
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
+    # inventory_write.pl をやめて touch に
+#    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
+    push (@body, 'touch ' . $self->{id} . '_is_running');
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -160,7 +162,9 @@ sub make_jobscript_body {
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
+    # inventory_write.pl をやめて touch に
+#    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
+    push (@body, 'touch ' . $self->{id} . '_is_done');
     $self->{jobscript_body} = \@body;
 }
 
