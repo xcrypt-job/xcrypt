@@ -30,7 +30,7 @@ use common;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
-my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+my $Inventory_Path = $xcropt::options{inventory_path};
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
@@ -711,7 +711,16 @@ sub unalias_expand_make {
 sub do_prepared {
     my @jobs = @_;
     foreach my $self (@jobs) {
-        &jobsched::set_job_prepared($self);
+	if (-e File::Spec->catfile($Inventory_Path,
+				    $self->{id} . '_to_be_invalidated')) {
+	    &jobsched::set_job_finished($self);
+	} else {
+	    unlink File::Spec->catfile($Inventory_Path,
+					$self->{id} . '_to_be_aborted');
+	    unlink File::Spec->catfile($Inventory_Path,
+					$self->{id} . '_to_be_cancelled');
+	    &jobsched::set_job_prepared($self);
+	}
     }
 }
 

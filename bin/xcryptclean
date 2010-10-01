@@ -1,3 +1,3 @@
 #!/bin/sh
-#xcrypt ${XCRYPT}/lib/clean.xcr "$*"
-perl ${XCRYPT}/lib/clean.xcr.pl "$*"
+xcrypt ${XCRYPT}/bin/clean.xcr "$*"
+#perl ${XCRYPT}/bin/clean.xcr.pl "$*"
