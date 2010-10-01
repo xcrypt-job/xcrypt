@@ -1,0 +1,15 @@
+use base qw(core);
+use jobsched;
+use File::Spec;
+use xcropt;
+use builtin;
+use common;
+
+my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+
+open(my $fh, File::Spec->catfile($Inventory_Path, 'job_ids')) or die "$!";
+my $line = <$fh>;
+my @jobs = split(/ /, $line);
+foreach (@jobs) {
+    system("xcryptdel $_");
+}
