@@ -1,3 +1,0 @@
-#!/bin/sh
-#xcrypt ${XCRYPT}/lib/delall.xcr "$*"
-perl ${XCRYPT}/lib/delall.xcr.pl "$*"

@@ -1,0 +1,15 @@
+use base qw(core);
+use File::Spec;
+use interactive_command;
+
+my $Inventory_Path = $xcropt::options{inventory_path};
+foreach my $id (@ARGV) {
+    print "$id is cancelled by user.\n";
+    unlink File::Spec->catfile($Inventory_Path,
+			       $id . '_to_be_invalidated');
+    system('touch ' . File::Spec->catfile($Inventory_Path,
+					  $id . '_to_be_cancelled'));
+    my ($last_stat, $request_id, $userhost, $sched)
+	= &interactive_command::read_log($id);
+    &interactive_command::qdel($last_stat, $request_id, $userhost, $sched);
+}
