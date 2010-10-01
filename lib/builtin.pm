@@ -30,6 +30,8 @@ use common;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
+my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
 my @allprefixes = ('JS_');
@@ -883,6 +885,11 @@ sub submit {
             ## set_job_queued()
             if (check_status_for_set_job_queued ($self)) {
                 &jobsched::write_log (":reqID $self->{id} $self->{request_id}\n");
+		mkdir File::Spec->catfile($Inventory_Path, $self->{id}), 0755;
+		open(my $fh, '>', File::Spec->catfile($Inventory_Path,
+						      $self->{id},
+						      $self->{id} . '_is_queued')) or die "$!";
+		print $fh $self->{request_id};
                 &jobsched::set_job_queued($self);
             }
             ## If the job was 'running' in the last execution, set it's status to 'running'.
