@@ -571,6 +571,7 @@ sub read_log {
             chomp;
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
+#print "$id: $stat\n";
                 $Last_State{$id} = $stat;
             } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $req_id) = ($1, $2);
@@ -800,6 +801,10 @@ sub invoke_abort_check {
 sub left_message_file_name {
     my ($job, $stat) = @_;
     return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");   # must be eq to inventory_write.pl $Left_Message_File
+}
+sub left_message_file_name_in_inventory_path {
+    my ($job, $stat) = @_;
+    return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }
 sub invoke_left_message_check {
     # インベントリファイルの置き場所ディレクトリを作成
