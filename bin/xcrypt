@@ -34,7 +34,7 @@ print TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 print TMP 'sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}' . "\n";
 
 print TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
-#print TMP '&jobsched::read_log();' . "\n";
+print TMP '&jobsched::read_log();' . "\n";
 print TMP '&jobsched::invoke_abort_check();' . "\n";
 print TMP '&jobsched::invoke_left_message_check();' . "\n";
 #print TMP '&jobsched::invoke_watch();' . "\n";

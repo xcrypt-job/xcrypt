@@ -5,7 +5,7 @@ our @EXPORT = qw(cmd_executable
 get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-unalias_expand_make do_initialized do_prepared
+unalias_expand_make do_initialized
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander set_separator check_separator nocheck_separator
@@ -29,8 +29,6 @@ use common;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
-
-my $Inventory_Path = $xcropt::options{inventory_path};
 
 # id, exe$i and arg$i_$j are built-in.
 my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
@@ -594,8 +592,6 @@ sub do_initialized {
                 die "Can't interpret $members\n";
             }
         }
-
-
     }
     my $self = user->new(\%job);
 
@@ -611,7 +607,19 @@ sub do_initialized {
     }
 
     &jobsched::entry_job_id ($self);
-    &jobsched::set_job_initialized($self);
+
+    # check left_messages
+    if (-e jobsched::left_message_file_name_in_inventory_path($self,
+							      'invalidated')) {
+	&jobsched::set_job_finished($self);
+    } else {
+	unlink jobsched::left_message_file_name_in_inventory_path($self,
+								  'aborted');
+	unlink jobsched::left_message_file_name_in_inventory_path($self,
+								  'cancelled');
+	&jobsched::set_job_initialized($self);
+    }
+
     # &jobsched::load_inventory ($self->{id});
     return $self;
 }
@@ -708,26 +716,12 @@ sub unalias_expand_make {
     return @objs;
 }
 
-sub do_prepared {
-    my @jobs = @_;
-    foreach my $self (@jobs) {
-	if (-e File::Spec->catfile($Inventory_Path,
-				    $self->{id} . '_to_be_invalidated')) {
-	    &jobsched::set_job_finished($self);
-	} else {
-	    unlink File::Spec->catfile($Inventory_Path,
-					$self->{id} . '_to_be_aborted');
-	    unlink File::Spec->catfile($Inventory_Path,
-					$self->{id} . '_to_be_cancelled');
-	    &jobsched::set_job_prepared($self);
-	}
-    }
-}
-
 sub prepare{
     my @objs = &unalias_expand_make(@_);
     $count = 0;
-    &do_prepared(@objs);
+    foreach (@objs) {
+	&jobsched::set_job_prepared($_);
+    }
     return @objs;
 }
 
@@ -969,7 +963,7 @@ sub sync {
 sub prepare_submit {
     my @objs = &unalias_expand_make(@_);
     foreach (@objs) {
-        &do_prepared ($_);
+	&jobsched::set_job_prepared($_);
 	&submit($_);
     }
     return @objs;
