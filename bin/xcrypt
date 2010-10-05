@@ -15,7 +15,7 @@ if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
 
 my $xcrplfile = "$xcrfile" . '.pl';
 if ( -e $xcrplfile ) {
-    print "The old $xcrplfile replaced by the new $xcrplfile\n";
+#    print "The old $xcrplfile replaced by the new $xcrplfile\n";
     unlink $xcrplfile;
 }
 

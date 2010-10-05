@@ -13,3 +13,5 @@ use base qw (core);
     'after_in_job' => 'print STDOUT $self->{exe}. "\n";',
     );
 @jobs=&prepare_submit_sync (%template);
+foreach (keys(%{$jobs[0]})) { print "$_: $jobs[0]}->{$_}\n"; }
+

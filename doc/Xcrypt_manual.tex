@@ -252,9 +252,35 @@ Finally, execute Xcrypt with the script:
 shows states of jobs.
 
 \begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptclean}
+\end{screen}
+forgets states of all jobs.
+
+\begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob}
 \end{screen}
-makes states of jobs aborted.
+makes states of unfinished jobs aborted.
+
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptcancel} \textit{myjob}
+\end{screen}
+makes states of (not necessarily unfinished) jobs aborted.
+
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptinvalidate} \textit{myjob}
+\end{screen}
+makes states of jobs finished.
+
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptdelall}
+\end{screen}
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptcancelall}
+\end{screen}
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcryptinvalidateall}
+\end{screen}
+are commands for all jobs, respectively.
 
 \section{Product}\label{sec:created}
 
@@ -944,14 +970,30 @@ to be written...
 %\section{\texttt{--port}}
 \section{\texttt{--scheduler}}
 \section{\texttt{--abort\_check\_interval}}
+
+an interval of checking whether jobs are aborted or not (sec).
+
+\section{\texttt{--left\_message\_check\_interval}}
+
+an interval of checking what states jobs have (sec).
+
 \section{\texttt{--inventory\_path}}
+
+a path at that logs are located.
+
 \section{\texttt{--verbose}}
 \section{\texttt{--stack\_size}}
 \section{\texttt{--rhost}}
+
+a host to that jobs are submitted.
+
 \section{\texttt{--rwd}}
 
+a working directory in that Xcrypt is executed at a remote host.
 
 \appendix
+
+\if0
 \chapter{Recipes}
 
 \section{}
@@ -1090,6 +1132,8 @@ to be written...
 ./myexe 1 101 myoutput1
 \end{alltt}
 \end{boxnote}
+
+\fi
 
 \chapter{How to Implement Job Class Extension Modules}
 
