@@ -17,12 +17,11 @@ use File::Spec;
 use interactive_command;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
+&interactive_command::read_log();
 foreach my $id (@ARGV) {
     system('touch ' . File::Spec->catfile($Inventory_Path,
 					  $id . '_to_be_aborted'));
-    my ($last_stat, $request_id, $userhost, $sched)
-	= &interactive_command::read_log($id);
-    &interactive_command::qdel($last_stat, $request_id, $userhost, $sched);
+    &interactive_command::qdel($id);
     print "$id is aborted by user.\n";
 }
 # Up to here your script.  From here Xcrypt's footer.
