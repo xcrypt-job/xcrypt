@@ -27,7 +27,7 @@ unless ($LOG) {
 my @ids;
 while (<$LOG>) {
     chomp;
-    if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
+    if ($_ =~ /^:reqID\s+(\S+)/ ) {
 	push(@ids, $1);
     }
 }
