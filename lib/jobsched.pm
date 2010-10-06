@@ -44,7 +44,7 @@ my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
-my %Last_State = (); 
+my %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
 my %Last_Request_ID = ();
 # Hash table (key,val)=(job ID, the signal name set in the previous Xcrypt execution)
@@ -105,8 +105,8 @@ sub qstat {
 	my @qstat_out = &xcr_qx($env, $command_string, '.');
 	my @tmp_ids = &$extractor(@qstat_out);
 	foreach (@tmp_ids) {
-	    push(@ids, "$env->{host}"."$_");
-#	    push(@ids, ($env->{host}, $_));
+	    my $index = make_index_of_Running_Jobs($_, $env->{host});
+	    push(@ids, $index);
 	}
     }
     return @ids;
@@ -661,21 +661,24 @@ sub print_all_job_status {
     print "\n";
 }
 
+sub make_index_of_Running_Jobs {
+    my ($request_id, $host) = @_;
+    return $request_id . '_at_' . $host;
+}
+
 ##################################################
 # "running"なジョブ一覧の更新
 sub entry_running_job {
     my ($self) = @_;
-    my $req_id = $self->{env}->{host} . $self->{request_id};
-#    my $req_id = $self->{request_id};
-    $Running_Jobs{$req_id} = $self;
+    my $index = make_index_of_Running_Jobs($self->{request_id}, $self->{env}->{host});
+    $Running_Jobs{$index} = $self;
     # print STDERR "entry_running_job: $jobname($req_id), #=" . (keys %Running_Jobs) . "\n";
 }
 sub delete_running_job {
     my ($self) = @_;
-    my $req_id = $self->{env}->{host} . $self->{request_id};
-#    my $req_id = $self->{request_id};
-    if ($req_id) {
-        delete ($Running_Jobs{$req_id});
+    my $index = make_index_of_Running_Jobs($self->{request_id}, $self->{env}->{host});
+    if ($index) {
+        delete ($Running_Jobs{$index});
     }
 }
 

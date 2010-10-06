@@ -2,6 +2,7 @@ package interactive_command;
 
 use xcropt;
 use File::Spec;
+use common;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
@@ -12,12 +13,12 @@ sub qdel {
 	unless ($last_stat eq 'done') {
 	    my $qdel_command = $jsconfig::jobsched_config{$sched}{qdel_command};
 	    unless ( defined $qdel_command ) {
-		die "qdel_command is not defined in $ENV{XCRJOBSCHED}.pm";
+		die "qdel_command is not defined in $sched.pm";
 	    }
 	    if ($request_id) {
 		# execute qdel
 		my $command_string = any_to_string_spc ("$qdel_command ", $request_id);
-		if ($host eq 'local') {
+		if ($userhost eq 'local') {
 #        if (cmd_executable ($command_string, $self->{env})) {
 		    exec_async ($command_string);
 #        } else {
@@ -51,7 +52,7 @@ sub read_log {
 		$last_stat = $stat;
 	    }
 	} elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)/ ) {
-	    my ($id, $req_id, $userhost, $sched) = ($1, $2, $3, $4);
+	    $id = $1;
 	    if ($1 eq $arg) {
 		($req_id, $userhost, $sched) = ($2, $3, $4);
 	    }
