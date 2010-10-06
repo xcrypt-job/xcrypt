@@ -10,11 +10,12 @@ open (my $LOG, '<', $Logfile);
 unless ($LOG) {
     warn "Failed to open the log file $Logfile in read mode.";
 }
+my @ids;
 while (<$LOG>) {
     chomp;
     if ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
-	my $id = $1;
-	system("xcryptdel $id");
+	push(@ids, $1);
     }
 }
+system("xcryptdel @ids");
 close ($LOG);
