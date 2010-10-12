@@ -1,3 +1,4 @@
+# This file is obsoleted
 package xcrypt_comm;
 
 use base qw(Exporter);

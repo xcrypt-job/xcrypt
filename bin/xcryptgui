@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# This file is obsoleted.
 
 #use strict;
 use File::Spec;

@@ -5,15 +5,13 @@ our @EXPORT = qw(mkarray set_member_if_empty exec_async
 any_to_string any_to_string_nl any_to_string_spc write_string_array
 );
 
+use strict;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Basename;
-#use strict;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
 use Net::OpenSSH;
-#use xcropt;
-#use jobsched;
 
 ##
 sub mkarray ($) {
