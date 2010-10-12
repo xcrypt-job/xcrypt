@@ -43,6 +43,10 @@ my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 my %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
 my %Last_Request_ID = ();
+# Hash table (key,val)=(job ID, the user@host in the previous Xcrypt execution)
+my %Last_Userhost_ID = ();
+# Hash table (key,val)=(job ID, the job scheduler in the previous Xcrypt execution)
+my %Last_Sched_ID = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -570,9 +574,11 @@ sub read_log {
                 my ($id, $stat, $time) = ($1, $2, $3);
 #print "$id: $stat\n";
                 $Last_State{$id} = $stat;
-            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)/ ) {
-                my ($id, $req_id) = ($1, $2);
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)/ ) {
+                my ($id, $req_id, $userhost, $sched) = ($1, $2, $3, $4);
                 $Last_Request_ID{$id} = $req_id;
+                $Last_Userhost_ID{$id} = $userhost;
+                $Last_Sched_ID{$id} = $sched;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
 		## Obsolete: do nothing now

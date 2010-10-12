@@ -59,18 +59,10 @@ sub get_all_envs { return @Env; }
 my $expander = '@';
 my $separator = '_';
 my $separator_check = 1;
-sub set_expander {
-    $expander = $_[0];
-}
-sub set_separator {
-    $separator = $_[0];
-}
-sub check_separator {
-    $separator_check = 1;
-}
-sub nocheck_separator {
-    $separator_check = 0;
-}
+sub set_expander { $expander = $_[0]; }
+sub set_separator { $separator = $_[0]; }
+sub check_separator { $separator_check = 1; }
+sub nocheck_separator { $separator_check = 0; }
 #
 sub cmd_executable {
     my ($cmd, $env) = @_;
@@ -323,13 +315,13 @@ sub add_host {
 	}
     }
     unless (defined $env->{xd}) {
-	    my @xd = &xcr_qx($env, 'echo $XCRYPT');
-	    chomp($xd[0]);
-	    unless ($xd[0] eq '') {
-		$env->{xd} = $xd[0];
-	    } else {
-		die "Set the environment varialble \$XCRYPT at $env->{host}\n";
-	    }
+	my @xd = &xcr_qx($env, 'echo $XCRYPT');
+	chomp($xd[0]);
+	unless ($xd[0] eq '') {
+	    $env->{xd} = $xd[0];
+	} else {
+	    die "Set the environment varialble \$XCRYPT at $env->{host}\n";
+	}
     }
     push(@Env, $env);
     return $env;
@@ -544,8 +536,6 @@ sub do_initialized {
 								  'cancelled');
 	&jobsched::set_job_initialized($self);
     }
-
-    # &jobsched::load_inventory ($self->{id});
     return $self;
 }
 
@@ -679,7 +669,7 @@ sub check_status_for_initially {
     return 1;
 }
 
-sub check_status_for_before {    
+sub check_status_for_before {
     my $self = shift;
     my $sig = jobsched::get_signal_status($self);
     if ($sig) {
@@ -814,7 +804,7 @@ sub submit {
             ## set_job_queued()
             if (check_status_for_set_job_queued ($self)) {
 #		if ($self->{env}->{location} eq 'local') {
-		if ($self->{env}->{host} eq $env_d->{host}) { 
+		if ($self->{env}->{host} eq $env_d->{host}) {
 		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
 		} else {

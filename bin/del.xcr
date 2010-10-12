@@ -1,16 +1,11 @@
 use base qw(core);
 use File::Spec;
-use interactive_command;
+use interactive;
+use jobsched;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
-&interactive_command::read_log();
 foreach my $id (@ARGV) {
-    my $stat = &interactive_command::get_job_status($id);
-    unless ($stat eq 'finished' || $stat eq 'aborted') {
-	system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
-	&interactive_command::qdel($id);
-	print "$id is aborted by user.\n";
-    } else {
-	print "$id has already been $stat.\n";
-    }
+    system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+    &interactive::qdel($id);
+    print "$id is aborted by user.\n";
 }

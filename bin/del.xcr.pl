@@ -11,17 +11,16 @@ sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}(
 &jobsched::read_log();
 &jobsched::invoke_abort_check();
 &jobsched::invoke_left_message_check();
-if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }
+$builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
 use base qw(core);
 use File::Spec;
-use interactive_command;
+use interactive;
+use jobsched;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
-&interactive_command::read_log();
 foreach my $id (@ARGV) {
-    system('touch ' . File::Spec->catfile($Inventory_Path,
-					  $id . '_to_be_aborted'));
-    &interactive_command::qdel($id);
+    system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+    &interactive::qdel($id);
     print "$id is aborted by user.\n";
 }
 # Up to here your script.  From here Xcrypt's footer.
