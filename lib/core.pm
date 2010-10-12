@@ -173,7 +173,7 @@ sub make_jobscript_body {
 sub make_in_job_script {
     my ($self, $memb_evalstr, $memb_script) = @_;
     my @body = ();
-    push (@body, 'use Data_Extraction;', 'use Data_Generation;');
+    push (@body, 'use data_extractor;', 'use data_generator;');
     push (@body, Data::Dumper->Dump([$self],['self']));
     push (@body, $self->{$memb_evalstr});
     $self->{$memb_script} = \@body;
