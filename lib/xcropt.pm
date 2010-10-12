@@ -7,10 +7,13 @@ use Getopt::Long;
 
 my $localhost = qx/hostname/;
 chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
 my $wd = Cwd::getcwd();
 
 our %options = (
 #    'localhost' => $localhost,  # Obsolete
+    'host' => $username . '@' . $localhost,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
     'p5l' => $ENV{PERL5LIB},
@@ -24,9 +27,6 @@ our %options = (
     #
     'verbose' => 0,               # verbose level
     'stack_size' => 32768,        # Perlスレッドのスタックサイズ
-    #
-    'rhost' => undef,
-    'rwd' => undef,
     # define other default values...
     );
 
@@ -35,6 +35,7 @@ GetOptions
      'shared',
      #
 #     'localhost=s',  # Obsolete
+     'host=s',
      'wd=s',
      'xd=s',
      'p5l=s',
@@ -48,9 +49,6 @@ GetOptions
      #
      'verbose=i',
      'stack_size=i',
-     #
-     'rhost=s',
-     'rwd=s',
      # define other command-line options...
     );
 
