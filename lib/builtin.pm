@@ -5,7 +5,7 @@ our @EXPORT = qw(cmd_executable
 get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-unalias_expand_make do_initialized
+unalias expand_make do_initialized
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander set_separator check_separator nocheck_separator
@@ -539,10 +539,9 @@ sub do_initialized {
     return $self;
 }
 
-sub unalias_expand_make {
+sub unalias {
     my %job = @_;
 
-    # aliases
     if ($job{exe}) {
 	$job{exe0} = $job{exe};
 	delete($job{exe});
@@ -564,6 +563,12 @@ sub unalias_expand_make {
 	    delete($job{"arg$i$expander"});
 	}
     }
+    return %job;
+}
+
+
+sub expand_make {
+    my %job = @_;
 
     # add_key for built-in keys "exe*", "arg*" and ":*"
     my $max_of_exe    = &get_max_index_of_exe(%job);
@@ -633,7 +638,8 @@ sub unalias_expand_make {
 
 sub prepare{
     $count = 0;
-    my @objs = &unalias_expand_make(@_);
+    my %template = &unalias(@_);
+    my @objs = &expand_make(%template);
     foreach (@objs) {
 	&jobsched::set_job_prepared($_);
     }
@@ -872,7 +878,8 @@ sub sync {
 }
 
 sub prepare_submit {
-    my @objs = &unalias_expand_make(@_);
+    my %template = &unalias(@_);
+    my @objs = &expand_make(%template);
     foreach (@objs) {
 	&jobsched::set_job_prepared($_);
 	&submit($_);
