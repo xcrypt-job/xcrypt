@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# This file is obsoleted
 use strict;
 use Error qw(:try);
 use Time::HiRes;

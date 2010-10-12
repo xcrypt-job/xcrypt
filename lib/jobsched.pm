@@ -2,17 +2,13 @@
 package jobsched;
 
 use base qw(Exporter);
-our @EXPORT = qw(any_to_string_nl any_to_string_spc
-inventory_write_cmdline inventory_write
-);
+our @EXPORT = qw(inventory_write_cmdline);
 
 use strict;
 use Cwd;
 use File::Basename;
 use File::Spec;
-#use IO::Socket;
 use Coro;
-use Coro::Socket;
 use Coro::AnyEvent;
 use Coro::Signal;
 use Time::HiRes;
@@ -27,28 +23,26 @@ use jsconfig;
 ##################################################
 
 ### Inventory
-my $Inventory_Host = $xcropt::options{localhost};
-my $Inventory_Port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由
+# my $Inventory_Host = $xcropt::options{localhost};   # Obsolete
+# my $Inventory_Port = $xcropt::options{port}; # インベントリ通知待ち受けポート．0ならNFS経由 # Obsolete
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
+# my $Inventory_Write_Cmd = 'inventory_write.pl';     # Obsolete
 
-my $Inventory_Write_Cmd = 'inventory_write.pl';
-
+## Obsoleted
 # Administrative files for inventory_write.pl file communication mode.
 # Relative path from working directories.
-my $Reqfile = File::Spec->catfile($Inventory_Path, 'inventory_req');
-my $Ackfile = File::Spec->catfile($Inventory_Path, 'inventory_ack');
-my $Opened_File = $Reqfile . '.opened';
-my $Ack_Tmpfile = $Ackfile . '.tmp';  # not required?
-my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
+# my $Reqfile = File::Spec->catfile($Inventory_Path, 'inventory_req');
+# my $Ackfile = File::Spec->catfile($Inventory_Path, 'inventory_ack');
+# my $Opened_File = $Reqfile . '.opened';
+# my $Ack_Tmpfile = $Ackfile . '.tmp';  # not required?
+# my $Lockdir = File::Spec->catfile($Inventory_Path, 'inventory_lock');
 
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
 my %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
-my %Last_Request_ID = ();
-# Hash table (key,val)=(job ID, the signal name set in the previous Xcrypt execution)
-my %Last_Signal = ();
+# my %Last_Request_ID = ();  # Obsolete
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -63,19 +57,16 @@ my %Running_Jobs = ();
 my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
-my $Watch_Thread = undef;    # accessed from bin/xcrypt
+# my $Watch_Thread = undef;    # accessed from bin/xcrypt # Obsolete
 # ジョブがabortedになってないかチェックするスレッド
 my $Abort_Check_Thread = undef;
 my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
 # The thread that checks messages that inventory_write.pl leaves when communication failed
 my $Left_Message_Check_Thread = undef;
 my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
-# ユーザ定義のタイム割り込み関数を実行するスレッド
-# Now obsoleted because it is implemented in builtin.pm?
-our $Periodic_Thread = undef; # accessed from bin/xcrypt
 
 # Warning option (can be bound dynamically using a local declaration)
-our $Warn_job_not_found_by_id = 1;
+# our $Warn_job_not_found_by_id = 1;  # Obsolete because handle_inventory is bsolete
 our $Warn_illegal_transition = 1;
 
 # 出力をバッファリングしない（STDOUT & STDERR）
@@ -89,13 +80,13 @@ sub qstat {
     foreach my $env (@envs) {
 	my $qstat_command = $jsconfig::jobsched_config{$env->{sched}}{qstat_command};
 	unless ( defined $qstat_command ) {
-	    die "qstat_command is not defined in $env->{sched}.pm";
+	    warn "qstat_command is not defined in $env->{sched}.pm";
 	}
 	my $extractor = $jsconfig::jobsched_config{$env->{sched}}{extract_req_ids_from_qstat_output};
 	unless ( defined $extractor ) {
-	    die "extract_req_ids_from_qstat_output is not defined in $env->{sched}.pm";
+	    warn "extract_req_ids_from_qstat_output is not defined in $env->{sched}.pm";
 	} elsif ( ref ($extractor) ne 'CODE' ) {
-	    die "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
+	    warn "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
 	unless (cmd_executable ($command_string, $env)) {
@@ -114,107 +105,112 @@ sub qstat {
 
 ##############################
 # Set the status of job $jobname to $stat by executing an external process.
-sub inventory_write {
-    my ($self, $stat) = @_;
-    my $cmdline = inventory_write_cmdline($self, $stat);
-    if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
-    &xcr_system($self->{env}, "$cmdline", '.');
+### Obsolete (use set_job_* instead)
+# sub inventory_write {
+#     my ($self, $stat) = @_;
+#     my $cmdline = inventory_write_cmdline($self, $stat);
+#     if ( $xcropt::options{verbose} >= 2 ) { print "$cmdline\n"; }
+#     &xcr_system($self->{env}, "$cmdline", '.');
 
-    ## Use the following when $Watch_Thread is a Coro.
-    # {
-    #     my $pid = exec_async ($cmdline);
-    #     ## polling for checking the child process finished.
-    #     ## DO NOT USE blocking waitpid(*,0) for Coros.
-    #     # print "Waiting for $pid finished.\n";
-    #     # until (waitpid($pid,1)) { Coro::AnyEvent::sleep 0.1; }
-    #     # print "$pid finished.\n";
-    # }
-}
+#     ## Use the following when $Watch_Thread is a Coro.
+#     # {
+#     #     my $pid = exec_async ($cmdline);
+#     #     ## polling for checking the child process finished.
+#     #     ## DO NOT USE blocking waitpid(*,0) for Coros.
+#     #     # print "Waiting for $pid finished.\n";
+#     #     # until (waitpid($pid,1)) { Coro::AnyEvent::sleep 0.1; }
+#     #     # print "$pid finished.\n";
+#     # }
+# }
 
 sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
-    my $write_command=File::Spec->catfile($self->{env}->{xd}, 'bin', $Inventory_Write_Cmd);
-    my $timeout = $xcropt::options{comm_timeout};
-    if ( $Inventory_Port > 0 ) {
-        return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port $timeout";
-    } else {
-        my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
-        my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
-        my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
-        return "$write_command $self->{id} $stat file $dir $req $ack $timeout";
-    }
+    return 'touch ' . $self->{id} . '_is_' . $stat;
+    ## Obsolete
+    # status_name_to_level ($stat); # Valid status name?
+    # my $write_command=File::Spec->catfile($self->{env}->{xd}, 'bin', $Inventory_Write_Cmd);
+    # my $timeout = $xcropt::options{comm_timeout};
+    # if ( $Inventory_Port > 0 ) {
+    #     return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port $timeout";
+    # } else {
+    #     my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
+    #     my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
+    #     my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
+    #     return "$write_command $self->{id} $stat file $dir $req $ack $timeout";
+    # }
 }
 
 ##############################
+## Obsolete
 # watchの出力一行を処理
 # for scalar contexts: set_job_statusを行ったら1，そうでなければ0，エラー（再通知を促す）なら-1を返す
 # for list contexts: returns (status(the same to scalar contexts), last_job, last_jobname)
-sub handle_inventory {
-    my ($line) = @_;
-    my ($flag, $job, $job_id);  # return values
-    if ($line =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/) {
-        $job_id = $1;
-        my ($status, $tim) = ($2, $3);
-        {
-            local $Warn_job_not_found_by_id = undef;
-            $job = find_job_by_id ($job_id);
-        }
-        if ($job) {
-            if ($status eq 'running') {
-                # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
-                # ここでwaitせずに再連絡させるのはデッドロック防止のため
-                my $cur_stat = get_job_status ($job);
-                if ( $cur_stat eq 'queued' ) {
-                    unless (get_signal_status($job)) {
-                        set_job_running ($job, $tim);
-                    } else {
-                        set_job_status_according_to_signal($job, $tim);
-                    }
-                    $flag=1;
-                } else {
-                    $flag = -1;
-                }
-            } elsif ($status eq 'done') {
-                # まだrunningになっていなければ書き込まず，-1を返すことで再連絡を促す．
-                # ここでwaitせずに再連絡させるのはデッドロック防止のため
-                my $cur_stat = get_job_status ($job);
-                if ( $cur_stat eq 'running' ) {
-                    unless (get_signal_status($job)) {
-                        set_job_done ($job, $tim);
-                    } else {
-                        set_job_status_according_to_signal($job, $tim);
-                    }
-                    $flag=1;
-                } else {
-                    $flag = -1;
-                }
-            } else {
-                warn "unexpected transition: \"$line\"\n";
-                $flag = 0;
-            }
-        } else { # The job is not found
-            # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
-            $flag = 0;
-        }
-    } elsif ($line =~/^:abort\s+(\S+)/) {         # request to abort()
-        my $job = find_job_by_id ($1);
-        if ($job) { $job->abort(); }
-        $flag = 0;
-    } elsif ($line =~/^:cancel\s+(\S+)/) {        # request to cancel()
-        my $job = find_job_by_id ($1);
-        if ($job) { $job->cancel(); }
-        $flag = 0;
-    } elsif ($line =~/^:invalidate\s+(\S+)/) {    # request to invalidate()
-        my $job = find_job_by_id ($1);
-        if ($job) { $job->invalidate(); }
-        $flag = 0;
-    } else {
-        warn "unexpected inventory: \"$line\"\n";
-        $flag = 0;
-    }
-    wantarray ? return ($flag, $job, $job_id) : return $flag;
-}
+# sub handle_inventory {
+#     my ($line) = @_;
+#     my ($flag, $job, $job_id);  # return values
+#     if ($line =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/) {
+#         $job_id = $1;
+#         my ($status, $tim) = ($2, $3);
+#         {
+#             local $Warn_job_not_found_by_id = undef;
+#             $job = find_job_by_id ($job_id);
+#         }
+#         if ($job) {
+#             if ($status eq 'running') {
+#                 # まだqueuedになっていなければ書き込まず，-1を返すことで再連絡を促す．
+#                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
+#                 my $cur_stat = get_job_status ($job);
+#                 if ( $cur_stat eq 'queued' ) {
+#                     unless (get_signal_status($job)) {
+#                         set_job_running ($job, $tim);
+#                     } else {
+#                         set_job_status_according_to_signal($job, $tim);
+#                     }
+#                     $flag=1;
+#                 } else {
+#                     $flag = -1;
+#                 }
+#             } elsif ($status eq 'done') {
+#                 # まだrunningになっていなければ書き込まず，-1を返すことで再連絡を促す．
+#                 # ここでwaitせずに再連絡させるのはデッドロック防止のため
+#                 my $cur_stat = get_job_status ($job);
+#                 if ( $cur_stat eq 'running' ) {
+#                     unless (get_signal_status($job)) {
+#                         set_job_done ($job, $tim);
+#                     } else {
+#                         set_job_status_according_to_signal($job, $tim);
+#                     }
+#                     $flag=1;
+#                 } else {
+#                     $flag = -1;
+#                 }
+#             } else {
+#                 warn "unexpected transition: \"$line\"\n";
+#                 $flag = 0;
+#             }
+#         } else { # The job is not found
+#             # warn "Inventory \"$line\" is ignored because the job $job_id is not found.";
+#             $flag = 0;
+#         }
+#     } elsif ($line =~/^:abort\s+(\S+)/) {         # request to abort()
+#         my $job = find_job_by_id ($1);
+#         if ($job) { $job->abort(); }
+#         $flag = 0;
+#     } elsif ($line =~/^:cancel\s+(\S+)/) {        # request to cancel()
+#         my $job = find_job_by_id ($1);
+#         if ($job) { $job->cancel(); }
+#         $flag = 0;
+#     } elsif ($line =~/^:invalidate\s+(\S+)/) {    # request to invalidate()
+#         my $job = find_job_by_id ($1);
+#         if ($job) { $job->invalidate(); }
+#         $flag = 0;
+#     } else {
+#         warn "unexpected inventory: \"$line\"\n";
+#         $flag = 0;
+#     }
+#     wantarray ? return ($flag, $job, $job_id) : return $flag;
+# }
 
 =comment
 # ジョブの状態変化を監視するスレッドを起動
@@ -356,19 +352,20 @@ sub invoke_watch_by_socket {
 }
 =cut
 
+## Obsolete: Logfile is used instead
 # $jobnameに対応するインベントリファイルを読み込んで反映
-sub load_inventory {
-    my ($jobname) = @_;
-    my $invfile = File::Spec->catfile($Inventory_Path, $jobname);
-    if ( -e $invfile ) {
-	open ( IN, "< $invfile" )
-	    or warn "Can't open $invfile: $!\n";
-	while (<IN>) {
-	    handle_inventory ($_);
-	}
-	close (IN);
-    }
-}
+# sub load_inventory {
+#     my ($jobname) = @_;
+#     my $invfile = File::Spec->catfile($Inventory_Path, $jobname);
+#     if ( -e $invfile ) {
+# 	open ( IN, "< $invfile" )
+# 	    or warn "Can't open $invfile: $!\n";
+# 	while (<IN>) {
+# 	    handle_inventory ($_);
+# 	}
+# 	close (IN);
+#     }
+# }
 
 ##############################
 # job_id_hash
@@ -578,11 +575,12 @@ sub read_log {
                 $Last_Request_ID{$id} = $req_id;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
-                if ( $sig eq 'unset' ) {
-                    delete ($Last_Signal{$id});
-                } else {
-                    $Last_Signal{$id} = $sig;
-                }
+		## Obsolete: do nothing now
+                # if ( $sig eq 'unset' ) {
+                #     delete ($Last_Signal{$id});
+                # } else {
+                #     $Last_Signal{$id} = $sig;
+                # }
             }
         }
         foreach my $id (keys %Last_State) {
@@ -620,17 +618,6 @@ sub delete_record_last_time {
     my ($job) = @_;
     delete ($Last_State{$job->{id}});
     delete ($Last_Request_ID{$job->{id}});
-}
-
-sub resume_signal_last_time {
-    my ($job) = @_;
-    my $sig = $Last_Signal{$job->{id}};
-    if ($sig) {
-        delete ($Last_Signal{$job->{id}});
-        return set_signal($job, $sig);
-    } else {
-        return undef;
-    }
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
@@ -721,14 +708,11 @@ sub get_signal_status {
 # Running_Jobsのジョブがabortedになってないかチェック
 # 状態が "queued" または "running"にもかかわらず，qstatで当該ジョブが出力されないものを
 # abortedとみなし，ジョブ状態ハッシュを更新する．
-# また，signaledなジョブがqstatに現れたらqdelする
 ### Note:
 # ジョブ終了後（done書き込みはスクリプト内なので終わっているはず．
-# ただし，NFSのコンシステンシ戦略によっては危ないかも）
-# inventory_watchからdone書き込みの通知がXcryptに届くまでの間に
-# abort_checkが入ると，abortedを書き込んでしまう．
-# → TCP/IP版はジョブ状態変更通知後，ackを待つようにしたので上記は起こらないはず．
-# → NFS版もそうすべき
+# ただし，NFSのコンシステンシ戦略によっては危ないかも．
+# *_is_done をジョブ側で生成してから，それがXcrypt実行ホストから認識できるまでの間に
+# abort_checkが入ると，abortedを書き込んでしまうことがある）
 sub check_and_write_aborted {
     my %unchecked;
     {
@@ -767,21 +751,6 @@ sub check_and_write_aborted {
         }
     }
 }
-
-# 定期的実行文字列が登録されている配列
-# our %periodicfuns;
-# sub invoke_periodic {
-#     $Periodic_Thread = Coro::async_pool {
-#        while (1) {
-# # ユーザ定義の定期的実行文字列
-#            foreach my $i (keys(%periodicfuns)) {
-#                Coro::AnyEvent::sleep $periodicfuns{"$i"};
-#                eval "$i"
-#            }
-#            Coro::AnyEvent::sleep 0.1;
-#         }
-#    };
-# }
 
 sub invoke_abort_check {
     # print "invoke_abort_check.\n";
@@ -855,7 +824,7 @@ sub invoke_left_message_check {
 }
 
 ##
-=comment
+=comment Obsolete
 sub wait_and_get_file {
     my ($interval) = @_;
     my @envs = &get_all_envs();
@@ -880,29 +849,5 @@ sub wait_and_get_file {
   }
 }
 =cut
-
-sub get_job_states_from_left_messages {
-    my @envs = &get_all_envs();
-    foreach my $env (@envs) {
-	my @ret = &xcr_qx($env, '\ls -1', 'inv_watch');
-	foreach my $l (@ret) {
-	    if ($l =~ /_is_/) {
-		my ($id , $state) = split(/_is_/, $l);
-		chomp $state;
-		if (exists $Job_ID_Hash{$id}->{status}) {
-		    if ($Status_Level{$jobsched::Job_ID_Hash{$id}->{status}} < $Status_Level{$state}) {
-			$Job_ID_Hash{$id}->{status} = "$state";
-		    }
-		} else {
-		    $Job_ID_Hash{$id}->{status} = "$state";
-		}
-	    }
-	}
-    }
-}
-
-sub get_last_ids {
-    return keys(%Last_State);
-}
 
 1;

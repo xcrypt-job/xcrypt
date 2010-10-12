@@ -9,10 +9,10 @@ unalias_expand_make do_initialized
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander set_separator check_separator nocheck_separator
-filter filter_by_VALUE
+filter
 );
 
-#use strict;
+use strict;
 use NEXT;
 use Coro;
 use Coro::Signal;
@@ -22,7 +22,7 @@ use Data::Dumper;
 use File::Basename;
 use Net::OpenSSH;
 
-#use jobsched;
+# use jobsched;
 use xcropt;
 use Cwd;
 use common;
@@ -30,20 +30,17 @@ use common;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
-# id, exe$i and arg$i_$j are built-in.
-my @allkeys = ('id', 'before', 'before_in_job', 'after_in_job', 'after', 'env');
+# Permitted job template member names.
+my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env');
 my @allprefixes = ('JS_');
-my $expander = '@';
-my $separator = '_';
-my $separator_check = 1;
 my $nil = 'nil';
 
 my %ssh_opts = (
-    copy_attrs => 1,   # -pと同じ。オリジナルの情報を保持
-    recursive => 1,    # -rと同じ。再帰的にコピー
-    bwlimit => 40000,  # -lと同じ。転送量のリミットをKbit単位で指定
-    glob => 1,         # ファイル名に「*」を使えるようにする。
-    quiet => 1,        # 進捗を表示する
+    copy_attrs => 1,      # -p preserver file attributes
+    recursive => 1,       # -r recursive copy
+    bwlimit => 10000000,  # -l the max size of a copied file
+    glob => 1,            # enable globs (e.g. '*' for all files)
+    quiet => 1,           # Quiet. Does not show progress
     );
 
 my %Host_Ssh_Hash;
@@ -58,6 +55,9 @@ my @Env = ($env_d);
 sub get_local_env { return $env_d; }
 sub get_all_envs { return @Env; }
 ##
+my $expander = '@';
+my $separator = '_';
+my $separator_check = 1;
 sub set_expander {
     $expander = $_[0];
 }
@@ -233,8 +233,8 @@ sub rmt_rename  {            rmt_cmd('rename',  @_);                }
 sub rmt_symlink {            rmt_cmd('symlink', @_);                }
 sub rmt_unlink  {            rmt_cmd('unlink',  @_);                }
 
-sub get_from     {            rmt_cmd('get',     @_);                }
-sub put_into     {            rmt_cmd('put',     @_);                }
+sub get_from    {            rmt_cmd('get',     @_);                }
+sub put_into    {            rmt_cmd('put',     @_);                }
 
 sub xcr_exist   { my $flag = xcr_cmd('exist',   @_);  return $flag; }
 sub xcr_qx      { my @ret  = xcr_cmd('qx',      @_);  return @ret;  }
@@ -244,41 +244,6 @@ sub xcr_copy    {            xcr_cmd('copy',    @_);                }
 sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
-
-=comment
-sub check_and_alert_elapsed {
-    my @job_ids = &jobsched::get_all_job_ids();
-
-    my $sum = 0;
-    my %elapseds = ();
-    my $length = 0;
-    foreach my $i (@job_ids) {
-        $elapseds{"$i"} = undef;
-        my $inventoryfile = File::Spec->catfile ($inventory_path, "$i");
-        $time_done_now = time();
-        &update_running_and_done_now($inventoryfile);
-        if (defined $time_running) {
-            my $elapsed = $time_done_now - $time_running;
-            $sum = $sum + $elapsed;
-            $elapseds{"$i"} = $elapsed;
-            $length = $length + 1;
-        }
-        $time_running = undef;
-    }
-    my $average = 0;
-    unless ($length == 0) {
-        $average = $sum / $length;
-    }
-    foreach (@job_ids) {
-        if (defined $elapseds{$_}) {
-            if ( $elapseds{$_} - $average > 300 ) {
-                print "Warning: $_ takes more time than the other jobs.\n";
-            }
-        }
-    }
-}
-
-=cut
 
 my $default_period = 10;
 my @periodic_threads = ();
@@ -509,43 +474,6 @@ sub times {
     return @result;
 }
 
-=comment
-sub MAX {
-    my %job = @_;
-    my $num = 0;
-
-    foreach (@allkeys) {
-        my $members = "$_" . $expander;
-        if ( exists($_[0]{"$members"}) ) {
-            if (ref($_[0]{"$members"}) eq 'ARRAY') {
-                my $tmp = @{$_[0]{"$members"}};
-                $num = $tmp + $num;
-            }
-        }
-    }
-    return $num;
-}
-
-sub MIN {
-    my %job = @_;
-    my $num = 0;
-
-    foreach (@allkeys) {
-        my $members = "$_" . $expander;
-        if ( exists($_[0]{"$members"}) ) {
-            if ( ref($_[0]{"$members"} ) eq 'ARRAY') {
-                my $tmp = @{$_[0]{"$members"}};
-                if ($tmp <= $num) { $num = $tmp; }
-                elsif ($num == 0) { $num = $tmp; }
-                else {}
-            }
-        }
-    }
-    return $num;
-}
-=cut
-
-my $count = 0;
 sub do_initialized {
     my %job = %{$_[0]};
     shift;
@@ -717,8 +645,8 @@ sub unalias_expand_make {
 }
 
 sub prepare{
+    local $count = 0;
     my @objs = &unalias_expand_make(@_);
-    $count = 0;
     foreach (@objs) {
 	&jobsched::set_job_prepared($_);
     }
@@ -951,13 +879,6 @@ sub sync {
 	&jobsched::exit_job_id($_);
     }
     return @_;
-=comment
-    my %ret;
-    foreach (@jobs) {
-	$ret{$_->{id}} = $_;
-    }
-    return %ret;
-=cut
 }
 
 sub prepare_submit {
@@ -985,40 +906,6 @@ sub filter {
     foreach (@_) {
 	if (&$fun($_)) {
 	    push(@ret, $_);
-	}
-    }
-    return @ret;
-}
-
-
-sub filter_by_VALUE_body {
-    my $ref_array0 = shift;
-    my $ref_array1 = shift;
-    my @array0 = @$ref_array0;
-    my @array1 = @$ref_array1;
-    unless ($#array0 == $#array1) {
-	return 0;
-    }
-    my $head0 = shift(@array0);
-    my $head1 = shift(@array1);
-    if ($head0 eq $head1) {
-	if ($#array0 == -1) {
-	    return 1;
-	} else {
-	    &filter_by_VALUE_body(\@array0, \@array1);
-	}
-    } else {
-	return 0;
-    }
-}
-
-sub filter_by_VALUE {
-    my $ref_array = shift;
-    my @jobs = @_;
-    my @ret;
-    foreach my $job (@jobs) {
-	if (&filter_by_VALUE_body($ref_array, $job->{VALUE})) {
-	    push(@ret, $job);
 	}
     }
     return @ret;

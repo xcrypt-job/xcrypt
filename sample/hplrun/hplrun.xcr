@@ -3,12 +3,6 @@ use data_generator;
 use data_extractor;
 &limit::initialize(10);
 
-# These lines in HPL.dat are forcely replaced by "1"
-@lines_to_have_one = ( 5, 7, 10, 14, 16, 18, 20, 22, 24 );
-
-# Indicate HPL.dat lines, the parameters of which you want to sweep
-@lines_for_psweep = ( 9, 11 );
-
 %template = (
     'id@' => sub{ "hpljob_" . $VALUE[0] .'_'. $VALUE[1] .'_'. $VALUE[2]; },
     'exe0' => 'cd ./hpl; make arch=Linux_ATHLON_FBLAS clean_arch_all',
@@ -16,7 +10,7 @@ use data_extractor;
     'exe2' => 'mpiexec -n ${QSUB_VNODES} ./hpl/bin/Linux_ATHLON_FBLAS/xhpl',
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'JS_cpu' => '1',
+    'JS_cpu' => 1,
     'copiedfile0' => 'hpl',
 # Indicate sweep ranges
 #    'RANGE0'   => ["-Kfast", "-O3"],			# Compile options
@@ -25,57 +19,48 @@ use data_extractor;
     'RANGE0'   => ["-Kfast"],
     'RANGE1'   => [0],
     'RANGE2'   => [2, 4],
-    'JS_node'  => '4',					# P x Q = # of proc.
+    'JS_node'  => 4,					# P x Q = # of proc.
     'before' => sub{
+	my $self = shift;
         # Generate Makefile
         my $hplmake = data_generator
-                   -> new( "$ENV{'PWD'}/hpl/Make.Linux_ATHLON_FBLAS",
-                           "$ENV{'PWD'}/" . $self->{'id'} . "/hpl" );
+                   -> new( "hpl/Make.Linux_ATHLON_FBLAS",
+                           $self->workdir() . "/hpl" );
         $hplmake -> replace_key_value( "TOPdir",
-                        "$ENV{'PWD'}/" . $self->{'id'} . "/hpl" );
-        $hplmake -> replace_line_column( "171", "4", $VALUE[0] );
-        $hplmake -> execute( );
+				       $self->workdir() . "/hpl" );
+        $hplmake -> replace_line_column( 171, 4, $VALUE[0] );
+        $hplmake -> execute();
         # Generate input file
-        my $hpldat = data_generator
-                   -> new( "$ENV{'PWD'}/HPL.dat",
-                           "$ENV{'PWD'}/" . $self->{'id'} );
-        foreach $hplline ( @lines_to_have_one ) {
-            $hpldat -> replace_line_column( $hplline, "1", "1" );
-        }
-        $rcount = 0;
-        foreach $hplline ( @lines_for_psweep ) {
-            $rcount = $rcount + 1;
-            $hpldat -> replace_line_column( $hplline, "1", $VALUE[$rcount] );
-        }
-	$hpldat -> replace_line_column( "12", "1", $self->{'JS_node'}/$VALUE[2] );
-        $hpldat -> execute( );
+        my $hpldat = data_generator->new( "HPL.dat", $self->workdir() );
+	$hpldat -> replace_line_column(  9, 1, $VALUE[1] ); # take one of RANGE1
+	$hpldat -> replace_line_column( 11, 1, $VALUE[2] ); # take one of RANGE2
+	$hpldat -> replace_line_column( 12, 1, $self->{'JS_node'}/$VALUE[2] );
+        $hpldat -> execute();
     },
     'after' => sub{
+	my $self = shift;
         # Extract performance value
-        my $stdout = data_extractor
-                  -> new( 'file:' . "$ENV{'PWD'}/" . "$self->{'id'}"
-                          . '/' . "$self->{'id'}" . '_stdout' );
-        $stdout -> extract_line_rn( 'PASSED/-2' );
-        $stdout -> extract_line_nn( '1' );
-        $stdout -> extract_column_nn( '7' );
-        @result = $stdout -> execute( );
+	my $stdout_file = $self->workdir() . "/$self->{id}_stdout";
+        my $stdout = data_extractor->new($stdout_file);
+        $stdout -> extract_line_rn ('PASSED/-2'); # ('PASSED',-2)
+        $stdout -> extract_line_nn (1);
+        $stdout -> extract_column_nn (7);
+        @result = $stdout -> execute();
         print $result[0], "\n";
         # Examine the best performance
         if ( $result[0] > $max_performance ) {
             $max_performance = $result[0];
-            $max_performance_dir = "$ENV{'PWD'}/" . "$self->{'id'}";
+            $max_performance_dir = $self->{workdir};
             $coption = $VALUE[0];
-            my $stdout = data_extractor
-                      -> new( 'file:' . "$ENV{'PWD'}/" . "$self->{'id'}"
-                              . '/' . "$self->{'id'}" . '_stdout' );
-            $stdout -> extract_line_rn( 'following parameter/18' );
-            $stdout -> extract_line_nn( '3/18' );
-            @parameters = $stdout -> execute( );
+            my $stdout = data_extractor->new($stdout_file);
+            $stdout -> extract_line_rn( 'following parameter/18' ); # 'following parameter',18
+            $stdout -> extract_line_nn( '3/18' ); # 3,18
+            @parameters = $stdout -> execute();
         }
     },
 );
 
-&prepare_submit_sync(%template,);
+&prepare_submit_sync(%template);
 
 # Output of final result
 print "\n", "-------- RESULT -------- \n\n";

@@ -10,16 +10,16 @@ chomp $localhost;
 my $wd = Cwd::getcwd();
 
 our %options = (
-    'localhost' => $localhost,
+#    'localhost' => $localhost,  # Obsolete
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
     'p5l' => $ENV{PERL5LIB},
     'sched' => $ENV{XCRJOBSCHED},
     #
-    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由
-    'comm_timeout' => 60, # timeout for inventory_write.pl
+#    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
+#    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
-    'left_message_check_interval' => 10, # inventory_write.pl が残したメッセージをチェックする間隔(sec)
+    'left_message_check_interval' => 2, # inventory_write.pl が残したメッセージをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
     #
     'verbose' => 0,               # verbose level
@@ -34,14 +34,14 @@ GetOptions
     (\%options,
      'shared',
      #
-     'localhost=s',
+#     'localhost=s',  # Obsolete
      'wd=s',
      'xd=s',
      'p5l=s',
      'sched=s',
      #
-     'port=i',
-     'comm_timeout=i',
+#     'port=i',         # Obsolete
+#     'comm_timeout=i', # Obsolete
      'abort_check_interval=i',
      'left_message_check_interval=i',
      'inventory_path=s',
