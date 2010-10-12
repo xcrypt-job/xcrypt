@@ -45,12 +45,13 @@ my %ssh_opts = (
 
 my %Host_Ssh_Hash;
 our $env_d;
-$env_d = { 'host'     => $xcropt::options{localhost},
+$env_d = { 'host'     => $xcropt::options{host},
 	   'wd'       => $xcropt::options{wd},
 	   'sched'    => $xcropt::options{sched},
 	   'xd'       => $xcropt::options{xd},
-	   'p5l'      => $xcropt::options{p5l},
-	   'location' => 'local' };
+	   'p5l'      => $xcropt::options{p5l}
+};
+#	   'location' => 'local' };
 my @Env = ($env_d);
 sub get_local_env { return $env_d; }
 sub get_all_envs { return @Env; }
@@ -74,7 +75,9 @@ sub nocheck_separator {
 sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if ($env->{location} eq 'remote') {
+    if ($env->{host} eq $env_d->{host}) {
+	qx/which $cmd0[0]/;
+    } else {
 	my $ssh = $Host_Ssh_Hash{$env->{host}};
 	my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
 	my $tmp = $flags[0];
@@ -83,8 +86,6 @@ sub cmd_executable {
 	} else {
 	    return 1;
 	}
-    } else {
-	qx/which $cmd0[0]/;
     }
     my $ex_code = $? >> 8;
     # print "$? $ex_code ";
@@ -181,9 +182,9 @@ sub rmt_cmd {
 sub xcr_cmd {
     my $cmd =shift;
     my $env =shift;
-    if ($env->{location} eq 'remote') {
+    unless ($env->{host} eq $env_d->{host}) {
 	rmt_cmd($cmd, $env, @_);
-    } elsif ($env->{location} eq 'local') {
+    } else {
 	if ($cmd eq 'exist') {
 	    my $flag = 0;
             my ($file) = @_;
@@ -219,8 +220,6 @@ sub xcr_cmd {
 	} else {
 	    die ;
 	}
-    } else {
-	die ;
     }
 }
 
@@ -284,13 +283,15 @@ sub repeat {
 
 sub add_host {
     my ($env) = @_;
-    unless (defined $env->{location}) {	$env->{location} = 'remote'; }
-    if ($env->{location} eq 'remote') {
+    unless ($env->{host} eq $env_d->{host}) {
 	unless (exists $Host_Ssh_Hash{$env->{host}}) {
 	    my ($user, $host) = split(/@/, $env->{host});
 	    my $ssh = Net::OpenSSH->new($host, (user => $user));
 	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
 	    $Host_Ssh_Hash{$env->{host}} = $ssh;
+	}
+	unless ($xcropt::options{shared}) {
+	    &rmt_mkdir($env, $xcropt::options{inventory_path});
 	}
     }
     unless (defined $env->{wd}) {
@@ -301,11 +302,6 @@ sub add_host {
 	    $env->{wd} = $wd[0];
 	} else {
 	    die "Set the key wd at $env->{host}\n";
-	}
-    }
-    if ($env->{location} eq 'remote') {
-	unless ($xcropt::options{shared}) {
-	    &rmt_mkdir($env, $xcropt::options{inventory_path});
 	}
     }
     unless (defined $env->{p5l}) {
@@ -474,6 +470,7 @@ sub times {
     return @result;
 }
 
+our $count = 0;
 sub do_initialized {
     my %job = %{$_[0]};
     shift;
@@ -645,7 +642,7 @@ sub unalias_expand_make {
 }
 
 sub prepare{
-    local $count = 0;
+    $count = 0;
     my @objs = &unalias_expand_make(@_);
     foreach (@objs) {
 	&jobsched::set_job_prepared($_);
@@ -799,7 +796,8 @@ sub submit {
                 };
               }
             ## Resume signal
-            jobsched::resume_signal_last_time ($self);
+# ↓ jobsched に定義されていないのでコメントアウトした 2010/10/12
+#            jobsched::resume_signal_last_time ($self);
             ## initially()
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
@@ -815,9 +813,11 @@ sub submit {
             }
             ## set_job_queued()
             if (check_status_for_set_job_queued ($self)) {
-		if ($self->{env}->{location} eq 'local') {
+#		if ($self->{env}->{location} eq 'local') {
+		if ($self->{env}->{host} eq $env_d->{host}) { 
 		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched}\n");
-		} elsif ($self->{env}->{location} eq 'remote') {
+#		} elsif ($self->{env}->{location} eq 'remote') {
+		} else {
 		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched}\n");
 		}
                 &jobsched::set_job_queued($self);

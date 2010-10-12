@@ -196,7 +196,7 @@ sub update_script_file {
     my $file_base = shift;
     my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
-    if ($self->{env}->{location} eq 'remote') {
+    unless ($self->{env}->{host} eq $builtin::env_d->{host}) {
 	&put_into($self->{env}, $file, '.');
 	unlink $file;
     }
@@ -342,16 +342,16 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-	if ($self->{env}->{location} eq 'remote') {
-	    print "Deleting $self->{id} (request ID: $req_id)\n";
-	    &xcr_system($self->{env}, $command_string, $self->{env}->{workdir});
-	} elsif ($self->{env}->{location} eq 'local') {
+	if ($self->{env}->{host} eq $builtin::env_d->{host}) {
 	    if (cmd_executable ($command_string, $self->{env})) {
 		print "Deleting $self->{id} (request ID: $req_id)\n";
 		exec_async ($command_string);
 	    } else {
 		warn "$command_string not executable.";
 	    }
+	} else {
+	    print "Deleting $self->{id} (request ID: $req_id)\n";
+	    &xcr_system($self->{env}, $command_string, $self->{env}->{workdir});
 	}
     }
 }

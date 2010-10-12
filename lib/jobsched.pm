@@ -42,7 +42,7 @@ my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
 my %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
-# my %Last_Request_ID = ();  # Obsolete
+my %Last_Request_ID = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -66,7 +66,7 @@ my $Left_Message_Check_Thread = undef;
 my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
 
 # Warning option (can be bound dynamically using a local declaration)
-# our $Warn_job_not_found_by_id = 1;  # Obsolete because handle_inventory is bsolete
+our $Warn_job_not_found_by_id = 1;
 our $Warn_illegal_transition = 1;
 
 # 出力をバッファリングしない（STDOUT & STDERR）
@@ -791,7 +791,7 @@ sub invoke_left_message_check {
                 if ( get_job_status($self) eq 'queued') {
                     if ( $xcropt::options{verbose} >= 2 ) {
                         print "check if ". left_message_file_name($self, 'running')
-                            . " exists at $self->{env}->{location}\n";
+                            . " exists at $self->{env}->{host}\n";
                     }
                     if ( xcr_exist ($self->{env}, left_message_file_name($self, 'running')) ) {
                         unless (get_signal_status($self)) {
@@ -805,7 +805,7 @@ sub invoke_left_message_check {
                 if ( get_job_status($self) eq 'running') {
                     if ( $xcropt::options{verbose} >= 2 ) {
                         print "check if ". left_message_file_name($self, 'done')
-                            . " exists at $self->{env}->{location}.\n";
+                            . " exists at $self->{env}->{host}.\n";
                     }
                     if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
                         unless (get_signal_status($self)) {
