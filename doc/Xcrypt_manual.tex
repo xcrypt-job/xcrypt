@@ -48,7 +48,7 @@ job, and supports users to process jobs easily.
 
 \section{Environment}
 
-Xcrypt requires a superset of Bourne shell, Perl ($\geq$ 5.10.0).
+Xcrypt requires Perl 5.10.\texttt{x} and a superset of Bourne shell.
 
 \if0
 , and Perl/Tk 8.4 for GUI.
@@ -115,9 +115,9 @@ similarly to how to use modules in Perl.
 Xcrypt's templates are implemented as Perl's hashes.  For example,
 \begin{boxnote}
 \begin{alltt}
-%template = (
+%mytemplate = (
  'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
- 'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
+ 'exe0@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
  'RANGE0' => [0,1]
 );
 \end{alltt}
@@ -150,13 +150,13 @@ use base qw(limit core);
 
 &limit::initialize(10);
 
-%template = (
+%mytemplate = (
  'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
- 'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
+ 'exe0@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
  'RANGE0' => [0,1]
 );
 
-&prepare_submit_sync(%myjob);
+&prepare_submit_sync(%mytemplate);
 \end{alltt}
 \end{boxnote}
 
@@ -333,13 +333,14 @@ This module is the Xcrypt core module, and required to be read in
 order to use anything particular to Xcrypt.
 
 It creates a job script file of the name \texttt{\$myjob->\{id\}.sh}
-under the job working directory, where \texttt{\%myjob} is a template.
+under the job working directory, where \texttt{\$myjob} is a job object.
 
 \section{\texttt{sandbox}}
 
-A directory
+A directory of the name
 \begin{center}
- \texttt{\$myjob->\{id\}}\_\texttt{\$VALUE[0]}\_\texttt{\$VALUE[1]}\_$\ldots$
+\texttt{join('\_', (\$myjob->\{id\}, @VALUE))}
+%\texttt{\$VALUE[0]}\_\texttt{\$VALUE[1]}\_$\ldots$
 \end{center}
 is created for each job (called a \textit{job working directory}).
 Job-processing is done in the job working directory.
@@ -424,6 +425,8 @@ execution).  Description in a template
 \noindent
 makes any job (derived from this hash) to be processed in dry mode.
 
+\if0
+
 \section{\texttt{minimax}}
 
 This module provides a function of a tree algorithm \textit{minimax}.
@@ -450,6 +453,8 @@ The following is a sample script:
 \noindent
 where \texttt{strategy1}, \texttt{strategy2}, and
 \texttt{strategy3} are static functions.
+
+\fi
 
 \section{\texttt{invalidate}}
 
@@ -566,32 +571,38 @@ prepare(%template);
 \begin{boxnote}
 \begin{alltt}
 @jobs = prepare('id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
-                'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
+                'exe0@' => sub \{ "./\textit{myexe0} $VALUE[0]"; \},
+                'exe1@' => sub \{ "./\textit{myexe1} $VALUE[0]"; \},
                 'RANGE0' => [0,1]);
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
 
+\if0
+
 This is almost the same as
 \begin{boxnote}
 \begin{alltt}
 @jobs = ();
-push(@jobs, \{'id' => '\textit{myjob0}', 'exe' => '\textit{./myexe} 0'\});
-push(@jobs, \{'id' => '\textit{myjob1}', 'exe' => '\textit{./myexe} 1'\});
+push(@jobs, \{'id' => '\textit{myjob0}', 'exe0' => '\textit{./myexe} 0'\});
+push(@jobs, \{'id' => '\textit{myjob1}', 'exe0' => '\textit{./myexe} 1'\});
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
+
+\fi
 
 Declarative description is also available as follows,
 \begin{boxnote}
 \begin{alltt}
 %mytemplate = (
     'id@' => sub \{ "\textit{myjob}$VALUE[0]"; \},
-    'exe@' => sub \{ "./\textit{myexe} $VALUE[0]"; \},
+    'exe0@' => sub \{ "./\textit{myexe0} $VALUE[0]"; \},
+    'exe1@' => sub \{ "./\textit{myexe1} $VALUE[0]"; \},
     'RANGE0' => [0,1]
 );
 
-prepare(%mytemplate);
+@jobs = prepare(%mytemplate);
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
@@ -605,7 +616,7 @@ For example,
 \begin{alltt}
 %mytemplate = (
     'id@' => sub \{ "\textit{myjob}$VALUE[0]_$VALUE[1]"; \},
-    'exe@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
+    'exe0@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
     'RANGE0' => [0,1],
     'RANGE1' => [2,4]
 );
@@ -614,7 +625,18 @@ For example,
 \end{boxnote}
 \vspace{\baselineskip}
 
-creates 4 job objects.
+creates 4 job objects.  This is the same as
+\begin{boxnote}
+\begin{alltt}
+%mytemplate = (
+    'id@' => sub \{ "\textit{myjob}$VALUE[0]_$VALUE[1]"; \},
+    'exe0@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
+    'RANGES' => [[0,1],[2,4]]
+);
+@jobs = prepare(%mytemplate);
+\end{alltt}
+\end{boxnote}
+\vspace{\baselineskip}
 
 \section{\texttt{submit}}\label{sec:submit}
 
@@ -827,7 +849,7 @@ add_host(\|\|%\textit{env});
 \begin{boxnote}
 \begin{alltt}
 $env = add_host(\{'host' => '\textit{foo@bar}', 'wd' => '\textit{/home/foo}'\});
-%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'env' => $env);
+%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
 \end{alltt}
 \end{boxnote}
 
@@ -849,7 +871,7 @@ get_local_env();
 \begin{boxnote}
 \begin{alltt}
 $env = get_local_env();
-%template = ('id' => '\textit{myjob}', 'exe' => '\textit{./myexe}', 'env' => $env);
+%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
 \end{alltt}
 \end{boxnote}
 
@@ -1006,7 +1028,7 @@ a working directory in that Xcrypt is executed at a remote host.
 \begin{alltt}
 %myjob = (
     'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe} 0 100 myoutput'
+    'exe0' => '\textit{./myexe} 0 100 myoutput'
 );
 \end{alltt}
 \end{boxnote}
@@ -1023,10 +1045,10 @@ a working directory in that Xcrypt is executed at a remote host.
 \begin{alltt}
 %myjob = (
     'id' => '\textit{myjob}',
-    'exe' => '\textit{./myexe}',
+    'exe0' => '\textit{./myexe}',
     'arg0_0@' => [0,1],
     'arg0_1' => 100,
-    'arg0_2@' => [\textit{myoutput}0,\textit{myoutput}1]
+    'arg0_2@' => [\textit{myoutput0},\textit{myoutput}1]
 );
 \end{alltt}
 \end{boxnote}
@@ -1049,14 +1071,14 @@ a working directory in that Xcrypt is executed at a remote host.
 \begin{alltt}
 %myjob = (
     'id' => '\textit{myjob}',
-    'exe0' => '\textit{./myexe}0',
-    'exe1' => '\textit{./myexe}1',
+    'exe0' => '\textit{./myexe0}',
+    'exe1' => '\textit{./myexe1}',
     'arg0_0@' => [0,1],
     'arg0_1' => 100,
-    'arg0_2@' => [\textit{myoutput}00,\textit{myoutput}01],
+    'arg0_2@' => [\textit{myoutput00},\textit{myoutput01}],
     'arg1_0@' => [2,3],
     'arg1_1' => 200,
-    'arg1_2@' => [\textit{myoutput}10,\textit{myoutput}11]
+    'arg1_2@' => [\textit{myoutput10},\textit{myoutput11}]
 );
 \end{alltt}
 \end{boxnote}
@@ -1082,7 +1104,7 @@ a working directory in that Xcrypt is executed at a remote host.
 \begin{alltt}
 %myjob = (
   'id' => '\textit{myjob}',
-  'exe' => sub \{ "\textit{./myexe} $VALUE[0] 100 \textit{myoutput} $VALUE[0]"; \},
+  'exe0' => sub \{ "\textit{./myexe} $VALUE[0] 100 \textit{myoutput} $VALUE[0]"; \},
   'RANGE0' => [0,1]
 );
 \end{alltt}
@@ -1106,7 +1128,7 @@ a working directory in that Xcrypt is executed at a remote host.
 \begin{alltt}
 %myjob = (
   'id' => '\textit{myjob}',
-  'exe' => sub \{ "\textit{./myexe} $VALUE[0] $VALUE[1] \textit{myoutput} $VALUE[0]_$VALUE[1]"; \},
+  'exe0' => sub \{ "\textit{./myexe} $VALUE[0] $VALUE[1] \textit{myoutput} $VALUE[0]_$VALUE[1]"; \},
   'RANGE0' => [0,1],
   'RANGE1' => [100,101],
 );
