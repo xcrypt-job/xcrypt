@@ -1,3 +1,3 @@
 #!/bin/sh
-xcrypt ${XCRYPT}/bin/cancelall.xcr "$*"
-#perl ${XCRYPT}/bin/cancelall.xcr.pl "$*"
+#xcrypt ${XCRYPT}/bin/script/cancelall.xcr "$*"
+perl ${XCRYPT}/bin/script/cancelall.xcr.pl "$*"
