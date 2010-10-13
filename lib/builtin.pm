@@ -282,9 +282,6 @@ sub add_host {
 	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
 	    $Host_Ssh_Hash{$env->{host}} = $ssh;
 	}
-	unless ($xcropt::options{shared}) {
-	    &rmt_mkdir($env, $xcropt::options{inventory_path});
-	}
     }
     unless (defined $env->{wd}) {
 	my @wd = &xcr_qx($env, 'echo $HOME');
@@ -294,6 +291,11 @@ sub add_host {
 	    $env->{wd} = $wd[0];
 	} else {
 	    die "Set the key wd at $env->{host}\n";
+	}
+    }
+    unless ($env->{host} eq $env_d->{host}) {
+	unless ($xcropt::options{shared}) {
+	    &rmt_mkdir($env, $xcropt::options{inventory_path});
 	}
     }
     unless (defined $env->{p5l}) {
