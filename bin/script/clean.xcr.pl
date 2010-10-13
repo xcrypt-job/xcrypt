@@ -11,7 +11,7 @@ sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}(
 &jobsched::read_log();
 &jobsched::invoke_abort_check();
 &jobsched::invoke_left_message_check();
-if (defined $xcropt::options{rhost}) { if (defined $xcropt::options{rwd}) { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "wd" => $xcropt::options{rwd}, "location" => "remote"}); } else { $builtin::env_d = &add_host({"host" => $xcropt::options{rhost}, "location" => "remote"}); } }
+$builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
 use base qw(core);
 
 =comment
