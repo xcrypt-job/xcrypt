@@ -31,6 +31,6 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("xcryptdel @ids");
+system("$ENV{XCRYPT}/bin/xcryptdel @ids");
 close ($LOG);
 # Up to here your script.  From here Xcrypt's footer.
