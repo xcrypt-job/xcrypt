@@ -3,14 +3,14 @@ use base qw (core);
 
 %template = (
     'id' => 'job0',
-    'exe' => 'bin/fib-file', # or exe0
-    'arg0' => "dat/num40",   # or arg0_0
-    'arg1' => "out_0",       # or arg0_1
+    'exe0' => 'bin/fib-file',
+    'arg0_0' => "dat/num40",
+    'arg0_1' => "out_0",
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'before_in_job' => 'print STDERR $self->{arg0}. "\n";',
+    'before_in_job' => 'print STDERR $self->{arg0_0}. "\n";',
 #    'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
-    'after_in_job' => 'print STDOUT $self->{exe}. "\n";',
+    'after_in_job' => 'print STDOUT $self->{exe0}. "\n";',
     );
 @jobs=&prepare_submit_sync (%template);
 foreach (keys(%{$jobs[0]})) { print "$_: $jobs[0]}->{$_}\n"; }
