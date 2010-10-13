@@ -17,5 +17,5 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("xcryptcancel @ids");
+system("$ENV{XCRYPT}/bin/xcryptcancel @ids");
 close ($LOG);
