@@ -1,3 +1,3 @@
 #!/bin/sh
-xcrypt ${XCRYPT}/bin/stat.xcr "$*"
-#perl ${XCRYPT}/bin/stat.xcr.pl "$*"
+#xcrypt ${XCRYPT}/bin/script/stat.xcr "$*"
+perl ${XCRYPT}/bin/script/stat.xcr.pl "$*"

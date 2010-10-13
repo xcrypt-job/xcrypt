@@ -1,3 +1,3 @@
 #!/bin/sh
-xcrypt ${XCRYPT}/bin/invalidateall.xcr "$*"
-#perl ${XCRYPT}/bin/invalidateall.xcr.pl "$*"
+#xcrypt ${XCRYPT}/bin/script/invalidateall.xcr "$*"
+perl ${XCRYPT}/bin/script/invalidateall.xcr.pl "$*"
