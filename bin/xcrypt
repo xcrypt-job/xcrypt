@@ -24,6 +24,8 @@ print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
 print $TMP 'use Coro;' . "\n";
 print $TMP 'use jobsched;' . "\n";
+print $TMP 'use data_generator;' . "\n";
+print $TMP 'use data_extractor;' . "\n";
 print $TMP 'our @VALUE = ();' . "\n";
 print $TMP 'sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}' . "\n";
 print $TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";

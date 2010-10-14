@@ -1,0 +1,25 @@
+use base qw(bulk_simple core);
+
+$template = {
+    'id' => 'bulked_job_',
+};
+%template0 = (
+    'id' => 'job6',
+#    'exe0@' => sub { 'echo '.(0 + $VALUE[0])." > job4_$VALUE[0]".'_out'},
+    'exe0@' => sub { 'echo '.(0 + $VALUE[0]); },
+    'arg0_0@' => sub { "> job4_$VALUE[0]".'_out'; },
+    'exe1@' => sub { 'echo '.(10 + $VALUE[0])." > job4_$VALUE[0]".'_out'},
+    'RANGE0' => [31..33],
+    'before' => sub { print "$_[0]->{id}: $VALUE[0]\n"; }
+);
+%template1 = (
+    'id' => 'job6',
+    'exe0@' => sub { 'echo '.(20 + $VALUE[0])." > job4_$VALUE[0]".'_out'},
+    'RANGE0' => [41..44],
+    'after' => sub { print "$_[0]->{id}: $VALUE[0]\n"; }
+);
+
+my @jobs0 = &prepare(%template0);
+my @jobs1 = &prepare(%template1);
+my @bulk = &bulk_simple::bulk($template, @jobs0, @jobs1);
+&submit_sync(@bulk);
