@@ -13,16 +13,17 @@ sub bulk {
     $template{id} = "$pre_template->{id}"."$count";
     $template{bulked_jobs} = \@jobs;
     my $count_exe = 0;
+    my $sep = &get_separator();
     foreach my $job (@jobs) {
 	foreach my $key (keys(%$job)) {
 	    if ($key =~ /\Aexe([0-9]+)\Z/) {
 		my $tmp = $1;
 		$template{"exe$count_exe"} = $job->{$key};
 		foreach my $key (keys(%$job)) {
-		    my $str = '\Aarg'.$tmp.'_([0-9]+)\Z';
+		    my $str = '\Aarg'.$tmp.$sep.'([0-9]+)\Z';
 		    if ($key =~ /$str/) {
 			my $temp = $1;
-			$template{"arg$count_exe"."_$temp"} = $job->{$key};
+			$template{"arg$count_exe".$sep."$temp"} = $job->{$key};
 		    }
 		}
 		$count_exe++;

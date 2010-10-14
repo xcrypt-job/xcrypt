@@ -8,7 +8,7 @@ xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 unalias expand_make do_initialized
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
-set_expander set_separator check_separator nocheck_separator
+set_expander get_expander set_separator get_separator check_separator nocheck_separator
 filter
 );
 
@@ -60,7 +60,9 @@ my $expander = '@';
 my $separator = '_';
 my $separator_check = 1;
 sub set_expander { $expander = $_[0]; }
+sub get_expander { return $expander; }
 sub set_separator { $separator = $_[0]; }
+sub get_separator { return $separator; }
 sub check_separator { $separator_check = 1; }
 sub nocheck_separator { $separator_check = 0; }
 #
