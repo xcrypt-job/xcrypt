@@ -22,7 +22,7 @@ sub bulk {
 		    my $str = '\Aarg'.$tmp.'_([0-9]+)\Z';
 		    if ($key =~ /$str/) {
 			my $temp = $1;
-			$template{"arg$count_exe".'_'."$temp"} = $job->{$key};
+			$template{"arg$count_exe"."_$temp"} = $job->{$key};
 		    }
 		}
 		$count_exe++;
@@ -38,7 +38,8 @@ sub initially {
     my $self = shift;
     foreach my $job (@{$self->{bulked_jobs}}) {
 	if (defined $job->{initially}) {
-	    &{$job->{initially}}($job);
+	    @user::VALUE = @{$job->{VALUE}};
+	    &{$job->{initially}}($job, @user::VALUE);
 	}
     }
 }
@@ -47,7 +48,8 @@ sub before {
     my $self = shift;
     foreach my $job (@{$self->{bulked_jobs}}) {
 	if (defined $job->{before}) {
-	    &{$job->{before}}($job);
+	    @user::VALUE = @{$job->{VALUE}};
+	    &{$job->{before}}($job, @user::VALUE);
 	}
     }
 }
@@ -56,7 +58,8 @@ sub after {
     my $self = shift;
     foreach my $job (@{$self->{bulked_jobs}}) {
 	if (defined $job->{after}) {
-	    &{$job->{after}}($job);
+	    @user::VALUE = @{$job->{VALUE}};
+	    &{$job->{after}}($job, @user::VALUE);
 	}
     }
 }
@@ -65,11 +68,11 @@ sub finally {
     my $self = shift;
     foreach my $job (@{$self->{bulked_jobs}}) {
 	if (defined $job->{finally}) {
-	    &{$job->{finally}}($job);
+	    @user::VALUE = @{$job->{VALUE}};
+	    &{$job->{finally}}($job, @user::VALUE);
 	}
     }
 }
-
 
 sub new {
     my $class = shift;
