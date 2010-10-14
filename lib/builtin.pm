@@ -400,11 +400,11 @@ sub get_max_index {
 	$pat0 = '\Aarg[0-9]+';
 	$pat1 = '[0-9]+';
     } elsif ($arg eq 'first') {
-	$pat0 = '\Aarg[0-9]+_[0-9]+';
+	$pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
 	$pat1 = '[0-9]+';
     } elsif ($arg eq 'second') {
-	$pat0 = '\Aarg[0-9]+_[0-9]+';
-	$pat1 = '[0-9]+_';
+	$pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
+	$pat1 = '[0-9]+'.$separator;
     }
     foreach my $key (keys(%job)) {
 	if ($key =~ /$pat0/) {
