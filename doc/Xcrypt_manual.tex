@@ -364,6 +364,20 @@ write as follows,
 \end{verbatim}
 \end{boxnote}
 
+\section{\texttt{bulk\_simple}}
+
+This module gathers jobs and returns one job of the same denotation.
+Typically, you can write as follows,
+\begin{boxnote}
+\begin{verbatim}
+my $template = { 'id' => 'bulked_job_', 'JS_queue' => 'myqueue' };
+my @jobs0 = &prepare(%template0);
+my @jobs1 = &prepare(%template1);
+my @bulk = &bulk_simple::bulk($template, @jobs0, @jobs1);
+&submit(@bulk);
+\end{verbatim}
+\end{boxnote}
+
 \section{\texttt{successor}}
 
 This module indicates job objects which can be defined declaratively.
