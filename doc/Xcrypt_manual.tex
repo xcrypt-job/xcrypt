@@ -48,13 +48,13 @@ job, and supports users to process jobs easily.
 
 \section{Environment}
 
-Xcrypt requires Perl 5.10.\texttt{x} and a superset of Bourne shell.
+Xcrypt requires Perl ($\geq$ 5.10.0) and a superset of Bourne shell.
 
 \if0
 , and Perl/Tk 8.4 for GUI.
 \fi
 
-Xcrypt also requires the following outer modules (bundled with Xcrypt):
+Xcrypt also requires the following outer modules:
 \begin{itemize}
 \item Marc Lehmann's Coro (where conftest.c is not contained), EV,
 \item Graham Barr's Error,
@@ -63,7 +63,7 @@ Xcrypt also requires the following outer modules (bundled with Xcrypt):
 \item Daniel Muey's Recursive,
 \end{itemize}
 and wants Marc Lehmann's AnyEvent, common::sense, and Guard (warns if
-none).
+none).  These modules are bundled with Xcrypt.
 
 
 \chapter{Script}
@@ -367,7 +367,11 @@ write as follows,
 \section{\texttt{bulk\_simple}}
 
 This module gathers jobs and returns one job of the same denotation.
-Typically, you can write as follows,
+For bulked jobs, the function \texttt{\&bulk} ignores any member
+except \texttt{exe}\textit{i},
+\texttt{exe}\textit{i}\texttt{\_}\texttt{j}, \texttt{initially},
+\texttt{before}, \texttt{after}, and \texttt{finally}.  Typically, you
+can write as follows,
 \begin{boxnote}
 \begin{verbatim}
 my $template = { 'id' => 'bulked_job_', 'JS_queue' => 'myqueue' };
