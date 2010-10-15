@@ -16,7 +16,7 @@ use data_extractor;
 #    'RANGE0'   => ["-Kfast", "-O3"],			# Compile options
 #    'RANGE1'   => [0, 1],				# PMAP process mapping
 #    'RANGE2'   => [1, 2, 4],				# P
-    'RANGE0'   => ["-Kfast"],
+    'RANGE0'   => ["-O3"],
     'RANGE1'   => [0],
     'RANGE2'   => [2, 4],
     'JS_node'  => 4,					# P x Q = # of proc.
@@ -24,25 +24,28 @@ use data_extractor;
 	my $self = shift;
         # Generate Makefile
         my $hplmake = data_generator
-                   -> new( "hpl/Make.Linux_ATHLON_FBLAS",
-                           $self->workdir() . "/hpl" );
-        $hplmake -> replace_key_value( "TOPdir",
-				       $self->workdir() . "/hpl" );
-        $hplmake -> replace_line_column( 171, 4, $VALUE[0] );
+                   -> new("hpl/Make.Linux_ATHLON_FBLAS",
+                          $self->{workdir} . "/hpl/Make.Linux_ATHLON_FBLAS");
+        $hplmake -> replace_key_value ("TOPdir",
+                        "$ENV{'PWD'}/" . $self->{workdir} . "/hpl");
+        $hplmake -> replace_line_column(171, 4, $VALUE[0]);
         $hplmake -> execute();
         # Generate input file
-        my $hpldat = data_generator->new( "HPL.dat", $self->workdir() );
-	$hpldat -> replace_line_column(  9, 1, $VALUE[1] ); # take one of RANGE1
-	$hpldat -> replace_line_column( 11, 1, $VALUE[2] ); # take one of RANGE2
-	$hpldat -> replace_line_column( 12, 1, $self->{'JS_node'}/$VALUE[2] );
+        my $hpldat = data_generator -> new("HPL.dat",
+                                           $self->{workdir} . "/HPL.dat");
+	$hpldat -> replace_line_column ( 9, 1, $VALUE[1]); # take one of RANGE1
+	$hpldat -> replace_line_column (11, 1, $VALUE[2]); # take one of RANGE2
+	$hpldat -> replace_line_column (12, 1, $self->{'JS_node'}/$VALUE[2]);
         $hpldat -> execute();
     },
     'after' => sub{
+        # Wait for stdout to be outputed
+        sleep(2);
 	my $self = shift;
         # Extract performance value
-	my $stdout_file = $self->workdir() . "/$self->{id}_stdout";
+	my $stdout_file = $self->{workdir} . "/$self->{id}_stdout";
         my $stdout = data_extractor->new($stdout_file);
-        $stdout -> extract_line_rn ('PASSED/-2'); # ('PASSED',-2)
+        $stdout -> extract_line_rn (['PASSED',-2]);
         $stdout -> extract_line_nn (1);
         $stdout -> extract_column_nn (7);
         @result = $stdout -> execute();
@@ -52,9 +55,9 @@ use data_extractor;
             $max_performance = $result[0];
             $max_performance_dir = $self->{workdir};
             $coption = $VALUE[0];
-            my $stdout = data_extractor->new($stdout_file);
-            $stdout -> extract_line_rn( 'following parameter/18' ); # 'following parameter',18
-            $stdout -> extract_line_nn( '3/18' ); # 3,18
+            my $stdout = data_extractor -> new($stdout_file);
+            $stdout -> extract_line_rn(['following parameter',18]);
+            $stdout -> extract_line_nn([3,18]);
             @parameters = $stdout -> execute();
         }
     },
