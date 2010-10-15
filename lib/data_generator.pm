@@ -15,7 +15,7 @@ sub new{
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = クラス名                                                                #
     #         $_[1] = 雛形ファイル名                                                          #
-    #         $_[2] = 生成ファイル格納ディレクトリ名                                          #
+    #         $_[2] = 生成ファイル名                                                          #
     # 処理 ： オブジェクト定義（置換えファイル定義）                                          #
     # 返却 ： オブジェクト                                                                    #
     #-----------------------------------------------------------------------------------------#
@@ -24,8 +24,7 @@ sub new{
     ############
     my $class             = shift;                                                            # クラス名
     my $infile            = shift;                                                            # 雛形ファイル名
-    my $outdir            = shift;                                                            # 生成ファイル格納ディレクトリ名
-    my $outfile           = File::Spec->catfile("$outdir", (basename($infile)));              # 生成ファイル名
+    my $outfile           = shift;                                                            # 生成ファイル名
     my @replace_datas     = ();                                                               # 置換え情報(配列)
     my @insert_datas      = ();                                                               # 挿入情報(配列)
     my $value_options_all = undef;                                                            # 標準表示書式
@@ -44,15 +43,7 @@ sub new{
         exit 99;
     }
     # 生成ファイルチェック
-    if (!-d "$outdir") {
-        # ディレクトリ無し
-        print STDERR "Output file directory($outdir) not found\n";
-        exit 99;
-    } elsif (!-w "$outdir") {
-        # ディレクトリに書込み権限無し
-        print STDERR "Output file directory($outdir) is not write authority\n";
-        exit 99;
-    } elsif (-e "$outfile" and !-w "$outfile") {
+    if (-e "$outfile" and !-w "$outfile") {
         # ファイルに書込み権限無し
         print STDERR "Output file($outfile) is not write authority\n";
         exit 99;

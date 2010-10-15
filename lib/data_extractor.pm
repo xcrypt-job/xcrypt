@@ -13,9 +13,7 @@ use Cwd;
 sub new {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = クラス名                                                                #
-    #         $_[1] = 入力データ情報                                                          #
-    #                 ・変数指定    ）変数名                                                  #
-    #                 ・ファイル指定）file:ファイル名                                         #
+    #         $_[1] = ファイル名 or 変数名                                                    #
     #         $_[2] = ユーザ指定最大バッファ数                                                #
     # 処理 ： 入力データチェック、オブジェクト定義（抽出対象ファイル定義）                    #
     # 返却 ： オブジェクト                                                                    #
@@ -103,40 +101,14 @@ sub check_in_data {
     my @out_data = ();                                                                        # チェック後入力データ情報(入力区分、入力データ名)
     
     # ファイル指定か変数指定かチェック
-    if ($in_data !~ /file:/) {
-        #==========#
-        # 変数指定 #
-        #==========#
-        # ユーザスクリプト定義変数に置換える
-        $out_data[1] = '${main::'.$in_data.'}';
-        # 変数チェック
-        if (! defined eval($out_data[1])) {
-            #----------#
-            # 変数なし #
-            #----------#
-            print STDERR "Input variable($in_data) not found\n";
-            exit 99;
-        } elsif (eval($out_data[1]) eq '') {
-            #--------------#
-            # 変数に値なし #
-            #--------------#
-            print STDERR "There are not the input data($in_data)\n";
-            exit 99;
-        }
-    } else {
+    if (-e "$in_data") {
         #==============#
         # ファイル指定 #
         #==============#
         $out_data[0] = 'file';
-        $out_data[1] = substr $in_data, 5;
+        $out_data[1] = $in_data;
         # ファイルチェック
-        if (!-e "$out_data[1]") {
-            #--------------#
-            # ファイルなし #
-            #--------------#
-            print STDERR "Input file($in_data) not found\n";
-            exit 99;
-        } elsif (!-r "$out_data[1]") {
+        if (!-r "$out_data[1]") {
             #----------------#
             # 読込み権限なし #
             #----------------#
@@ -151,6 +123,36 @@ sub check_in_data {
             print STDERR "There are not the input data($in_data)\n";
             exit 99;
         }
+    } elsif (substr($in_data, 0, 1) eq '$') {
+        #==========#
+        # 変数指定 #
+        #==========#
+        # 変数チェック
+        my $in_data_name = substr($in_data, 1);
+        $out_data[1] = '${user::'."$in_data_name".'}';
+        if (! defined eval($out_data[1])) {
+            $out_data[1] = '${main::'."$in_data_name".'}';
+            if (! defined eval($out_data[1])) {
+                #----------#
+                # 変数なし #
+                #----------#
+                print STDERR "Input variable($in_data) not found\n";
+                exit 99;
+            }
+        }
+        if (eval($out_data[1]) eq '') {
+            #--------------#
+            # 変数に値なし #
+            #--------------#
+            print STDERR "There are not the input data($in_data)\n";
+            exit 99;
+        }
+    } else {
+        #==============================#
+        # ファイル指定（ファイルなし） #
+        #==============================#
+        print STDERR "Input file($in_data) not found\n";
+        exit 99;
     }
     
     ################################
@@ -666,17 +668,23 @@ sub check_fixed_form_cond {
             # 最終からの実数指定("end") #
             #---------------------------#
             # 処理なし
-        } elsif (${$cond_end} =~ /^\d+$/ and ${$cond_end} > 0) {
+       #} elsif (${$cond_end} =~ /^\d+$/ and ${$cond_end} > 0) {
+        } elsif (${$cond_end} =~ /^\d+$/) {
             #----------#
             # 実数指定 #
             #----------#
+            if (${$cond_end} == 0) {
+                # 開始を終了に設定
+                ${$cond_end} = ${$cond_start};
+            }
             # 開始条件よりも終了条件が小さい場合、条件を入替える
             if (${$cond_start} =~ /end/ or ${$cond_start} > ${$cond_end}) {
                 my $temp_su    = ${$cond_start};
                 ${$cond_start} = ${$cond_end};
                 ${$cond_end}   = $temp_su;
             }
-        } elsif (${$cond_end} =~ /^\+\d+$/ and ${$cond_end} != 0) {
+       #} elsif (${$cond_end} =~ /^\+\d+$/ and ${$cond_end} != 0) {
+        } elsif (${$cond_end} =~ /^\+\d+$/) {
             #------------------------------#
             # 後続範囲指定(プラス付き数字) #
             #------------------------------#
@@ -684,7 +692,8 @@ sub check_fixed_form_cond {
             if (${$cond_start} !~ /end/) {
                 ${$cond_end} += ${$cond_start};
             }
-        } elsif (${$cond_end} =~ /^-\d+$/ and ${$cond_end} != 0) {
+       #} elsif (${$cond_end} =~ /^-\d+$/ and ${$cond_end} != 0) {
+        } elsif (${$cond_end} =~ /^-\d+$/) {
             #--------------------------------#
             # 先行範囲指定(マイナス付き数字) #
             #--------------------------------#
@@ -727,7 +736,8 @@ sub check_fixed_form_cond {
         }
         
         # ＜終了条件チェック＞
-        if ($_[4] =~ /^[\+-]\d+/ and ($_[4] !~ /^[\+-]\d+$/ or $_[4] == 0))  {
+       #if ($_[4] =~ /^[\+-]\d+/ and ($_[4] !~ /^[\+-]\d+$/ or $_[4] == 0))  {
+        if ($_[4] =~ /^[\+-]\d+/ and $_[4] !~ /^[\+-]\d+$/)  {
             # 抽出範囲誤り
             print STDERR "End Range Number is an Error ($_[4])\n";
             exit 99;
