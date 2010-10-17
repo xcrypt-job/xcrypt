@@ -374,21 +374,20 @@ sub qdel_if_queued_or_running {
 sub abort {
     my ($self) = @_;
     print "$self->{id} is aborted by user.\n";
-    jobsched::set_signal ($self, 'sig_abort');
-    if ($self->qdel_if_queued_or_running()) {
-        jobsched::set_job_status_according_to_signal ($self);
+    unless (jobsched::get_signal_status ($self) eq 'sig_invalidate') {
+        jobsched::set_signal ($self, 'sig_abort');
     }
+    $self->qdel_if_queued_or_running();
+    jobsched::set_job_status_according_to_signal ($self);
 }
 
-# Same as abort except that the method is named for finished or deleted jobs.
+# Same as abort except that this method also aborts finished or invalidated jobs.
 sub cancel {
     my ($self) = @_;
     print "$self->{id} is canceled by user.\n";
     jobsched::set_signal ($self, 'sig_cancel');
-    if ($self->qdel_if_queued_or_running()
-        || jobsched::get_job_status($self) eq 'finished') {
-        jobsched::set_job_status_according_to_signal ($self);
-    }
+    $self->qdel_if_queued_or_running();
+    jobsched::set_job_status_according_to_signal ($self);
 }
 
 # Stop the job. The job is never executed until reset is invoked.
@@ -396,9 +395,8 @@ sub invalidate {
     my ($self) = @_;
     print "$self->{id} is invalidated by user.\n";
     jobsched::set_signal ($self, 'sig_invalidate');
-    if ($self->qdel_if_queued_or_running()) {
-        jobsched::set_job_status_according_to_signal ($self);
-    }
+    $self->qdel_if_queued_or_running();
+    jobsched::set_job_status_according_to_signal ($self);
 }
 
 1;

@@ -43,6 +43,8 @@ my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 my %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
 my %Last_Request_ID = ();
+# Hash table (key,val)=(job ID, the signal name in the previous Xcrypt execution)
+my %Last_Signal = ();
 # Hash table (key,val)=(job ID, the user@host in the previous Xcrypt execution)
 my %Last_Userhost_ID = ();
 # Hash table (key,val)=(job ID, the job scheduler in the previous Xcrypt execution)
@@ -58,6 +60,8 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
 # Signalの種類
+# A signal is set when a job is made aborted, canceled, or invalidated
+# to indicate that the job is deleted by a user (not accidentally).
 my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
 # 外部からの状態変更通知を待ち受け，処理するスレッド
@@ -491,13 +495,17 @@ sub set_job_aborted  {
     set_job_status ($self, "aborted", $tim);
 }
 
-# Set job's status to 'aborted' or 'finished' accordign to the job's signal status.
+# Set job's status to 'aborted' or 'finished' according to the job's signal status.
 # Do nothing if the job is not signaled.
 sub set_job_status_according_to_signal {
     my ($self, $tim) = @_;
     my $sig = get_signal_status ($self);
     my $stat = get_job_status ($self);
-    if ($sig eq 'sig_abort' || $sig eq 'sig_cancel') {
+    if ($sig eq 'sig_abort') {
+        unless ( $stat eq 'aborted' || $stat eq 'finished') { 
+            set_job_aborted ($self, $tim);
+        }
+    } elsif ($sig eq 'sig_cancel') {
         unless ( $stat eq 'aborted' ) { 
             set_job_aborted ($self, $tim);
         }
@@ -581,12 +589,11 @@ sub read_log {
                 $Last_Sched_ID{$id} = $sched;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
-		## Obsolete: do nothing now
-                # if ( $sig eq 'unset' ) {
-                #     delete ($Last_Signal{$id});
-                # } else {
-                #     $Last_Signal{$id} = $sig;
-                # }
+                if ( $sig eq 'unset' ) {
+                    delete ($Last_Signal{$id});
+                } else {
+                    $Last_Signal{$id} = $sig;
+                }
             }
         }
         foreach my $id (keys %Last_State) {
@@ -731,6 +738,7 @@ sub check_and_write_aborted {
             # Delete from %unchecked if the job is displayed by qstat.
             delete ($unchecked{$_});
             # If the job exists but is signaled, qdel it.
+            # This is applied when the job is signaled before submitted.
             if ($job && get_signal_status($job)) {
                 if ($job->qdel_if_queued_or_running()) {
                     # set to 'aborted' or 'finished'
@@ -747,12 +755,13 @@ sub check_and_write_aborted {
 	    unless (($status eq 'done') || ($status eq 'finished')
                     || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
-                if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
-                    local $Warn_illegal_transition = undef;
-                    set_job_finished ($aborted_job);
-                } else {
-                    set_job_aborted ($aborted_job);
-                }
+                ## Is it necessary?
+                # if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
+                #     local $Warn_illegal_transition = undef;
+                #     set_job_finished ($aborted_job);
+                # } else {
+                #     set_job_aborted ($aborted_job);
+                # }
 	    }
         }
     }
@@ -792,6 +801,7 @@ sub invoke_left_message_check {
     $Left_Message_Check_Thread = Coro::async_pool {
         while (1) {
             print "left_message_check:\n";
+            # Transition to running/done
             foreach my $req_id (keys %Running_Jobs) {
                 my $self = $Running_Jobs{$req_id};
                 if ( get_job_status($self) eq 'queued') {
@@ -819,6 +829,26 @@ sub invoke_left_message_check {
                         } else {
                             set_job_status_according_to_signal($self);
                             $self->qdel();
+                        }
+                    }
+                }
+            }
+            # Signal
+            foreach my $sigmsg (glob File::Spec->catfile($Inventory_Path, "*_to_be_*")) {
+                my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
+                if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
+                    my ($id, $sig) = ($1, $2);
+                    my $self = find_job_by_id ($id);
+                    if ($self) {
+                        if ( $sig eq 'aborted' ) {
+                            $self->abort();
+                            unlink ($sigmsg);
+                        } elsif ( $sig eq 'cancelled' ) {
+                            $self->cancel();
+                            unlink ($sigmsg);
+                        } elsif ( $sig eq 'invalidated' ) {
+                            $self->invalidate();
+                            unlink ($sigmsg);
                         }
                     }
                 }
