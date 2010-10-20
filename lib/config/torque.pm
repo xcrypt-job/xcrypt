@@ -20,7 +20,7 @@ $jsconfig::jobsched_config{"torque"} = {
 	return "#PBS -l nodes=$node:ppn=$cpu";
     },
     # jobscript_workdir => '', # OK ad hok (since 'cd $PWD' is described)
-    jobscript_body_preamble = 'SCORE_RSH="/opt/torque/bin/pbsdsh -h %s /bin/sh -c"',
+    jobscript_body_preamble => 'SCORE_RSH="/opt/torque/bin/pbsdsh -h %s /bin/sh -c"',
     extract_req_id_from_qsub_output => sub {
         my (@lines) = @_;
         if ($lines[0] =~ /^([0-9]*)\./) {
