@@ -112,6 +112,13 @@ sub make_jobscript_header {
             }
         }
     }
+    ## Other options
+    my $others = $cfg{jobscript_other_options};
+    if ( ref($others) eq 'CODE' ) {
+        push (@header, &$others($self));
+    } else {
+        push (@header, @{mkarray($others)});
+    }
     ## Environment variables
 #    push (@header, "export XCRYPT=$ENV{XCRYPT}");
 #    push (@header, 'export PERL5LIB=$XCRYPT/lib');
@@ -137,6 +144,13 @@ sub make_jobscript_body {
         }
     }
     push (@body, "cd $wkdir_str");
+    ## preamble
+    my $preamble = $cfg{jobscript_body_preamble};
+    if ( ref($preamble) eq 'CODE' ) {
+        push (@body, &$preamble($self));
+    } else {
+        push (@body, @{mkarray($preamble)});
+    }
     # Set the job's status to "running"
     push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     # inventory_write.pl をやめて touch に
