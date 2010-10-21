@@ -755,13 +755,12 @@ sub check_and_write_aborted {
 	    unless (($status eq 'done') || ($status eq 'finished')
                     || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
 		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
-                ## Is it necessary?
-                # if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
-                #     local $Warn_illegal_transition = undef;
-                #     set_job_finished ($aborted_job);
-                # } else {
-                #     set_job_aborted ($aborted_job);
-                # }
+                if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
+                    local $Warn_illegal_transition = undef;
+                    set_job_finished ($aborted_job);
+                } else {
+                    set_job_aborted ($aborted_job);
+                }
 	    }
         }
     }

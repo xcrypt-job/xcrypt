@@ -5,6 +5,8 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
+our @ARGV_ORIG = @ARGV;
+
 my $localhost = qx/hostname/;
 chomp $localhost;
 my $username = qx/whoami/;
