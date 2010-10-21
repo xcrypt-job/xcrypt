@@ -33,6 +33,6 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("$ENV{XCRYPT}/bin/xcryptcancel @ids");
+system("$ENV{XCRYPT}/bin/xcryptcancel @ids" . join(' ', @ARGV));
 close ($LOG);
 # Up to here your script.  From here Xcrypt's footer.

@@ -18,5 +18,5 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("$ENV{XCRYPT}/bin/xcryptinvalidate @ids");
+system("$ENV{XCRYPT}/bin/xcryptinvalidate @ids" . join(' ', @ARGV));
 close ($LOG);
