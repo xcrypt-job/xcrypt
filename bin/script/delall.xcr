@@ -17,5 +17,7 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("$ENV{XCRYPT}/bin/xcryptdel @ids");
+
+print "$ENV{XCRYPT}/bin/xcryptdel @ids" . join(' ', @ARGV), "\n";
+system("$ENV{XCRYPT}/bin/xcryptdel @ids" . join(' ', @ARGV));
 close ($LOG);

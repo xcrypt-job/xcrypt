@@ -3,6 +3,8 @@ use xcropt;
 use builtin;
 use Coro;
 use jobsched;
+use data_generator;
+use data_extractor;
 our @VALUE = ();
 sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}
 sub start  {my $self = shift;$self->SUPER::start();}

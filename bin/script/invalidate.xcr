@@ -2,6 +2,7 @@ use base qw(core);
 use File::Spec;
 use interactive;
 use jobsched;
+use xcropt;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 foreach my $id (@ARGV) {
