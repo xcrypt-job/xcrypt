@@ -5,7 +5,7 @@ use strict;
 use Cwd;
 use Getopt::Long;
 
-our @ARGV_ORIG = @ARGV;
+my @ARGV_ORIG = @ARGV;
 
 my $localhost = qx/hostname/;
 chomp $localhost;
@@ -53,5 +53,7 @@ GetOptions
      'stack_size=i',
      # define other command-line options...
     );
+
+@ARGV = @ARGV_ORIG;
 
 1;
