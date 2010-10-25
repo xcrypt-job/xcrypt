@@ -15,6 +15,12 @@ sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}(
 &jobsched::invoke_left_message_check();
 $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
 use base qw(core);
+use File::Spec;
+use xcropt;
+
+my $Inventory_Path = $xcropt::options{inventory_path};
+
+system("$ENV{XCRYPT}/bin/xcryptdelall " . join($", @ARGV));
 
 =comment
 my @postfixes = ('after_in_job.pl',
@@ -35,8 +41,8 @@ foreach my $file (@tmp) {
 =cut
 
 my $count = 0;
-while (-e "$xcropt::options{inventory_path}.$count") {
+while (-e "$Inventory_Path.$count") {
     $count++;
 }
-rename $xcropt::options{inventory_path}, "$xcropt::options{inventory_path}.$count";
+rename $Inventory_Path, "$Inventory_Path.$count";
 # Up to here your script.  From here Xcrypt's footer.
