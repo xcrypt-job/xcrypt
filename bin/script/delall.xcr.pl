@@ -33,8 +33,6 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-
-# print "$ENV{XCRYPT}/bin/xcryptdel @ids" . join(' ', @ARGV), "\n";
-system("$ENV{XCRYPT}/bin/xcryptdel @ids" . join(' ', @ARGV));
+system("$ENV{XCRYPT}/bin/xcryptdel " . join($", @ids) . join($", @ARGV));
 close ($LOG);
 # Up to here your script.  From here Xcrypt's footer.
