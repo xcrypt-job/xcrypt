@@ -15,30 +15,11 @@ sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}(
 &jobsched::invoke_left_message_check();
 $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
 use base qw(core);
-use File::Spec;
 use xcropt;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 
 system("$ENV{XCRYPT}/bin/xcryptdelall " . join($", @ARGV));
-
-=comment
-my @postfixes = ('after_in_job.pl',
-		 'before_in_job.pl',
-		 'invwrite.log',
-		 'sh.sh',
-		 'stderr',
-		 'stdout');
-my @tmp = &jobsched::get_last_ids();
-foreach my $file (@tmp) {
-    foreach my $postfix (@postfixes) {
-#    print "$file" . '_' . "$postfix\n";
-	if (-e "$file" . '_' . "$postfix") {
-	    unlink "$file" . '_' . "$postfix";
-	}
-    }
-}
-=cut
 
 my $count = 0;
 while (-e "$Inventory_Path.$count") {
