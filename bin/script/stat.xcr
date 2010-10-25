@@ -1,5 +1,3 @@
 use base qw(core);
-use File::Spec;
 use xcropt;
-use jobsched;
-&jobsched::read_log();
+#&jobsched::read_log();
