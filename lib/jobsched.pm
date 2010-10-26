@@ -596,6 +596,7 @@ sub read_log {
                 }
             }
         }
+=comment
         foreach my $id (keys %Last_State) {
             print "$id = $Last_State{$id}";
             if ( $Last_Request_ID{$id} ) {
@@ -603,8 +604,19 @@ sub read_log {
             }
             print "\n";
         }
+=cut
         close ($LOG);
         print "Finished reading the log file $Logfile\n";
+    }
+}
+
+sub print_log {
+    foreach my $id (keys %Last_State) {
+	print "$id = $Last_State{$id}";
+	if ( $Last_Request_ID{$id} ) {
+	    print " (request_ID=$Last_Request_ID{$id})";
+	}
+	print "\n";
     }
 }
 
