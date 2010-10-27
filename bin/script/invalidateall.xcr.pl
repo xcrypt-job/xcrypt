@@ -34,6 +34,6 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("$ENV{XCRYPT}/bin/xcryptinvalidate @ids" . join(' ', @ARGV));
+system("$ENV{XCRYPT}/bin/xcryptinvalidate @ids" . join(' ', @ARGV) . ' --scratch');
 close ($LOG);
 # Up to here your script.  From here Xcrypt's footer.
