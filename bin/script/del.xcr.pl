@@ -10,8 +10,7 @@ sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}
 sub start  {my $self = shift;$self->SUPER::start();}
 sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}
 # Up to here Xcrypt's header.  From here your script.
-&jobsched::read_log();
-if ($xcropt::options{print_log}) { &jobsched::print_log(); }
+unless ($xcropt::options{scratch}) { &jobsched::read_log(); }
 &jobsched::invoke_abort_check();
 &jobsched::invoke_left_message_check();
 $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
@@ -25,6 +24,6 @@ my $Inventory_Path = $xcropt::options{inventory_path};
 foreach my $id (@ARGV) {
      system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
     &interactive::qdel($id);
-    print "$id is aborted by user.\n";
+    print "$id is deleted by user.\n";
 }
 # Up to here your script.  From here Xcrypt's footer.

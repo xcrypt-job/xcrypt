@@ -35,7 +35,7 @@ our %options = (
 GetOptions
     (\%options,
      'shared',
-     'print_log',
+     'scratch',
      #
 #     'localhost=s',  # Obsolete
      'host=s',
