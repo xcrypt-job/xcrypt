@@ -13,6 +13,17 @@ if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     warn "The file extension should be .xcr\n";
 }
 
+if (defined $ENV{PERL5LIB}) {
+    $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+} else {
+    $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+}
+
 # Delete the .xcr.pl file if the old one exists.
 my $xcrplfile = "$xcrfile" . '.pl';
 if ( -e $xcrplfile ) { unlink $xcrplfile; }

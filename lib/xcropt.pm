@@ -4,6 +4,7 @@ package xcropt;
 use strict;
 use Cwd;
 use Getopt::Long;
+use File::Spec;
 
 my @ARGV_ORIG = @ARGV;
 
@@ -13,12 +14,24 @@ my $username = qx/whoami/;
 chomp $username;
 my $wd = Cwd::getcwd();
 
+my $p5l;
+if (defined $ENV{PERL5LIB}) {
+    $p5l = $ENV{PERL5LIB} . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+} else {
+    $p5l = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+}
+
 our %options = (
 #    'localhost' => $localhost,  # Obsolete
     'host' => $username . '@' . $localhost,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
-    'p5l' => $ENV{PERL5LIB},
+    'p5l' => $p5l,
     'sched' => $ENV{XCRJOBSCHED},
     #
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
