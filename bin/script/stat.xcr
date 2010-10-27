@@ -1,2 +1,1 @@
 use base qw(core);
-use xcropt;

@@ -15,5 +15,4 @@ unless ($xcropt::options{scratch}) { &jobsched::read_log(); }
 &jobsched::invoke_left_message_check();
 $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}, "p5l" => $xcropt::options{p5l});
 use base qw(core);
-use xcropt;
 # Up to here your script.  From here Xcrypt's footer.
