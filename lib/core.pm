@@ -120,9 +120,7 @@ sub make_jobscript_header {
         push (@header, @{mkarray($others)});
     }
     ## Environment variables
-#    push (@header, "export XCRYPT=$ENV{XCRYPT}");
-#    push (@header, 'export PERL5LIB=$XCRYPT/lib');
-    push (@header, 'export PERL5LIB=' . $self->{env}->{p5l});
+    push (@header, 'PERL5LIB=' . $self->{env}->{p5l} . '; export PERL5LIB');
     $self->{jobscript_header} = \@header;
 }
 

@@ -302,13 +302,29 @@ sub add_host {
 	}
     }
 =cut
+    unless (defined $env->{xd}) {
+	my @xd = &xcr_qx($env, 'echo $XCRYPT');
+	chomp($xd[0]);
+	unless ($xd[0] eq '') {
+	    $env->{xd} = $xd[0];
+	} else {
+	    die "Set the environment varialble \$XCRYPT at $env->{host}\n";
+	}
+    }
     unless (defined $env->{p5l}) {
 	my @p5l = &xcr_qx($env, 'echo $PERL5LIB');
 	chomp($p5l[0]);
 	unless ($p5l[0] eq '') {
-	    $env->{p5l} = $p5l[0];
+	    $env->{p5l} = $p5l[0] . ':'
+		. $env->{xd} . ':'
+		. File::Spec->catfile($env->{xd}, 'lib') . ':'
+		. File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
+		. File::Spec->catfile($env->{xd}, 'lib', 'cpan');
 	} else {
-	    die "Set the environment varialble \$PERL5LIB at $env->{host}\n";
+	    $env->{p5l} = $env->{xd} . ':'
+		. File::Spec->catfile($env->{xd}, 'lib') . ':'
+		. File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
+		. File::Spec->catfile($env->{xd}, 'lib', 'cpan');
 	}
     }
     unless (defined $env->{sched}) {
@@ -318,15 +334,6 @@ sub add_host {
 	    $env->{sched} = $sched[0];
 	} else {
 	    die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
-	}
-    }
-    unless (defined $env->{xd}) {
-	my @xd = &xcr_qx($env, 'echo $XCRYPT');
-	chomp($xd[0]);
-	unless ($xd[0] eq '') {
-	    $env->{xd} = $xd[0];
-	} else {
-	    die "Set the environment varialble \$XCRYPT at $env->{host}\n";
 	}
     }
     push(@Env, $env);
