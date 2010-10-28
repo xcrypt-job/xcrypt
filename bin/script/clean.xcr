@@ -1,9 +1,13 @@
 use base qw(core);
-use xcropt;
+use File::Spec;
+use interactive;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
-
-system("$ENV{XCRYPT}/bin/xcryptdelall " . join($", @ARGV));
+foreach my $id (keys(%jobsched::Last_State)) {
+    system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+    &interactive::qdel($id);
+    print "$id is deleted by user.\n";
+}
 
 my $count = 0;
 while (-e "$Inventory_Path.$count") {

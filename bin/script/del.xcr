@@ -1,10 +1,9 @@
 use base qw(core);
 use File::Spec;
 use interactive;
-use jobsched;
-use xcropt;
 
+my $id = $ARGV[0];
 my $Inventory_Path = $xcropt::options{inventory_path};
-system('touch ' . File::Spec->catfile($Inventory_Path, $ARGV[0] . '_to_be_aborted'));
-&interactive::qdel($ARGV[0]);
-print "$ARGV[0] is deleted by user.\n";
+system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+&interactive::qdel($id);
+print "$id is deleted by user.\n";
