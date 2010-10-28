@@ -1,3 +1,3 @@
 #!/bin/sh
-#xcrypt ${XCRYPT}/bin/script/cancel.xcr "$@"
-perl ${XCRYPT}/bin/script/cancel.xcr.pl "$@"
+xcrypt ${XCRYPT}/bin/script/cancel.xcr "$@"
+#perl ${XCRYPT}/bin/script/cancel.xcr.pl "$@"
