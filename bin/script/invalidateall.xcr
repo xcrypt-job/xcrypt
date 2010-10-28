@@ -19,6 +19,6 @@ while (<$LOG>) {
     }
 }
 foreach (@ids) {
-    system("$ENV{XCRYPT}/bin/xcryptinvalidate $_ " . join($", @ARGV) . ' --scratch');
+    system("$ENV{XCRYPT}/bin/xcryptinvalidate $_ " . join($", @ARGV));
 }
 close ($LOG);
