@@ -1,22 +1,11 @@
 use base qw(core);
 use File::Spec;
-use xcropt;
+use interactive;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
-my @jobs;
-open (my $LOG, '<', $Logfile);
-unless ($LOG) {
-    warn "Failed to open the log file $Logfile in read mode.";
+foreach my $id (keys(%jobsched::Last_State)) {
+    system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+    &interactive::qdel($id);
+    print "$id is deleted by user.\n";
 }
-my @ids;
-while (<$LOG>) {
-    chomp;
-    if ($_ =~ /^:reqID\s+(\S+)/ ) {
-	push(@ids, $1);
-    }
-}
-foreach (@ids) {
-    system("$ENV{XCRYPT}/bin/xcryptdel $_ " . join($", @ARGV));
-}
-close ($LOG);

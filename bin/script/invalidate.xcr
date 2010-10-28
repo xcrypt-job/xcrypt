@@ -1,11 +1,10 @@
 use base qw(core);
 use File::Spec;
 use interactive;
-use jobsched;
-use xcropt;
 
+my $id = $ARGV[0];
 my $Inventory_Path = $xcropt::options{inventory_path};
-unlink File::Spec->catfile($Inventory_Path, $ARGV[0] . '_to_be_cancelled');
-system('touch ' . File::Spec->catfile($Inventory_Path, $ARGV[0] . '_to_be_invalidated'));
-&interactive::qdel($ARGV[0]);
-print "$ARGV[0] is invalidated by user.\n";
+unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled');
+system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated'));
+&interactive::qdel($id);
+print "$id is invalidated by user.\n";
