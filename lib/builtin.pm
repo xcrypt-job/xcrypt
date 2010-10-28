@@ -762,14 +762,17 @@ sub check_status_for_wait_job_done {
 sub check_status_for_after {
     my $self = shift;
     my $sig = jobsched::get_signal_status($self);
+    my $stat = jobsched::get_job_status($self);
     if ($sig) {
         jobsched::set_job_status_according_to_signal ($self);
         return 0;
     } elsif (jobsched::job_proceeded_last_time ($self, 'finished')) {
         print "$self->{id}: the after() methods invocation.\n";
         return 0;
-    } else {
+    } elsif ( $stat eq 'done' ) {
         return 1;
+    } else {
+        return 0;
     }
 }
 
