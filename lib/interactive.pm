@@ -3,7 +3,6 @@ package interactive;
 use xcropt;
 use File::Spec;
 use common;
-use jobsched;
 use Net::OpenSSH;
 
 sub qdel {

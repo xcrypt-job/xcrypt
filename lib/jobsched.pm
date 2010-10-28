@@ -40,15 +40,15 @@ my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that syst
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
-my %Last_State = ();
+our %Last_State = ();
 # Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
-my %Last_Request_ID = ();
+our %Last_Request_ID = ();
 # Hash table (key,val)=(job ID, the signal name in the previous Xcrypt execution)
-my %Last_Signal = ();
+our %Last_Signal = ();
 # Hash table (key,val)=(job ID, the user@host in the previous Xcrypt execution)
-my %Last_Userhost_ID = ();
+our %Last_Userhost_ID = ();
 # Hash table (key,val)=(job ID, the job scheduler in the previous Xcrypt execution)
-my %Last_Sched_ID = ();
+our %Last_Sched_ID = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();

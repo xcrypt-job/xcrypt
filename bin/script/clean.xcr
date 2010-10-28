@@ -3,7 +3,7 @@ use xcropt;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 
-system("$ENV{XCRYPT}/bin/xcryptdelall " . join($", @ARGV) . ' --scratch');
+system("$ENV{XCRYPT}/bin/xcryptdelall " . join($", @ARGV));
 
 my $count = 0;
 while (-e "$Inventory_Path.$count") {
