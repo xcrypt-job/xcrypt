@@ -314,19 +314,21 @@ working directory, respectively.
 is a job script passed to a job scheduler or a Bourne shell script
 executed, regarding OS as a job scheduler, respectively.
 
-\subsection*{\texttt{stdout}}
+\subsection*{\textit{myjob}\_\texttt{stdout}}
 
 is a file storing the job's standard output.  When \texttt{stdofile}
 is defined, the file is renamed as its value.
 
-\subsection*{\texttt{stderr}}
+\subsection*{\textit{myjob}\_\texttt{stderr}}
 
 is a file storing the job's standard error.  When \texttt{stdefile}
 is defined, the file is renamed as its value.
 
 \subsection*{\texttt{inv\_watch}}
 
-is a directory containing log, lock, and other files.
+is a directory containing log and other files for retry.  When
+\texttt{--inventory\_path} is defined, the directory is renamed as its
+value.
 
 \part{Details}
 

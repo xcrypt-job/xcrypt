@@ -840,6 +840,7 @@ sub submit {
 
 	    ## ジョブスクリプトの最終行の処理を終えたからといって
 	    ## after()をしてよいとは限らないが……
+=comment
 	    my $flag0 = 0;
 	    my $flag1 = 0;
 	    until ($flag0 && $flag1) {
@@ -853,7 +854,7 @@ sub submit {
 							    $self->{JS_stderr})
 			);
 	    }
-
+=cut
 	    ## NFS が書き込んでくれる*経験的*待ち時間
 	    sleep 3;
 
