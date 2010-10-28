@@ -4,7 +4,6 @@ use xcropt;
 
 my $Inventory_Path = $xcropt::options{inventory_path};
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
-
 my @jobs;
 open (my $LOG, '<', $Logfile);
 unless ($LOG) {
@@ -17,5 +16,7 @@ while (<$LOG>) {
 	push(@ids, $1);
     }
 }
-system("$ENV{XCRYPT}/bin/xcryptdel " . join($", @ids) . join($", @ARGV) . ' --scratch');
+foreach (@ids) {
+    system("$ENV{XCRYPT}/bin/xcryptdel $_ " . join($", @ARGV) . ' --scratch');
+}
 close ($LOG);
