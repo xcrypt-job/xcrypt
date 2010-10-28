@@ -13,23 +13,22 @@ if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     warn "The file extension should be .xcr\n";
 }
 
+my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
 if (defined $ENV{PERL5LIB}) {
-    $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':'
-	. File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
-	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
-	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+    $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':' . $added_path;
 } else {
-    $ENV{PERL5LIB} = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
-	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
-	. File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan');
+    $ENV{PERL5LIB} = $added_path;
 }
 
 # Delete the .xcr.pl file if the old one exists.
-my $xcrplfile = "$xcrfile" . '.pl';
-if ( -e $xcrplfile ) { unlink $xcrplfile; }
+#my $xcrplfile = "$xcrfile" . '.pl';
+#if ( -e $xcrplfile ) { unlink $xcrplfile; }
 
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
-open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
+#open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
+open(my $TMP , "| perl - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
 print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
@@ -52,5 +51,5 @@ print $TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 close($TMP);
 close($USER);
 
-my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
-unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
+#my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
+#unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }

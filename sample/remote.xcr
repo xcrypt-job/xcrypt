@@ -20,4 +20,3 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 my @jobs = &prepare(%template);
 &submit(@jobs);
 &sync(@jobs);
-
