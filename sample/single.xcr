@@ -8,8 +8,9 @@ use base qw (core);
     'arg0_1' => "out_0",
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'before_in_job' => 'print STDERR $self->{arg0_0}. "\n";',
-#    'before_in_job' => sub {print STDERR $self->{JS_queue}. "\n";},
+    'before' => sub {print "before\n"},
+    'before_in_job' => 'print STDERR $self->{arg1_0}. "\n";',
+    'after' => sub {print "after\n";},
     'after_in_job' => 'print STDOUT $self->{exe0}. "\n";',
     );
 @jobs=&prepare_submit_sync (%template);
