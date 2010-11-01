@@ -792,6 +792,62 @@ sub left_message_file_name_in_inventory_path {
     my ($job, $stat) = @_;
     return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }
+sub left_message_check {
+    print "left_message_check:\n";
+    # Transition to running/done
+    foreach my $req_id (keys %Running_Jobs) {
+        my $self = $Running_Jobs{$req_id};
+        if ( get_job_status($self) eq 'queued') {
+            if ( $xcropt::options{verbose} >= 2 ) {
+                print "check if ". left_message_file_name($self, 'running')
+                    . " exists at $self->{env}->{host}\n";
+            }
+            if ( xcr_exist ($self->{env}, left_message_file_name($self, 'running')) ) {
+                unless (get_signal_status($self)) {
+                    set_job_running ($self);
+                } else {
+                    set_job_status_according_to_signal($self);
+                    $self->qdel();
+                }
+            }
+        }
+        if ( get_job_status($self) eq 'running') {
+            if ( $xcropt::options{verbose} >= 2 ) {
+                print "check if ". left_message_file_name($self, 'done')
+                    . " exists at $self->{env}->{host}.\n";
+            }
+            if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
+                unless (get_signal_status($self)) {
+                    set_job_done ($self);
+                } else {
+                    set_job_status_according_to_signal($self);
+                    $self->qdel();
+                }
+            }
+        }
+    }
+    # Signal
+    foreach my $sigmsg (glob File::Spec->catfile($Inventory_Path, "*_to_be_*")) {
+        my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
+        if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
+            my ($id, $sig) = ($1, $2);
+            my $self = find_job_by_id ($id);
+            if ($self) {
+                if ( $sig eq 'aborted' ) {
+                    $self->abort();
+                    unlink ($sigmsg);
+                } elsif ( $sig eq 'cancelled' ) {
+                    $self->cancel();
+                    unlink ($sigmsg);
+                } elsif ( $sig eq 'invalidated' ) {
+                    $self->invalidate();
+                    unlink ($sigmsg);
+                }
+            }
+        }
+    }
+    Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+}
 sub invoke_left_message_check {
     # インベントリファイルの置き場所ディレクトリを作成
     unless (-d "$Inventory_Path") {
@@ -799,60 +855,7 @@ sub invoke_left_message_check {
     }
     $Left_Message_Check_Thread = Coro::async_pool {
         while (1) {
-            print "left_message_check:\n";
-            # Transition to running/done
-            foreach my $req_id (keys %Running_Jobs) {
-                my $self = $Running_Jobs{$req_id};
-                if ( get_job_status($self) eq 'queued') {
-                    if ( $xcropt::options{verbose} >= 2 ) {
-                        print "check if ". left_message_file_name($self, 'running')
-                            . " exists at $self->{env}->{host}\n";
-                    }
-                    if ( xcr_exist ($self->{env}, left_message_file_name($self, 'running')) ) {
-                        unless (get_signal_status($self)) {
-                            set_job_running ($self);
-                        } else {
-                            set_job_status_according_to_signal($self);
-                            $self->qdel();
-                        }
-                    }
-                }
-                if ( get_job_status($self) eq 'running') {
-                    if ( $xcropt::options{verbose} >= 2 ) {
-                        print "check if ". left_message_file_name($self, 'done')
-                            . " exists at $self->{env}->{host}.\n";
-                    }
-                    if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
-                        unless (get_signal_status($self)) {
-                            set_job_done ($self);
-                        } else {
-                            set_job_status_according_to_signal($self);
-                            $self->qdel();
-                        }
-                    }
-                }
-            }
-            # Signal
-            foreach my $sigmsg (glob File::Spec->catfile($Inventory_Path, "*_to_be_*")) {
-                my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
-                if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
-                    my ($id, $sig) = ($1, $2);
-                    my $self = find_job_by_id ($id);
-                    if ($self) {
-                        if ( $sig eq 'aborted' ) {
-                            $self->abort();
-                            unlink ($sigmsg);
-                        } elsif ( $sig eq 'cancelled' ) {
-                            $self->cancel();
-                            unlink ($sigmsg);
-                        } elsif ( $sig eq 'invalidated' ) {
-                            $self->invalidate();
-                            unlink ($sigmsg);
-                        }
-                    }
-                }
-            }
-            Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+            left_message_check();
         }
     };
     return $Left_Message_Check_Thread;
