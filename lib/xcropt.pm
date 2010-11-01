@@ -35,6 +35,7 @@ our %options = (
 
 GetOptions
     (\%options,
+     'xqsub',
      'shared',
      'scratch',
      #
