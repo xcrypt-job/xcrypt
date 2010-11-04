@@ -29,5 +29,7 @@ sub qdel {
     }
 }
 
+sub get_job_status { return $Last_State{$_[0]}; }
+
 1;
 
