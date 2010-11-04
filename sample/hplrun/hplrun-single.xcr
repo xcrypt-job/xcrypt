@@ -1,0 +1,27 @@
+use base qw(sandbox core);
+use data_generator;
+use data_extractor;
+ 
+%template = (
+    'id' => 'hpljob',
+    'exe0' => 'mpirun -group $PBS_NODEFILE -JOBID=$PBS_JOBID ./xhpl',
+    'copiedfile0' => 'xhpl',
+    'copiedfile1' => 'HPL.dat',
+    'JS_queue' => 'batch',
+    'JS_node' => 1,
+    'JS_cpu' => 4,                                      # P x Q <= # of proc.
+);
+ 
+my @jobs = &prepare(%template);
+ 
+submit_sync(@jobs);
+ 
+# Extract performance value
+my $stdout_file = $self->{workdir} . "hpljob/hpljob_stdout";
+my $stdout = data_extractor->new($stdout_file);
+$stdout -> extract_line_rn (['PASSED',-2]);
+$stdout -> extract_line_nn (1);
+$stdout -> extract_column_nn (7);
+@result = $stdout -> execute();
+print $result[0], "\n";
+

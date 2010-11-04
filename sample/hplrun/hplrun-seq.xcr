@@ -1,0 +1,69 @@
+use base qw(sandbox limit core);
+use data_generator;
+use data_extractor;
+&limit::initialize(4);
+
+%template = (
+    'exe0' => 'mpirun -group $PBS_NODEFILE -JOBID=$PBS_JOBID ./xhpl',
+    'copiedfile0' => 'xhpl',
+    'JS_queue' => 'batch',
+    'JS_node' => 1,
+    'JS_cpu' => 4,		# P x Q <= # of proc.
+);
+
+# Indicate sweep ranges
+@pmaps = (0, 1);                # PMAP process mapping
+@pblks = (1, 2);                # Value of P
+
+$preid = "hpljob_";
+
+foreach my $pmap (@pmaps) {
+  foreach my $pblk (@pblks) {
+    $template{'id'} = $preid . $pmap . "_" . $pblk;
+    my @job = &prepare(%template);
+    my $self = $job[0];
+
+#before
+    # Generate input file
+    my $hpldat = data_generator -> new("HPL.dat",
+                                       $self->{workdir} . "/HPL.dat");
+    $hpldat -> replace_line_column ( 9, 1, $pmap); # take one of RANGE1
+    $hpldat -> replace_line_column (11, 1, $pblk); # take one of RANGE2
+    $hpldat -> replace_line_column (12, 1, $self->{'JS_cpu'}/$pblk);
+    $hpldat -> execute();
+
+#job execution
+    @results = &submit_sync(@job);
+
+#after
+    # Wait for stdout to be outputed
+    sleep(1);
+    # Extract performance value
+    my $stdout_file = $self->{workdir} . "/$self->{id}_stdout";
+    my $stdout = data_extractor -> new ($stdout_file);
+    $stdout -> extract_line_rn (['PASSED',-2]);
+    $stdout -> extract_line_nn (1);
+    $stdout -> extract_column_nn (7);
+    @result = $stdout -> execute();
+    print $result[0], "\n";
+    # Examine the best performance
+    if ( $result[0] > $max_performance ) {
+        $max_performance = $result[0];
+        $max_performance_dir = $self->{workdir};
+        my $stdout = data_extractor -> new ($stdout_file);
+        $stdout -> extract_line_rn (['following parameter',18]);
+        $stdout -> extract_line_nn ([3,18]);
+        @parameters = $stdout -> execute();
+    }
+  }
+}
+
+# Output of final result
+print "\n", "-------- RESULT -------- \n\n";
+print "Maximum performance is\n\n" . $max_performance . " Gflops,\n\n";
+print "when the following parameter values are used:\n";
+print "(corresponding working directory is " . $max_performance_dir . " )\n\n";
+foreach $parameter ( @parameters ) {
+    print $parameter, "\n";
+}
+print "\n";
