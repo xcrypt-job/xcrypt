@@ -832,6 +832,7 @@ sub left_message_check {
         if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
             my ($id, $sig) = ($1, $2);
             my $self = find_job_by_id ($id);
+            print "$id $sig:\n";
             if ($self) {
                 if ( $sig eq 'aborted' ) {
                     $self->abort();
