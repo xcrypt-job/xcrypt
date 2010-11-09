@@ -449,7 +449,7 @@ sub set_job_status {
         warn_if_illegal_transition ($self, $stat, $tim);
     }
     write_log (":transition $self->{id} $stat $tim\n");
-    print "$self->{id} <= $stat\n";
+    if ( $xcropt::options{verbose} >= 0 ) { print "$self->{id} <= $stat\n"; }
     {
         $self->{status} = $stat;
         $self->{last_update} = $tim;
@@ -793,7 +793,7 @@ sub left_message_file_name_in_inventory_path {
     return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }
 sub left_message_check {
-    print "left_message_check:\n";
+    if ( $xcropt::options{verbose} >= 2 ) { print "left_message_check:\n"; }
     # Transition to running/done
     foreach my $req_id (keys %Running_Jobs) {
         my $self = $Running_Jobs{$req_id};
