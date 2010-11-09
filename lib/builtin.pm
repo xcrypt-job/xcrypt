@@ -801,7 +801,7 @@ sub submit {
         my $job_coro = Coro::async {
             my $self = $_[0];
             # Output message on entering/leaving the Coro thread.
-            if ( $xcropt::options{verbose} >= 2 ) {
+            if ( $xcropt::options{verbose} >= 3 ) {
                 Coro::on_enter {
                     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
@@ -882,11 +882,11 @@ sub submit {
 sub sync {
     my @jobs = @_;
     foreach (@jobs) {
-        if ( $xcropt::options{verbose} >= 1 ) {
+        if ( $xcropt::options{verbose} >= 2 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
         $_->{thread}->join;
-        if ( $xcropt::options{verbose} >= 1 ) {
+        if ( $xcropt::options{verbose} >= 2 ) {
             print "$_->{id} finished.\n";
         }
     }
