@@ -5,8 +5,11 @@ use File::Spec;
 use common;
 use Net::OpenSSH;
 
+
 sub qdel {
     my ($id) = @_;
+    unlink File::Spec->catfile($jobsched::Last_Workdir{$id}, $id . '_is_running');
+    unlink File::Spec->catfile($jobsched::Last_Workdir{$id}, $id . '_is_done');
     if (($jobsched::Last_State{$id} eq 'queued') || ($jobsched::Last_State{$id} eq 'running')) {
 	my $qdel_command = $jsconfig::jobsched_config{$jobsched::Last_Sched_ID{$id}}{qdel_command};
 	unless ( defined $qdel_command ) {

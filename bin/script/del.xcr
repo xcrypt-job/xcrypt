@@ -4,6 +4,10 @@ use interactive;
 
 my $id = $ARGV[0];
 my $Inventory_Path = $xcropt::options{inventory_path};
-system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+unless (-e File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated')) {
+    unless (-e File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled')) {
+	system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted'));
+    }
+}
 &interactive::qdel($id);
 print "$id is deleted by user.\n";
