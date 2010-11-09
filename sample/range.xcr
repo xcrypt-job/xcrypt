@@ -1,8 +1,8 @@
-use base qw(core);
+use base qw(sandbox core);
 
 %template1 = (
     'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
-    'exe0@' => sub { 'bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
+    'exe0@' => sub { '../bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
     'arg0_0@' => sub { $_[0]->{JS_queue}.'_'.$VALUE[0].'_'. $VALUE[2]; },
     'RANGE0' => [40],
     'RANGE2' => [0],
