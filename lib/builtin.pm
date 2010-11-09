@@ -547,8 +547,6 @@ sub do_initialized {
 								  'aborted');
 	unlink jobsched::left_message_file_name_in_inventory_path($self,
 								  'cancelled');
-	unlink jobsched::left_message_file_name($self, 'running');
-	unlink jobsched::left_message_file_name($self, 'done');
 	&jobsched::set_job_initialized($self);
     }
     return $self;
