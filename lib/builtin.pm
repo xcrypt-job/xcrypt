@@ -830,7 +830,7 @@ sub submit {
 		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} $self->{workdir}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
 		} else {
-		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{workdir}\n");
+		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} " . File::Spec->catfile($self->{env}->{wd}, $self->{workdir}) . "\n");
 		}
                 &jobsched::set_job_queued($self);
             }
