@@ -539,16 +539,10 @@ sub do_initialized {
     &jobsched::entry_job_id ($self);
 
     # check left_messages
-    if (-e jobsched::left_message_file_name_in_inventory_path($self,
-							      'invalidated')) {
+    if (-e jobsched::left_message_file_name_in_inventory_path($self, 'invalidated')) {
 	&jobsched::set_job_finished($self);
     } else {
-	unlink jobsched::left_message_file_name_in_inventory_path($self,
-								  'aborted');
-	unlink jobsched::left_message_file_name_in_inventory_path($self,
-								  'cancelled');
-	unlink jobsched::left_message_file_name($self, 'running');
-	unlink jobsched::left_message_file_name($self, 'done');
+	unlink jobsched::left_message_file_name_in_inventory_path($self, 'cancelled');
 	&jobsched::set_job_initialized($self);
     }
     return $self;
@@ -801,7 +795,7 @@ sub submit {
         my $job_coro = Coro::async {
             my $self = $_[0];
             # Output message on entering/leaving the Coro thread.
-            if ( $xcropt::options{verbose} >= 2 ) {
+            if ( $xcropt::options{verbose} >= 3 ) {
                 Coro::on_enter {
                     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
@@ -829,10 +823,10 @@ sub submit {
             if (check_status_for_set_job_queued ($self)) {
 #		if ($self->{env}->{location} eq 'local') {
 		if ($self->{env}->{host} eq $env_d->{host}) {
-		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched}\n");
+		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} $self->{workdir}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
 		} else {
-		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched}\n");
+		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} " . File::Spec->catfile($self->{env}->{wd}, $self->{workdir}) . "\n");
 		}
                 &jobsched::set_job_queued($self);
             }
@@ -882,11 +876,11 @@ sub submit {
 sub sync {
     my @jobs = @_;
     foreach (@jobs) {
-        if ( $xcropt::options{verbose} >= 1 ) {
+        if ( $xcropt::options{verbose} >= 2 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
         $_->{thread}->join;
-        if ( $xcropt::options{verbose} >= 1 ) {
+        if ( $xcropt::options{verbose} >= 2 ) {
             print "$_->{id} finished.\n";
         }
     }
