@@ -791,7 +791,7 @@ sub left_message_file_name {
     my ($job, $stat) = @_;
     return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");   # must be eq to inventory_write.pl $Left_Message_File
 }
-sub left_message_file_name_in_inventory_path {
+sub left_message_file_name_inventory {
     my ($job, $stat) = @_;
     return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }

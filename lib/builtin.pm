@@ -539,10 +539,10 @@ sub do_initialized {
     &jobsched::entry_job_id ($self);
 
     # check left_messages
-    if (-e jobsched::left_message_file_name_in_inventory_path($self, 'invalidated')) {
+    if (-e jobsched::left_message_file_name_inventory($self, 'invalidated')) {
 	&jobsched::set_job_finished($self);
     } else {
-	unlink jobsched::left_message_file_name_in_inventory_path($self, 'cancelled');
+	unlink jobsched::left_message_file_name_inventory($self, 'cancelled');
 	&jobsched::set_job_initialized($self);
     }
     return $self;
