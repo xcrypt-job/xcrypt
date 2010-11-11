@@ -5,6 +5,6 @@ use interactive;
 my $id = $ARGV[0];
 my $Inventory_Path = $xcropt::options{inventory_path};
 unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled');
-system('touch ' . File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated'));
+system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_invalidated'));
 &interactive::qdel($id);
 print "$id is invalidated by user.\n";

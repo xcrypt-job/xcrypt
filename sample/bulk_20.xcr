@@ -1,0 +1,27 @@
+use base qw(bulk sandbox core);
+
+&bulk::initialize(
+    'max_num'  => "3",     # bulk化する最大ジョブ数を指定
+    'max_time' => "11",    # bulk化する最大処理秒を指定
+);
+
+%template = (
+    'id' => 'job20',
+    'exe' => './fib.pl',
+    'arg1' => '> out',
+    'linkedfile0' => 'common/fib.pl',
+    'time'  => '5',
+);
+
+@jobs = &prepare(%template,
+    'RANGE0' => [1,5,7],
+    'RANGE2' => [2,8],
+    'arg0@' => '$R0 + $R2;',
+);
+
+my @bulkedjobs = &bulk::bulk('bulk20', @jobs);
+&submit(@bulkedjobs);
+&sync(@bulkedjobs);
+
+
+
