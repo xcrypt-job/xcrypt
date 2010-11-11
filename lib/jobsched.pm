@@ -786,12 +786,13 @@ sub invoke_abort_check {
     return $Abort_Check_Thread;
 }
 
-# Check messages that inventory_write.pl leaves when the communication failed.
-sub left_message_file_name {
+# Check messages that a job script leaves when the job becomes 'running' or 'done'
+# and when xcrypt{del,cancel,invalidate}[all] commands is executed by user.
+sub left_message_file_name {   # Transition message file
     my ($job, $stat) = @_;
-    return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");   # must be eq to inventory_write.pl $Left_Message_File
+    return File::Spec->catfile($job->{workdir}, "$job->{id}_is_$stat");
 }
-sub left_message_file_name_inventory {
+sub left_message_file_name_inventory {   # Signal message file
     my ($job, $stat) = @_;
     return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }
