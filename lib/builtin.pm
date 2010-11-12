@@ -537,16 +537,8 @@ sub do_initialized {
             $self->{"arg$i"} = $self->{"arg0_$i"};
         }
     }
-
+    
     &jobsched::entry_job_id ($self);
-
-    # check left_messages
-    if (-e jobsched::left_message_file_name_inventory($self, 'invalidated')) {
-        &jobsched::set_job_finished($self);
-    } else {
-        unlink jobsched::left_message_file_name_inventory($self, 'cancelled');
-        &jobsched::set_job_initialized($self);
-    }
     return $self;
 }
 
@@ -805,9 +797,8 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
             }
-            ## Resume signal
-# ↓ jobsched に定義されていないのでコメントアウトした 2010/10/12
-#            jobsched::resume_signal_last_time ($self);
+            ## Manually handle a signal message once.
+            jobsched::left_signal_message_check ($self);
             ## initially()
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
