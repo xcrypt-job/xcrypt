@@ -222,145 +222,143 @@ sub inventory_write_cmdline {
 #     wantarray ? return ($flag, $job, $job_id) : return $flag;
 # }
 
-=comment
-# ジョブの状態変化を監視するスレッドを起動
-sub invoke_watch {
-    # 起動
-    if ( $Inventory_Port > 0 ) {   # TCP/IP通信で通知を受ける
-        invoke_watch_by_socket ();
-    } else {                       # NFS経由で通知を受ける
-        invoke_watch_by_file ();
-    }
-}
+# # ジョブの状態変化を監視するスレッドを起動
+# sub invoke_watch {
+#     # 起動
+#     if ( $Inventory_Port > 0 ) {   # TCP/IP通信で通知を受ける
+#         invoke_watch_by_socket ();
+#     } else {                       # NFS経由で通知を受ける
+#         invoke_watch_by_file ();
+#     }
+# }
 
-# 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
-my $slp = 1;
-sub invoke_watch_by_file {
-    # 監視スレッドの処理
-    $Watch_Thread = async_pool
-    {
-        my $interval = 1;
-        while (1) {
-            &wait_and_get_file ($interval);
-            my $CLIENT_IN;
-            open($CLIENT_IN, '<', $Opened_File) || next;
-            my $inv_text = '';
-            my $handle_inventory_ret = 0;
-            my $handled_job; my $handled_jobname;
-            # クライアントからのメッセージは
-            # (0行以上のメッセージ行)+(":end"で始まる行)
-            while (<$CLIENT_IN>) {
-                if ( $_ =~ /^:/ ) {
-                    if ( $_ =~ /^:end/ ) {
-                        # print STDERR "received :end\n";
-                        last;
-                    }
-                } else {
-                    # ':' で始まる行を除いてinventory_fileに保存する
-                    $inv_text .= $_;
-                }
-                # 一度エラーがでたら以降のhandle_inventoryはとばす
-                if ( $handle_inventory_ret >= 0 ) {
-                    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
-                }
-            }
-            close($CLIENT_IN);
-            ###
-            my $CLIENT_OUT = undef;
-            until ($CLIENT_OUT) {
-                open($CLIENT_OUT, '>', $Ack_Tmpfile) or die "Can't open\n";
-                unless ($CLIENT_OUT) {
-                    warn ("Failed to make ackfile $Ack_Tmpfile");
-                    sleep $slp;
-                }
-            }
-            if ($handle_inventory_ret >= 0) {
-                # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
-                open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
-                print $SAVE $inv_text;
-                close($SAVE);
-                print $CLIENT_OUT ":ack\n";
-                close($CLIENT_OUT);
-            } else {
-                # エラーがあれば:failedを返す（inventory fileには書き込まない）
-                print $CLIENT_OUT ":failed\n";
-                close($CLIENT_OUT);
-            }
-            if ($handled_job->{env}->{location} eq 'remote') {
-                &put_into($handled_job->{env}, $Ack_Tmpfile, '.');
-                &rmt_rename($handled_job->{env}, $Ack_Tmpfile, $Ackfile);
-                unlink $Ack_Tmpfile;
-            } elsif ($handled_job->{env}->{location} eq 'local') {
-                rename $Ack_Tmpfile, $Ackfile;
-            } else {
-                unlink $Ack_Tmpfile;
-                rmdir $Lockdir;
-	    }
-            unlink $Opened_File;
-            Coro::AnyEvent::sleep ($interval);
-        }
-    };
-    return $Watch_Thread;
-}
+# # 外部プログラムwatchを起動し，その標準出力を監視するスレッドを起動
+# my $slp = 1;
+# sub invoke_watch_by_file {
+#     # 監視スレッドの処理
+#     $Watch_Thread = async_pool
+#     {
+#         my $interval = 1;
+#         while (1) {
+#             &wait_and_get_file ($interval);
+#             my $CLIENT_IN;
+#             open($CLIENT_IN, '<', $Opened_File) || next;
+#             my $inv_text = '';
+#             my $handle_inventory_ret = 0;
+#             my $handled_job; my $handled_jobname;
+#             # クライアントからのメッセージは
+#             # (0行以上のメッセージ行)+(":end"で始まる行)
+#             while (<$CLIENT_IN>) {
+#                 if ( $_ =~ /^:/ ) {
+#                     if ( $_ =~ /^:end/ ) {
+#                         # print STDERR "received :end\n";
+#                         last;
+#                     }
+#                 } else {
+#                     # ':' で始まる行を除いてinventory_fileに保存する
+#                     $inv_text .= $_;
+#                 }
+#                 # 一度エラーがでたら以降のhandle_inventoryはとばす
+#                 if ( $handle_inventory_ret >= 0 ) {
+#                     ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
+#                 }
+#             }
+#             close($CLIENT_IN);
+#             ###
+#             my $CLIENT_OUT = undef;
+#             until ($CLIENT_OUT) {
+#                 open($CLIENT_OUT, '>', $Ack_Tmpfile) or die "Can't open\n";
+#                 unless ($CLIENT_OUT) {
+#                     warn ("Failed to make ackfile $Ack_Tmpfile");
+#                     sleep $slp;
+#                 }
+#             }
+#             if ($handle_inventory_ret >= 0) {
+#                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
+#                 my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
+#                 open(my $SAVE, '>>', "$inv_save") or die "Failed to write inventory_file $inv_save\n";
+#                 print $SAVE $inv_text;
+#                 close($SAVE);
+#                 print $CLIENT_OUT ":ack\n";
+#                 close($CLIENT_OUT);
+#             } else {
+#                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
+#                 print $CLIENT_OUT ":failed\n";
+#                 close($CLIENT_OUT);
+#             }
+#             if ($handled_job->{env}->{location} eq 'remote') {
+#                 &put_into($handled_job->{env}, $Ack_Tmpfile, '.');
+#                 &rmt_rename($handled_job->{env}, $Ack_Tmpfile, $Ackfile);
+#                 unlink $Ack_Tmpfile;
+#             } elsif ($handled_job->{env}->{location} eq 'local') {
+#                 rename $Ack_Tmpfile, $Ackfile;
+#             } else {
+#                 unlink $Ack_Tmpfile;
+#                 rmdir $Lockdir;
+# 	    }
+#             unlink $Opened_File;
+#             Coro::AnyEvent::sleep ($interval);
+#         }
+#     };
+#     return $Watch_Thread;
+# }
 
-# TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
+# # TCP/IP通信によりジョブ状態の変更通知等の外部からの通信を受け付けるスレッドを起動
 
-sub invoke_watch_by_socket {
-    my $listen_socket = Coro::Socket->new (LocalAddr => $Inventory_Host,
-                                           LocalPort => $Inventory_Port,
-                                           Listen => 10,
-                                           Proto => 'tcp',
-                                           ReuseAddr => 1);
-    unless ($listen_socket) { die "Can't bind : $@\n"; }
-    $Watch_Thread = async_pool
-    {
-        my $socket;
-        while (1) {
-            # print "Waiting for connection.\n";
-            $socket = $listen_socket->accept;
-            # print "Connection accepted.\n";
-            unless ($socket) {next;}
-            $socket->autoflush();
-            my $inv_text = '';
-            my $handle_inventory_ret = 0;
-            my ($handled_job, $handled_jobname);
-            # クライアントからのメッセージは
-            # (0行以上のメッセージ行)+(":end"で始まる行)
-            while (<$socket>) {
-                if ( $_ =~ /^:/ ) {
-                    if ( $_ =~ /^:end/ ) {
-                        # print STDERR "received :end\n";
-                        last;
-                    }
-                } else {
-                    # ':' で始まる行を除いてinventory_fileに保存する
-                    $inv_text .= $_;
-                }
-                # 一度エラーがでたら以降のhandle_inventoryはとばす
-                if ( $handle_inventory_ret >= 0 ) {
-                    ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
-                }
-            }
-            if ($handle_inventory_ret >= 0) {
-                # エラーがなければinventoryファイルにログを書き込んで:ackを返す
-                my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
-                open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
-                print SAVE $inv_text;
-                close (SAVE);
-                $socket->print (":ack\n");
-                # print STDERR "sent :ack\n";
-            } else {
-                # エラーがあれば:failedを返す（inventory fileには書き込まない）
-                $socket->print (":failed\n");
-                # print STDERR "sent :failed\n";
-            }
-            $socket->close();
-       }
-    };
-    return $Watch_Thread;
-}
-=cut
+# sub invoke_watch_by_socket {
+#     my $listen_socket = Coro::Socket->new (LocalAddr => $Inventory_Host,
+#                                            LocalPort => $Inventory_Port,
+#                                            Listen => 10,
+#                                            Proto => 'tcp',
+#                                            ReuseAddr => 1);
+#     unless ($listen_socket) { die "Can't bind : $@\n"; }
+#     $Watch_Thread = async_pool
+#     {
+#         my $socket;
+#         while (1) {
+#             # print "Waiting for connection.\n";
+#             $socket = $listen_socket->accept;
+#             # print "Connection accepted.\n";
+#             unless ($socket) {next;}
+#             $socket->autoflush();
+#             my $inv_text = '';
+#             my $handle_inventory_ret = 0;
+#             my ($handled_job, $handled_jobname);
+#             # クライアントからのメッセージは
+#             # (0行以上のメッセージ行)+(":end"で始まる行)
+#             while (<$socket>) {
+#                 if ( $_ =~ /^:/ ) {
+#                     if ( $_ =~ /^:end/ ) {
+#                         # print STDERR "received :end\n";
+#                         last;
+#                     }
+#                 } else {
+#                     # ':' で始まる行を除いてinventory_fileに保存する
+#                     $inv_text .= $_;
+#                 }
+#                 # 一度エラーがでたら以降のhandle_inventoryはとばす
+#                 if ( $handle_inventory_ret >= 0 ) {
+#                     ($handle_inventory_ret, $handled_job, $handled_jobname) = handle_inventory ($_, 1);
+#                 }
+#             }
+#             if ($handle_inventory_ret >= 0) {
+#                 # エラーがなければinventoryファイルにログを書き込んで:ackを返す
+#                 my $inv_save = File::Spec->catfile($Inventory_Path, $handled_jobname);
+#                 open ( SAVE, ">> $inv_save") or die "Can't open $inv_save\n";
+#                 print SAVE $inv_text;
+#                 close (SAVE);
+#                 $socket->print (":ack\n");
+#                 # print STDERR "sent :ack\n";
+#             } else {
+#                 # エラーがあれば:failedを返す（inventory fileには書き込まない）
+#                 $socket->print (":failed\n");
+#                 # print STDERR "sent :failed\n";
+#             }
+#             $socket->close();
+#        }
+#     };
+#     return $Watch_Thread;
+# }
 
 ## Obsolete: Logfile is used instead
 # $jobnameに対応するインベントリファイルを読み込んで反映
@@ -886,30 +884,29 @@ sub invoke_left_message_check {
 }
 
 ##
-=comment Obsolete
-sub wait_and_get_file {
-    my ($interval) = @_;
-    my @envs = &get_all_envs();
-  LABEL: while (1) {
-      foreach my $env (@envs) {
-	  if ($env->{location} eq 'remote') {
-	      my $tmp = &rmt_exist($env, $Reqfile);
-	      if ($tmp) {
-		  &rmt_rename($env, $Reqfile, $Opened_File);
-		  &get_from($env, $Opened_File, '.');
-		  &rmt_unlink($env, $Opened_File);
-		  last LABEL;
-	      }
-	  } else {
-	      if (-e $Reqfile) {
-		  rename $Reqfile, $Opened_File;
-		  last LABEL;
-	      }
-	  }
-      }
-      Coro::AnyEvent::sleep ($interval);
-  }
-}
-=cut
+# Obsolete
+# sub wait_and_get_file {
+#     my ($interval) = @_;
+#     my @envs = &get_all_envs();
+#   LABEL: while (1) {
+#       foreach my $env (@envs) {
+# 	  if ($env->{location} eq 'remote') {
+# 	      my $tmp = &rmt_exist($env, $Reqfile);
+# 	      if ($tmp) {
+# 		  &rmt_rename($env, $Reqfile, $Opened_File);
+# 		  &get_from($env, $Opened_File, '.');
+# 		  &rmt_unlink($env, $Opened_File);
+# 		  last LABEL;
+# 	      }
+# 	  } else {
+# 	      if (-e $Reqfile) {
+# 		  rename $Reqfile, $Opened_File;
+# 		  last LABEL;
+# 	      }
+# 	  }
+#       }
+#       Coro::AnyEvent::sleep ($interval);
+#   }
+# }
 
 1;

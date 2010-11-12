@@ -296,13 +296,12 @@ sub add_host {
             die "Set the key wd at $env->{host}\n";
         }
     }
-=comment left_messages 方式と _to_be_ 関連をローカルに保存することより不要になった
-    unless ($env->{host} eq $env_d->{host}) {
-	unless ($xcropt::options{shared}) {
-	    &rmt_mkdir($env, $xcropt::options{inventory_path});
-	}
-    }
-=cut
+# left_messages 方式と _to_be_ 関連をローカルに保存することより不要になった
+    # unless ($env->{host} eq $env_d->{host}) {
+    # 	unless ($xcropt::options{shared}) {
+    # 	    &rmt_mkdir($env, $xcropt::options{inventory_path});
+    # 	}
+    # }
     unless (defined $env->{xd}) {
         my @xd = &xcr_qx($env, 'echo $XCRYPT');
         chomp($xd[0]);
@@ -363,15 +362,12 @@ sub expand {
             }
         }
         @range = &times(@ranges);
-=comment
-    } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
-        my @params = (0..(&MIN(\%job)-1));
-        foreach (@params) {
-	    my $self = &do_initialized(\%job, $_);
-	    push(@objs, $self);
-        }
-    }
-=cut
+    # } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
+    #     my @params = (0..(&MIN(\%job)-1));
+    #     foreach (@params) {
+    # 	    my $self = &do_initialized(\%job, $_);
+    # 	    push(@objs, $self);
+    #     }
     } else {
         @range = ([]);
     }
@@ -486,12 +482,10 @@ sub do_initialized {
     my @range = @_;
     $job{'VALUE'} = \@range;
     my $tmp = 0;
-=comment
-    foreach (@range) {
-	$job{"VALUE$tmp"} = $_;
-	$tmp++;
-    }
-=cut
+    # foreach (@range) {
+    # 	$job{"VALUE$tmp"} = $_;
+    # 	$tmp++;
+    # }
         if ($separator_check) {
             unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
                 die "Can't support $separator as \$separator.\n";
@@ -619,12 +613,10 @@ sub expand_make {
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
-=comment
-	       if ($key =~ /^JS_/) {
-		   my ($before_exp_char , $after_exp_char) = split(/@/, $key);
-		   push(@allkeys, $before_exp_char);
-	   }
-=cut
+	    # if ($key =~ /^JS_/) {
+	    # 	my ($before_exp_char , $after_exp_char) = split(/@/, $key);
+	    # 	push(@allkeys, $before_exp_char);
+	    # }
         }
         $exist = 0;
     }
@@ -834,21 +826,20 @@ sub submit {
 
             ## ジョブスクリプトの最終行の処理を終えたからといって
             ## after()をしてよいとは限らないが……
-=comment
-	    my $flag0 = 0;
-            my $flag1 = 0;
-            until ($flag0 && $flag1) {
-            Coro::AnyEvent::sleep 1;
-            $flag0 = &xcr_exist($self->{env},
-            File::Spec->catfile($self->{workdir},
-            $self->{JS_stdout})
-                );
-            $flag1 = &xcr_exist($self->{env},
-            File::Spec->catfile($self->{workdir},
-            $self->{JS_stderr})
-                );
-            }
-=cut
+	    # my $flag0 = 0;
+            # my $flag1 = 0;
+            # until ($flag0 && $flag1) {
+            # Coro::AnyEvent::sleep 1;
+            # $flag0 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stdout})
+            #     );
+            # $flag1 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stderr})
+            #     );
+            # }
+
             ## NFS が書き込んでくれる*経験的*待ち時間
             sleep 3;
 
