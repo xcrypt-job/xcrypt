@@ -46,10 +46,10 @@ my %ssh_opts = (
 my %Host_Ssh_Hash;
 our $env_d;
 $env_d = { 'host'     => $xcropt::options{host},
-	   'wd'       => $xcropt::options{wd},
-	   'sched'    => $xcropt::options{sched},
-	   'xd'       => $xcropt::options{xd},
-	   'p5l'      => $xcropt::options{p5l}
+           'wd'       => $xcropt::options{wd},
+           'sched'    => $xcropt::options{sched},
+           'xd'       => $xcropt::options{xd},
+           'p5l'      => $xcropt::options{p5l}
 };
 #	   'location' => 'local' };
 my @Env = ($env_d);
@@ -70,16 +70,16 @@ sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{host} eq $env_d->{host}) {
-	qx/which $cmd0[0]/;
+        qx/which $cmd0[0]/;
     } else {
-	my $ssh = $Host_Ssh_Hash{$env->{host}};
-	my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
-	my $tmp = $flags[0];
-	if ($tmp == 0) {
-	    return 0;
-	} else {
-	    return 1;
-	}
+        my $ssh = $Host_Ssh_Hash{$env->{host}};
+        my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
+        my $tmp = $flags[0];
+        if ($tmp == 0) {
+            return 0;
+        } else {
+            return 1;
+        }
     }
     my $ex_code = $? >> 8;
     # print "$? $ex_code ";
@@ -91,23 +91,23 @@ sub ssh_command {
 
     $ssh->system("true");
     while ($ssh->error) {
-	sleep(60);
-	my ($user, $host) = split(/@/, $env->{host});
-	$ssh = Net::OpenSSH->new($host, (user => $user));
-	$ssh->error and warn $ssh->error;
-	$Host_Ssh_Hash{$env->{host}} = $ssh;
+        sleep(60);
+        my ($user, $host) = split(/@/, $env->{host});
+        $ssh = Net::OpenSSH->new($host, (user => $user));
+        $ssh->error and warn $ssh->error;
+        $Host_Ssh_Hash{$env->{host}} = $ssh;
     }
 
     my @flags;
     if ($command eq 'capture') {
-	@flags = $ssh->capture("$str0"); # or warn $ssh->error;
+        @flags = $ssh->capture("$str0"); # or warn $ssh->error;
     } elsif ($command eq 'system') {
-	my $flag = $ssh->system("$str0") or warn $ssh->error;
-	@flags = ($flag);
+        my $flag = $ssh->system("$str0") or warn $ssh->error;
+        @flags = ($flag);
     } elsif ($command eq 'get') {
-	$ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+        $ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
     } elsif ($command eq 'put') {
-	$ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+        $ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
     }
     return @flags;
 }
@@ -117,59 +117,59 @@ sub rmt_cmd {
     my $env = shift;
     my $ssh = $Host_Ssh_Hash{$env->{host}};
     if ($cmd eq 'qx') {
-	my ($command, $dir) = @_;
-	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-	my @flags = &ssh_command($env, $ssh,'capture', "$tmp");
-	return @flags;
+        my ($command, $dir) = @_;
+        my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+        my @flags = &ssh_command($env, $ssh,'capture', "$tmp");
+        return @flags;
     } elsif ($cmd eq 'system') {
-	my ($command, $dir) = @_;
-	my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
-	my @flags = &ssh_command($env, $ssh, 'system', "$tmp");
-	return $flags[0];
+        my ($command, $dir) = @_;
+        my $tmp = 'cd ' . File::Spec->catfile($env->{wd}, $dir) . "; $command";
+        my @flags = &ssh_command($env, $ssh, 'system', "$tmp");
+        return $flags[0];
     } elsif ($cmd eq 'exist') {
-	my ($file) = @_;
-	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	my @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath && echo 1");
-	chomp($flags[0]);
-	return $flags[0];
+        my ($file) = @_;
+        my $fullpath = File::Spec->catfile($env->{wd}, $file);
+        my @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath && echo 1");
+        chomp($flags[0]);
+        return $flags[0];
     } elsif ($cmd eq 'mkdir') {
-	my ($dir) = @_;
-	my $fullpath = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_cmd('system', $env, "test -e $fullpath || mkdir $fullpath");
+        my ($dir) = @_;
+        my $fullpath = File::Spec->catfile($env->{wd}, $dir);
+        &rmt_cmd('system', $env, "test -e $fullpath || mkdir $fullpath");
     } elsif ($cmd eq 'copy') {
-	my ($copied, $dir) = @_;
-	my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
-	my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-	&rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_dir");
-	&rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_dir");
+        my ($copied, $dir) = @_;
+        my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
+        my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
+        &rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_dir");
+        &rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_dir");
     } elsif ($cmd eq 'rename') {
-	my ($renamed, $file) = @_;
-	my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
-	my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-	&rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+        my ($renamed, $file) = @_;
+        my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
+        my $tmp1 = File::Spec->catfile($env->{wd}, $file);
+        &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
     } elsif ($cmd eq 'symlink') {
-	my ($dir, $file, $link) = @_;
-	my $tmp = File::Spec->catfile($dir, $link);
-	&rmt_cmd('system', $env, "ln -s $file $tmp");
+        my ($dir, $file, $link) = @_;
+        my $tmp = File::Spec->catfile($dir, $link);
+        &rmt_cmd('system', $env, "ln -s $file $tmp");
     } elsif ($cmd eq 'unlink') {
-	my ($file) = @_;
-	my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	&rmt_cmd('system', $env, "rm -f $fullpath");
+        my ($file) = @_;
+        my $fullpath = File::Spec->catfile($env->{wd}, $file);
+        &rmt_cmd('system', $env, "rm -f $fullpath");
     } elsif ($cmd eq 'get') {
-	my ($file, $to) = @_;
-	unless ($xcropt::options{shared}) {
-	    my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	    &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
-	}
+        my ($file, $to) = @_;
+        unless ($xcropt::options{shared}) {
+            my $fullpath = File::Spec->catfile($env->{wd}, $file);
+            &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+        }
     } elsif ($cmd eq 'put') {
-	my ($file, $to) = @_;
-	unless ($xcropt::options{shared}) {
-	    my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-	    &ssh_command($env, $ssh, 'put', $file, $fullpath);
-	}
+        my ($file, $to) = @_;
+        unless ($xcropt::options{shared}) {
+            my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
+            &ssh_command($env, $ssh, 'put', $file, $fullpath);
+        }
     } else {
-	foreach(%$cmd){print $_, "\n";}
-	die "$cmd doesn't match";
+        foreach(%$cmd){print $_, "\n";}
+        die "$cmd doesn't match";
     }
 }
 
@@ -177,43 +177,43 @@ sub xcr_cmd {
     my $cmd =shift;
     my $env =shift;
     unless ($env->{host} eq $env_d->{host}) {
-	rmt_cmd($cmd, $env, @_);
+        rmt_cmd($cmd, $env, @_);
     } else {
-	if ($cmd eq 'exist') {
-	    my $flag = 0;
+        if ($cmd eq 'exist') {
+            my $flag = 0;
             my ($file) = @_;
-	    if (-e $file) {
-		$flag = 1;
-	    }
-	    return $flag;
-	} elsif ($cmd eq 'qx') {
-	    my ($command, $dir) = @_;
-	    my @ret = qx/cd $dir; $command/;
-	    return @ret;
-	} elsif ($cmd eq 'system') {
-	    my ($command, $dir) = @_;
-	    my $flag = system("cd $dir; $command");
-	    return $flag;
-	} elsif ($cmd eq 'mkdir') {
-	    my ($dir) = @_;
-	    mkdir $dir, 0755;
-	} elsif ($cmd eq 'copy') {
-	    my ($copied, $dir) = @_;
-	    rcopy($copied, $dir);
-	} elsif ($cmd eq 'rename') {
-	    my ($renamed, $file) = @_;
-	    if (-e $renamed) {
-		rename $renamed, $file;
-	    }
-	} elsif ($cmd eq 'symlink') {
-	    my ($dir, $file, $link) = @_;
-	    symlink($file, File::Spec->catfile($dir, $link));
-	} elsif ($cmd eq 'unlink') {
-	    my ($file) = @_;
-	    unlink $file;
-	} else {
-	    die ;
-	}
+            if (-e $file) {
+                $flag = 1;
+            }
+            return $flag;
+        } elsif ($cmd eq 'qx') {
+            my ($command, $dir) = @_;
+            my @ret = qx/cd $dir; $command/;
+            return @ret;
+        } elsif ($cmd eq 'system') {
+            my ($command, $dir) = @_;
+            my $flag = system("cd $dir; $command");
+            return $flag;
+        } elsif ($cmd eq 'mkdir') {
+            my ($dir) = @_;
+            mkdir $dir, 0755;
+        } elsif ($cmd eq 'copy') {
+            my ($copied, $dir) = @_;
+            rcopy($copied, $dir);
+        } elsif ($cmd eq 'rename') {
+            my ($renamed, $file) = @_;
+            if (-e $renamed) {
+                rename $renamed, $file;
+            }
+        } elsif ($cmd eq 'symlink') {
+            my ($dir, $file, $link) = @_;
+            symlink($file, File::Spec->catfile($dir, $link));
+        } elsif ($cmd eq 'unlink') {
+            my ($file) = @_;
+            unlink $file;
+        } else {
+            die ;
+        }
     }
 }
 
@@ -278,63 +278,63 @@ sub repeat {
 sub add_host {
     my ($env) = @_;
     unless ($env->{host} eq $env_d->{host}) {
-	unless (exists $Host_Ssh_Hash{$env->{host}}) {
-	    my ($user, $host) = split(/@/, $env->{host});
-	    my $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
-	    $Host_Ssh_Hash{$env->{host}} = $ssh;
-	}
+        unless (exists $Host_Ssh_Hash{$env->{host}}) {
+            my ($user, $host) = split(/@/, $env->{host});
+            my $ssh = Net::OpenSSH->new($host, (user => $user));
+            $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
+            $Host_Ssh_Hash{$env->{host}} = $ssh;
+        }
     }
     unless (defined $env->{wd}) {
-	my @wd = &xcr_qx($env, 'echo $HOME');
-	chomp($wd[0]);
-	print $wd[0], "\n";
-	unless ($wd[0] eq '') {
-	    $env->{wd} = $wd[0];
-	} else {
-	    die "Set the key wd at $env->{host}\n";
-	}
+        my @wd = &xcr_qx($env, 'echo $HOME');
+        chomp($wd[0]);
+        print $wd[0], "\n";
+        unless ($wd[0] eq '') {
+            $env->{wd} = $wd[0];
+        } else {
+            die "Set the key wd at $env->{host}\n";
+        }
     }
-=comment left_messages 方式と _to_be_ 関連をローカルに保存することより不要になった
-    unless ($env->{host} eq $env_d->{host}) {
+    =comment left_messages 方式と _to_be_ 関連をローカルに保存することより不要になった
+        unless ($env->{host} eq $env_d->{host}) {
 	unless ($xcropt::options{shared}) {
-	    &rmt_mkdir($env, $xcropt::options{inventory_path});
+    &rmt_mkdir($env, $xcropt::options{inventory_path});
 	}
     }
-=cut
+    =cut
     unless (defined $env->{xd}) {
-	my @xd = &xcr_qx($env, 'echo $XCRYPT');
-	chomp($xd[0]);
-	unless ($xd[0] eq '') {
-	    $env->{xd} = $xd[0];
-	} else {
-	    die "Set the environment varialble \$XCRYPT at $env->{host}\n";
-	}
+        my @xd = &xcr_qx($env, 'echo $XCRYPT');
+        chomp($xd[0]);
+        unless ($xd[0] eq '') {
+            $env->{xd} = $xd[0];
+        } else {
+            die "Set the environment varialble \$XCRYPT at $env->{host}\n";
+        }
     }
     unless (defined $env->{p5l}) {
-	my @p5l = &xcr_qx($env, 'echo $PERL5LIB');
-	chomp($p5l[0]);
-	unless ($p5l[0] eq '') {
-	    $env->{p5l} = $p5l[0] . ':'
-		. $env->{xd} . ':'
-		. File::Spec->catfile($env->{xd}, 'lib') . ':'
-		. File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
-		. File::Spec->catfile($env->{xd}, 'lib', 'cpan');
-	} else {
-	    $env->{p5l} = $env->{xd} . ':'
-		. File::Spec->catfile($env->{xd}, 'lib') . ':'
-		. File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
-		. File::Spec->catfile($env->{xd}, 'lib', 'cpan');
-	}
+        my @p5l = &xcr_qx($env, 'echo $PERL5LIB');
+        chomp($p5l[0]);
+        unless ($p5l[0] eq '') {
+            $env->{p5l} = $p5l[0] . ':'
+                . $env->{xd} . ':'
+                . File::Spec->catfile($env->{xd}, 'lib') . ':'
+                . File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
+                . File::Spec->catfile($env->{xd}, 'lib', 'cpan');
+        } else {
+            $env->{p5l} = $env->{xd} . ':'
+                . File::Spec->catfile($env->{xd}, 'lib') . ':'
+                . File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
+                . File::Spec->catfile($env->{xd}, 'lib', 'cpan');
+        }
     }
     unless (defined $env->{sched}) {
-	my @sched = &xcr_qx($env, 'echo $XCRJOBSCHED');
-	chomp($sched[0]);
-	unless ($sched[0] eq '') {
-	    $env->{sched} = $sched[0];
-	} else {
-	    die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
-	}
+        my @sched = &xcr_qx($env, 'echo $XCRJOBSCHED');
+        chomp($sched[0]);
+        unless ($sched[0] eq '') {
+            $env->{sched} = $sched[0];
+        } else {
+            die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
+        }
     }
     push(@Env, $env);
     return $env;
@@ -345,7 +345,7 @@ sub expand {
     my $max_of_range = &get_max_index_of_range(%job);
     my @range;
     if (defined $job{'RANGES'}) {
-	@range = &times(@{$job{'RANGES'}});
+        @range = &times(@{$job{'RANGES'}});
     } elsif ( $max_of_range != -1 ) {
         my @ranges = ();
         for ( my $i = 0; $i <= $max_of_range; $i++ ) {
@@ -356,20 +356,20 @@ sub expand {
                     warn "The value of RANGE$i must be an ARRAY reference";
                 }
             } else {
-		my @temp = ($nil);
-		$job{"RANGE$i"} = \@temp;
-		push(@ranges, $job{"RANGE$i"});
-	    }
+                my @temp = ($nil);
+                $job{"RANGE$i"} = \@temp;
+                push(@ranges, $job{"RANGE$i"});
+            }
         }
         @range = &times(@ranges);
-=comment
+        =comment
     } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
         my @params = (0..(&MIN(\%job)-1));
         foreach (@params) {
-            my $self = &do_initialized(\%job, $_);
-            push(@objs, $self);
+        my $self = &do_initialized(\%job, $_);
+        push(@objs, $self);
         }
-=cut
+        =cut
     } else {
         @range = ([]);
     }
@@ -383,10 +383,10 @@ sub max {
     my @array = @_;
     my $max = -1;
     until (@array == ()) {
-	my $tmp = shift(@array);
-	if ($tmp > $max) {
-	    $max = $tmp;
-	}
+        my $tmp = shift(@array);
+        if ($tmp > $max) {
+            $max = $tmp;
+        }
     }
     return $max;
 }
@@ -398,35 +398,37 @@ sub get_max_index {
     my $pat1;
     my $pat2;
     if ($arg eq 'range') {
-	$pat0 = '\ARANGE[0-9]+\Z';
-	$pat1 = '[0-9]+\Z';
+        $pat0 = '\ARANGE[0-9]+\Z';
+        $pat1 = '[0-9]+\Z';
     } elsif ($arg eq 'exe') {
-	$pat0 = '\Aexe[0-9]+';
-	$pat1 = '[0-9]+';
+        $pat0 = '\Aexe[0-9]+';
+        $pat1 = '[0-9]+';
     } elsif ($arg eq 'arg') {
-	$pat0 = '\Aarg[0-9]+';
-	$pat1 = '[0-9]+';
+        $pat0 = '\Aarg[0-9]+';
+        $pat1 = '[0-9]+';
     } elsif ($arg eq 'first') {
-	$pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
-	$pat1 = '[0-9]+';
+        $pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
+        $pat1 = '[0-9]+';
     } elsif ($arg eq 'second') {
-	$pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
-	$pat1 = '[0-9]+'.$separator;
+        $pat0 = '\Aarg[0-9]+'.$separator.'[0-9]+';
+        $pat1 = '[0-9]+'.$separator;
     }
     foreach my $key (keys(%job)) {
-	if ($key =~ /$pat0/) {
-	    if ($key =~ /$pat1/) {
-		if ($arg eq 'second') {
-		    push(@ret, $'); #'
-		} else {
-		    push(@ret, $&);
-		}
-	    }
-	}
+        if ($key =~ /$pat0/) {
+            if ($key =~ /$pat1/) {
+                if ($arg eq 'second') {
+                    push(@ret, $'); #'
+                        } else {
+                            push(@ret, $&);
+                    }
+                }
+            }
+        }
+        my $max = &max(@ret);
+        return $max;
     }
-    my $max = &max(@ret);
-    return $max;
 }
+
 sub get_max_index_of_range             { return &get_max_index('range',  @_); }
 sub get_max_index_of_exe               { return &get_max_index('exe',    @_); }
 sub get_max_index_of_arg               { return &get_max_index('arg',    @_); }
@@ -438,22 +440,22 @@ sub times_loop {
     my @arg = @_;
     my @ret;
     until (@arg == ()) {
-	my $head = shift(@arg);
-	if (@ret == ()) {
-	    foreach my $k (@$head) {
-		push(@ret, [$k]);
-	    }
-	} else {
-	    my @tmp;
-	    foreach my $i (@ret) {
-		foreach my $j (@$head) {
-		    my @foo = @$i;
-		    push(@foo, $j);
-		    push(@tmp, \@foo);
-		}
-	    }
-	    @ret = @tmp;
-	}
+        my $head = shift(@arg);
+        if (@ret == ()) {
+            foreach my $k (@$head) {
+                push(@ret, [$k]);
+            }
+        } else {
+            my @tmp;
+            foreach my $i (@ret) {
+                foreach my $j (@$head) {
+                    my @foo = @$i;
+                    push(@foo, $j);
+                    push(@tmp, \@foo);
+                }
+            }
+            @ret = @tmp;
+        }
     }
     return @ret;
 }
@@ -482,34 +484,34 @@ sub do_initialized {
     my @range = @_;
     $job{'VALUE'} = \@range;
     my $tmp = 0;
-=comment
-    foreach (@range) {
-	$job{"VALUE$tmp"} = $_;
-	$tmp++;
+    =comment
+        foreach (@range) {
+            $job{"VALUE$tmp"} = $_;
+            $tmp++;
     }
-=cut
-    if ($separator_check) {
-        unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
-            die "Can't support $separator as \$separator.\n";
-        }
+    =cut
+        if ($separator_check) {
+            unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
+                die "Can't support $separator as \$separator.\n";
+            }
     }
 
     # generate job objects
     unless (defined $job{"id$expander"}) {
-	$job{id} = join($separator, ($job{id}, @_));
+        $job{id} = join($separator, ($job{id}, @_));
     }
 #    foreach my $k (@allkeys) {
     foreach my $tmp_k (keys(%job)) {
-	my ($k , $after_k) = split(/$expander/, $tmp_k);
+        my ($k , $after_k) = split(/$expander/, $tmp_k);
         my $members = "$k" . $expander;
 
         if ( exists($job{"$members"}) ) {
-	    local $user::self = \%job;
-	    local @user::VALUE = @range;
+            local $user::self = \%job;
+            local @user::VALUE = @range;
             unless ( ref($job{"$members"}) ) {
-		warn "Can't dereference $members.  Instead evaluate $members";
-		@_ = (\%job, @range);
-		$job{"$k"} = eval($job{$members});
+                warn "Can't dereference $members.  Instead evaluate $members";
+                @_ = (\%job, @range);
+                $job{"$k"} = eval($job{$members});
             } elsif ( ref($job{"$members"}) eq 'CODE' ) {
 #foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
                 $job{"$k"} = &{$job{"$members"}}(\%job, @range);
@@ -517,7 +519,7 @@ sub do_initialized {
                 my @tmp = @{$job{"$members"}};
                 $job{"$k"} = $tmp[$count];
             } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-		$job{"$k"} = ${$job{"$members"}};
+                $job{"$k"} = ${$job{"$members"}};
             } else {
                 die "Can't interpret $members\n";
             }
@@ -527,23 +529,23 @@ sub do_initialized {
 
     # aliases
     if (defined $self->{exe0}) {
-	$self->{exe} = $self->{exe0};
+        $self->{exe} = $self->{exe0};
     }
     my $max_of_arg = &get_max_index_of_arg(%job);
     foreach my $i (0..$max_of_arg) {
-	if (defined $self->{"arg0_$i"}) {
-	    $self->{"arg$i"} = $self->{"arg0_$i"};
-	}
+        if (defined $self->{"arg0_$i"}) {
+            $self->{"arg$i"} = $self->{"arg0_$i"};
+        }
     }
 
     &jobsched::entry_job_id ($self);
 
     # check left_messages
     if (-e jobsched::left_message_file_name_inventory($self, 'invalidated')) {
-	&jobsched::set_job_finished($self);
+        &jobsched::set_job_finished($self);
     } else {
-	unlink jobsched::left_message_file_name_inventory($self, 'cancelled');
-	&jobsched::set_job_initialized($self);
+        unlink jobsched::left_message_file_name_inventory($self, 'cancelled');
+        &jobsched::set_job_initialized($self);
     }
     return $self;
 }
@@ -552,25 +554,25 @@ sub unalias {
     my %job = @_;
 
     if ($job{exe}) {
-	$job{exe0} = $job{exe};
-	delete($job{exe});
+        $job{exe0} = $job{exe};
+        delete($job{exe});
     }
     if ($job{"exe$expander"}) {
-	$job{"exe0$expander"} = $job{"exe$expander"};
-	delete($job{"exe$expander"});
+        $job{"exe0$expander"} = $job{"exe$expander"};
+        delete($job{"exe$expander"});
     }
     my $max_of_arg = &get_max_index_of_arg(%job);
     foreach my $i (0..$max_of_arg) {
-	if ($job{"arg$i"}) {
-	    $job{"arg0_$i"} = $job{"arg$i"};
-	    delete($job{"arg$i"});
-	}
+        if ($job{"arg$i"}) {
+            $job{"arg0_$i"} = $job{"arg$i"};
+            delete($job{"arg$i"});
+        }
     }
     foreach my $i (0..$max_of_arg) {
-	if ($job{"arg$i$expander"}) {
-	    $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
-	    delete($job{"arg$i$expander"});
-	}
+        if ($job{"arg$i$expander"}) {
+            $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
+            delete($job{"arg$i$expander"});
+        }
     }
     return %job;
 }
@@ -585,10 +587,10 @@ sub expand_make {
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
     for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
     for ( my $i = 0; $i <= $max_of_first; $i++ ) {
-	push(@allkeys, "arg$i");
-	for ( my $j = 0; $j <= $max_of_second; $j++ ) {
+        push(@allkeys, "arg$i");
+        for ( my $j = 0; $j <= $max_of_second; $j++ ) {
             push(@allkeys, "arg$i".'_'."$j");
-	}
+        }
     }
     foreach my $key (keys(%job)) {
         if ($key =~ /\A:/) {
@@ -596,7 +598,7 @@ sub expand_make {
                 $/ = $expander;
                 chomp $key;
             }
-	    push(@allkeys, $key);
+            push(@allkeys, $key);
         }
     }
 
@@ -619,16 +621,16 @@ sub expand_make {
                     || ($key =~ /\ARANGES\Z/)
                     || ($key =~ /\AVALUE\Z/))
             {
-		print $key, "\n";
+                print $key, "\n";
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
-=comment
-            if ($key =~ /^JS_/) {
-		my ($before_exp_char , $after_exp_char) = split(/@/, $key);
-		push(@allkeys, $before_exp_char);
-	    }
-=cut
+            =comment
+                if ($key =~ /^JS_/) {
+            my ($before_exp_char , $after_exp_char) = split(/@/, $key);
+            push(@allkeys, $before_exp_char);
+        }
+            =cut
         }
         $exist = 0;
     }
@@ -638,9 +640,9 @@ sub expand_make {
     my @objs;
     my $self;
     foreach (@range) {
-	$self = &do_initialized(\%job, @{$_});
-	$count++;
-	push(@objs, $self);
+        $self = &do_initialized(\%job, @{$_});
+        $count++;
+        push(@objs, $self);
     }
     return @objs;
 }
@@ -650,7 +652,7 @@ sub prepare{
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
     foreach (@objs) {
-	&jobsched::set_job_prepared($_);
+        &jobsched::set_job_prepared($_);
     }
     return @objs;
 }
@@ -802,7 +804,7 @@ sub submit {
                 Coro::on_leave {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
-              }
+            }
             ## Resume signal
 # ↓ jobsched に定義されていないのでコメントアウトした 2010/10/12
 #            jobsched::resume_signal_last_time ($self);
@@ -822,12 +824,12 @@ sub submit {
             ## set_job_queued()
             if (check_status_for_set_job_queued ($self)) {
 #		if ($self->{env}->{location} eq 'local') {
-		if ($self->{env}->{host} eq $env_d->{host}) {
-		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} $self->{workdir}\n");
+                if ($self->{env}->{host} eq $env_d->{host}) {
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} $self->{workdir}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
-		} else {
-		    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} " . File::Spec->catfile($self->{env}->{wd}, $self->{workdir}) . "\n");
-		}
+                } else {
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} " . File::Spec->catfile($self->{env}->{wd}, $self->{workdir}) . "\n");
+                }
                 &jobsched::set_job_queued($self);
             }
             ## If the job was 'running' in the last execution, set it's status to 'running'.
@@ -837,25 +839,25 @@ sub submit {
                 &jobsched::wait_job_done ($self);
             }
 
-	    ## ジョブスクリプトの最終行の処理を終えたからといって
-	    ## after()をしてよいとは限らないが……
-=comment
-	    my $flag0 = 0;
-	    my $flag1 = 0;
-	    until ($flag0 && $flag1) {
-		Coro::AnyEvent::sleep 1;
-		    $flag0 = &xcr_exist($self->{env},
-					File::Spec->catfile($self->{workdir},
-							    $self->{JS_stdout})
-			);
-		    $flag1 = &xcr_exist($self->{env},
-					File::Spec->catfile($self->{workdir},
-							    $self->{JS_stderr})
-			);
-	    }
-=cut
-	    ## NFS が書き込んでくれる*経験的*待ち時間
-	    sleep 3;
+            ## ジョブスクリプトの最終行の処理を終えたからといって
+            ## after()をしてよいとは限らないが……
+            =comment
+                my $flag0 = 0;
+            my $flag1 = 0;
+            until ($flag0 && $flag1) {
+            Coro::AnyEvent::sleep 1;
+            $flag0 = &xcr_exist($self->{env},
+            File::Spec->catfile($self->{workdir},
+            $self->{JS_stdout})
+                );
+            $flag1 = &xcr_exist($self->{env},
+            File::Spec->catfile($self->{workdir},
+            $self->{JS_stderr})
+                );
+            }
+            =cut
+            ## NFS が書き込んでくれる*経験的*待ち時間
+            sleep 3;
 
             ## after()
             if (check_status_for_after ($self)) {
@@ -865,10 +867,10 @@ sub submit {
             if (check_status_for_set_job_finished ($self)) {
                 &jobsched::set_job_finished($self);
             }
-	} $self;
+        } $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
-	Coro::AnyEvent::sleep $slp;
+        Coro::AnyEvent::sleep $slp;
     }
     return @array;
 }
@@ -885,7 +887,7 @@ sub sync {
         }
     }
     foreach (@jobs) {
-	&jobsched::exit_job_id($_);
+        &jobsched::exit_job_id($_);
     }
     return @_;
 }
@@ -894,8 +896,8 @@ sub prepare_submit {
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
     foreach (@objs) {
-	&jobsched::set_job_prepared($_);
-	&submit($_);
+        &jobsched::set_job_prepared($_);
+        &submit($_);
     }
     return @objs;
 }
@@ -914,9 +916,9 @@ sub filter {
     my $fun = shift;
     my @ret;
     foreach (@_) {
-	if (&$fun($_)) {
-	    push(@ret, $_);
-	}
+        if (&$fun($_)) {
+            push(@ret, $_);
+        }
     }
     return @ret;
 }
