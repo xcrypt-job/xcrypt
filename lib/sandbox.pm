@@ -16,14 +16,13 @@ sub new {
     my $self = $class->NEXT::new(@_);
 
     $self->{workdir} = $self->{id};
-=comment
     # If the working directory already exists, delete it
-    my $ex = &xcr_exist($self->{env}, $self->{id});
-    if ($ex) {
-	print "Delete directory $self->{id}\n";
-	&xcr_rmtree($self->{id}, $self->{env});
-    }
-=cut
+    # my $ex = &xcr_exist($self->{env}, $self->{id});
+    # if ($ex) {
+    # 	print "Delete directory $self->{id}\n";
+    # 	&xcr_rmtree($self->{id}, $self->{env});
+    # }
+
     mkdir $self->{workdir}, 0755;
     &xcr_mkdir($self->{env}, $self->{workdir});
 
