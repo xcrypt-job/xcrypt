@@ -830,9 +830,19 @@ sub left_transition_message_check {
         }
     }
 }
-
+# Handle signal message file.
+# If a job object is given, handle a message for the specified jobs.
+# Otherwies, handle for all the signal messages.
 sub left_signal_message_check {
-    foreach my $sigmsg (glob File::Spec->catfile($Inventory_Path, "*_to_be_*")) {
+    my $self_or_all = shift;
+    my @checklist;
+    if (ref ($self_or_all) eq 'HASH') {
+        my $id = $self_or_all{id};
+        @checklist = glob File::Spec->catfile($Inventory_Path, "$id_to_be_*");
+    } else {
+        @checklist = glob File::Spec->catfile($Inventory_Path, "$id_to_be_*");
+    }
+    foreach my $sigmsg @checklist{
         my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
         if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
             my ($id, $sig) = ($1, $2);
