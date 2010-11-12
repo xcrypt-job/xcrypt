@@ -62,7 +62,7 @@ my %Status_Level = ("initialized"=>0, "prepared"=>1, "submitted"=>2, "queued"=>3
 # "running"状態のジョブが登録されているハッシュ (key,value)=(request_id, job object)
 my %Running_Jobs = ();
 # Signalの種類
-# A signal is set when a job is made aborted, canceled, or invalidated
+# A signal is set when a job is made aborted, cancelled, or invalidated
 # to indicate that the job is deleted by a user (not accidentally).
 my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
@@ -842,7 +842,7 @@ sub left_signal_message_check {
     }
     foreach my $sigmsg (@checklist) {
         my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
-        if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
+        if ( $file =~ /^(\S+)_to_be_(\S+)$/ ) {
             my ($id, $sig) = ($1, $2);
             my $self = find_job_by_id ($id);
             print "$id $sig:\n";

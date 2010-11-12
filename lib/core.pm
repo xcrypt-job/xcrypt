@@ -415,7 +415,7 @@ sub abort {
 # Same as abort except that this method also aborts finished or invalidated jobs.
 sub cancel {
     my ($self) = @_;
-    print "$self->{id} is canceled by user.\n";
+    print "$self->{id} is cancelled by user.\n";
     jobsched::set_signal ($self, 'sig_cancel');
     $self->qdel_if_queued_or_running();
     jobsched::set_job_status_according_to_signal ($self);
