@@ -796,9 +796,8 @@ sub left_message_file_name_inventory {   # Signal message file
     my ($job, $stat) = @_;
     return File::Spec->catfile($Inventory_Path, "$job->{id}_to_be_$stat");
 }
-sub left_message_check {
-    if ( $xcropt::options{verbose} >= 2 ) { print "left_message_check:\n"; }
-    # Transition to running/done
+
+sub left_transition_message_check {
     foreach my $req_id (keys %Running_Jobs) {
         my $self = $Running_Jobs{$req_id};
         if ( get_job_status($self) eq 'queued') {
@@ -830,7 +829,9 @@ sub left_message_check {
             }
         }
     }
-    # Signal
+}
+
+sub left_signal_message_check {
     foreach my $sigmsg (glob File::Spec->catfile($Inventory_Path, "*_to_be_*")) {
         my ($volume, $directories, $file) = File::Spec->splitpath($sigmsg);
         if ( $_ =~ /^(\S+)_to_be_(\S+)$/ ) {
@@ -851,16 +852,24 @@ sub left_message_check {
             }
         }
     }
-    Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+}
+
+sub left_message_check {
+    if ( $xcropt::options{verbose} >= 2 ) { print "left_message_check:\n"; }
+    # Transition to running/done
+    left_transition_message_check ();
+    # Signal
+    left_signal_message_check (1);
 }
 sub invoke_left_message_check {
     # インベントリファイルの置き場所ディレクトリを作成
     unless (-d "$Inventory_Path") {
-	mkdir $Inventory_Path, 0755;
+        mkdir $Inventory_Path, 0755;
     }
     $Left_Message_Check_Thread = Coro::async_pool {
         while (1) {
             left_message_check();
+            Coro::AnyEvent::sleep $Left_Message_Check_Interval;
         }
     };
     return $Left_Message_Check_Thread;
