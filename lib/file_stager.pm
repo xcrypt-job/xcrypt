@@ -22,7 +22,7 @@ sub new {
 	if(defined($job->{JS_stage_in_files})){
 		$stage_in_flag = 1;
 	}
-	if(defiend($job->{JS_stage_out_files})){
+	if(defined($job->{JS_stage_out_files})){
 		$stage_out_flag = 1;
 	}		
 	my $staging_file_obj = {				
