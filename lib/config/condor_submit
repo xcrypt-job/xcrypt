@@ -1,0 +1,108 @@
+#!/usr/bin/perl -w
+
+use strict;
+use File::Basename;
+use File::Spec;
+use Getopt::Long;
+
+sub usage() {
+	print STDERR "Usage: $0 -e job_stderr -o job_stdout jobscript\n";
+}
+
+sub quote($) {
+	my ($file) = @_;
+	$file =~ s/'/'\\''/g;
+	$file = "'" . $file . "'";
+	return $file;
+}
+
+# ----------- åãÂå¦«åãŽ¡åãŽ¼åâŽ¿éïÎå¡ñéïÌå£ê ------------ #
+
+# ê¾ÊèÊ² check
+if( @ARGV != 5 ) {
+    usage();
+    exit 1;
+}
+
+my $stdout = undef;
+my $stderr = undef;
+my @others = ();
+GetOptions( "o=s" => \$stdout, "e=s" => \$stderr, "<>" => sub { push(@others, @_); } );
+if( $Getopt::Long::error || !defined($stdout) || !defined($stderr) || @others != 1 ) {
+    usage();
+    exit 1;
+}
+
+# åã¬å¦µåãÚå¦«åãŽªåã®å¤¥åãŽ¬åâŽ¯åã°å¦¬åãÂå¤»éð
+my $tmpdir = $ENV{'XCR_TMP_DIR'};
+if(!defined($tmpdir)) {
+	$tmpdir = ".";	# ëüŽªëì®çŽ®Ôå¢¬åâ²å¢²åâŽ«åãŽ¬åãŽ³åãˆ
+}
+
+#åâŽ¸åãŽ§åãÌå¤»åâŽ¯åãŽªåãÎå¥èåãÊå¤£åâŽ¤åãŽ«éð
+my $jobscript = $others[0];
+
+# CondoråâŽ³åãÜå¦µåã²å¥ñåâŽ¹éð
+my $command_path = "/opt/condor-7.2.2/bin";
+my $condor_submit_command = File::Spec->catfile( $command_path, "condor_submit" );
+my $condor_rm_command = File::Spec->catfile( $command_path, "condor_rm" );
+
+# ----------- submit description file è¿Øè¯ð ------------ #
+
+my $Submit_file = File::Spec->catfile($tmpdir, "jd.$$.sub");
+open(SUBFILE, ">$Submit_file") || die "$0: cannot open submit description file. (file: $Submit_file)\n";
+print SUBFILE "Transfer_Executable = True \n";
+print SUBFILE "getenv = True \n";
+print SUBFILE "should_transfer_files = YES \n";
+print SUBFILE "when_to_transfer_output = ON_EXIT_OR_EVICT \n";
+print SUBFILE "universe = vanilla \n";
+print SUBFILE "+out = \"$stdout\" \n";
+print SUBFILE "+err = \"$stderr\" \n";
+print SUBFILE "Executable = $jobscript \n";
+# éåŽ¥éêÖå¥õåâŽ¡åâŽ¤åãŽ«ñá”
+if( exists($ENV{'XCR_INPUTFILE'}) ) {
+	print SUBFILE "transfer_input_files = $ENV{'XCR_INPUTFILE'} \n";
+}
+# éçŽºéêÖå¥õåâŽ¡åâŽ¤åãŽ«ñá”
+if( exists($ENV{'XCR_OUTPUTFILE'}) ) {
+	print SUBFILE "transfer_output_files = $ENV{'XCR_OUTPUTFILE'} \n";
+}
+print SUBFILE "+XCRJobRequestName = \"$ENV{'LOGNAME'}\" \n";
+print SUBFILE "Queue \n";
+close( SUBFILE );
+
+# -----------åâŽ¸åãŽ§åãÌå¤»åâŽ¯åãŽªåãÎå¥èåáŽ«ê°ÞêŽ¡¸å¥ñåãŽ¼åãÞå¥ãåâŽ·åãŽ§åãŽ³åáŽ®è½Ðç´¢  ------------ #
+chmod 0755, $jobscript;
+
+
+# ----------- condor_submit åâŽ³åãÜå¦µåã²çŽ®ÞêŽ¡Œ ------------ #
+
+my $cmd = quote( $condor_submit_command );
+$cmd .= " " . quote( $Submit_file );
+my @condor_submit_out = `$cmd`;
+my $stat = $?;
+my $count = 0;
+my $JobID = undef;
+my $jobs = undef;
+for(@condor_submit_out) {
+	if(/(\d+)\s+job\(s\) submitted to cluster\s+(\d+)\./) {
+		$count++;
+		if($count > 1) {
+			my @rm_out = `$condor_rm_command $JobID`;
+		}
+		$jobs = $1;
+		$JobID = $2;
+	}
+}
+if (($count == 1) && ($jobs == 1)) {
+	print "$JobID\n";
+	exit 0;
+}
+elsif ($stat == 0) {
+	print STDERR @condor_submit_out;
+	exit 1;
+}
+else {
+	print STDERR @condor_submit_out;
+	exit $stat;
+}
