@@ -27,6 +27,8 @@ use Net::OpenSSH;
 use xcropt;
 use Cwd;
 use common;
+use jsconfig;
+use file_stager;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
@@ -802,6 +804,11 @@ sub submit {
             if (check_status_for_before ($self)) {
                 $self->EVERY::before(@{$self->{VALUE}});
             }
+	    ## stage_in_local処理
+	    #beforeした後にstage_in_localの処理をする
+	    if(defined $self->{JS_stage_in_files}){
+		$self->{'staging_files'}->stage_in_local();
+	    }
             ## start()
             if (check_status_for_start ($self)) {
                 $self->{request_id} = $self->start();
@@ -843,6 +850,14 @@ sub submit {
             ## NFS が書き込んでくれる*経験的*待ち時間
             sleep 3;
 
+	    ## ステージアウトファイルの展開
+	    if(defined $self->{JS_stage_out_files}){
+		$self->{'staging_files'}->stage_out_local();
+	    }
+	    ## ステージングアーカイブファイルの削除
+	    if(defined $self->{JS_stage_in_files} or defined $self->{JS_stage_out_files}){
+		$self->{'staging_files'}->dispose();
+	    }
             ## after()
             if (check_status_for_after ($self)) {
                 $self->EVERY::LAST::after(@{$self->{VALUE}});
