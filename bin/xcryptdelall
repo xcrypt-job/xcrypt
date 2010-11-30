@@ -1,3 +1,0 @@
-#!/bin/sh
-xcrypt ${XCRYPT}/bin/script/delall.xcr "$@"
-#perl ${XCRYPT}/bin/script/delall.xcr.pl "$@"

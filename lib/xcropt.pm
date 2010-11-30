@@ -6,7 +6,7 @@ use Cwd;
 use Getopt::Long;
 use File::Spec;
 
-my @ARGV_ORIG = @ARGV;
+#my @ARGV_ORIG = @ARGV;
 
 my $localhost = qx/hostname/;
 chomp $localhost;
@@ -57,6 +57,6 @@ GetOptions
      # define other command-line options...
     );
 
-@ARGV = @ARGV_ORIG;
+#@ARGV = @ARGV_ORIG;
 
 1;
