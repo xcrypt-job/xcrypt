@@ -5,11 +5,12 @@ use strict;
 use File::Copy;
 use File::Spec;
 use File::Basename;
-use Getopt::Long;
+#use Getopt::Long;
 
 my $xcrfile = shift @ARGV;
 
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
+print $xcrfile;
     warn "The file extension should be .xcr\n";
 }
 

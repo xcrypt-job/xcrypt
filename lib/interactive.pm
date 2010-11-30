@@ -11,6 +11,7 @@ sub qdel {
     my $user;
     my $host;
     my $ssh;
+    if (defined $jobsched::Last_Userhost_ID{$id}) {
     unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
 	($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
 	$ssh = Net::OpenSSH->new($host, (user => $user));
@@ -42,6 +43,9 @@ sub qdel {
 	    print "Deleting $id (request ID: $jobsched::Last_Request_ID{$id})\n";
 	    $ssh->system("$command_string") or warn $ssh->error;
 	}
+    }
+    } else {
+	die "any job of id:$id doesn't exist";
     }
 }
 
