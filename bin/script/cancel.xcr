@@ -1,13 +1,30 @@
 use base qw(core);
 use File::Spec;
 use interactive;
+use Getopt::Long;
 
-if ($#ARGV == -1) { die "Can't cancel any job without its id\n";}
-my $id = $ARGV[0];
+our %options = ();
+
+GetOptions
+    (\%options,
+     'all',
+    );
+
 my $Inventory_Path = $xcropt::options{inventory_path};
-unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
-system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_cancelled'));
-&interactive::qdel($id);
-print "$id is cancelled by user.\n";
+if (defined $options{'all'}) {
+    foreach my $id (keys(%jobsched::Last_State)) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_cancelled'));
+	&interactive::qdel($id);
+	print "$id is cancelled by user.\n";
+    }
+} else {
+     foreach my $id (@ARGV) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_cancelled'));
+	&interactive::qdel($id);
+	print "$id is cancelled by user.\n";
+    }
+}
 
 

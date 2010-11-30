@@ -1,1 +1,21 @@
 use base qw(core);
+use Getopt::Long;
+
+our %options = ();
+
+GetOptions
+    (\%options,
+     'aborted',
+    );
+
+if (defined $options{'aborted'}) {
+    foreach my $id (keys %jobsched::Last_State) {
+	if ($jobsched::Last_State{$id} eq 'aborted') {
+	    print "$id = $jobsched::Last_State{$id}";
+	    if ( $jobsched::Last_Request_ID{$id} ) {
+		print " (request_ID=$jobsched::Last_Request_ID{$id})";
+	    }
+	    print "\n";
+	}
+    }
+}
