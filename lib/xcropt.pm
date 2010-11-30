@@ -3,7 +3,7 @@ package xcropt;
 
 use strict;
 use Cwd;
-use Getopt::Long;
+use Getopt::Long qw(:config pass_through);
 use File::Spec;
 
 #my @ARGV_ORIG = @ARGV;

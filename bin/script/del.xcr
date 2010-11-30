@@ -1,10 +1,24 @@
 use base qw(core);
 use File::Spec;
 use interactive;
+use Getopt::Long;
 
-#if ($#ARGV == -1) { die "Can't delete any job without its id\n";}
-foreach my $id (@ARGV) {
+our %options = ();
+
+GetOptions
+    (\%options,
+     'all',
+    );
+
+if (defined $options{'all'}) {
+    foreach my $id (keys(%jobsched::Last_State)) {
+	&interactive::qdel($id);
+	print "$id is deleted by user.\n";
+    }
+} else {
+    foreach my $id (@ARGV) {
 #    my $id = $ARGV[0];
-    &interactive::qdel($id);
-    print "$id is deleted by user.\n";
+	&interactive::qdel($id);
+	print "$id is deleted by user.\n";
+    }
 }

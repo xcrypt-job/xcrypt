@@ -1,8 +1,0 @@
-use base qw(core);
-use File::Spec;
-use interactive;
-
-foreach my $id (keys(%jobsched::Last_State)) {
-    &interactive::qdel($id);
-    print "$id is deleted by user.\n";
-}
