@@ -5,6 +5,7 @@ use strict;
 use Cwd;
 use File::Copy;
 use File::Spec;
+use File::Temp qw/tempfile/;
 use File::Basename;
 use Getopt::Long qw(:config pass_through);
 use Data::Dumper;
@@ -75,10 +76,8 @@ if (defined $ENV{PERL5LIB}) {
     $ENV{PERL5LIB} = $added_path;
 }
 
-my @tmp = split(/.xcr/, File::Spec->catfile(basename($xcrfile)));
-my $header = $tmp[0];
-my $headerfile =  $header . '.pm';
-open(my $HEADER, ">", File::Spec->catfile($options{inventory_path}, $headerfile)) or die "Can't open $headerfile\n";
+my($HEADER, $tmp_filename) = tempfile( DIR => "$options{inventory_path}", SUFFIX => '.pm' );
+#open(my $HEADER, ">>", File::Spec->catfile($options{inventory_path}, $headerfile)) or die "Can't open $headerfile\n";
 #open(my $HEADER, ">", $headerfile) or die "Can't open $headerfile\n";
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
@@ -90,7 +89,7 @@ open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
 #my $xcrplfile = "$xcrfile" . '.pl';
 #if ( -e $xcrplfile ) { unlink $xcrplfile; }
 #open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
-open(my $TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
+my @header = split(/.pm/, File::Spec->catfile(basename($tmp_filename)));open(my $TMP , "| perl -m" . $header[0] . " - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
 #print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
