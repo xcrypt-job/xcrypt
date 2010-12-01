@@ -51,6 +51,8 @@ our %Last_Userhost_ID = ();
 our %Last_Sched_ID = ();
 # Hash table (key,val)=(job ID, the workdir in the previous Xcrypt execution)
 our %Last_Workdir = ();
+our %Last_Stdout = ();
+our %Last_Stderr = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -575,19 +577,23 @@ sub read_log {
             warn "Failed to open the log file $Logfile in read mode.";
             return 0;
         }
-        print "Reading the log file $Logfile\n";
+	if (defined $xcropt::options{print_log}) {
+	    print "Reading the log file $Logfile\n";
+	}
         while (<$LOG>) {
             chomp;
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
 #print "$id: $stat\n";
                 $Last_State{$id} = $stat;
-            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
-                my ($id, $req_id, $userhost, $sched, $wd) = ($1, $2, $3, $4, $5);
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
+                my ($id, $req_id, $userhost, $sched, $wd, $stdout, $stderr) = ($1, $2, $3, $4, $5, $6, $7);
                 $Last_Request_ID{$id} = $req_id;
                 $Last_Userhost_ID{$id} = $userhost;
                 $Last_Sched_ID{$id} = $sched;
                 $Last_Workdir{$id} = $wd;
+                $Last_Stdout{$id} = $stdout;
+                $Last_Stderr{$id} = $stderr;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
                 if ( $sig eq 'unset' ) {
@@ -598,14 +604,22 @@ sub read_log {
             }
         }
         foreach my $id (keys %Last_State) {
-            print "$id = $Last_State{$id}";
+	    if (defined $xcropt::options{print_log}) {
+		print "$id = $Last_State{$id}";
+	    }
             if ( $Last_Request_ID{$id} ) {
-                print " (request_ID=$Last_Request_ID{$id})";
+		if (defined $xcropt::options{print_log}) {
+		    print " (request_ID=$Last_Request_ID{$id})";
+		}
             }
-            print "\n";
+		if (defined $xcropt::options{print_log}) {
+		    print "\n";
+		}
         }
         close ($LOG);
-        print "Finished reading the log file $Logfile\n";
+	if (defined $xcropt::options{print_log}) {
+	    print "Finished reading the log file $Logfile\n";
+	}
     }
 }
 
