@@ -4,12 +4,18 @@ use jobsched;
 
 our %options = ();
 
-GetOptions
-    (\%options,
-     'output:s', 'error:s',
-     'job=s',
-     'initialized', 'prepared', 'submitted', 'queued', 'running', 'done', 'finished', 'aborted',
+my @keys = ('help',
+	    'output:s', 'error:s',
+	    'job=s',
+	    'initialized', 'prepared', 'submitted', 'queued', 'running', 'done', 'finished', 'aborted',
     );
+GetOptions(\%options, @keys);
+
+if (defined $options{'help'}) {
+    foreach my $key (@keys) {
+	print $key, "\n";
+    }
+}
 
 if (keys(%options) =='') {
     $xcropt::options{print_log} = 1;
