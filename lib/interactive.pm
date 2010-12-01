@@ -1,6 +1,6 @@
 package interactive;
 
-use xcropt;
+#use xcropt;
 use File::Spec;
 use common;
 use Net::OpenSSH;

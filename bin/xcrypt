@@ -2,16 +2,66 @@
 package xcrypt;
 
 use strict;
+use Cwd;
 use File::Copy;
 use File::Spec;
 use File::Basename;
-#use Getopt::Long;
+use Getopt::Long qw(:config pass_through);
+use Data::Dumper;
+
+my $localhost = qx/hostname/;
+chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
+my $wd = Cwd::getcwd();
+
+our %options = (
+#    'localhost' => $localhost,  # Obsolete
+    'host' => $username . '@' . $localhost,
+    'wd' => $wd,
+    'xd' => $ENV{XCRYPT},
+    'p5l' => $ENV{PERL5LIB},
+    'sched' => $ENV{XCRJOBSCHED},
+    #
+#    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
+#    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
+    'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
+    'left_message_check_interval' => 2, # inventory_write.pl が残したメッセージをチェックする間隔(sec)
+    'inventory_path' => 'inv_watch',
+    #
+    'verbose' => 0,               # verbose level
+    'stack_size' => 32768,        # Perlスレッドのスタックサイズ
+    # define other default values...
+    );
+
+GetOptions
+    (\%options,
+     'xqsub',
+     'shared',
+     'scratch',
+     #
+#     'localhost=s',  # Obsolete
+     'host=s',
+     'wd=s',
+     'xd=s',
+     'p5l=s',
+     'sched=s',
+     #
+#     'port=i',         # Obsolete
+#     'comm_timeout=i', # Obsolete
+     'abort_check_interval=i',
+     'left_message_check_interval=i',
+     'inventory_path=s',
+     #
+     'verbose=i',
+     'stack_size=i',
+     # define other command-line options...
+    );
 
 my $xcrfile = shift @ARGV;
 
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
-print $xcrfile;
-    warn "The file extension should be .xcr\n";
+    die "The file extension should be .xcr\n";
 }
 
 my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
@@ -27,11 +77,22 @@ if (defined $ENV{PERL5LIB}) {
 #my $xcrplfile = "$xcrfile" . '.pl';
 #if ( -e $xcrplfile ) { unlink $xcrplfile; }
 
+my @tmp = split(/.xcr/, File::Spec->catfile(basename($xcrfile)));
+my $header = $tmp[0];
+my $headerfile =  $header . '.pm';
+open(my $HEADER, ">", $headerfile) or die "Can't open $headerfile\n";
+print $HEADER 'package xcropt;' . "\n";
+my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
+print $HEADER 'my ' . $dumper . "\n";
+print $HEADER 'our %options = %$options_tmp;' . "\n";
+print $HEADER '1;' . "\n";
+close($HEADER);
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
 #open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
-open(my $TMP , "| perl - " . join(' ', @ARGV)) or die $!;
+open(my $TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
+#open(my $TMP , "| perl - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
-print $TMP 'use xcropt;' . "\n";
+#print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
 print $TMP 'use Coro;' . "\n";
 print $TMP 'use jobsched;' . "\n";

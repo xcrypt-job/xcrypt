@@ -5,7 +5,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use Cwd;
-use xcropt;
+#use xcropt;
 use jsconfig;
 
 sub new {
