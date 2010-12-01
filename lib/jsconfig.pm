@@ -1,7 +1,7 @@
 package jsconfig;
 
 use strict;
-use xcropt;
+#use xcropt;
 
 # Load all configulation files in $XCRYPT/lib/config/*.pm and initialize %jobsched_config
 

@@ -17,7 +17,7 @@ use Net::OpenSSH;
 
 use builtin;
 use common;
-use xcropt;
+#use xcropt;
 use jsconfig;
 
 ##################################################

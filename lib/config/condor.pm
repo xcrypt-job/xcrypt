@@ -2,7 +2,7 @@
 use config_common;
 use File::Spec;
 use File::Basename;
-use xcropt;
+#use xcropt;
 use Cwd;
 $jsconfig::jobsched_config{"condor"} = {
     # commands
