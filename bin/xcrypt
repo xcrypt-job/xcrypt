@@ -68,7 +68,7 @@ if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
 my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
     . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
     . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan') . ':'
-    . File::Spec->catfile($ENV{XCRYPT}, 'tmp');
+    . File::Spec->catfile($options{inventory_path});
 if (defined $ENV{PERL5LIB}) {
     $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':' . $added_path;
 } else {
@@ -78,7 +78,7 @@ if (defined $ENV{PERL5LIB}) {
 my @tmp = split(/.xcr/, File::Spec->catfile(basename($xcrfile)));
 my $header = $tmp[0];
 my $headerfile =  $header . '.pm';
-open(my $HEADER, ">", my $a = File::Spec->catfile($ENV{XCRYPT}, 'tmp', $headerfile)) or die "Can't open $headerfile\n";
+open(my $HEADER, ">", File::Spec->catfile($options{inventory_path}, $headerfile)) or die "Can't open $headerfile\n";
 #open(my $HEADER, ">", $headerfile) or die "Can't open $headerfile\n";
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
