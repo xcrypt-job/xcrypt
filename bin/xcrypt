@@ -36,6 +36,7 @@ our %options = (
 
 GetOptions
     (\%options,
+     'print_log',
      'xqsub',
      'shared',
      'scratch',
@@ -73,10 +74,6 @@ if (defined $ENV{PERL5LIB}) {
     $ENV{PERL5LIB} = $added_path;
 }
 
-# Delete the .xcr.pl file if the old one exists.
-#my $xcrplfile = "$xcrfile" . '.pl';
-#if ( -e $xcrplfile ) { unlink $xcrplfile; }
-
 my @tmp = split(/.xcr/, File::Spec->catfile(basename($xcrfile)));
 my $header = $tmp[0];
 my $headerfile =  $header . '.pm';
@@ -88,9 +85,10 @@ print $HEADER 'our %options = %$options_tmp;' . "\n";
 print $HEADER '1;' . "\n";
 close($HEADER);
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
+#my $xcrplfile = "$xcrfile" . '.pl';
+#if ( -e $xcrplfile ) { unlink $xcrplfile; }
 #open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
 open(my $TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
-#open(my $TMP , "| perl - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
 #print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
@@ -112,6 +110,8 @@ foreach (<$USER>) { print $TMP "$_"; }
 print $TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 close($TMP);
 close($USER);
+
+#system("perl -m$header $xcrplfile " . join(' ', @ARGV)) or die $!;
 
 #my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
 #unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
