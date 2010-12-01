@@ -76,6 +76,7 @@ if (defined $ENV{PERL5LIB}) {
     $ENV{PERL5LIB} = $added_path;
 }
 
+mkdir $options{inventory_path}, 0755;
 my($HEADER, $tmp_filename) = tempfile( DIR => "$options{inventory_path}", SUFFIX => '.pm' );
 #open(my $HEADER, ">>", File::Spec->catfile($options{inventory_path}, $headerfile)) or die "Can't open $headerfile\n";
 #open(my $HEADER, ">", $headerfile) or die "Can't open $headerfile\n";
