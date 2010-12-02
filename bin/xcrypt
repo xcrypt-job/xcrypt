@@ -77,17 +77,20 @@ if (defined $ENV{PERL5LIB}) {
 }
 
 mkdir $options{inventory_path}, 0755;
-my($HEADER, $tmp_filename) = tempfile( DIR => "$options{inventory_path}", SUFFIX => '.pm' );
+my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', DIR => "$options{inventory_path}", SUFFIX => '.pm' );
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
 print $HEADER 'my ' . $dumper . "\n";
 print $HEADER 'our %options = %$options_tmp;' . "\n";
 print $HEADER '1;' . "\n";
 close($HEADER);
+until (-e $tmp_filename) {
+    sleep 1;
+}
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
-#open(my $TMP , ">", $xcrfile . '.pl') or die $!;
+open(my $TMP , ">", $xcrfile . '.pl') or die $!;
 my @header = split(/.pm/, File::Spec->catfile(basename($tmp_filename)));
-open(my $TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
+#open(my $TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
 print $TMP 'use builtin;' . "\n";
 print $TMP 'use Coro;' . "\n";
@@ -109,9 +112,7 @@ print $TMP '# Up to here your script.  From here Xcrypt\'s footer.' . "\n";
 close($TMP);
 close($USER);
 
-#system("perl -m$header $xcrplfile " . join(' ', @ARGV)) or die $!;
+my $exitcode = system("perl -m$header[0] $xcrfile.pl " . join(' ', @ARGV));
+unless ($exitcode == 0) { die "Can't perl $xcrfile.pl\n"; }
 
-#my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
-#unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
-
-unlink $tmp_filename;
+#unlink $tmp_filename;
