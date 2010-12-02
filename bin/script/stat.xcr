@@ -22,15 +22,12 @@ if (defined $options{'help'}) {
 	    if ($id =~ /$options{job}/) {
 		&print_stat($id);
 	    }
-	} else {
-	    if (keys(%options) =='') {
+	} elsif (defined $options{'status'}) {
+	    if ($jobsched::Last_State{$id} =~ /$options{status}/) {
 		&print_stat($id);
 	    }
-	    if (defined $options{'status'}) {
-		if ($jobsched::Last_State{$id} =~ /$options{status}/) {
-		    &print_stat($id);
-		}
-	    }
+	} else {
+	    &print_stat($id);
 	}
     }
 }
