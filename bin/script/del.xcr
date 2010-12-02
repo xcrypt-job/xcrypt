@@ -28,12 +28,13 @@ sub del {
     &interactive::qdel($id);
     print "$id is deleted by user.\n";
     if ($options{'invalidate'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_cancelled'));
-	print "$id is cancelled by user.\n";
-    } elsif ($options{'cancel'}) {
 	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled');
 	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_invalidated'));
 	print "$id is invalidated by user.\n";
+    }
+    if ($options{'cancel'}) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_cancelled'));
+	print "$id is cancelled by user.\n";
     }
 }
