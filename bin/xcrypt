@@ -78,8 +78,6 @@ if (defined $ENV{PERL5LIB}) {
 
 mkdir $options{inventory_path}, 0755;
 my($HEADER, $tmp_filename) = tempfile( DIR => "$options{inventory_path}", SUFFIX => '.pm' );
-#open(my $HEADER, ">>", File::Spec->catfile($options{inventory_path}, $headerfile)) or die "Can't open $headerfile\n";
-#open(my $HEADER, ">", $headerfile) or die "Can't open $headerfile\n";
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
 print $HEADER 'my ' . $dumper . "\n";
@@ -87,12 +85,10 @@ print $HEADER 'our %options = %$options_tmp;' . "\n";
 print $HEADER '1;' . "\n";
 close($HEADER);
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
-#my $xcrplfile = "$xcrfile" . '.pl';
-#if ( -e $xcrplfile ) { unlink $xcrplfile; }
-#open(my $TMP , ">", $xcrplfile) or die "Can't open $xcrfile\n";
-my @header = split(/.pm/, File::Spec->catfile(basename($tmp_filename)));open(my $TMP , "| perl -m" . $header[0] . " - " . join(' ', @ARGV)) or die $!;
+#open(my $TMP , ">", $xcrfile . '.pl') or die $!;
+my @header = split(/.pm/, File::Spec->catfile(basename($tmp_filename)));
+open(my $TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
-#print $TMP 'use xcropt;' . "\n";
 print $TMP 'use builtin;' . "\n";
 print $TMP 'use Coro;' . "\n";
 print $TMP 'use jobsched;' . "\n";
@@ -117,3 +113,5 @@ close($USER);
 
 #my $exitcode = system("perl $xcrplfile " . join(' ', @ARGV));
 #unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
+
+unlink $tmp_filename;

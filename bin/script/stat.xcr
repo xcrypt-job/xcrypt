@@ -4,138 +4,54 @@ use jobsched;
 
 our %options = ();
 
-my @keys = ('help',
-	    'output:s', 'error:s',
-	    'job=s',
-	    'initialized', 'prepared', 'submitted', 'queued', 'running', 'done', 'finished', 'aborted',
+my %keys = ('help' => '    show all the options',
+	    'job=s' => '   show indicated jobs only',
+	    'status=s' => 'show jobs of the state only',
+	    'output' => "  show jobs' standard output",
+	    'error' => "   show jobs' standard error",
     );
-GetOptions(\%options, @keys);
+GetOptions(\%options, keys(%keys));
 
 if (defined $options{'help'}) {
-    foreach my $key (@keys) {
-	print $key, "\n";
+    foreach my $key (keys(%keys)) {
+	print $key . '  ' . $keys{$key}, "\n";
+    }
+} else {
+    foreach my $id (keys %jobsched::Last_State) {
+	if (defined $options{'job'}) {
+	    if ($id =~ /$options{job}/) {
+		&print_stat($id);
+	    }
+	} else {
+	    if (keys(%options) =='') {
+		&print_stat($id);
+	    }
+	    if (defined $options{'status'}) {
+		if ($jobsched::Last_State{$id} =~ /$options{status}/) {
+		    &print_stat($id);
+		}
+	    }
+	}
     }
 }
 
-if (keys(%options) =='') {
-    $xcropt::options{print_log} = 1;
-    &jobsched::read_log();
-}
-
-foreach my $id (keys %jobsched::Last_State) {
+sub print_stat {
+    my $id = shift;
+    print "$id = $jobsched::Last_State{$id}";
+    if ( $jobsched::Last_Request_ID{$id} ) {
+	print " (request_ID=$jobsched::Last_Request_ID{$id})";
+    }
+    print "\n";
     if (defined $options{'output'}) {
-	if ($options{'output'} eq '') {
-	    print '-' . "\n" . "$id\n" . '=' . "\n";
-	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id},
-					      $jobsched::Last_Stdout{$id})) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
-	} else {
-	    if ($id =~ /$options{output}/) {
-		print '-' . "\n" . "$id\n" . '=' . "\n";
-		open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id},
-						  $jobsched::Last_Stdout{$id})) or die $!;
-		foreach (<$out>) { print "$_"; }
-		close($out);
-	    }
-	}
+	print '=' . $id . "'s stdout=\n";
+	open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stdout{$id})) or die $!;
+	foreach (<$out>) { print "$_"; }
+	close($out);
     }
     if (defined $options{'error'}) {
-	if ($options{'error'} eq '') {
-	    print '-' . "\n" . "$id\n" . '=' . "\n";
-	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id},
-					      $jobsched::Last_Stderr{$id})) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
-	} else {
-	    if ($id =~ /$options{error}/) {
-		print '-' . "\n" . "$id\n" . '=' . "\n";
-		open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id},
-						  $jobsched::Last_Stderr{$id})) or die $!;
-		foreach (<$out>) { print "$_"; }
-		close($out);
-	    }
-	}
-    }
-    if (defined $options{'job'}) {
-	if ($id =~ /$options{job}/) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'initialized') {
-	if (defined $options{'initialized'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'prepared') {
-	if (defined $options{'prepared'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'submitted') {
-	if (defined $options{'submitted'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'queued') {
-	if (defined $options{'queued'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'running') {
-	if (defined $options{'running'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'done') {
-	if (defined $options{'done'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'finished') {
-	if (defined $options{'finished'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
-    }
-    if ($jobsched::Last_State{$id} eq 'aborted') {
-	if (defined $options{'aborted'}) {
-	    print "$id = $jobsched::Last_State{$id}";
-	    if ( $jobsched::Last_Request_ID{$id} ) {
-		print " (request_ID=$jobsched::Last_Request_ID{$id})";
-	    }
-	    print "\n";
-	}
+	print '=' . $id . "'s stderr=\n";
+	open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stderr{$id})) or die $!;
+	foreach (<$out>) { print "$_"; }
+	close($out);
     }
 }
