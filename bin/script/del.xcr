@@ -8,17 +8,32 @@ our %options = ();
 GetOptions
     (\%options,
      'all',
+     'cancel',
+     'invalidate',
     );
 
+my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'all'}) {
     foreach my $id (keys(%jobsched::Last_State)) {
-	&interactive::qdel($id);
-	print "$id is deleted by user.\n";
+	&del($id);
     }
 } else {
     foreach my $id (@ARGV) {
-#    my $id = $ARGV[0];
-	&interactive::qdel($id);
-	print "$id is deleted by user.\n";
+	&del($id);
+    }
+}
+
+sub del {
+    my $id = shift;
+    &interactive::qdel($id);
+    print "$id is deleted by user.\n";
+    if ($options{'invalidate'}) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_cancelled'));
+	print "$id is cancelled by user.\n";
+    } elsif ($options{'cancel'}) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_invalidated'));
+	print "$id is invalidated by user.\n";
     }
 }
