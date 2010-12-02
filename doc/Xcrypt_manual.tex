@@ -260,7 +260,7 @@ helps you.
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptstat}
 \end{screen}
-shows states of jobs.
+shows states of jobs.  In detail, use \texttt{--help} option.
 
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptclean}
@@ -268,30 +268,13 @@ shows states of jobs.
 forgets states of all jobs.
 
 \begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob}
+\texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob ...}
 \end{screen}
-makes states of unfinished jobs aborted.
+makes states of unfinished jobs aborted.  In case of deleting all
+jobs, use \texttt{--all} option.  In case of making (not necessarily
+unfinished) jobs aborted, use \texttt{--cancel} option.  In case of
+making jobs finished, use \texttt{--invalidated} option.
 
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptcancel} \textit{myjob}
-\end{screen}
-makes states of (not necessarily unfinished) jobs aborted.
-
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptinvalidate} \textit{myjob}
-\end{screen}
-makes states of jobs finished.
-
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptdelall}
-\end{screen}
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptcancelall}
-\end{screen}
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptinvalidateall}
-\end{screen}
-are commands for all jobs, respectively.
 
 \section{Product}\label{sec:created}
 
