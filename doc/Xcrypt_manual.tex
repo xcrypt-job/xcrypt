@@ -260,20 +260,16 @@ helps you.
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptstat}
 \end{screen}
-shows states of jobs.  In detail, use \texttt{--help} option.
+shows states of jobs.  In detail, use the \texttt{--help} option.
 
 \begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptclean}
+\texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob} [\textit{myjob}...]
 \end{screen}
-forgets states of all jobs.
-
-\begin{screen}
-\texttt{\$ \$XCRYPT/bin/xcryptdel} \textit{myjob ...}
-\end{screen}
-makes states of unfinished jobs aborted.  In case of deleting all
-jobs, use \texttt{--all} option.  In case of making (not necessarily
-unfinished) jobs aborted, use \texttt{--cancel} option.  In case of
-making jobs finished, use \texttt{--invalidated} option.
+makes states of unfinished jobs aborted.  For deleting all the jobs,
+use the \texttt{--all} option.  For making (not necessarily
+unfinished) jobs aborted, use the \texttt{--cancel} option.  For
+making jobs finished, use the \texttt{--invalidated} option.  For
+forgetting states of all jobs, use the \texttt{--clean} option.
 
 
 \section{Product}\label{sec:created}
