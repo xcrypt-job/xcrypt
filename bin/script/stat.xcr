@@ -5,10 +5,10 @@ use jobsched;
 our %options = ();
 
 my %keys = ('help' => '    show all the options',
-	    'job=s' => '   show indicated jobs only',
-	    'status=s' => 'show jobs of the state only',
-	    'output' => "  show jobs' standard output",
-	    'error' => "   show jobs' standard error",
+	    'job=s' => '   show matched jobs',
+	    'status=s' => 'show jobs of the state',
+	    'output' => "  show standard outputs",
+	    'error' => "   show standard errors",
     );
 GetOptions(\%options, keys(%keys));
 
