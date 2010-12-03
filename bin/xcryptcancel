@@ -1,3 +1,0 @@
-#!/bin/sh
-xcrypt ${XCRYPT}/bin/script/del.xcr --cancel "$@"
-#perl ${XCRYPT}/bin/script/cancel.xcr.pl "$@"
