@@ -50,6 +50,7 @@ our %Last_Userhost_ID = ();
 # Hash table (key,val)=(job ID, the job scheduler in the previous Xcrypt execution)
 our %Last_Sched_ID = ();
 # Hash table (key,val)=(job ID, the workdir in the previous Xcrypt execution)
+our %Last_Prefix = ();
 our %Last_Workdir = ();
 our %Last_Stdout = ();
 our %Last_Stderr = ();
@@ -586,11 +587,12 @@ sub read_log {
                 my ($id, $stat, $time) = ($1, $2, $3);
 #print "$id: $stat\n";
                 $Last_State{$id} = $stat;
-            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
-                my ($id, $req_id, $userhost, $sched, $wd, $stdout, $stderr) = ($1, $2, $3, $4, $5, $6, $7);
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
+                my ($id, $req_id, $userhost, $sched, $prefix, $wd, $stdout, $stderr) = ($1, $2, $3, $4, $5, $6, $7, $8);
                 $Last_Request_ID{$id} = $req_id;
                 $Last_Userhost_ID{$id} = $userhost;
                 $Last_Sched_ID{$id} = $sched;
+                $Last_Prefix{$id} = $prefix;
                 $Last_Workdir{$id} = $wd;
                 $Last_Stdout{$id} = $stdout;
                 $Last_Stderr{$id} = $stderr;

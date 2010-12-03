@@ -831,10 +831,10 @@ sub submit {
             if (check_status_for_set_job_queued ($self)) {
 #		if ($self->{env}->{location} eq 'local') {
                 if ($self->{env}->{host} eq $env_d->{host}) {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} $self->{workdir} $self->{JS_stdout} $self->{JS_stderr}\n");
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{JS_stdout} $self->{JS_stderr}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
                 } else {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} " . File::Spec->catfile($self->{env}->{wd}, $self->{workdir}) . " $self->{JS_stdout} $self->{JS_stderr}\n");
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{JS_stdout} $self->{JS_stderr}\n");
                 }
                 &jobsched::set_job_queued($self);
             }

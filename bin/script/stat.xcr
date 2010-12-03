@@ -52,42 +52,32 @@ sub print_stat {
     print "\n";
     if (defined $options{'output'}) {
 	print '=' . $id . "'s stdout=\n";
+	my $tmp = File::Spec->catfile($jobsched::Last_Workdir{$id},
+				      $jobsched::Last_Stdout{$id});
 	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
-	    my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
-	    $ssh = Net::OpenSSH->new($host, (user => $user));
-	    my $tmp = File::Spec->catfile($Inventory_Path, 'temporary_file');
-	    $ssh->scp_get(\%ssh_opts,
-			  File::Spec->catfile($jobsched::Last_Workdir{$id},
-					      $jobsched::Last_Stdout{$id}),
-		$tmp) or warn $ssh->error;
-	    open(my $out, $tmp) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
-	} else {
-	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stdout{$id})) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
+	    unless(-e $tmp) {
+		my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+		$ssh = Net::OpenSSH->new($host, (user => $user));
+		$ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Prefix{$id}, $tmp), $tmp) or warn $ssh->error;
+	    }
 	}
+	open(my $out, $tmp) or die $!;
+	foreach (<$out>) { print "$_"; }
+	close($out);
     }
     if (defined $options{'error'}) {
 	print '=' . $id . "'s stderr=\n";
-
-
+	my $tmp = File::Spec->catfile($jobsched::Last_Workdir{$id},
+				      $jobsched::Last_Stderr{$id});
 	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
-	    my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
-	    $ssh = Net::OpenSSH->new($host, (user => $user));
-	    my $tmp = File::Spec->catfile($Inventory_Path, 'temporary_file');
-	    $ssh->scp_get(\%ssh_opts,
-			  File::Spec->catfile($jobsched::Last_Workdir{$id},
-					      $jobsched::Last_Stderr{$id}),
-		$tmp) or warn $ssh->error;
-	    open(my $out, $tmp) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
-	} else {
-	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stderr{$id})) or die $!;
-	    foreach (<$out>) { print "$_"; }
-	    close($out);
+	    unless (-e $tmp) {
+		my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+		$ssh = Net::OpenSSH->new($host, (user => $user));
+		$ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Prefix{$id}, $tmp), $tmp) or warn $ssh->error;
+	    }
 	}
+	open(my $out, $tmp) or die $!;
+	foreach (<$out>) { print "$_"; }
+	close($out);
     }
 }
