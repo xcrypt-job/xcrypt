@@ -7,6 +7,7 @@ $jsconfig::jobsched_config{"TOKYO"} = {
     qsub_command => "/opt/hitachi/nqs/bin/qsub",
     qdel_command => "/opt/hitachi/nqs/bin/qdel",
     qstat_command => "/opt/hitachi/nqs/bin/qstat",
+    jobscript_preamble => ['#!/bin/bash'],
     # standard options
     jobscript_option_stdout => workdir_file_option('#@$-o ', 'stdout'),
     jobscript_option_stderr => workdir_file_option('#@$-e ', 'stderr'),
