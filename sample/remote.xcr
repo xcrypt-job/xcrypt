@@ -14,7 +14,7 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp'});
 'env@'           => [$env0, $env1,      $env2,     $env3,     $default],
 'JS_cpu'         => '1',
 'JS_memory@'     => [' ',   ' ',        '1GB',     '1gb',     ' '     ],
-'JS_queue@'      => [' ',   'ESCIENCE', 'short',   'gh10034', ' '     ],
+#'JS_queue@'      => [' ',   'ESCIENCE', 'short',   'gh10034', ' '     ],
 'JS_group@'      => [' ',   ' ',        ' ',       'gh10034', ' '     ],
 'JS_limit_time@' => [' ',   '0:1:0',    '0:01:00', 30,        ' '     ],
 );
