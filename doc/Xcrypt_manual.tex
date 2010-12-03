@@ -170,13 +170,13 @@ In this chapter, we introduce how jobs are processed.
 Any job has one of the following states:
 \begin{center}
 \begin{tabular}{ll}
-initialized: & the job is initialized or cancelled,\\
+initialized: & the job is initialized or aborted,\\
 prepared: & the job object is generated and being submitted,\\
 submitted: & the job is submitted,\\
 queued: & the job is queued,\\
 running: & the job is running,\\
 done: & the job is done,\\
-finished: & the job is finished or invalidated,\\
+finished: & the job is finished,\\
 aborted: & the job is aborted.
 \end{tabular}
 \end{center}
@@ -269,8 +269,8 @@ shows states of jobs.  In detail, use the \texttt{--help} option.
 \end{screen}
 makes states of unfinished jobs aborted.  For deleting all the jobs,
 use the \texttt{--all} option.  For making (not necessarily
-unfinished) jobs aborted, use the \texttt{--cancel} option.  For
-making jobs finished, use the \texttt{--invalidated} option.  For
+unfinished) jobs aborted, use the \texttt{--abort} option.  For
+making jobs finished, use the \texttt{--finish} option.  For
 forgetting states of all jobs, use the \texttt{--clean} option.
 
 

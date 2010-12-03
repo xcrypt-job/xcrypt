@@ -9,8 +9,10 @@ our %options = ();
 my %keys = ('help' => '      show all the options',
 	    'all' => "       delete all the jobs",
 	    'clean' => "     delete all the jobs and clean the history",
-	    'cancel' => "    delete jobs with making aborted",
-	    'invalidate' => "delete jobs with making finished",
+	    'cancel' => "    the same as abort",
+	    'invalidate' => "the same as finish",
+	    'abort' => "     delete jobs with making aborted",
+	    'finish' =>     "delete jobs with making finished",
     );
 GetOptions(\%options, keys(%keys));
 
@@ -42,15 +44,15 @@ sub del {
     my $id = shift;
     &qdel($id);
     print "$id is deleted by user.\n";
-    if ($options{'invalidate'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_cancelled');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_invalidated'));
-	print "$id is invalidated by user.\n";
+    if ($options{'invalidate'} || $options{'finish'}) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_finished'));
+	print "$id is finished by user.\n";
     }
-    if ($options{'cancel'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_invalidated');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_cancelled'));
-	print "$id is cancelled by user.\n";
+    if ($options{'cancel'} || $options{'abort'}) {
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_finished');
+	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_aborted'));
+	print "$id is aborted by user.\n";
     }
 }
 
