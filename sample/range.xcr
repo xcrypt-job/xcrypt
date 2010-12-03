@@ -3,12 +3,15 @@ use base qw(sandbox core);
 %template1 = (
     'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
     'exe0@' => sub { '../bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
-    'arg0_0@' => sub { $_[0]->{JS_queue}.'_'.$VALUE[0].'_'. $VALUE[2]; },
+    'arg0_0@' => sub { $_[0]->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]; },
 #    'RANGE0' => [45],
 #    'RANGE2' => [0],
-    'RANGES' => [[34],[0],[0,3]],
-    'JS_group' => 'gh10034',
-    'before' => sub { print "$_[0]->{id}\n";
+    'RANGES' => [[42],[0],[0]],
+    'JS_cpu' => 1,
+#    'JS_group' => 'gh10034',
+    'JS_limit_time' => '0:1:0',
+    'before' => sub { my $self = shift;
+		      print "$self->{id}\n";
 		      print "$VALUE[0]\n";
     },
     'after'  => sub { my $self = shift;
