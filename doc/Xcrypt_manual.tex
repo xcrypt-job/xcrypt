@@ -223,10 +223,10 @@ Any job transits to \textit{states} as follows,
 
 Edit \texttt{xcrypt/source-me.sh} in order to set some environment
 variables where \texttt{XCRJOBSCHED}\footnote{\texttt{SGE},
-\texttt{t2k-tsukuba}, \texttt{t2k-tokyo}, \texttt{t2k-kyoto}, and \texttt{sh} are
-available.  In the case of \texttt{sh}, jobs are dealt with as
-processes in OS.  The default is \texttt{sh}} should be set to your
-job scheduler, and
+\texttt{t2k-tsukuba}, \texttt{t2k-tokyo}, \texttt{t2k-kyoto}, and
+\texttt{sh} are available.  In the case of \texttt{sh}, jobs are dealt
+with as processes in OS.  The default is \texttt{sh}} should be set to
+your job scheduler, and
 \begin{screen}
 \texttt{\$ source source-me.sh}
 \end{screen}
@@ -234,6 +234,8 @@ In addition, continue the following installation procedure:
 \begin{screen}
 \texttt{\$ cd \$XCRYPT/cpan; ./do-install.sh}
 \end{screen}
+
+Optionally, set \texttt{XCRQUEUE} as the default queue.
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}

@@ -65,8 +65,12 @@ sub qdel {
 	$ssh = Net::OpenSSH->new($host, (user => $user));
     }
 
-    my $running_file = File::Spec->catfile($jobsched::Last_Workdir{$id}, $id . '_is_running');
-    my $done_file = File::Spec->catfile($jobsched::Last_Workdir{$id}, $id . '_is_done');
+    my $running_file = File::Spec->catfile($jobsched::Last_Prefix{$id},
+					   $jobsched::Last_Workdir{$id},
+					   $id . '_is_running');
+    my $done_file = File::Spec->catfile($jobsched::Last_Prefix{$id},
+					$jobsched::Last_Workdir{$id},
+					$id . '_is_done');
     if ($jobsched::Last_Userhost_ID{$id} eq 'local') {
 	unlink $running_file;
 	unlink $done_file;
