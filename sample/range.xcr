@@ -7,7 +7,6 @@ use base qw(sandbox core);
 #    'RANGE0' => [45],
 #    'RANGE2' => [0],
     'RANGES' => [[34],[0],[0,3]],
-    'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'before' => sub { print "$_[0]->{id}\n";
 		      print "$VALUE[0]\n";

@@ -1,6 +1,8 @@
 use base qw(core);
 use Getopt::Long;
 use jobsched;
+use common;
+use Net::OpenSSH;
 
 our %options = ();
 
@@ -12,6 +14,7 @@ my %keys = ('help' => '    show all the options',
     );
 GetOptions(\%options, keys(%keys));
 
+my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'help'}) {
     foreach my $key (keys(%keys)) {
 	print $key . '  ' . $keys{$key}, "\n";
@@ -32,6 +35,14 @@ if (defined $options{'help'}) {
     }
 }
 
+my %ssh_opts = (
+    copy_attrs => 1,      # -p preserver file attributes
+    recursive => 1,       # -r recursive copy
+    bwlimit => 10000000,  # -l the max size of a copied file
+    glob => 1,            # enable globs (e.g. '*' for all files)
+    quiet => 1,           # Quiet. Does not show progress
+    );
+
 sub print_stat {
     my $id = shift;
     print "$id = $jobsched::Last_State{$id}";
@@ -41,14 +52,42 @@ sub print_stat {
     print "\n";
     if (defined $options{'output'}) {
 	print '=' . $id . "'s stdout=\n";
-	open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stdout{$id})) or die $!;
-	foreach (<$out>) { print "$_"; }
-	close($out);
+	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
+	    my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+	    $ssh = Net::OpenSSH->new($host, (user => $user));
+	    my $tmp = File::Spec->catfile($Inventory_Path, 'temporary_file');
+	    $ssh->scp_get(\%ssh_opts,
+			  File::Spec->catfile($jobsched::Last_Workdir{$id},
+					      $jobsched::Last_Stdout{$id}),
+		$tmp) or warn $ssh->error;
+	    open(my $out, $tmp) or die $!;
+	    foreach (<$out>) { print "$_"; }
+	    close($out);
+	} else {
+	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stdout{$id})) or die $!;
+	    foreach (<$out>) { print "$_"; }
+	    close($out);
+	}
     }
     if (defined $options{'error'}) {
 	print '=' . $id . "'s stderr=\n";
-	open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stderr{$id})) or die $!;
-	foreach (<$out>) { print "$_"; }
-	close($out);
+
+
+	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
+	    my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+	    $ssh = Net::OpenSSH->new($host, (user => $user));
+	    my $tmp = File::Spec->catfile($Inventory_Path, 'temporary_file');
+	    $ssh->scp_get(\%ssh_opts,
+			  File::Spec->catfile($jobsched::Last_Workdir{$id},
+					      $jobsched::Last_Stderr{$id}),
+		$tmp) or warn $ssh->error;
+	    open(my $out, $tmp) or die $!;
+	    foreach (<$out>) { print "$_"; }
+	    close($out);
+	} else {
+	    open(my $out, File::Spec->catfile($jobsched::Last_Workdir{$id}, $jobsched::Last_Stderr{$id})) or die $!;
+	    foreach (<$out>) { print "$_"; }
+	    close($out);
+	}
     }
 }
