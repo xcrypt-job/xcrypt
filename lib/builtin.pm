@@ -292,7 +292,7 @@ sub add_host {
     unless (defined $env->{wd}) {
         my @wd = &xcr_qx($env, 'echo $HOME');
         chomp($wd[0]);
-        print $wd[0], "\n";
+        print $env->{host} . ':'. $wd[0], "\n";
         unless ($wd[0] eq '') {
             $env->{wd} = $wd[0];
         } else {
@@ -831,10 +831,10 @@ sub submit {
             if (check_status_for_set_job_queued ($self)) {
 #		if ($self->{env}->{location} eq 'local') {
                 if ($self->{env}->{host} eq $env_d->{host}) {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{JS_stdout} $self->{JS_stderr}\n");
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
 #		} elsif ($self->{env}->{location} eq 'remote') {
                 } else {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{JS_stdout} $self->{JS_stderr}\n");
+                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
                 }
                 &jobsched::set_job_queued($self);
             }

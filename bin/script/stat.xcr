@@ -7,10 +7,11 @@ use Net::OpenSSH;
 our %options = ();
 
 my %keys = ('help' => '    show all the options',
-	    'job=s' => '   show matched jobs',
+	    'match=s' => ' show matched jobs',
 	    'status=s' => 'show jobs of the state',
 	    'output' => "  show standard outputs",
 	    'error' => "   show standard errors",
+	    'batch' => "   show batch job scripts",
     );
 GetOptions(\%options, keys(%keys));
 
@@ -20,18 +21,35 @@ if (defined $options{'help'}) {
 	print $key . '  ' . $keys{$key}, "\n";
     }
 } else {
-    foreach my $id (keys %jobsched::Last_State) {
-	if (defined $options{'job'}) {
-	    if ($id =~ /$options{job}/) {
+    if ($#ARGV == -1) {
+	foreach my $id (keys %jobsched::Last_State) {
+	    if (defined $options{'match'}) {
+		if ($id =~ /$options{match}/) {
+		    &print_stat($id);
+		}
+	    } elsif (defined $options{'status'}) {
+		if ($jobsched::Last_State{$id} =~ /$options{status}/) {
+		    &print_stat($id);
+		}
+	    } else {
 		&print_stat($id);
 	    }
-	} elsif (defined $options{'status'}) {
-	    if ($jobsched::Last_State{$id} =~ /$options{status}/) {
-		&print_stat($id);
-	    }
-	} else {
-	    &print_stat($id);
 	}
+    } else {
+	foreach my $id (@ARGV) {
+	    if (defined $options{'match'}) {
+		if ($id =~ /$options{match}/) {
+		    &print_stat($id);
+		}
+	    } elsif (defined $options{'status'}) {
+		if ($jobsched::Last_State{$id} =~ /$options{status}/) {
+		    &print_stat($id);
+		}
+	    } else {
+		&print_stat($id);
+	    }
+	}
+
     }
 }
 
@@ -51,33 +69,34 @@ sub print_stat {
     }
     print "\n";
     if (defined $options{'output'}) {
-	print '=' . $id . "'s stdout=\n";
 	my $tmp = File::Spec->catfile($jobsched::Last_Workdir{$id},
 				      $jobsched::Last_Stdout{$id});
-	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
-	    unless(-e $tmp) {
-		my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
-		$ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Prefix{$id}, $tmp), $tmp) or warn $ssh->error;
-	    }
-	}
-	open(my $out, $tmp) or die $!;
-	foreach (<$out>) { print "$_"; }
-	close($out);
+	&print_stat_body($id, 'output', $tmp);
     }
     if (defined $options{'error'}) {
-	print '=' . $id . "'s stderr=\n";
 	my $tmp = File::Spec->catfile($jobsched::Last_Workdir{$id},
 				      $jobsched::Last_Stderr{$id});
-	unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
-	    unless (-e $tmp) {
-		my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
-		$ssh = Net::OpenSSH->new($host, (user => $user));
-		$ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Prefix{$id}, $tmp), $tmp) or warn $ssh->error;
-	    }
-	}
-	open(my $out, $tmp) or die $!;
-	foreach (<$out>) { print "$_"; }
-	close($out);
+	&print_stat_body($id, 'error', $tmp);
     }
+    if (defined $options{'batch'}) {
+	my $tmp = File::Spec->catfile($jobsched::Last_Workdir{$id},
+				      $jobsched::Last_Script{$id});
+	&print_stat_body($id, 'batch', $tmp);
+    }
+}
+
+
+sub print_stat_body {
+    my ($id, $type, $file) = @_;
+    print '=' . $id . "'s $type" . "=\n";
+    unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
+	unless(-e $file) {
+	    my ($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+	    $ssh = Net::OpenSSH->new($host, (user => $user));
+	    $ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Prefix{$id}, $file), $file) or warn $ssh->error;
+	}
+    }
+    open(my $out, $file) or die $!;
+    foreach (<$out>) { print "$_"; }
+    close($out);
 }
