@@ -52,7 +52,8 @@ $env_d = { 'host'     => $xcropt::options{host},
            'wd'       => $xcropt::options{wd},
            'sched'    => $xcropt::options{sched},
            'xd'       => $xcropt::options{xd},
-           'p5l'      => $xcropt::options{p5l}
+           'p5l'      => $xcropt::options{p5l},
+           'queue'    => $xcropt::options{queue},
 };
 #	   'location' => 'local' };
 my @Env = ($env_d);
@@ -336,6 +337,15 @@ sub add_host {
             $env->{sched} = $sched[0];
         } else {
             die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
+        }
+    }
+    unless (defined $env->{queue}) {
+        my @queue = &xcr_qx($env, 'echo $XCRQUEUE');
+        chomp($queue[0]);
+        unless ($queue[0] eq '') {
+            $env->{queue} = $queue[0];
+        } else {
+	    $env->{queue} = ' ';
         }
     }
     push(@Env, $env);
@@ -793,6 +803,10 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
             }
+	    ## set JS_queue if undefined
+	    unless (defined $self->{JS_queue}) {
+		$self->{JS_queue} = $self->{env}->{queue};
+	    }
             ## Manually handle a signal message once.
             jobsched::left_signal_message_check ($self);
             ## initially()
