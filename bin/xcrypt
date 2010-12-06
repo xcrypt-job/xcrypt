@@ -92,7 +92,6 @@ until (-e $tmp_filename) {
 }
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
 #open(my $TMP , ">", $xcrfile . '.pl') or die $!;
-print $tmp_filename, "\n";
 my @header = split(/\.pm/, File::Spec->catfile(basename($tmp_filename)));
 open(my $TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
 print $TMP 'package user;' . "\n";
