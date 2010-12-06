@@ -13,12 +13,12 @@ $jsconfig::jobsched_config{"t2k-tokyo"} = {
     jobscript_option_stderr => workdir_file_option('#@$-e ', 'stderr'),
     jobscript_option_memory => '#@$-lM ',
     jobscript_option_queue => '#@$-q ',
-    jobscript_proc => '#@$-J ',
-#    jobscript_cpu => '# @$-lp ',
+    jobscript_option_proc => '#@$-J ',
+    jobscript_option_cpu => '#@$-N ',
     jobscript_option_limit_time => '#@$-lT ',
     # non-standard options
     jobscript_option_stack => '#@$-ls ',
-#    jobscript_workdir => '', # OK ad hok (since 'cd $PWD' is described)
+#    jobscript_workdir => sub { '.'; }, # if set, NG
     extract_req_id_from_qsub_output => sub {
         my (@lines) = @_;
         if ($lines[0] =~ /([0-9]*)\.batch1/) {
