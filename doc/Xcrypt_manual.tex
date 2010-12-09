@@ -219,23 +219,26 @@ Any job transits to \textit{states} as follows,
 \]
 \fi
 
-\section{Execution}
+\section{Installation}
 
 Edit \texttt{xcrypt/source-me.sh} in order to set some environment
-variables where \texttt{XCRJOBSCHED}\footnote{\texttt{SGE},
-\texttt{t2k-tsukuba}, \texttt{t2k-tokyo}, \texttt{t2k-kyoto}, and
-\texttt{sh} are available.  In the case of \texttt{sh}, jobs are dealt
-with as processes in OS.  The default is \texttt{sh}} should be set to
-your job scheduler, and
+variables, and
 \begin{screen}
 \texttt{\$ source source-me.sh}
 \end{screen}
-In addition, continue the following installation procedure:
+
+Then, continue the following installation procedure:
 \begin{screen}
 \texttt{\$ cd \$XCRYPT/cpan; ./do-install.sh}
 \end{screen}
 
-Optionally, set \texttt{XCRQUEUE} as the default queue.
+\section{Execution}
+
+Set \texttt{XCRJOBSCHED}\footnote{\texttt{SGE}, \texttt{t2k-tsukuba},
+\texttt{t2k-tokyo}, \texttt{t2k-kyoto}, and \texttt{sh} are available.
+In the case of \texttt{sh}, jobs are dealt with as processes in OS.
+The default is \texttt{sh}} to your job scheduler.  Optionally, set
+\texttt{XCRQUEUE} as the default queue.
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
@@ -258,6 +261,11 @@ helps you.
 \end{boxnote}
 
 \section{Interactive Usage}
+
+\begin{screen}
+\texttt{\$ \$XCRYPT/bin/xcrypt} \textit{myscript}\texttt{.xcr}
+\end{screen}
+makes Xcrypt to intrepret \textit{myscript}\texttt{.xcr}.
 
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptstat}
