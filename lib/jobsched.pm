@@ -755,6 +755,8 @@ sub check_and_write_aborted {
         foreach (@ids) {
             my $job = $unchecked{$_};
             # Delete from %unchecked if the job is displayed by qstat.
+	    # 実は異なるサイトの request_id を一緒くたにしているので
+	    # done のジョブを running とするバグがある
             delete ($unchecked{$_});
             # If the job exists but is signaled, qdel it.
             # This is applied when the job is signaled before submitted.

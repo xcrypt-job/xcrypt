@@ -12,7 +12,7 @@ my %keys = ('help' => '      show all the options',
 	    'cancel' => "    the same as abort",
 	    'invalidate' => "the same as finish",
 	    'abort' => "     delete jobs with making aborted",
-	    'finish' =>     "delete jobs with making finished",
+	    'finish' => "    delete jobs with making finished",
     );
 GetOptions(\%options, keys(%keys));
 
