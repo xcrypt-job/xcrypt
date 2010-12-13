@@ -34,7 +34,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env');
+my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -816,7 +816,15 @@ sub submit {
             $self->EVERY::initially(@{$self->{VALUE}});
             ## before()
             if (check_status_for_before ($self)) {
-                $self->EVERY::before(@{$self->{VALUE}});
+                #$self->EVERY::before(@{$self->{VALUE}});
+                if ($self->{before_to_job} != 1) {
+                    my $before_return = $self->EVERY::before(@{$self->{VALUE}});
+                    foreach my $key (keys %{$before_return}) {
+                        if ($key eq 'user::before' and $self->{before} ne '') {
+                            $self->return_write("before", ${$before_return}{$key});
+                        }
+                    }
+                }
             }
 	    ## stage_in_local処理
 	    #beforeした後にstage_in_localの処理をする
@@ -874,7 +882,15 @@ sub submit {
 	    }
             ## after()
             if (check_status_for_after ($self)) {
-                $self->EVERY::LAST::after(@{$self->{VALUE}});
+                #$self->EVERY::LAST::after(@{$self->{VALUE}});
+                if ($self->{after_to_job} != 1) {
+                    my $after_retrun = $self->EVERY::LAST::after(@{$self->{VALUE}});
+                    foreach my $key (keys %{$after_retrun}) {
+                        if ($key eq 'user::after' and $self->{after} ne '') {
+                            $self->return_write("after", ${$after_retrun}{$key});
+                        }
+                    }
+                }
             }
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {
@@ -937,4 +953,3 @@ sub filter {
 }
 
 1;
-
