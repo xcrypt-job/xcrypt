@@ -821,7 +821,7 @@ sub submit {
                     my $before_return = $self->EVERY::before(@{$self->{VALUE}});
                     foreach my $key (keys %{$before_return}) {
                         if ($key eq 'user::before' and $self->{before} ne '') {
-                            $self->return_write("before", ${$before_return}{$key});
+#                            $self->return_write("before", ${$before_return}{$key});
                         }
                     }
                 }
@@ -887,7 +887,7 @@ sub submit {
                     my $after_retrun = $self->EVERY::LAST::after(@{$self->{VALUE}});
                     foreach my $key (keys %{$after_retrun}) {
                         if ($key eq 'user::after' and $self->{after} ne '') {
-                            $self->return_write("after", ${$after_retrun}{$key});
+#                            $self->return_write("after", ${$after_retrun}{$key});
                         }
                     }
                 }
