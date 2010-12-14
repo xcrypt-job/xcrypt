@@ -2,7 +2,7 @@
 use config_common;
 use File::Spec;
 
-$jsconfig::jobsched_config{"TOKYO"} = {
+$jsconfig::jobsched_config{"t2k-tokyo"} = {
     # commands
     qsub_command => "/opt/hitachi/nqs/bin/qsub",
     qdel_command => "/opt/hitachi/nqs/bin/qdel",
@@ -13,8 +13,8 @@ $jsconfig::jobsched_config{"TOKYO"} = {
     jobscript_option_stderr => workdir_file_option('#@$-e ', 'stderr'),
     jobscript_option_memory => '#@$-lM ',
     jobscript_option_queue => '#@$-q ',
-    jobscript_option_proc => '#@$-N ',
-    jobscript_option_cpu => '# @$-lp ',
+    jobscript_option_proc => '#@$-J ',
+    jobscript_option_cpu => '#@$-N ',
     jobscript_option_limit_time => '#@$-lT ',
     # non-standard options
     jobscript_option_stack => '#@$-ls ',

@@ -1,3 +1,0 @@
-#!/bin/sh
-xcrypt ${XCRYPT}/bin/script/invalidate.xcr "$@"
-#perl ${XCRYPT}/bin/script/invalidate.xcr.pl "$@"
