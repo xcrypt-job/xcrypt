@@ -9,8 +9,9 @@ use Data::Dumper;
 
 use jobsched;
 use jsconfig;
-use xcropt;
+#use xcropt;
 use common;
+use file_stager;
 use builtin;
 
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
@@ -22,17 +23,17 @@ sub new {
 
     set_member_if_empty ($self, 'workdir', '.');
 
-    # default env
+    ## default env
     set_member_if_empty ($self, 'env', $builtin::env_d);
 
-    # stderr & stdout
+    ## stderr & stdout
     set_member_if_empty ($self, 'JS_stdout', "$self->{id}_stdout");
     set_member_if_empty ($self, 'JS_stderr', "$self->{id}_stderr");
 
-    # Check if the job ID is not empty
+    ## Check if the job ID is not empty
     if ($self->{id} eq '') { die "Can't generate any job without id\n"; }
 
-    # Job script related members
+    ## Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     if ($xcropt::options{'xqsub'}) {
@@ -42,6 +43,8 @@ sub new {
     }
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
+    # file staging information
+    set_member_if_empty ($self, 'staging_files', file_stager->new($self));
     set_member_if_empty ($self, 'qsub_options', []);
 
     return bless $self, $class;
@@ -127,7 +130,8 @@ sub make_jobscript_header {
         push (@header, @{mkarray($others)});
     }
     ## Environment variables
-    push (@header, 'PERL5LIB=' . $self->{env}->{p5l} . '; export PERL5LIB');
+    push (@header, 'PERL5LIB=' . $self->{env}->{p5l});
+    push (@header, 'export PERL5LIB');
     $self->{jobscript_header} = \@header;
 }
 
@@ -160,10 +164,14 @@ sub make_jobscript_body {
         push (@body, @{mkarray($preamble)});
     }
     # Set the job's status to "running"
-    push (@body, "sleep 1"); # running ãŒæ—©ã™ãŽã¦ queued ãŒãªã‹ãªã‹å‹ã¦ãªã„ãŸã‚
-    # inventory_write.pl ã‚’ã‚„ã‚ã¦ touch ã«
+    push (@body, "sleep 1"); # running ¤¬Áá¤¹¤®¤Æ queued ¤¬¤Ê¤«¤Ê¤«¾¡¤Æ¤Ê¤¤¤¿¤á
+    # inventory_write.pl ¤ò¤ä¤á¤Æ touch ¤Ë
 #    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push (@body, 'touch ' . $self->{id} . '_is_running');
+    ## ¥¹¥Æ¡¼¥¸¥¤¥ó¥¸¥ç¥Ö¤ò¸Æ¤Ó½Ð¤¹¡Ê¥¢¡¼¥«¥¤¥Ö¥Õ¥¡¥¤¥ë¤ÎÅ¸³«¡Ë
+    if (defined($self->{JS_stage_in_files})){
+    	$self->{before_in_job} = $self->{'staging_files'}->stage_in_job() . $self->{before_in_job};
+    }
     # Do before_in_job
     if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     # Execute the program
@@ -184,8 +192,12 @@ sub make_jobscript_body {
     }
     # Do after_in_job
     if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
+    ## ¥¹¥Æ¡¼¥¸¥¢¥¦¥È¥¸¥ç¥Ö¤ò¸Æ¤Ó½Ð¤¹¡Ê¥¹¥Æ¡¼¥¸¥¢¥¦¥È¥¢¡¼¥«¥¤¥Ö¥Õ¥¡¥¤¥ë¤ÎºîÀ®¡Ë
+    if (defined($self->{JS_stage_out_files})){
+    	$self->{after_in_job} .= $self->{'staging_files'}->stage_out_job();
+    }
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    # inventory_write.pl ã‚’ã‚„ã‚ã¦ touch ã«
+    # inventory_write.pl ¤ò¤ä¤á¤Æ touch ¤Ë
 #    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
     push (@body, 'touch ' . $self->{id} . '_is_done');
     $self->{jobscript_body} = \@body;
@@ -333,7 +345,7 @@ sub qsub {
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
-        if ($xcropt::options{verbose} >= 2) { print "$cmdline\n"; }
+        if ($xcropt::options{verbose} >= 1) { print "$cmdline\n"; }
 
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
         if ( @qsub_output == 0 ) { die "qsub command failed"; }
@@ -360,10 +372,10 @@ sub qsub {
 }
 
 ##################################################
-# qdelã‚³ãƒžãƒ³ãƒ‰ã‚’å®Ÿè¡Œã—ã¦æŒ‡å®šã•ã‚ŒãŸã‚¸ãƒ§ãƒ–ã‚’æ®ºã™
+# qdel¥³¥Þ¥ó¥É¤ò¼Â¹Ô¤·¤Æ»ØÄê¤µ¤ì¤¿¥¸¥ç¥Ö¤ò»¦¤¹
 sub qdel {
     my ($self) = @_;
-    # qdelã‚³ãƒžãƒ³ãƒ‰ã‚’configã‹ã‚‰ç²å¾—
+    # qdel¥³¥Þ¥ó¥É¤òconfig¤«¤é³ÍÆÀ
 #    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
     my $qdel_command = $jsconfig::jobsched_config{$self->{env}->{sched}}{qdel_command};
     unless ( defined $qdel_command ) {
@@ -415,7 +427,7 @@ sub abort {
 # Same as abort except that this method also aborts finished or invalidated jobs.
 sub cancel {
     my ($self) = @_;
-    print "$self->{id} is canceled by user.\n";
+    print "$self->{id} is cancelled by user.\n";
     jobsched::set_signal ($self, 'sig_cancel');
     $self->qdel_if_queued_or_running();
     jobsched::set_job_status_according_to_signal ($self);

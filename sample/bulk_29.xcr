@@ -1,0 +1,53 @@
+use base qw(bulk sandbox core);
+
+&bulk::initialize(
+    'max_time' => "28",    # bulk‰»‚·‚éÅ‘åˆ—•b‚ðŽw’è
+);
+
+%template1 = (
+    'id' => 'job23a',
+    'exe' => './fib1.pl',
+    'arg0' => '30',
+    'arg1' => '> out',
+    'linkedfile0' => 'common/fib1.pl',
+    'time'  => '5',        # ƒAƒvƒŠ‚Ì—\‘ªˆ—•b
+);
+%template2 = (
+    'id' => 'job29b',
+    'exe' => './fib2.pl',
+    'arg0' => '30',
+    'arg1' => '> out',
+    'linkedfile0' => 'common/fib2.pl',
+    'time'  => '3',        # ƒAƒvƒŠ‚Ì—\‘ªˆ—•b
+);
+%template3 = (
+    'id' => 'job29c',
+    'exe' => './fib3.pl',
+    'arg0' => '30',
+    'arg1' => '> out',
+    'linkedfile0' => 'common/fib3.pl',
+    'time'  => '4',        # ƒAƒvƒŠ‚Ì—\‘ªˆ—•b
+);
+
+@jobs1 = &prepare(%template1,
+    'RANGE0' => [1,5],
+    'RANGE2' => [2,7],
+    'arg0@' => '$R0 + $R2;'
+);
+@jobs2 = &prepare(%template2,
+    'RANGE0' => [1,5],
+    'RANGE2' => [2,7],
+    'arg0@' => '$R0 + $R2;'
+);
+@jobs3 = &prepare(%template3,
+    'RANGE0' => [1,5],
+    'RANGE2' => [2,7],
+    'arg0@' => '$R0 + $R2;'
+);
+
+my @bulkedjobs = &bulk::bulk('bulk29', @jobs1, @jobs2, @jobs3);
+&submit(@bulkedjobs);
+&sync(@bulkedjobs);
+
+
+

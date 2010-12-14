@@ -6,6 +6,7 @@ use File::Spec;
 use Time::HiRes;
 use Coro;
 use Coro::Channel;
+use common;
 
 my  $matrix_file_name      = 'matrixfile';                                                    # マトリックスファイル名（排他・誘導等を定義したファイル）
 my  $output_file_name      = 'seacher_result';                                                # 結果出力ファイル名
@@ -48,11 +49,18 @@ my  %setting_options       = ();                                                
 
 my  @job_execute_times     : shared = ();                                                     # ジョブ別実行時間（data=オプションID,ジョブ名,実行レベル番号,実行時間）
 my  @opid_execute_times    : shared = ();                                                     # オプションID別実行時間（data=オプションID,実行時間）
+our %after_user_info       = ();                                                              # ユーザ設定情報（key=オプションID、data=ユーザ指定情報）
+our %after_user_time       = ();                                                              # ユーザ設定時間（key=オプションID、data=ユーザ指定時間）
+our $our_opid;                                                                                # get_after_user_infoにて使用するオプションID
+my  $bulk_id               = '';                                                              # bulk時用のbulkジョブ名
+my  $bulk_cnt              = 0;                                                               # bulk時用のbulkジョブ名連番
+my  $user_time             = '';                                                              # ユーザ指定時間の並び順（1=昇順、2=降順）
 
 ###################################################################################################
 #   ＜＜ 初期処理 ＞＞                                                                            #
 ###################################################################################################
     $user::max_range += 2;
+    &add_prefix_of_key("compile");
 ###################################################################################################
 #   ＜＜ 設定処理 ＞＞                                                                            #
 ###################################################################################################
@@ -153,6 +161,11 @@ sub initialize {
     } else {
         $compile_patterns{0} = [];
         $next_compile_patterns{0} = [];
+    }
+    
+    # bulkジョブ名
+    if (exists $script_appointments{"bulk_id"}) {
+        $bulk_id = $script_appointments{"bulk_id"};
     }
     
     # パターンファイルをオプション情報へ反映
@@ -302,10 +315,20 @@ sub get_pattern_file_data {
         &chk_pattern_file($pattern_file_name, $line);
         # パターンをパターンファイル情報へ追加
         my @line_compile_options = &arrangement_compile_option($line);
-        if ($line_compile_options[0] ne '') {
-            $group_options{$line_compile_options[0]}++;
+        my $flg_push = 1;
+        foreach my $compile_option (@compile_options[0..$#compile_options]) {
+            my @options = split (/=/, ${$compile_option}[1]);
+            if ((grep {$_ =~ /(^|\s)$options[0]($|=|\s)/} @line_compile_options) > 0) {
+                $flg_push = 0;
+                last;
+            }
         }
-        push (@compile_options, \@line_compile_options);
+        if ($flg_push eq 1) {
+            if ($line_compile_options[0] ne '') {
+                $group_options{$line_compile_options[0]}++;
+            }
+            push (@compile_options, \@line_compile_options);
+        }
     }
     # CLOSE
     close(PATTERN);
@@ -903,6 +926,14 @@ sub sort_group_option {
 sub cpoption_searcher {
     my %templetes = @_;
     my @jobs = &prepare(%templetes);
+    if ($bulk_id ne '') {
+        if (($#compile_options - $base_option_level) > 1) {
+            $bulk_cnt++;
+            @jobs = &bulk::bulk("${bulk_id}_${bulk_cnt}", @jobs);
+        } else {
+            @jobs = &bulk::bulk("$bulk_id", @jobs);
+        }
+    }
     &submit(@jobs);
 }
 ###################################################################################################
@@ -1321,13 +1352,13 @@ sub upd_setting_option {
     }
     
     # 旧オプションが存在するかチェック
-    if ((grep {$_ =~ /^$old_option$/} @{$setting_options{$opid}}) == 0) {
+    if ($old_option eq '' or
+       (grep {$_ =~ /^$old_option$/} @{$setting_options{$opid}}) == 0) {
         # （存在しない）
         push (@{$setting_options{$opid}}, "$new_option");
     } else {
         # （存在する）
-        my @idx = map {$_ =~ /^$old_option$/; $_;} @{$setting_options{$opid}};
-        ${$setting_options{$idx[0]}} = "$new_option";
+        @{$setting_options{$opid}} = map {$_ =~ s/^$old_option$/$new_option/; $_;} @{$setting_options{$opid}};
     }
     
     # 設定済オプション情報を更新
@@ -1451,12 +1482,12 @@ sub get_search_level_jobs_index {
 ###################################################################################################
 #   ＜＜ prepare前処理 ＞＞                                                                       #
 ###################################################################################################
-# ユーザースクリプトのチェック、cpoption_seacher用の情報追加
 sub prepare_search {
     my (%job)     = @_;
     my @range     = ();                                                                       # rangeへ追加するオプション配列
-    @compile_keys = grep {$_ =~ /^compile[\d]+$/} keys %job;
+    @compile_keys = sort grep {$_ =~ /^compile[\d]+$/} keys %job;
     #-----------------------------------------------------------------------------------------#
+    
     # コンパイル文が正しいかチェック
     &chk_compile_str(%job);
     
@@ -1545,24 +1576,38 @@ sub submit {
     foreach my $check_opid (@{$search_level_jobs["${search_level}"]}) {
         # オプションID毎の実行結果を取得
         my @opid_job_execute_times_data = grep {$_ =~ /^$check_opid/} @job_execute_times;
-        if ($#opid_job_execute_times_data >= 0) {
-            my $opid_execute_times_data = &get_opid_execute_time(@opid_job_execute_times_data);
-            push (@jobs, [$check_opid, $opid_execute_times_data]);
-            # オプションID別実行時間に登録
-            push (@opid_execute_times, "$check_opid,$opid_execute_times_data");
+        if ($user_time > 0) {
+            if ($after_user_time{$check_opid}) {
+                push (@jobs, [$check_opid, $after_user_time{$check_opid}]);
+                # オプションID別実行時間に登録
+                push (@opid_execute_times, "$check_opid,$after_user_time{$check_opid}");
+            }
+        } else {
+            if ($#opid_job_execute_times_data >= 0) {
+                my $opid_execute_times_data = &get_opid_execute_time(@opid_job_execute_times_data);
+                push (@jobs, [$check_opid, $opid_execute_times_data]);
+                # オプションID別実行時間に登録
+                push (@opid_execute_times, "$check_opid,$opid_execute_times_data");
+            }
         }
     }
     
     # 次のレベルが存在する場合 prepare submit sync 実行
     if ($search_level < $#compile_options) {
         # 実行結果を早い順に並べる
-        my @sorted_jobs  = sort {${$a}[1] <=> ${$b}[1]} grep {${$_}[1] != 0} @jobs;
+        my @sorted_jobs = ();
+        if ($user_time == 2) {
+            @sorted_jobs  = sort {${$b}[1] <=> ${$a}[1]} grep {${$_}[1] != 0} @jobs;
+        } else {
+            @sorted_jobs  = sort {${$a}[1] <=> ${$b}[1]} grep {${$_}[1] != 0} @jobs;
+        }
         my @next_pattern_jobs = ();
         my %temp_next_compile_patterns = %next_compile_patterns;
         %next_compile_patterns = ();
         my $cnt = 0;
         # 次レベルへ引渡すパターンを設定 
         foreach my $i (0..$#sorted_jobs) {
+            $our_opid = ${$sorted_jobs[$i]}[0];
             if ($extraction_cond > $cnt and
                 eval ($user_conditional) ) {
                 push (@next_pattern_jobs, $sorted_jobs[$i]);
@@ -1588,7 +1633,40 @@ sub submit {
 ###################################################################################################
 #   ＜＜ ジョブ前処理 ＞＞                                                                        #
 ###################################################################################################
-sub before {}
+sub before {
+    my $self = shift;
+    if (!exists($self->{exe})) {
+        return;
+    }
+    
+    my $exe = $self->{exe};
+    my @args;
+    my $max_of_second = &builtin::get_max_index_of_second_arg_of_arg(%$self);
+    for ( my $i = 0; $i <= $max_of_second; $i++) {
+        if ( $self->{'arg0_'."$i"} ) {
+            push(@args, $self->{'arg0_'."$i"});
+            delete $self->{'arg0_'."$i"};
+        }
+    }
+    
+    my $cnt_compille_key = 0;
+    foreach my $compile_key (@compile_keys) {
+        if ($self->{$compile_key}) {
+            my $OP;
+            if ($self->{$compile_key} =~ /^-o/ ||
+                $self->{$compile_key} =~ /^-c/) {
+                $OP = &get_compile_option($self->{opid});
+                $self->{$compile_key} =~ s/\$OP/$OP/;
+            } else {
+                $self->{$compile_key} = '-o'.' '.$exe.' '.&get_compile_option($self->{opid}). ' '.$self->{$compile_key};
+            }
+            $self->{"exe$cnt_compille_key"} = $compile_comand . ' ' . $self->{$compile_key};
+            $cnt_compille_key++;
+        }
+    }
+    
+    $self->{"exe$cnt_compille_key"} = '/usr/bin/time '.$exe.' '.join(' ', @args).' 2>./'.$self->{id}. '.time';
+}
 ###################################################################################################
 #   ＜＜ ジョブ実行 ＞＞                                                                          #
 ###################################################################################################
@@ -1599,94 +1677,21 @@ sub start {
     $self->NEXT::start();
 }
 ###################################################################################################
-#   ＜＜ スクリプト生成 ＞＞                                                                      #
-###################################################################################################
-# コンパイル、実行時間取得
-sub make_jobscript_body {
-    my $self = shift;
-    my @body = ();
-    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    #-----------------------------------------------------------------------------------------#
-    ## Job script body
-    # Chdir to the job's working directory
-    my $wkdir_str = $self->{workdir};
-    if (defined ($cfg{jobscript_workdir})) {
-        my $js_wkdir = $cfg{jobscript_workdir};
-        unless (ref ($js_wkdir)) {
-            $wkdir_str = $js_wkdir;
-        } elsif (ref ($js_wkdir) eq 'CODE') {
-            $wkdir_str = &$js_wkdir($self);
-        } else {
-            warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
-        }
-    }
-    unless ($self->{rhost} eq '') {
-        $wkdir_str = File::Spec->catfile( $self->{rwd}, $wkdir_str );
-    }
-    push (@body, "cd ". $wkdir_str);
-    # Set the job's status to "running"
-    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    # Compile the source
-    foreach my $compile_key (@compile_keys) {
-        if ($self->{$compile_key}) {
-            my $OP;
-            if ($self->{$compile_key} =~ /^-o/ ||
-                $self->{$compile_key} =~ /^-c/) {
-                $OP = &get_compile_option($self->{opid});
-                $self->{$compile_key} =~ s/\$OP/$OP/;
-            } else {
-                $self->{$compile_key} = '-o' . ' ' . $self->{exe} . ' ' . &get_compile_option($self->{opid}) . ' ' . $self->{$compile_key};
-            }
-            my $cmd = $compile_comand . ' ' . $self->{$compile_key};
-            push (@body, $cmd);
-        }
-    }
-    # Do before_in_job
-    if ($self->{before_in_job}) {
-        push (@body, "perl $self->{before_in_job_file}");
-    }
-    my $cmd = 'if [ ! -f "'. $self->{exe}. '" ]; then';
-    push (@body, $cmd);
-    push (@body, "\t".jobsched::inventory_write_cmdline($self, 'aborted'). " || exit 1");
-    push (@body, "\t".'kill -9 $$');
-    push (@body, 'else');
-    push (@body, "\t".jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
-    push (@body, 'fi');
-    # Execute the program
-    foreach my $j (0 .. $user::max_exe) {
-        if ($self->{"exe$j"}) {
-            my @args = ();
-            for ( my $i = 0; $i <= $user::max_arg; $i++) {
-                if ( $self->{"arg$j".'_'."$i"} ) {
-                    push(@args, $self->{"arg$j".'_'."$i"});
-                }
-            }
-            push (@body, "sleep 1");
-            # timeコマンド結果(標準エラー出力)をファイルに出力
-            my $cmd = '/usr/bin/time ' . $self->{"exe$j"} . ' ' . join(' ', @args) . ' 2>./' . $self->{id}. '.time';
-            push (@body, $cmd);
-        }
-    }
-    # Do after_in_job
-    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
-    # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@body,  'if [ ! -f "./'. $self->{id}. '.time' . '" ]; then');
-    push (@body, "\t".jobsched::inventory_write_cmdline($self, 'aborted'). " || exit 1");
-    push (@body, "\t".'kill -9 $$');
-    push (@body, 'else');
-    push (@body, "\t".jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
-    push (@body, 'fi');
-    $self->{jobscript_body} = \@body;
-}
-###################################################################################################
 #   ＜＜ ジョブ後処理 ＞＞                                                                        #
 ###################################################################################################
 sub after {
     my $self = shift;                                                                         # オブジェクト
+    my @execute_time = ();                                                                    # アプリ実行時間
     #-----------------------------------------------------------------------------------------#
     # ジョブ毎の実行結果を登録
-    if ((&jobsched::get_job_status) eq "aborted") { return; }
-    my @execute_time = &get_execute_time($self);
+    if ((&jobsched::get_job_status($self)) eq "aborted") { return; }
+    if ($bulk_id ne '') {
+        foreach my $sub_self (@{${$self}{bulk_jobs}}) {
+            push (@execute_time, &get_execute_time($sub_self));
+        }
+    } else {
+        @execute_time = &get_execute_time($self);
+    }
     if ($#execute_time >= 0) {
         push (@job_execute_times, @execute_time);
     }
@@ -1699,11 +1704,25 @@ sub get_execute_time {
     my @execute_times = ();                                                                   # 実行時間情報
     my $line_cnt      = 0;                                                                    # 行カウンタ
     my $opid          = $self->{opid};                                                        # オプションID
+    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
     #-----------------------------------------------------------------------------------------#
     # OPEN
-    my $execute_time_file =  File::Spec->catfile( $self->{workdir}, $self->{id} . '.time' );
+    my $wkdir_str = File::Spec->catfile($self->{env}->{wd}, $self->{workdir});
+    if (defined ($cfg{jobscript_workdir})) {
+        my $js_wkdir = $cfg{jobscript_workdir};
+        unless (ref ($js_wkdir)) {
+            $wkdir_str = $js_wkdir;
+        } elsif (ref ($js_wkdir) eq 'CODE') {
+            $wkdir_str = &$js_wkdir($self);
+        } else {
+            warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
+        }
+    }
+    my $execute_time_file =  File::Spec->catfile( $wkdir_str, $self->{id} . '.time' );
+    if (!-e "$execute_time_file") { return (); }
     open (EXECUTE_TIME, "< $execute_time_file") or warn "Cannot open  $execute_time_file";
     # 実行時間取得
+    my $pg_time = 0;
     my @execute_time_datas = <EXECUTE_TIME>;
     foreach my $execute_time_data (@execute_time_datas) {
         $line_cnt++;
@@ -1717,6 +1736,12 @@ sub get_execute_time {
             my $pg_time = ($1 + $2);
             #my $pg_time = $1;
             push (@execute_times, "$opid,$self->{id},$search_level,$pg_time");
+        } elsif ($execute_time_data =~ /^user\s+([0-9\.]+)/) {
+            $pg_time = $1;
+        } elsif ($execute_time_data =~ /^sys\s+([0-9\.]+)/) {
+            $pg_time += $1;
+            push (@execute_times, "$opid,$self->{id},$search_level,$pg_time");
+            $pg_time = 0;
         }
     }
     # CLOSE
@@ -1763,6 +1788,7 @@ sub output_result {
     my %check_opid          = ();
     my @output_time_datas   = ();                                                             # 時間情報
     my @output_option_datas = ();                                                             # オプション情報
+    my @sorted_jobs         = ();
     #-----------------------------------------------------------------------------------------#
     foreach my $opid_time_data (@opid_execute_times) {
         my @opid_time_data = split(/,/,$opid_time_data);
@@ -1772,7 +1798,11 @@ sub output_result {
         push (@execute_times, [$opid_time_data[0], $opid_time_data[$#opid_time_data]]);
     }
     if (@execute_times == ()) { return; }
-    my @sorted_jobs = sort {${$a}[1] <=> ${$b}[1]} @execute_times;                            # 昇順化実行結果
+    if ($user_time == 2) {
+        @sorted_jobs = sort {${$b}[1] <=> ${$a}[1]} @execute_times;                            # 降順化実行結果
+    } else {
+        @sorted_jobs = sort {${$a}[1] <=> ${$b}[1]} @execute_times;                            # 昇順化実行結果
+    }
     my $min         = ${$sorted_jobs[0]}[1];
     my $max     = ${$sorted_jobs[$#sorted_jobs]}[1];
     my $gap = ($max + $min) / 2;
@@ -1794,9 +1824,18 @@ sub output_result {
     if ($measurement_list > $jobs) {
         $measurement_list = $jobs;
     }
-    my $max_opid_digit = ${$sorted_jobs[$#sorted_jobs]}[0] =~ tr/0-9/0-9/;
+    my $max_opid_digit = length(${$sorted_jobs[$#sorted_jobs]}[0]);
     if ($max_opid_digit < 3) {$max_opid_digit = 3}
-    my $max_time_digit = ${$sorted_jobs[$#sorted_jobs]}[1]  =~ tr/0-9\./0-9\./;
+    my @splited_times = split(/\./, ${$sorted_jobs[$#sorted_jobs]}[1]);
+    my $max_time_digit = length($splited_times[0]);
+    my $max_time_digit_float = 0;
+    foreach my $sorted_job (@sorted_jobs) {
+        @splited_times = split(/\./, ${$sorted_job}[1]);
+        if ($max_time_digit_float < length($splited_times[1])) {
+            $max_time_digit_float = length($splited_times[1]);
+        }
+    }
+
     foreach my $i (0..$measurement_list) {
         # スケール算出
         my $scale_mark = '*';
@@ -1805,7 +1844,9 @@ sub output_result {
             $scale .= $scale_mark;
         }
         # 時間情報へ保存
-        push (@output_time_datas  , sprintf("%${max_opid_digit}d %${max_time_digit }.2f %s", $opid_jobseqs{${$sorted_jobs[$i]}[0]}, ${$sorted_jobs[$i]}[1], $scale));
+        @splited_times = split(/\./, ${$sorted_jobs[$i]}[1]);
+        push (@output_time_datas  , sprintf("%${max_opid_digit}d %${max_time_digit }s.%-${max_time_digit_float}s %s", $opid_jobseqs{${$sorted_jobs[$i]}[0]}, $splited_times[0], $splited_times[1], $scale));
+
         # オプション情報へ保存
         my $opid_compile_option = &get_compile_option(${$sorted_jobs[$i]}[0]);
         push (@output_option_datas, sprintf("%${max_opid_digit}d%s", $opid_jobseqs{${$sorted_jobs[$i]}[0]}, $opid_compile_option));
@@ -1830,4 +1871,41 @@ sub output_result {
     # CLOSE
     close(RESULT);
 }
+###################################################################################################
+#   ＜＜ ユーザ設定情報の取得 ＞＞                                                                #
+###################################################################################################
+sub get_after_user_info {
+    return $after_user_info{$our_opid};
+}
+###################################################################################################
+#   ＜＜ ユーザ設定情報の設定 ＞＞                                                                #
+###################################################################################################
+sub set_after_user_info {
+    my $self   = shift;
+    my ($info) = @_;
+    $after_user_info{${$self}{opid}} = $info;
+}
+###################################################################################################
+#   ＜＜ ユーザ指定情報（昇順）の設定 ＞＞                                                        #
+###################################################################################################
+sub set_ascending_data {
+    my $self   = shift;
+    my ($info) = @_;
+    if ($info -~ / [\+-]*[0-9]+\.*[0-9]*/) {
+        $user_time = 1;
+        $after_user_time{${$self}{opid}} = $info;
+    }
+}
+###################################################################################################
+#   ＜＜ ユーザ指定情報（降順）の設定 ＞＞                                                        #
+###################################################################################################
+sub set_descending_data {
+    my $self   = shift;
+    my ($info) = @_;
+    if ($info -~ / [\+-]*[0-9]+\.*[0-9]*/) {
+        $user_time = 2;
+        $after_user_time{${$self}{opid}} = $info;
+    }
+}
+
 1;
