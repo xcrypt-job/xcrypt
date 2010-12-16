@@ -32,6 +32,7 @@ use file_stager;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
+use return_transmission;
 
 # Permitted job template member names.
 my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
@@ -821,7 +822,7 @@ sub submit {
                     my $before_return = $self->EVERY::before(@{$self->{VALUE}});
                     foreach my $key (keys %{$before_return}) {
                         if ($key eq 'user::before' and $self->{before} ne '') {
-#                            $self->return_write("before", ${$before_return}{$key});
+                            $self->return_write("before", ${$before_return}{$key});
                         }
                     }
                 }
@@ -853,7 +854,7 @@ sub submit {
                     my $after_retrun = $self->EVERY::LAST::after(@{$self->{VALUE}});
                     foreach my $key (keys %{$after_retrun}) {
                         if ($key eq 'user::after' and $self->{after} ne '') {
-#                            $self->return_write("after", ${$after_retrun}{$key});
+                            $self->return_write("after", ${$after_retrun}{$key});
                         }
                     }
                 }
