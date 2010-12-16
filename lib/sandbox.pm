@@ -50,7 +50,7 @@ sub new {
 
 sub start {
     my $self = shift;
-    $self->NEXT::start();
+    $self->NEXT::start()
 }
 
 sub before {}
