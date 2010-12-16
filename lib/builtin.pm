@@ -546,7 +546,7 @@ sub do_initialized {
         }
     }
     &jobsched::entry_job_id ($self);
-    &jobsched::set_job_initialized($self);
+#    &jobsched::set_job_initialized($self); # -> core.pm
     return $self;
 }
 
@@ -649,9 +649,9 @@ sub prepare{
     $count = 0;
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
-    foreach (@objs) {
-        &jobsched::set_job_prepared($_);
-    }
+#    foreach (@objs) {
+#        &jobsched::set_job_prepared($_);
+#    }
     return @objs;
 }
 
@@ -833,45 +833,11 @@ sub submit {
 	    }
             ## start()
             if (check_status_for_start ($self)) {
-                $self->{request_id} = $self->start();
+#                $self->{request_id} = $self->start();
+                $self->start();
             }
-            ## set_job_queued()
-            if (check_status_for_set_job_queued ($self)) {
-#		if ($self->{env}->{location} eq 'local') {
-                if ($self->{env}->{host} eq $env_d->{host}) {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
-#		} elsif ($self->{env}->{location} eq 'remote') {
-                } else {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
-                }
-                &jobsched::set_job_queued($self);
-            }
-            ## If the job was 'running' in the last execution, set it's status to 'running'.
-            check_status_for_set_job_running ($self);
-            ## Waiting for the job "done"
-            if (check_status_for_wait_job_done ($self)) {
-                &jobsched::wait_job_done ($self);
-            }
-
-            ## ジョブスクリプトの最終行の処理を終えたからといって
-            ## after()をしてよいとは限らないが……
-	    # my $flag0 = 0;
-            # my $flag1 = 0;
-            # until ($flag0 && $flag1) {
-            # Coro::AnyEvent::sleep 1;
-            # $flag0 = &xcr_exist($self->{env},
-            # File::Spec->catfile($self->{workdir},
-            # $self->{JS_stdout})
-            #     );
-            # $flag1 = &xcr_exist($self->{env},
-            # File::Spec->catfile($self->{workdir},
-            # $self->{JS_stderr})
-            #     );
-            # }
-
-            ## NFS が書き込んでくれる*経験的*待ち時間
-            sleep 3;
-
+	    ## NFS が書き込んでくれる*経験的*待ち時間
+	    sleep 3;
 	    ## ステージアウトファイルの展開
 	    if(defined $self->{JS_stage_out_files}){
 		$self->{'staging_files'}->stage_out_local();
@@ -925,7 +891,7 @@ sub prepare_submit {
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
     foreach (@objs) {
-        &jobsched::set_job_prepared($_);
+#        &jobsched::set_job_prepared($_);
         &submit($_);
     }
     return @objs;

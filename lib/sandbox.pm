@@ -50,16 +50,7 @@ sub new {
 
 sub start {
     my $self = shift;
-
-    # Skip if the job is done or finished in the previous execution
-    # ↑ 「finishedも」というのはコメントの書き間違い？
-    my $stat = &jobsched::get_job_status($self);
-    if ( $stat eq 'done' ) {
-        print "Skipping " . $self->{id} . " because already $stat.\n";
-    } else {
-        &core::qsub_make($self);
-        $self->{request_id} = &core::qsub($self);
-    }
+    $self->NEXT::start();
 }
 
 sub before {}
