@@ -47,6 +47,9 @@ sub new {
     set_member_if_empty ($self, 'staging_files', file_stager->new($self));
     set_member_if_empty ($self, 'qsub_options', []);
 
+    &jobsched::set_job_initialized($self); # <- builtin.pm
+    &jobsched::set_job_prepared($self); # no diff between initialized and prepared now
+
     return bless $self, $class;
 }
 
@@ -59,8 +62,41 @@ sub start {
         # print "$self->{id}: calling qsub.\n";
         &qsub_make($self);
         # Returns request ID
-	return (&qsub($self));
+	$self->{request_id} = (&qsub($self));
     }
+    ## set_job_queued()
+    if (builtin::check_status_for_set_job_queued ($self)) {
+#		if ($self->{env}->{location} eq 'local') {
+	if ($self->{env}->{host} eq $builtin::env_d->{host}) {
+	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+#		} elsif ($self->{env}->{location} eq 'remote') {
+	} else {
+	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+	}
+	&jobsched::set_job_queued($self);
+    }
+            ## ジョブスクリプトの最終行の処理を終えたからといって
+            ## after()をしてよいとは限らないが……
+	    # my $flag0 = 0;
+            # my $flag1 = 0;
+            # until ($flag0 && $flag1) {
+            # Coro::AnyEvent::sleep 1;
+            # $flag0 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stdout})
+            #     );
+            # $flag1 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stderr})
+            #     );
+            # }
+    ## If the job was 'running' in the last execution, set it's status to 'running'.
+    builtin::check_status_for_set_job_running ($self);
+    ## Waiting for the job "done"
+    if (builtin::check_status_for_wait_job_done ($self)) {
+	&jobsched::wait_job_done ($self);
+    }
+    return $self->{request_id};
 }
 
 sub workdir_member_file {
