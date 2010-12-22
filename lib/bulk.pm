@@ -257,7 +257,9 @@ sub before {
     my $self = shift;
     if ($self->{exe} eq '') {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            $sub_self->before($sub_self);
+            if ($sub_self->{before_to_job} != 1) {
+                $sub_self->before($sub_self);
+            }
         }
     }
 }
@@ -267,7 +269,9 @@ sub after {
     if ($self->{exe} eq '') {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
             &set_job_status($sub_self, "done");
-            $sub_self->after($sub_self);
+            if ($sub_self->{after_to_job} != 1) {
+                $sub_self->after($sub_self);
+            }
         }
     }
 }

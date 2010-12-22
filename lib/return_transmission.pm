@@ -42,9 +42,6 @@ sub get_after_return {
 sub get_xxx_return {
     my $self   = shift;
     my $get_id = shift;
-
-    print "job get_xxx_return $get_id\n";
-
     if ($get_id eq "") {$get_id = $self->{id}};
     my $return_file;
     my $return_dir =  File::Spec->catfile($self->{env}->{wd}, "${get_id}");
@@ -55,22 +52,10 @@ sub get_xxx_return {
     }
     my $get_nm = shift;
     sleep 1;
-
-   # if (!-e $return_file) {
-   #     print ">>>>>not_file $return_file\n";
-   # } elsif (!-r $return_file) {
-   #     print ">>>>>not_read $return_file\n";
-   # } else {
-   #     print ">>>>>file $return_file\n";
-   # }
-
-    open (RETURN_R, "+< $return_file") or warn "Cannot open $return_file 11111111111111";
+    open (RETURN_R, "+< $return_file") or warn "Cannot open $return_file";
     my $return_datas = '';
     while (my $rec_data = <RETURN_R>){
         $return_datas .= $rec_data;
-
-       # print "${get_id}_return $rec_data\n";
-
     }
     close(RETURN_R);
     my @return_datas = split /\n\r\n/, $return_datas;
@@ -89,17 +74,14 @@ sub get_xxx_return {
             }
         }
     }
-    warn "There was not the return value of the target.(id=${get_id} sub=${get_nm})22222222222222\n";
+    warn "There was not the return value of the target.(id=${get_id} sub=${get_nm})\n";
 }
 
 sub return_write {
     my $self    = shift;
     my $summons = shift;
-
-    print "job return_write\n";
-
     my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
-    open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file 333333333333333";
+    open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file";
     flock RETURN_W, 2;
     if (exists $self->{"transfer_reference_level"}) {
         $Data::Dumper::Maxdepth = $self->{"transfer_reference_level"};
@@ -116,7 +98,6 @@ sub return_write {
 sub data_dumper {
     my $self = shift;
     my @body = ();
-    
     # Data_Dumper(Object)
     my %dump_self = ();
     foreach my $k (keys %{$self}) {
@@ -137,7 +118,6 @@ sub data_dumper {
     push (@body, 'bless $self;');
     push (@body, 'sub before {if ($self->{before}) {&{$self->{before}}($self, @{$self->{VALUE}})};}');
     push (@body, 'sub after  {if ($self->{after} ) {&{$self->{after}}($self, @{$self->{VALUE}})};}');
-    
     # Data_Dumper(User Script)
     while (my ($k,$v) = each %user::) {
         if ($k =~ /^[a-zA-Z]+/ and $k !~ /\:$/) {

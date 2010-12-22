@@ -53,7 +53,4 @@ sub start {
     $self->NEXT::start()
 }
 
-sub before {}
-sub after {}
-
 1;
