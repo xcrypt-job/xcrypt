@@ -32,10 +32,9 @@ use file_stager;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
-use return_transmission;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
+my @allkeys = ('id', 'initially', 'before', 'before_return', 'before_bkup', 'before_in_job', 'after_in_job', 'after', 'after_return', 'after_bkup', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -817,14 +816,20 @@ sub submit {
             $self->EVERY::initially(@{$self->{VALUE}});
             ## before()
             if (check_status_for_before ($self)) {
-                #$self->EVERY::before(@{$self->{VALUE}});
-                if ($self->{before_to_job} != 1) {
-                    my $before_return = $self->EVERY::before(@{$self->{VALUE}});
-                    foreach my $key (keys %{$before_return}) {
-                        if ($key eq 'user::before' and $self->{before} ne '') {
-                            $self->return_write("before", ${$before_return}{$key});
-                        }
+                if ($self->{before_to_job} == 1 and (exists $self->{before})) {
+                    $self->{before_bkup} = $self->{before};
+                    delete $self->{before};
+                }
+                my $before_return = $self->EVERY::before(@{$self->{VALUE}});
+                foreach my $key (keys %{$before_return}) {
+                    if ($key eq 'user::before' and $self->{before} ne '') {
+			$self->{before_return} = ${$before_return}{$key};
+                        $self->return_write("before", ${$before_return}{$key});
                     }
+                }
+                if (exists $self->{before_bkup}) {
+                    $self->{before} = $self->{before_bkup};
+                    delete $self->{before_bkup};
                 }
             }
 	    ## stage_in_local処理
@@ -834,9 +839,35 @@ sub submit {
 	    }
             ## start()
             if (check_status_for_start ($self)) {
-#                $self->{request_id} = $self->start();
                 $self->start();
             }
+	    ## set_job_queued()
+	    if (check_status_for_set_job_queued ($self)) {
+		&jobsched::set_job_queued($self);
+	    }
+	    ## If the job was 'running' in the last execution, set it's status to 'running'.
+	    check_status_for_set_job_running ($self);
+	    ## Waiting for the job "done"
+	    if (check_status_for_wait_job_done ($self)) {
+		&jobsched::wait_job_done ($self);
+	    }
+
+            ## ジョブスクリプトの最終行の処理を終えたからといって
+            ## after()をしてよいとは限らないが……
+	    # my $flag0 = 0;
+            # my $flag1 = 0;
+            # until ($flag0 && $flag1) {
+            # Coro::AnyEvent::sleep 1;
+            # $flag0 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stdout})
+            #     );
+            # $flag1 = &xcr_exist($self->{env},
+            # File::Spec->catfile($self->{workdir},
+            # $self->{JS_stderr})
+            #     );
+            # }
+
 	    ## NFS が書き込んでくれる*経験的*待ち時間
 	    sleep 3;
 	    ## ステージアウトファイルの展開
@@ -849,14 +880,20 @@ sub submit {
 	    }
             ## after()
             if (check_status_for_after ($self)) {
-                #$self->EVERY::LAST::after(@{$self->{VALUE}});
-                if ($self->{after_to_job} != 1) {
-                    my $after_retrun = $self->EVERY::LAST::after(@{$self->{VALUE}});
-                    foreach my $key (keys %{$after_retrun}) {
-                        if ($key eq 'user::after' and $self->{after} ne '') {
-                            $self->return_write("after", ${$after_retrun}{$key});
-                        }
+                if ($self->{after_to_job} == 1 and (exists $self->{after})) {
+                    $self->{after_bkup} = $self->{after};
+                    delete $self->{after};
+                }
+                my $after_return = $self->EVERY::after(@{$self->{VALUE}});
+                foreach my $key (keys %{$after_return}) {
+                    if ($key eq 'user::after' and $self->{after} ne '') {
+			$self->{after_return} = ${$after_return}{$key};
+                        $self->return_write("after", ${$after_return}{$key});
                     }
+                }
+                if (exists $self->{after_bkup}) {
+                    $self->{after} = $self->{after_bkup};
+                    delete $self->{after_bkup};
                 }
             }
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
