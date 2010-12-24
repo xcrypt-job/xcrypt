@@ -22,13 +22,13 @@ if (defined $options{'help'}) {
     }
 } else {
     if ($#ARGV == -1) {
-	foreach my $id (keys %jobsched::Last_Job) {
+	foreach my $id (&jobsched::get_last_job_id) {
 	    if (defined $options{'match'}) {
 		if ($id =~ /$options{match}/) {
 		    &print_stat($id);
 		}
 	    } elsif (defined $options{'status'}) {
-		if ($jobsched::Last_Job{$id}{state} =~ /$options{status}/) {
+		if (&jobsched::get_last_job_state($id) =~ /$options{status}/) {
 		    &print_stat($id);
 		}
 	    } else {
@@ -42,7 +42,7 @@ if (defined $options{'help'}) {
 		    &print_stat($id);
 		}
 	    } elsif (defined $options{'status'}) {
-		if ($jobsched::Last_Job{$id}{state} =~ /$options{status}/) {
+		if (&jobsched::get_last_job_state($id) =~ /$options{status}/) {
 		    &print_stat($id);
 		}
 	    } else {
@@ -63,24 +63,24 @@ my %ssh_opts = (
 
 sub print_stat {
     my $id = shift;
-    print "$id = $jobsched::Last_Job{$id}{state}";
-    if ( $jobsched::Last_Job{$id}{request_id} ) {
-	print " (request_ID=$jobsched::Last_Job{$id}{request_id})";
+    print "$id = ". &jobsched::get_last_job_state($id);
+    if ( &jobsched::get_last_job_request_id($id) ) {
+	print " (request_ID=" . &jobsched::get_last_job_request_id($id) . ")";
     }
     print "\n";
     if (defined $options{'output'}) {
-	my $tmp = File::Spec->catfile($jobsched::Last_Job{$id}{workdir},
-				      $jobsched::Last_Job{$id}{stdout});
+	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+				      &jobsched::get_last_job_stdout($id));
 	&print_stat_body($id, 'output', $tmp);
     }
     if (defined $options{'error'}) {
-	my $tmp = File::Spec->catfile($jobsched::Last_Job{$id}{workdir},
-				      $jobsched::Last_Job{$id}{stderr});
+	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+				      &jobsched::get_last_job_stderr($id));
 	&print_stat_body($id, 'error', $tmp);
     }
     if (defined $options{'batch'}) {
-	my $tmp = File::Spec->catfile($jobsched::Last_Job{$id}{workdir},
-				      $jobsched::Last_Job{$id}{script});
+	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+				      &jobsched::get_last_job_script($id));
 	&print_stat_body($id, 'batch', $tmp);
     }
 }
@@ -89,11 +89,11 @@ sub print_stat {
 sub print_stat_body {
     my ($id, $type, $file) = @_;
     print '=' . $id . "'s $type" . "=\n";
-    unless ($jobsched::Last_Job{$id}{userhost} eq 'local') {
+    unless (&jobsched::get_last_job_userhost($id) eq 'local') {
 	unless(-e $file) {
-	    my ($user, $host) = split(/@/, $jobsched::Last_Job{$id}{userhost});
+	    my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
 	    $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $ssh->scp_get(\%ssh_opts, File::Spec->catfile($jobsched::Last_Job{$id}{prefix}, $file), $file) or warn $ssh->error;
+	    $ssh->scp_get(\%ssh_opts, File::Spec->catfile(&jobsched::get_last_job_prefix($id), $file), $file) or warn $ssh->error;
 	}
     }
     open(my $out, $file) or die $!;
