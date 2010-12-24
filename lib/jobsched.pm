@@ -39,22 +39,8 @@ my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that syst
 
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
-# Hash table (key,val)=(job ID, the last state in the previous Xcrypt execution)
-our %Last_State = ();
-# Hash table (key,val)=(job ID, the request ID in the previous Xcrypt execution)
-our %Last_Request_ID = ();
-# Hash table (key,val)=(job ID, the signal name in the previous Xcrypt execution)
-our %Last_Signal = ();
-# Hash table (key,val)=(job ID, the user@host in the previous Xcrypt execution)
-our %Last_Userhost_ID = ();
-# Hash table (key,val)=(job ID, the job scheduler in the previous Xcrypt execution)
-our %Last_Sched_ID = ();
-# Hash table (key,val)=(job ID, the workdir in the previous Xcrypt execution)
-our %Last_Prefix = ();
-our %Last_Workdir = ();
-our %Last_Script = ();
-our %Last_Stdout = ();
-our %Last_Stderr = ();
+# Hash table (key,val)=(job ID, the last state, request_id, signal, user@host, sched, prefix, workdir, script, stdout, and stderr in the previous Xcrypt execution)
+our %Last_Job = ();
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -587,33 +573,33 @@ sub read_log {
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
 #print "$id: $stat\n";
-                $Last_State{$id} = $stat;
+                $Last_Job{$id}{state} = $stat;
             } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $req_id, $userhost, $sched, $prefix, $wd, $script, $stdout, $stderr) = ($1, $2, $3, $4, $5, $6, $7, $8, $9);
-                $Last_Request_ID{$id} = $req_id;
-                $Last_Userhost_ID{$id} = $userhost;
-                $Last_Sched_ID{$id} = $sched;
-                $Last_Prefix{$id} = $prefix;
-                $Last_Workdir{$id} = $wd;
-                $Last_Script{$id} = $script;
-                $Last_Stdout{$id} = $stdout;
-                $Last_Stderr{$id} = $stderr;
+                $Last_Job{$id}{request_id} = $req_id;
+                $Last_Job{$id}{userhost} = $userhost;
+                $Last_Job{$id}{sched} = $sched;
+                $Last_Job{$id}{prefix} = $prefix;
+                $Last_Job{$id}{workdir} = $wd;
+                $Last_Job{$id}{script} = $script;
+                $Last_Job{$id}{stdout} = $stdout;
+                $Last_Job{$id}{stderr} = $stderr;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
                 if ( $sig eq 'unset' ) {
-                    delete ($Last_Signal{$id});
+                    delete ($Last_Job{$id}{signal});
                 } else {
-                    $Last_Signal{$id} = $sig;
+                    $Last_Job{$id}{signal} = $sig;
                 }
             }
         }
-        foreach my $id (keys %Last_State) {
+        foreach my $id (keys %Last_Job) {
 	    if (defined $xcropt::options{print_log}) {
-		print "$id = $Last_State{$id}";
+		print "$id = $Last_Job{$id}{state}";
 	    }
-            if ( $Last_Request_ID{$id} ) {
+            if ( $Last_Job{$id}{state} ) {
 		if (defined $xcropt::options{print_log}) {
-		    print " (request_ID=$Last_Request_ID{$id})";
+		    print " (request_ID=$Last_Job{$id}{request_id})";
 		}
             }
 		if (defined $xcropt::options{print_log}) {
@@ -630,16 +616,16 @@ sub read_log {
 # The job proceeded than (or to) $stat in the last Xcrypt execution?
 sub job_proceeded_last_time {
     my ($job, $stat) = @_;
-    return ( $Last_State{$job->{id}}
-             && !($Last_State{$job->{id}} eq 'aborted')
-             && status_name_to_level ($Last_State{$job->{id}}) >= status_name_to_level($stat) );
+    return ( $Last_Job{$job->{id}}{state}
+             && !($Last_Job{$job->{id}}{state} eq 'aborted')
+             && status_name_to_level ($Last_Job{$job->{id}}{state}) >= status_name_to_level($stat) );
 }
 
 # Get the job's request ID in the last Xcrypt execution.
 sub request_id_last_time {
     my ($job) = @_;
-    if ( $Last_Request_ID{$job->{id}} ) {
-        return $Last_Request_ID{$job->{id}};
+    if ( $Last_Job{$job->{id}}{request_id} ) {
+        return $Last_Job{$job->{id}}{request_id};
     } else {
         return undef;
     }
@@ -648,8 +634,8 @@ sub request_id_last_time {
 # Delete the job's record in the last Xcrypt execution.
 sub delete_record_last_time {
     my ($job) = @_;
-    delete ($Last_State{$job->{id}});
-    delete ($Last_Request_ID{$job->{id}});
+    delete ($Last_Job{$job->{id}}{state});
+    delete ($Last_Job{$job->{id}}{request_id});
 }
 
 # ジョブ$selfの状態が$stat以上になるまで待つ
@@ -867,16 +853,16 @@ sub left_signal_message_check {
             my $self = find_job_by_id ($id);
             print "$id $sig:\n";
             if ($self) {
-                if ( $sig eq 'aborted' ) {
-                    $self->abort();
-                    unlink ($sigmsg);
-                } elsif ( $sig eq 'cancelled' ) {
+                if ( $sig eq 'cancelled' || $sig eq 'aborted' ) {
                     $self->cancel();
                     unlink ($sigmsg);
-                } elsif ( $sig eq 'invalidated' ) {
+                } elsif ( $sig eq 'invalidated' || $sig eq 'finished' ) {
                     $self->invalidate();
                     unlink ($sigmsg);
-                }
+#                } elsif ( $sig eq 'aborted' ) {
+#                    $self->abort();
+#                    unlink ($sigmsg);
+		}
             }
         }
     }
