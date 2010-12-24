@@ -171,7 +171,7 @@ Any job has one of the following states:
 \begin{center}
 \begin{tabular}{ll}
 initialized: & the job is initialized or aborted,\\
-prepared: & the job object is generated and being submitted,\\
+prepared: & the same as initialized (for backward compatibility)\\
 submitted: & the job is submitted,\\
 queued: & the job is queued,\\
 running: & the job is running,\\
@@ -265,7 +265,7 @@ helps you.
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcrypt} \textit{myscript}\texttt{.xcr}
 \end{screen}
-makes Xcrypt to intrepret \textit{myscript}\texttt{.xcr}.
+makes Xcrypt to interpret \textit{myscript}\texttt{.xcr}.
 
 \begin{screen}
 \texttt{\$ \$XCRYPT/bin/xcryptstat}

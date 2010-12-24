@@ -23,7 +23,7 @@ if (defined $options{'help'}) {
     }
 } else {
     if (defined $options{'clean'} || defined $options{'all'}) {
-	foreach my $id (keys(%jobsched::Last_State)) {
+	foreach my $id (keys(%jobsched::Last_Job)) {
 	    &del($id);
 	}
 	if (defined $options{'clean'}) {
@@ -61,40 +61,40 @@ sub qdel {
     my $user;
     my $host;
     my $ssh;
-    if (defined $jobsched::Last_Userhost_ID{$id}) {
-    unless ($jobsched::Last_Userhost_ID{$id} eq 'local') {
-	($user, $host) = split(/@/, $jobsched::Last_Userhost_ID{$id});
+    if (defined $jobsched::Last_Job{$id}{request_id}) {
+    unless ($jobsched::Last_Job{$id}{userhost} eq 'local') {
+	($user, $host) = split(/@/, $jobsched::Last_Job{$id}{userhost});
 	$ssh = Net::OpenSSH->new($host, (user => $user));
     }
 
-    my $running_file = File::Spec->catfile($jobsched::Last_Prefix{$id},
-					   $jobsched::Last_Workdir{$id},
+    my $running_file = File::Spec->catfile($jobsched::Last_Job{$id}{prefix},
+					   $jobsched::Last_Job{$id}{workdir},
 					   $id . '_is_running');
-    my $done_file = File::Spec->catfile($jobsched::Last_Prefix{$id},
-					$jobsched::Last_Workdir{$id},
+    my $done_file = File::Spec->catfile($jobsched::Last_Job{$id}{prefix},
+					$jobsched::Last_Job{$id}{workdir},
 					$id . '_is_done');
-    if ($jobsched::Last_Userhost_ID{$id} eq 'local') {
+    if ($jobsched::Last_Job{$id}{userhost} eq 'local') {
 	unlink $running_file;
 	unlink $done_file;
     } else {
 	$ssh->system("rm -f $running_file") or warn $ssh->error;
 	$ssh->system("rm -f $done_file") or warn $ssh->error;
     }
-    if (($jobsched::Last_State{$id} eq 'queued') || ($jobsched::Last_State{$id} eq 'running')) {
-	my $qdel_command = $jsconfig::jobsched_config{$jobsched::Last_Sched_ID{$id}}{qdel_command};
+    if (($jobsched::Last_Job{$id}{state} eq 'queued') || ($jobsched::Last_Job{$id}{state} eq 'running')) {
+	my $qdel_command = $jsconfig::jobsched_config{$jobsched::Last_Job{$id}{state}}{qdel_command};
 	unless ( defined $qdel_command ) {
-    die "qdel_command isn't defined in $jobsched::Last_Sched_ID{$id}.pm";
+    die "qdel_command isn't defined in $jobsched::Last_Job{$id}{sched}.pm";
 	}
 	# execute qdel
-	my $command_string = any_to_string_spc ("$qdel_command ", $jobsched::Last_Request_ID{$id});
-	if ($jobsched::Last_Userhost_ID{$id} eq 'local') {
+	my $command_string = any_to_string_spc ("$qdel_command ", $jobsched::Last_Job{$id}{request_id});
+	if ($jobsched::Last_Job{$id}{userhost} eq 'local') {
 #        if (cmd_executable ($command_string, $self->{env})) {
 	    exec_async ($command_string);
 #        } else {
 #            warn "$command_string not executable.";
 #        }
 	} else {
-	    print "Deleting $id (request ID: $jobsched::Last_Request_ID{$id})\n";
+	    print "Deleting $id (request ID: $jobsched::Last_Job{$id}{request_id})\n";
 	    $ssh->system("$command_string") or warn $ssh->error;
 	}
     }
