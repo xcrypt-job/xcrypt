@@ -38,6 +38,7 @@ our %options = (
 
 GetOptions
     (\%options,
+     'compile_only',
      'print_log',
      'xqsub',
      'shared',
@@ -99,9 +100,13 @@ until (-e $tmp_filename) {
     sleep 1;
 }
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
-#open(my $TMP , ">", $xcrfile . '.pl') or die $!;
 my @header = split(/\.pm/, File::Spec->catfile(basename($tmp_filename)));
-open(my $TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
+my $TMP;
+if (defined $options{compile_only}) {
+    open($TMP , ">", $xcrfile . '.pl') or die $!;
+} else {
+    open($TMP , "| perl -m$header[0] - " . join(' ', @ARGV)) or die $!;
+}
 print $TMP 'package user;' . "\n";
 print $TMP 'use builtin;' . "\n";
 print $TMP 'use Coro;' . "\n";
