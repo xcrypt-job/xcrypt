@@ -1028,10 +1028,26 @@ to be written...
 \chapter{Option}\label{chapoption}
 
 %\section{\texttt{--port}}
+
 \section{\texttt{--sched}}
+
+takes a batch job scheduler.
+
 \section{\texttt{--print\_log}}
-\section{\texttt{--xqsub}}
+
+prints the log (in particular, status of job objects), in detail.
+
+\section{\texttt{--compile\_only}}
+
+only makes a Perl script from the Xcrypt scritp, and does not exec the
+Perl script.
+
+%\section{\texttt{--xqsub}}
+
 \section{\texttt{--shared}}
+
+does not copy files at a shared system in remote-execution mode.
+
 \section{\texttt{--abort\_check\_interval}}
 
 an interval of checking whether jobs are aborted or not (sec).
