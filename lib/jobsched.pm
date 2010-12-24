@@ -40,7 +40,18 @@ my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that syst
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state, request_id, signal, user@host, sched, prefix, workdir, script, stdout, and stderr in the previous Xcrypt execution)
-our %Last_Job = ();
+my %Last_Job = ();
+sub get_last_job_id         { return keys(%Last_Job);              }
+sub get_last_job_state      { return $Last_Job{$_[0]}{state};      }
+sub get_last_job_request_id { return $Last_Job{$_[0]}{request_id}; }
+sub get_last_job_signal     { return $Last_Job{$_[0]}{signal};     }
+sub get_last_job_userhost   { return $Last_Job{$_[0]}{userhost};   }
+sub get_last_job_sched      { return $Last_Job{$_[0]}{sched};      }
+sub get_last_job_prefix     { return $Last_Job{$_[0]}{prefix};     }
+sub get_last_job_workdir    { return $Last_Job{$_[0]}{workdir};    }
+sub get_last_job_script     { return $Last_Job{$_[0]}{script};     }
+sub get_last_job_stdout     { return $Last_Job{$_[0]}{stdout};     }
+sub get_last_job_stderr     { return $Last_Job{$_[0]}{stderr};     }
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
