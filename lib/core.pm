@@ -13,6 +13,7 @@ use jsconfig;
 use common;
 use file_stager;
 use builtin;
+use return_transmission;
 
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 
@@ -47,6 +48,9 @@ sub new {
     set_member_if_empty ($self, 'staging_files', file_stager->new($self));
     set_member_if_empty ($self, 'qsub_options', []);
 
+    &jobsched::set_job_initialized($self); # <- builtin.pm
+    &jobsched::set_job_prepared($self); # no diff between initialized and prepared now
+
     return bless $self, $class;
 }
 
@@ -59,7 +63,12 @@ sub start {
         # print "$self->{id}: calling qsub.\n";
         &qsub_make($self);
         # Returns request ID
-	return (&qsub($self));
+	$self->{request_id} = (&qsub($self));
+	if ($self->{env}->{host} eq $builtin::env_d->{host}) {
+	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+	} else {
+	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+	}
     }
 }
 
@@ -173,7 +182,8 @@ sub make_jobscript_body {
     	$self->{before_in_job} = $self->{'staging_files'}->stage_in_job() . $self->{before_in_job};
     }
     # Do before_in_job
-    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
+#    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
+    if ( $self->{before_in_job} or $self->{before_to_job} == 1 ) { push (@body, "perl $self->{before_in_job_file}"); } # for return_transmission
     # Execute the program
 
     my $max_of_exe = &builtin::get_max_index_of_exe(%$self);
@@ -191,7 +201,8 @@ sub make_jobscript_body {
 	}
     }
     # Do after_in_job
-    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
+#    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
+    if ( $self->{after_in_job} or $self->{after_to_job} == 1 ) { push (@body, "perl $self->{after_in_job_file}"); } # for return_transmission
     ## ステージアウトジョブを呼び出す（ステージアウトアーカイブファイルの作成）
     if (defined($self->{JS_stage_out_files})){
     	$self->{after_in_job} .= $self->{'staging_files'}->stage_out_job();
@@ -207,11 +218,39 @@ sub make_jobscript_body {
 sub make_in_job_script {
     my ($self, $memb_evalstr, $memb_script) = @_;
     my @body = ();
-    push (@body, 'use data_extractor;', 'use data_generator;');
-    push (@body, Data::Dumper->Dump([$self],['self']));
-    push (@body, $self->{$memb_evalstr});
+    push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
+    push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
+    if (exists $self->{transfer_reference_level}) {
+        push (@body, '$Data::Dumper::Maxdepth = '.$self->{transfer_reference_level}.';');
+    } else {
+        push (@body, '$Data::Dumper::Maxdepth = '. $Data::Dumper::Maxdepth .';');
+    }
+   #push (@body, Data::Dumper->Dump([$self],['self']));
+    push (@body, $self->data_dumper());
+   #push (@body, $self->{$memb_evalstr});
+    if ($memb_evalstr eq 'before_in_job' and (exists $self->{before}) and $self->{before_to_job} == 1) {
+        push (@body, '$self->return_write("before", &before($self));');
+    }
+    if (ref ($self->{$memb_evalstr}) eq 'CODE') {
+        push (@body, '$self->return_write("'.$memb_evalstr.'", &{$self->{'.$memb_evalstr.'}}());');
+    } elsif (exists $self->{$memb_evalstr}) {
+        push (@body, '$self->return_write("'.$memb_evalstr.'", $self->{'.$memb_evalstr.'});');
+    }
+    if ($memb_evalstr eq 'after_in_job' and (exists $self->{after}) and $self->{after_to_job} == 1) {
+        push (@body, '$self->return_write("after", &after($self));');
+    }
     $self->{$memb_script} = \@body;
 }
+
+# original
+#sub make_in_job_script {
+#    my ($self, $memb_evalstr, $memb_script) = @_;
+#    my @body = ();
+#    push (@body, 'use data_extractor;', 'use data_generator;');
+#    push (@body, Data::Dumper->Dump([$self],['self']));
+#    push (@body, $self->{$memb_evalstr});
+#    $self->{$memb_script} = \@body;
+#}
 
 sub make_before_in_job_script {
     my $self = shift;

@@ -34,7 +34,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'before', 'before_in_job', 'after_in_job', 'after', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
+my @allkeys = ('id', 'initially', 'before', 'before_return', 'before_bkup', 'before_in_job', 'after_in_job', 'after', 'after_return', 'after_bkup', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -546,7 +546,7 @@ sub do_initialized {
         }
     }
     &jobsched::entry_job_id ($self);
-    &jobsched::set_job_initialized($self);
+#    &jobsched::set_job_initialized($self); # -> core.pm
     return $self;
 }
 
@@ -649,9 +649,9 @@ sub prepare{
     $count = 0;
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
-    foreach (@objs) {
-        &jobsched::set_job_prepared($_);
-    }
+#    foreach (@objs) {
+#        &jobsched::set_job_prepared($_);
+#    }
     return @objs;
 }
 
@@ -816,14 +816,20 @@ sub submit {
             $self->EVERY::initially(@{$self->{VALUE}});
             ## before()
             if (check_status_for_before ($self)) {
-                #$self->EVERY::before(@{$self->{VALUE}});
-                if ($self->{before_to_job} != 1) {
-                    my $before_return = $self->EVERY::before(@{$self->{VALUE}});
-                    foreach my $key (keys %{$before_return}) {
-                        if ($key eq 'user::before' and $self->{before} ne '') {
-#                            $self->return_write("before", ${$before_return}{$key});
-                        }
+                if ($self->{before_to_job} == 1 and (exists $self->{before})) {
+                    $self->{before_bkup} = $self->{before};
+                    delete $self->{before};
+                }
+                my $before_return = $self->EVERY::before(@{$self->{VALUE}});
+                foreach my $key (keys %{$before_return}) {
+                    if ($key eq 'user::before' and $self->{before} ne '') {
+			$self->{before_return} = ${$before_return}{$key};
+                        $self->return_write("before", ${$before_return}{$key});
                     }
+                }
+                if (exists $self->{before_bkup}) {
+                    $self->{before} = $self->{before_bkup};
+                    delete $self->{before_bkup};
                 }
             }
 	    ## stage_in_local処理
@@ -833,25 +839,18 @@ sub submit {
 	    }
             ## start()
             if (check_status_for_start ($self)) {
-                $self->{request_id} = $self->start();
+                $self->start();
             }
-            ## set_job_queued()
-            if (check_status_for_set_job_queued ($self)) {
-#		if ($self->{env}->{location} eq 'local') {
-                if ($self->{env}->{host} eq $env_d->{host}) {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
-#		} elsif ($self->{env}->{location} eq 'remote') {
-                } else {
-                    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
-                }
-                &jobsched::set_job_queued($self);
-            }
-            ## If the job was 'running' in the last execution, set it's status to 'running'.
-            check_status_for_set_job_running ($self);
-            ## Waiting for the job "done"
-            if (check_status_for_wait_job_done ($self)) {
-                &jobsched::wait_job_done ($self);
-            }
+	    ## set_job_queued()
+	    if (check_status_for_set_job_queued ($self)) {
+		&jobsched::set_job_queued($self);
+	    }
+	    ## If the job was 'running' in the last execution, set it's status to 'running'.
+	    check_status_for_set_job_running ($self);
+	    ## Waiting for the job "done"
+	    if (check_status_for_wait_job_done ($self)) {
+		&jobsched::wait_job_done ($self);
+	    }
 
             ## ジョブスクリプトの最終行の処理を終えたからといって
             ## after()をしてよいとは限らないが……
@@ -869,9 +868,8 @@ sub submit {
             #     );
             # }
 
-            ## NFS が書き込んでくれる*経験的*待ち時間
-            sleep 3;
-
+	    ## NFS が書き込んでくれる*経験的*待ち時間
+	    sleep 3;
 	    ## ステージアウトファイルの展開
 	    if(defined $self->{JS_stage_out_files}){
 		$self->{'staging_files'}->stage_out_local();
@@ -882,14 +880,20 @@ sub submit {
 	    }
             ## after()
             if (check_status_for_after ($self)) {
-                #$self->EVERY::LAST::after(@{$self->{VALUE}});
-                if ($self->{after_to_job} != 1) {
-                    my $after_retrun = $self->EVERY::LAST::after(@{$self->{VALUE}});
-                    foreach my $key (keys %{$after_retrun}) {
-                        if ($key eq 'user::after' and $self->{after} ne '') {
-#                            $self->return_write("after", ${$after_retrun}{$key});
-                        }
+                if ($self->{after_to_job} == 1 and (exists $self->{after})) {
+                    $self->{after_bkup} = $self->{after};
+                    delete $self->{after};
+                }
+                my $after_return = $self->EVERY::after(@{$self->{VALUE}});
+                foreach my $key (keys %{$after_return}) {
+                    if ($key eq 'user::after' and $self->{after} ne '') {
+			$self->{after_return} = ${$after_return}{$key};
+                        $self->return_write("after", ${$after_return}{$key});
                     }
+                }
+                if (exists $self->{after_bkup}) {
+                    $self->{after} = $self->{after_bkup};
+                    delete $self->{after_bkup};
                 }
             }
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
@@ -925,7 +929,7 @@ sub prepare_submit {
     my %template = &unalias(@_);
     my @objs = &expand_make(%template);
     foreach (@objs) {
-        &jobsched::set_job_prepared($_);
+#        &jobsched::set_job_prepared($_);
         &submit($_);
     }
     return @objs;

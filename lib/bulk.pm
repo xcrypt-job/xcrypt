@@ -92,6 +92,8 @@ sub bulk {
             $bulk_job->{'after'}              = $bulk{after};
             $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
             $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
+            $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
+            $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
         }
         # return
         return (@bulk_jobs);
@@ -118,6 +120,8 @@ sub bulk {
         $bulk_job->{'after'}              = $bulk{after};
         $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
         $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
+        $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
+        $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
         # return
         return ($bulk_job);
     } else {
@@ -196,6 +200,8 @@ sub bulk {
             $bulk_job->{'after'}              = $bulk{after};
             $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
             $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
+            $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
+            $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
         }
         # return
         return (@bulk_jobs);
@@ -251,7 +257,9 @@ sub before {
     my $self = shift;
     if ($self->{exe} eq '') {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            $sub_self->before($sub_self);
+            if ($sub_self->{before_to_job} != 1) {
+                $sub_self->before($sub_self);
+            }
         }
     }
 }
@@ -261,7 +269,9 @@ sub after {
     if ($self->{exe} eq '') {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
             &set_job_status($sub_self, "done");
-            $sub_self->after($sub_self);
+            if ($sub_self->{after_to_job} != 1) {
+                $sub_self->after($sub_self);
+            }
         }
     }
 }
@@ -311,7 +321,7 @@ sub make_jobscript {
     push (@{$self->{jobscript_body}}, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
     push (@{$self->{jobscript_body}}, 'touch ' . $self->{id} . '_is_running');
     # Do before_in_job
-    if ( $self->{before_in_job} ) { push (@{$self->{jobscript_body}}, "perl $self->{before_in_job_file}"); }
+    if ( $self->{before_in_job} or $self->{before_to_job} == 1 ) { push (@{$self->{jobscript_body}}, "perl $self->{before_in_job_file}"); }
     # make_jobscript_body
     foreach my $sub_self (@{$self->{bulk_jobs}}) {
         $sub_self->make_jobscript_header($sub_self);
@@ -339,7 +349,7 @@ sub make_jobscript {
     }
     # Do after_in_job
     #push (@{$self->{jobscript_body}}, "cd $wkdir_str");
-    if ( $self->{after_in_job} ) { push (@{$self->{jobscript_body}}, "perl $self->{after_in_job_file}"); }
+    if ( $self->{after_in_job} or $self->{after_to_job} == 1 ) { push (@{$self->{jobscript_body}}, "perl $self->{after_in_job_file}"); }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     push (@{$self->{jobscript_body}}, 'touch ' . $self->{id} . '_is_done');
 }
