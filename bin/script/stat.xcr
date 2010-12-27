@@ -65,7 +65,7 @@ sub print_stat {
     my $id = shift;
     print "$id = ". &jobsched::get_last_job_state($id);
     if ( &jobsched::get_last_job_request_id($id) ) {
-	print " (request_ID=" . &jobsched::get_last_job_request_id($id) . ")";
+	print " (request_ID=" . &jobsched::get_last_job_request_id($id) . "_at_" . &jobsched::get_last_job_userhost($id) . ")";
     }
     print "\n";
     if (defined $options{'output'}) {
