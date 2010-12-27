@@ -292,7 +292,6 @@ sub add_host {
     unless (defined $env->{wd}) {
         my @wd = &xcr_qx($env, 'echo $HOME');
         chomp($wd[0]);
-        print $env->{host} . ':'. $wd[0], "\n";
         unless ($wd[0] eq '') {
             $env->{wd} = $wd[0];
         } else {
@@ -347,6 +346,11 @@ sub add_host {
         } else {
 	    $env->{queue} = ' ';
         }
+    }
+    if ( $xcropt::options{verbose} >= 3 ) {
+	foreach my $key (keys(%$env)) {
+	    print $key . ': ' . $env->{$key} . "\n";
+	}
     }
     push(@Env, $env);
     return $env;
