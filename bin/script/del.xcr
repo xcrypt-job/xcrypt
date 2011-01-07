@@ -6,13 +6,13 @@ use Net::OpenSSH;
 
 our %options = ();
 
-my %keys = ('help' => '      show all the options',
-	    'all' => "       delete all the jobs",
-	    'clean' => "     delete all the jobs and clean the history",
-	    'cancel' => "    the same as abort",
-	    'invalidate' => "the same as finish",
-	    'abort' => "     delete jobs with making aborted",
-	    'finish' => "    delete jobs with making finished",
+my %keys = ('help' => '        show all the options',
+	    'all' => "         delete all the jobs",
+	    'clean' => "       delete all the jobs and clean the history",
+	    'cancel' => "      the same as uninitialized",
+	    'invalidate' => "  the same as finish",
+	    'uninitialize' => "delete jobs with making uninitialized",
+	    'finish' => "      delete jobs with making finished",
     );
 GetOptions(\%options, keys(%keys));
 
@@ -45,14 +45,14 @@ sub del {
     &qdel($id);
     print "$id is deleted by user.\n";
     if ($options{'invalidate'} || $options{'finish'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_aborted');
+	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_uninitialized');
 	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_finished'));
 	print "$id is finished by user.\n";
     }
-    if ($options{'cancel'} || $options{'abort'}) {
+    if ($options{'cancel'} || $options{'uninitialize'}) {
 	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_finished');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_aborted'));
-	print "$id is aborted by user.\n";
+	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_uninitialized'));
+	print "$id is uninitialized by user.\n";
     }
 }
 
