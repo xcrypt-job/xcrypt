@@ -34,7 +34,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'before', 'before_return', 'before_bkup', 'before_in_job', 'after_in_job', 'after', 'after_return', 'after_bkup', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
+my @allkeys = ('id', 'initially', 'before', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return', 'after_in_job', 'after_in_xcrypt', 'after_in_xcrypt_return', 'after', 'after_return', 'after_bkup', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -818,6 +818,16 @@ sub submit {
                 Coro::terminate();
             }
             $self->EVERY::initially(@{$self->{VALUE}});
+            ## before_in_xcrypt()
+#            if (check_status_for_before ($self)) {
+                my $before_in_xcrypt_return = $self->EVERY::before_in_xcrypt(@{$self->{VALUE}});
+                foreach my $key (keys %{$before_in_xcrypt_return}) {
+                    if ($key eq 'user::before_in_xcrypt' and $self->{before_in_xcrypt} ne '') {
+			$self->{before_in_xcrypt_return} = ${$before_in_xcrypt_return}{$key};
+                        $self->return_write("before_in_xcrypt", ${$before_in_xcrypt_return}{$key});
+                    }
+                }
+#            }
             ## before()
             if (check_status_for_before ($self)) {
                 if ($self->{before_to_job} == 1 and (exists $self->{before})) {
@@ -900,6 +910,17 @@ sub submit {
                     delete $self->{after_bkup};
                 }
             }
+            ## after_in_xcrypt()
+#            if (check_status_for_after ($self)) {
+                my $after_in_xcrypt_return = $self->EVERY::after_in_xcrypt(@{$self->{VALUE}});
+                foreach my $key (keys %{$after_in_xcrypt_return}) {
+                    if ($key eq 'user::after_in_xcrypt' and $self->{after_in_xcrypt} ne '') {
+			$self->{after_in_xcrypt_return} = ${$after_in_xcrypt_return}{$key};
+                        $self->return_write("after_in_xcrypt", ${$after_in_xcrypt_return}{$key});
+                    }
+                }
+#            }
+
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {
                 &jobsched::set_job_finished($self);

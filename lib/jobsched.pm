@@ -326,18 +326,16 @@ sub read_log {
             chomp;
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
-#print "$id: $stat\n";
                 $Last_Job{$id}{state} = $stat;
             } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
-                my ($id, $req_id, $userhost, $sched, $prefix, $wd, $script, $stdout, $stderr) = ($1, $2, $3, $4, $5, $6, $7, $8, $9);
-                $Last_Job{$id}{request_id} = $req_id;
-                $Last_Job{$id}{userhost} = $userhost;
-                $Last_Job{$id}{sched} = $sched;
-                $Last_Job{$id}{prefix} = $prefix;
-                $Last_Job{$id}{workdir} = $wd;
-                $Last_Job{$id}{script} = $script;
-                $Last_Job{$id}{stdout} = $stdout;
-                $Last_Job{$id}{stderr} = $stderr;
+                $Last_Job{$1}{request_id} = $2;
+                $Last_Job{$1}{userhost}   = $3;
+                $Last_Job{$1}{sched}      = $4;
+                $Last_Job{$1}{prefix}     = $5;
+                $Last_Job{$1}{workdir}    = $6;
+                $Last_Job{$1}{script}     = $7;
+                $Last_Job{$1}{stdout}     = $8;
+                $Last_Job{$1}{stderr}     = $9;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
                 if ( $sig eq 'unset' ) {
@@ -607,15 +605,15 @@ sub left_signal_message_check {
             my $self = find_job_by_id ($id);
             print "$id $sig:\n";
             if ($self) {
-                if ( $sig eq 'cancelled' || $sig eq 'aborted' ) {
+                if ( $sig eq 'cancelled' || $sig eq 'uninitialized' ) {
                     $self->cancel();
                     unlink ($sigmsg);
                 } elsif ( $sig eq 'invalidated' || $sig eq 'finished' ) {
                     $self->invalidate();
                     unlink ($sigmsg);
-#                } elsif ( $sig eq 'aborted' ) {
-#                    $self->abort();
-#                    unlink ($sigmsg);
+                } elsif ( $sig eq 'aborted' ) {
+                    $self->abort();
+                    unlink ($sigmsg);
 		}
             }
         }
