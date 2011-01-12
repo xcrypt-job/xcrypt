@@ -37,7 +37,7 @@ sub new {
     ## Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    if ($xcropt::options{'xqsub'}) {
+    if (defined $xcropt::options{'xqsub'}) {
 	set_member_if_empty ($self, 'jobscript_file', "$self->{id}_generic.sh");
     } else {
 	set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
@@ -102,7 +102,7 @@ sub make_jobscript_header {
     my $self = shift;
     my @header = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{xqsub}) {
+    if (defined $xcropt::options{xqsub}) {
 	%cfg = %{$jsconfig::jobsched_config{"generic"}};
     }
     ## preamble
@@ -148,7 +148,7 @@ sub make_jobscript_body {
     my $self = shift;
     my @body = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{xqsub}) {
+    if (defined $xcropt::options{xqsub}) {
 	%cfg = %{$jsconfig::jobsched_config{"generic"}};
     }
     ## Job script body
@@ -308,7 +308,7 @@ sub make_qsub_options {
     my $self = shift;
     my @contents = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{xqsub}) {
+    if (defined $xcropt::options{xqsub}) {
 	%cfg = %{$jsconfig::jobsched_config{"generic"}};
     }
     foreach my $k (keys %cfg) {
@@ -345,7 +345,7 @@ sub qsub_make {
 	die "$sched.pm doesn't exist in lib/config";
     }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
-    if ($xcropt::options{xqsub}) {
+    if (defined $xcropt::options{xqsub}) {
 	%cfg = %{$jsconfig::jobsched_config{"generic"}};
     }
 
@@ -372,8 +372,8 @@ sub qsub {
     my $sched = $self->{env}->{sched};
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
-    if ($xcropt::options{xqsub}) {
-	$qsub_command = "xqsub --to $sched";
+    if (defined $xcropt::options{xqsub}) {
+	$qsub_command = "xqsub --site $xcropt::options{xqsub} --  ";
     }
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";

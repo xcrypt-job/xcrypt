@@ -1029,7 +1029,7 @@ to be written...
 
 %\section{\texttt{--port}}
 
-\section{\texttt{--sched}}
+\section{\texttt{--sched} \textit{job\_scheduler}}
 
 takes a batch job scheduler.
 
@@ -1042,37 +1042,40 @@ prints the log (in particular, status of job objects), in detail.
 only makes a Perl script from the Xcrypt scritp, and does not exec the
 Perl script.
 
-%\section{\texttt{--xqsub}}
-
 \section{\texttt{--shared}}
 
 does not copy files at a shared system in remote-execution mode.
 
-\section{\texttt{--abort\_check\_interval}}
+\section{\texttt{--xqsub} \textit{site}}
+
+use Xqsub internally (\textit{site} in config).
+
+\section{\texttt{--abort\_check\_interval} \textit{num}}
 
 an interval of checking whether jobs are aborted or not (sec).
 
-\section{\texttt{--left\_message\_check\_interval}}
+\section{\texttt{--left\_message\_check\_interval} \textit{num}}
 
 an interval of checking what states jobs have (sec).
 
-\section{\texttt{--inventory\_path}}
+\section{\texttt{--inventory\_path} \textit{path}}
 
 a path at that logs are located.
 
-\section{\texttt{--verbose}}
-\section{\texttt{--stack\_size}}
+\section{\texttt{--verbose} \textit{num}}
 
-\section{\texttt{--host}}
+\section{\texttt{--stack\_size} \textit{num}}
+
+\section{\texttt{--host} \textit{username@hostname}}
 
 a host to that jobs are submitted.
 
-\section{\texttt{--wd}}
+\section{\texttt{--wd} \textit{path}}
 
 a working directory in that Xcrypt is executed at a remote host.
 
-\section{\texttt{--xd}}
-\section{\texttt{--p5l}}
+\section{\texttt{--xd} \textit{path}}
+\section{\texttt{--p5l} \textit{path}}
 \section{\texttt{--scratch}}
 
 executes Xcrypt without recovering the states of jobs in the previous
