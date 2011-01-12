@@ -14,10 +14,29 @@ $jsconfig::jobsched_config{"generic"} = {
 #   jobscript_option_memory => '# @$-lm ',
 #    jobscript_option_limit_time => '# @$-cp ',
 #    jobscript_option_limit_cputime => '# @$-lT ',
-    jobscript_option_queue => '#XBS--queue ',
-    jobscript_option_group => '#XBS--group ',
+    jobscript_option_queue => '#XBS --queue ',
+    jobscript_option_group => '#XBS --group ',
     # non-standard options
 #    jobscript_option_stack => '# @$-ls ',
 #    jobscript_option_verbose => boolean_option ('# @$-oi'),
 #    jobscript_option_verbose_node => boolean_option ('# @$-OI'),
+    # Extract from output messages
+    extract_req_id_from_qsub_output => sub {
+        my (@lines) = @_;
+        if ($lines[0] =~ /([0-9]*)\.nqs/) {
+            return $1;
+        } else {
+            return -1;
+        }
+    },
+    extract_req_ids_from_qstat_output => sub {
+        my (@lines) = @_;
+        my @ids = ();
+        foreach (@lines) {
+            if ($_ =~ /([0-9]+)\.nqs/) {
+                push (@ids, $1);
+            }
+        }
+        return @ids;
+    },
 };

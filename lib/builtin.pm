@@ -34,7 +34,9 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'before', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return', 'after_in_job', 'after_in_xcrypt', 'after_in_xcrypt_return', 'after', 'after_return', 'after_bkup', 'finally', 'env', 'before_to_job', 'after_to_job', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info');
+my @allkeys = ('id', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
+'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
+'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return');
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
