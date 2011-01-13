@@ -41,7 +41,7 @@ GetOptions
      'compile_only',
      'print_log',
      'xbs-auto',
-     'xbs=s',
+     'xbs-site=s',
      'shared',
      'scratch',
      #
@@ -65,9 +65,9 @@ GetOptions
     );
 
 if (defined $options{'xbs-auto'}) {
-    $options{xbs} = $options{sched};
+    $options{'xbs-site'} = $options{sched};
 }
-if (defined $options{xbs}) {
+if (defined $options{'xbs-site'}) {
     $options{sched} = 'XBS';
 }
 

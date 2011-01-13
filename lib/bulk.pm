@@ -298,8 +298,8 @@ sub set_job_status {
 sub make_jobscript {
     my $self = shift;
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{xbs}) {
-        %cfg = %{$jsconfig::jobsched_config{"xbs"}};
+    if ($xcropt::options{'xbs-site'}) {
+        %cfg = %{$jsconfig::jobsched_config{"xbs-site"}};
     }
     # make_jobscript_header
     $self->make_jobscript_header($self);
@@ -329,7 +329,7 @@ sub make_jobscript {
         #push (@{$self->{jobscript_body}}, @{$sub_self->{jobscript_body}});
         
         my %sub_cfg = %{$jsconfig::jobsched_config{$sub_self->{env}->{sched}}};
-        if ($xcropt::options{xbs}) {
+        if ($xcropt::options{'xbs-site'}) {
             %sub_cfg = %{$jsconfig::jobsched_config{"XBS"}};
         }
         # Chdir to the job's working directory
