@@ -83,7 +83,7 @@ sub qdel {
 	}
 	if ((&jobsched::get_last_job_state($id) eq 'queued') ||
 	    (&jobsched::get_last_job_state($id) eq 'running')) {
-	    my $qdel_command = $jsconfig::jobsched_config{&jobsched::get_last_job_state($id)}{qdel_command};
+	    my $qdel_command = $jsconfig::jobsched_config{&jobsched::get_last_job_sched($id)}{qdel_command};
 	    unless ( defined $qdel_command ) {
 		die "qdel_command isn't defined in " . &jobsched::get_last_job_sched($id) . '.pm';
 	    }
