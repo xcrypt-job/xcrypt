@@ -128,6 +128,7 @@ print $TMP 'sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$sel
 print $TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
 print $TMP 'sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}' . "\n";
 print $TMP 'sub after_in_xcrypt  {local ($self, @VALUE) = @_; if ($self->{after_in_xcrypt} ) {&{$self->{after_in_xcrypt}}($self, @VALUE)};}' . "\n";
+print $TMP '$SIG{INT} = sub {(bless{},"user")->EVERY::sigint_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};'. "\n";
 print $TMP '# Up to here Xcrypt\'s header.  From here your script.' . "\n";
 print $TMP 'unless ($xcropt::options{scratch}) { &jobsched::read_log(); }' . "\n";
 print $TMP '&jobsched::invoke_abort_check();' . "\n";

@@ -40,6 +40,11 @@ use base qw(sandbox core);
     'after_to_job' => 0,
 );
 
+# If defined, called when ^C is pressed.
+sub sigint_handler {
+  print "User's SIGINT handler is called.\n";
+}
+
 my @jobs = &prepare(%template1);
 &submit(@jobs);
 &sync(@jobs);
