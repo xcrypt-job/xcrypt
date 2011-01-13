@@ -3,6 +3,10 @@ use config_common;
 use File::Spec;
 
 $jsconfig::jobsched_config{"generic"} = {
+    # commands
+    qsub_command => "xqsub",
+    qdel_command => "xqdel",
+    qstat_command => "xqstat",
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
 #    jobscript_workdir => sub { File::Spec->catfile('$QSUB_WORKDIR'); },
@@ -16,6 +20,9 @@ $jsconfig::jobsched_config{"generic"} = {
 #    jobscript_option_limit_cputime => '# @$-lT ',
     jobscript_option_queue => '#XBS --queue ',
     jobscript_option_group => '#XBS --group ',
+    qsub_option_site => sub { '--site ' . $xcropt::options{xbs} . ' -- '; },
+    qdel_option_site => sub { '--site ' . $xcropt::options{xbs} . ' '; },
+    qstat_option_site => sub { '--site ' . $xcropt::options{xbs} . ' '; },
     # non-standard options
 #    jobscript_option_stack => '# @$-ls ',
 #    jobscript_option_verbose => boolean_option ('# @$-oi'),

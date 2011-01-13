@@ -37,11 +37,7 @@ sub new {
     ## Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    if (defined $xcropt::options{'xqsub'}) {
-	set_member_if_empty ($self, 'jobscript_file', "$self->{id}_generic.sh");
-    } else {
-	set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
-    }
+    set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
     # file staging information
@@ -102,9 +98,6 @@ sub make_jobscript_header {
     my $self = shift;
     my @header = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if (defined $xcropt::options{xqsub}) {
-	%cfg = %{$jsconfig::jobsched_config{"generic"}};
-    }
     ## preamble
     my $preamble = $cfg{jobscript_preamble};
     if ( ref($preamble) eq 'CODE' ) {
@@ -148,9 +141,6 @@ sub make_jobscript_body {
     my $self = shift;
     my @body = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if (defined $xcropt::options{xqsub}) {
-	%cfg = %{$jsconfig::jobsched_config{"generic"}};
-    }
     ## Job script body
     # Chdir to the job's working directory
     my $wkdir_str = File::Spec->catfile($self->{env}->{wd}, $self->{workdir});
@@ -308,9 +298,6 @@ sub make_qsub_options {
     my $self = shift;
     my @contents = ();
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if (defined $xcropt::options{xqsub}) {
-	%cfg = %{$jsconfig::jobsched_config{"generic"}};
-    }
     foreach my $k (keys %cfg) {
         if ( $k =~ /^qsub_option_(.*)/ ) {
             my $v = $cfg{$k};
@@ -345,9 +332,6 @@ sub qsub_make {
 	die "$sched.pm doesn't exist in lib/config";
     }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
-    if (defined $xcropt::options{xqsub}) {
-	%cfg = %{$jsconfig::jobsched_config{"generic"}};
-    }
 
     # Create JobScript & qsub options
     $self->make_jobscript();
@@ -372,9 +356,7 @@ sub qsub {
     my $sched = $self->{env}->{sched};
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
-    if (defined $xcropt::options{xqsub}) {
-	$qsub_command = "xqsub --site $xcropt::options{xqsub} --  ";
-    }
+
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
@@ -415,7 +397,6 @@ sub qsub {
 sub qdel {
     my ($self) = @_;
     # qdelコマンドをconfigから獲得
-#    my $qdel_command = $jsconfig::jobsched_config{$ENV{XCRJOBSCHED}}{qdel_command};
     my $qdel_command = $jsconfig::jobsched_config{$self->{env}->{sched}}{qdel_command};
     unless ( defined $qdel_command ) {
         die "qdel_command is not defined in $self->{env}->{sched}.pm";
