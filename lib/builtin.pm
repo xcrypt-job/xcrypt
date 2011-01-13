@@ -300,12 +300,6 @@ sub add_host {
             die "Set the key wd at $env->{host}\n";
         }
     }
-# left_messages 方式と _to_be_ 関連をローカルに保存することより不要になった
-    # unless ($env->{host} eq $env_d->{host}) {
-    # 	unless ($xcropt::options{shared}) {
-    # 	    &rmt_mkdir($env, $xcropt::options{inventory_path});
-    # 	}
-    # }
     unless (defined $env->{xd}) {
         my @xd = &xcr_qx($env, 'echo $XCRYPT');
         chomp($xd[0]);

@@ -298,7 +298,7 @@ sub set_job_status {
 sub make_jobscript {
     my $self = shift;
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{xqsub}) {
+    if ($xcropt::options{xbs}) {
         %cfg = %{$jsconfig::jobsched_config{"generic"}};
     }
     # make_jobscript_header
@@ -329,7 +329,7 @@ sub make_jobscript {
         #push (@{$self->{jobscript_body}}, @{$sub_self->{jobscript_body}});
         
         my %sub_cfg = %{$jsconfig::jobsched_config{$sub_self->{env}->{sched}}};
-        if ($xcropt::options{xqsub}) {
+        if ($xcropt::options{xbs}) {
             %sub_cfg = %{$jsconfig::jobsched_config{"generic"}};
         }
         # Chdir to the job's working directory
