@@ -1,8 +1,8 @@
-# Config file for Generic
+# Config file for XBS
 use config_common;
 use File::Spec;
 
-$jsconfig::jobsched_config{"generic"} = {
+$jsconfig::jobsched_config{"XBS"} = {
     # commands
     qsub_command => "xqsub",
     qdel_command => "xqdel",
