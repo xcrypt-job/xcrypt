@@ -20,9 +20,9 @@ $jsconfig::jobsched_config{"XBS"} = {
 #    jobscript_option_limit_cputime => '# @$-lT ',
     jobscript_option_queue => '#XBS --queue ',
     jobscript_option_group => '#XBS --group ',
-    qsub_option_site => sub { '--site ' . $xcropt::options{xbs} . ' -- '; },
-    qdel_option_site => sub { '--site ' . $xcropt::options{xbs} . ' '; },
-    qstat_option_site => sub { '--site ' . $xcropt::options{xbs} . ' '; },
+    qsub_option_site => sub { '--site ' . $xcropt::options{'xbs-site'} . ' -- '; },
+    qdel_option_site => sub { '--site ' . $xcropt::options{'xbs-site'} . ' '; },
+    qstat_option_site => sub { '--site ' . $xcropt::options{'xbs-site'} . ' '; },
     # non-standard options
 #    jobscript_option_stack => '# @$-ls ',
 #    jobscript_option_verbose => boolean_option ('# @$-oi'),
