@@ -5,7 +5,7 @@ use File::Spec;
 $jsconfig::jobsched_config{"t2k_kyoto"} = {
     # commands
     qsub_command => "/thin/local/bin/qsub",
-    qdel_command => "/usr/bin/qdel -K",
+    qdel_command => '/usr/bin/qdel -K',
     qstat_command => "/thin/local/bin/qstat",
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
