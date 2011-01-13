@@ -40,6 +40,7 @@ GetOptions
     (\%options,
      'compile_only',
      'print_log',
+     'xbs-auto',
      'xbs=s',
      'shared',
      'scratch',
@@ -63,6 +64,9 @@ GetOptions
      # define other command-line options...
     );
 
+if (defined $options{'xbs-auto'}) {
+    $options{xbs} = $options{sched};
+}
 if (defined $options{xbs}) {
     $options{sched} = 'XBS';
 }
