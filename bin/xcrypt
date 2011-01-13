@@ -26,8 +26,8 @@ our %options = (
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
 #    'p5l' => $ENV{PERL5LIB},
-    'sched' => $ENV{XCRJOBSCHED},
-    'queue' => $ENV{XCRQUEUE},
+    'sched' => undef,
+    'queue' => undef,
     #
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
 #    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
@@ -87,11 +87,13 @@ if (-e $cfg_file) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq $options{ini}) {
 	    my $real_key = $for_getting_real_key[1];
-	    $options{"$real_key"} = $cfg{"$key"};
+	    unless (defined $options{"$real_key"}) {
+		$options{"$real_key"} = $cfg{"$key"};
+	    }
 	}
     }
 } else {
-    warn '$XCRJOBSCHED and $XCRQUEUE are obsolete.  Use $HOME/.xcryptrc.  In detail, see the manual';
+    warn '$XCRJOBSCHED and $XCRQUEUE are obsolete.  Use $HOME/.xcryptrc';
 }
 
 if (defined $options{'xbs-auto'}) {
