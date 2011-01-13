@@ -299,7 +299,7 @@ sub make_jobscript {
     my $self = shift;
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
     if ($xcropt::options{xbs}) {
-        %cfg = %{$jsconfig::jobsched_config{"XBS"}};
+        %cfg = %{$jsconfig::jobsched_config{"xbs"}};
     }
     # make_jobscript_header
     $self->make_jobscript_header($self);
