@@ -10,6 +10,9 @@ use File::Basename;
 use Getopt::Long qw(:config pass_through);
 use Data::Dumper;
 
+use lib ("$ENV{XCRYPT}/lib/cpan");
+use Config::Simple;
+
 my $localhost = qx/hostname/;
 chomp $localhost;
 my $username = qx/whoami/;
@@ -18,6 +21,7 @@ my $wd = Cwd::getcwd();
 
 our %options = (
 #    'localhost' => $localhost,  # Obsolete
+    'ini' => 'default',
     'host' => $username . '@' . $localhost,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
@@ -38,10 +42,11 @@ our %options = (
 
 GetOptions
     (\%options,
+     'ini=s',
      'compile_only',
      'print_log',
      'xbs-auto',
-     'xbs-site=s',
+     'xbs-type=s',
      'shared',
      'scratch',
      #
@@ -64,10 +69,35 @@ GetOptions
      # define other command-line options...
     );
 
-if (defined $options{'xbs-auto'}) {
-    $options{'xbs-site'} = $options{sched};
+my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
+    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
+    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan') . ':'
+    . File::Spec->catfile($options{inventory_path});
+if (defined $ENV{PERL5LIB}) {
+    $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':' . $added_path;
+} else {
+    $ENV{PERL5LIB} = $added_path;
 }
-if (defined $options{'xbs-site'}) {
+
+my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
+if (-e $cfg_file) {
+    my $cfg_obj = new Config::Simple($cfg_file);
+    my %cfg = $cfg_obj->vars();
+    foreach my $key (keys %cfg) {
+	my @for_getting_real_key = split(/\./, $key);
+	if ($for_getting_real_key[0] eq $options{ini}) {
+	    my $real_key = $for_getting_real_key[1];
+	    $options{"$real_key"} = $cfg{"$key"};
+	}
+    }
+} else {
+    warn '$XCRJOBSCHED and $XCRQUEUE are obsolete.  Use $HOME/.xcryptrc.  In detail, see the manual';
+}
+
+if (defined $options{'xbs-auto'}) {
+    $options{'xbs-type'} = $options{sched};
+}
+if (defined $options{'xbs-type'}) {
     $options{sched} = 'XBS';
 }
 
@@ -84,16 +114,6 @@ foreach my $i (@ARGV) {
 @ARGV = @argv;
 if (File::Spec->catfile(basename($xcrfile)) !~ /\.xcr\Z/) {
     die "The file extension should be .xcr\n";
-}
-
-my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
-    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
-    . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan') . ':'
-    . File::Spec->catfile($options{inventory_path});
-if (defined $ENV{PERL5LIB}) {
-    $ENV{PERL5LIB} = $ENV{PERL5LIB} . ':' . $added_path;
-} else {
-    $ENV{PERL5LIB} = $added_path;
 }
 
 mkdir $options{inventory_path}, 0755;

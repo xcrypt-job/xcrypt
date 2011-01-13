@@ -60,7 +60,7 @@ job, and supports users to process jobs easily.
 
 \section{Environment}
 
-Xcrypt requires Perl ($\geq$ 5.10.0) and a superset of Bourne shell.
+Xcrypt requires Perl ($\geq$ 5.8.5) and a superset of Bourne shell.
 
 \if0
 , and Perl/Tk 8.4 for GUI.
@@ -68,7 +68,9 @@ Xcrypt requires Perl ($\geq$ 5.10.0) and a superset of Bourne shell.
 
 Xcrypt also requires the following outer modules:
 \begin{itemize}
+\item Sherzod Ruzmetov's Config-Simple,
 \item Marc Lehmann's Coro (where conftest.c is not contained), EV,
+\item Gurusamy Sarathy's Data-Dumper,
 \item Graham Barr's Error,
 \item Joshua Nathaniel Pritikin's Event,
 \item Salvador Fandi\~no's Net-OpenSSH,
@@ -246,11 +248,23 @@ Then, continue the following installation procedure:
 
 \section{Execution}
 
-Set \texttt{XCRJOBSCHED}\footnote{\texttt{SGE}, \texttt{t2k\_tsukuba},
-\texttt{t2k\_tokyo}, \texttt{t2k\_kyoto}, and \texttt{sh} are available.
-In the case of \texttt{sh}, jobs are dealt with as processes in OS.
-The default is \texttt{sh}} to your job scheduler.  Optionally, set
-\texttt{XCRQUEUE} as the default queue.
+Edit \texttt{\$HOME/.xcryptrc} as follows,
+\begin{boxnote}
+\begin{verbatim}
+[default]
+sched = t2k_kyoto
+queue = eh
+[special]
+sched = t2k_kyoto
+queue = ocuppied
+\end{verbatim}
+\end{boxnote}
+\noindent
+along your environment\footnote{\texttt{SGE}, \texttt{t2k\_tsukuba},
+\texttt{t2k\_tokyo}, \texttt{t2k\_kyoto}, and \texttt{sh} are
+available.  In the case of \texttt{sh}, jobs are dealt with as
+processes in OS.  The default is \texttt{sh}}.
+
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
@@ -1041,6 +1055,10 @@ to be written...
 
 %\section{\texttt{--port}}
 
+\section{\texttt{--ini} \textit{entry}}
+
+uses the entry in \texttt{\$HOME/.xcryptrc} as config.
+
 \section{\texttt{--sched} \textit{job\_scheduler}}
 
 takes a batch job scheduler.
@@ -1058,7 +1076,7 @@ Perl script.
 
 does not copy files at a shared system in remote-execution mode.
 
-\section{\texttt{--xbs-site} \textit{site}}
+\section{\texttt{--xbs-type} \textit{type}}
 
 use Keiji Yamamoto's XBS\footnote{\texttt{http://www.il.is.s.u-tokyo.ac.jp/\~{}yamamoto/xbs/}} internally (\textit{site} in config).
 
