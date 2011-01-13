@@ -64,7 +64,7 @@ GetOptions
     );
 
 if (defined $options{xbs}) {
-    $options{sched} = 'generic';
+    $options{sched} = 'XBS';
 }
 
 my $xcrfile;

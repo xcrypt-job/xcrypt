@@ -299,7 +299,7 @@ sub make_jobscript {
     my $self = shift;
     my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
     if ($xcropt::options{xbs}) {
-        %cfg = %{$jsconfig::jobsched_config{"generic"}};
+        %cfg = %{$jsconfig::jobsched_config{"XBS"}};
     }
     # make_jobscript_header
     $self->make_jobscript_header($self);
@@ -330,7 +330,7 @@ sub make_jobscript {
         
         my %sub_cfg = %{$jsconfig::jobsched_config{$sub_self->{env}->{sched}}};
         if ($xcropt::options{xbs}) {
-            %sub_cfg = %{$jsconfig::jobsched_config{"generic"}};
+            %sub_cfg = %{$jsconfig::jobsched_config{"XBS"}};
         }
         # Chdir to the job's working directory
         my $sub_wkdir_str = File::Spec->catfile($sub_self->{env}->{wd}, $sub_self->{workdir});
