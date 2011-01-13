@@ -8,13 +8,25 @@
 \usepackage{tascmac}
 \usepackage{alltt}
 %\usepackage[all]{xy}
+\usepackage[dvipdfm,bookmarks=true,%
+  bookmarksnumbered=true,% しおりに見出し番号をつける
+  bookmarksopen=true,% しおりのツリーを開く
+  breaklinks=true,% ハイパーリンクが複数行にまたがってもよい
+  colorlinks=false,% ハイパーリンクを枠ではなく文字に色をつけて表現
+  linkcolor=red,%
+  citecolor=green,%
+  bookmarksopen=true,% PDFしおりを展開
+  pdfstartview=FitH,%
+  bookmarkstype=toc,% PDFしおりに使うべき目次情報
+  pdftitle={Xcrypt Manual},%
+  pdfauthor={E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}]{hyperref}
 
 %
 \def\|{\verb|} %|
 %
 
 \title{Xcrypt Manual}
-\author{E-Science Group, Nakashima Laboratory, Kyoto University}
+\author{E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}
 
 \begin{document}
 \maketitle
@@ -1419,6 +1431,28 @@ In the module \|core|, \|start| is defined.  The \|start| creates a
 job script and submits the job to a job scheduler.  Note that this
 required procedure is skipped unless \|start|s in children classes call
 the \|start| in the \|core|.
+
+\subsection{\texttt{before\_in\_job}}
+
+The definition of this method is serialized (using the Data::Dumper
+module), sent to a job execution node, and interpreted and invoked by
+the Perl process executed in the node just {\em before} executing
+\texttt{exe}\textit{i}.  The job object is also serialized and passed
+to the method as its argument. A global variable defined in (local)
+Xcrypt is referred to only if it is specified by the
+\texttt{transfer\_variable} job template member.  Updates of the
+transferred variable are not reflected to the Xcrypt process.
+
+\subsection{\texttt{after\_in\_job}}
+
+The definition of this method is serialized (using the Data::Dumper
+module), sent to a job execution node, and interpreted and invoked by
+the Perl process executed in the node just {\em after} executing
+\texttt{exe}\textit{i}.  The job object is also serialized and passed
+to the method as its argument. A global variable defined in (local)
+Xcrypt is referred to only if it is specified by the
+\texttt{transfer\_variable} job template member.  Updates of the
+transferred variable are not reflected to the Xcrypt process.
 
 \if0
 \subsection{\texttt{after\_isready}}
