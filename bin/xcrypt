@@ -93,26 +93,21 @@ if (defined $options{'xbs-type'}) {
     $options{sched} = 'XBS';
 }
 
-
-foreach my $cfg_file (
-    File::Spec->catfile($ENV{HOME}, '.xcryptrc'),
-    File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc')
-    ) {
-    if (-e $cfg_file) {
-	my $cfg_obj = new Config::Simple($cfg_file);
-	my %cfg = $cfg_obj->vars();
-	foreach my $key (keys %cfg) {
-	    my @for_getting_real_key = split(/\./, $key);
-	    if ($for_getting_real_key[0] eq $options{ini}) {
-		my $real_key = $for_getting_real_key[1];
-		unless (defined $options{"$real_key"}) {
-		    $options{"$real_key"} = $cfg{"$key"};
-		}
-	    }
-	}
-	print "Loading $cfg_file.\n";
+my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
+unless (-e $cfg_file) {
+    $cfg_file = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
+}
+my $cfg_obj = new Config::Simple($cfg_file);
+my %cfg = $cfg_obj->vars();
+foreach my $key (keys %cfg) {
+    my @for_getting_real_key = split(/\./, $key);
+    my $real_key = $for_getting_real_key[1];
+    unless (defined $options{"$real_key"}) {
+	$options{"$real_key"} = $cfg{"$key"};
     }
 }
+print "Loading $cfg_file.\n";
+
 
 my $xcrfile;
 my @argv;
