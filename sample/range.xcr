@@ -9,7 +9,7 @@ use base qw(sandbox core);
 #    'RANGES' => [[45],[0],[0]],
     'JS_cpu' => 1,
     'JS_memory' => '1GB',
-    'JS_queue' => 'gh10034',
+#    'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'JS_limit_time' => 60,
     'before_in_xcrypt' => sub { my $self = shift;
