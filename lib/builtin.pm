@@ -10,6 +10,7 @@ prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander get_expander set_separator get_separator check_separator nocheck_separator
 filter
+set_template_of_template
 );
 
 use strict;
@@ -22,6 +23,7 @@ use Cwd;
 use Data::Dumper;
 use File::Basename;
 use Net::OpenSSH;
+use Config::Simple;
 
 # use jobsched;
 #use xcropt;
@@ -550,9 +552,36 @@ sub do_initialized {
     return $self;
 }
 
+sub set_template_of_template {
+    my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
+    unless (-e $cfg_file) {
+	$cfg_file = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
+    }
+    my $cfg_obj = new Config::Simple($cfg_file);
+    my %cfg = $cfg_obj->vars();
+    foreach my $key (keys %cfg) {
+	my @for_getting_real_key = split(/\./, $key);
+	if ($for_getting_real_key[0] eq 'template') {
+	    my $real_key = $for_getting_real_key[1];
+	    $user::template_of_template{"$key"} = $cfg{"$key"};
+	}
+    }
+    print "Loading $cfg_file.\n";
+}
+
 sub unalias {
     my %job = @_;
 
+    foreach my $key (keys %user::template_of_template) {
+	my @for_getting_real_key = split(/\./, $key);
+	if ($for_getting_real_key[0] eq 'template') {
+	    unless (defined $job{$for_getting_real_key[1]}) {
+		$job{$for_getting_real_key[1]} = $user::template_of_template{$key};
+	    }
+	}
+    }
+
+    foreach (%job) { print $_ , "\n";}
     if ($job{exe}) {
         $job{exe0} = $job{exe};
         delete($job{exe});

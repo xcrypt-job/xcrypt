@@ -101,9 +101,11 @@ my $cfg_obj = new Config::Simple($cfg_file);
 my %cfg = $cfg_obj->vars();
 foreach my $key (keys %cfg) {
     my @for_getting_real_key = split(/\./, $key);
-    my $real_key = $for_getting_real_key[1];
-    unless (defined $options{"$real_key"}) {
-	$options{"$real_key"} = $cfg{"$key"};
+    if ($for_getting_real_key[0] eq 'environment') {
+	my $real_key = $for_getting_real_key[1];
+	unless (defined $options{"$real_key"}) {
+	    $options{"$real_key"} = $cfg{"$key"};
+	}
     }
 }
 print "Loading $cfg_file.\n";
@@ -151,6 +153,8 @@ print $TMP 'use jobsched;' . "\n";
 print $TMP 'use data_generator;' . "\n";
 print $TMP 'use data_extractor;' . "\n";
 print $TMP 'our @VALUE = ();' . "\n";
+print $TMP 'our %template_of_template;' . "\n";
+print $TMP '&set_template_of_template();' . "\n";
 print $TMP 'sub before_in_xcrypt {local ($self, @VALUE) = @_; if ($self->{before_in_xcrypt}) {&{$self->{before_in_xcrypt}}($self, @VALUE)};}' . "\n";
 print $TMP 'sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}' . "\n";
 print $TMP 'sub start  {my $self = shift;$self->SUPER::start();}' . "\n";
