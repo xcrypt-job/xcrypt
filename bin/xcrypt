@@ -93,7 +93,12 @@ if (-e $cfg_file) {
 	}
     }
 } else {
-    warn '$XCRJOBSCHED and $XCRQUEUE are obsolete.  Use $HOME/.xcryptrc';
+    unless (defined $options{sched}) {
+	warn '$XCRJOBSCHED is obsolete.  Use $HOME/.xcryptrc';
+    }
+    unless (defined $options{queue}) {
+	warn '$XCRQUEUE is obsolete.  Use $HOME/.xcryptrc';
+    }
 }
 
 if (defined $options{'xbs-auto'}) {
