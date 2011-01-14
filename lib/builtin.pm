@@ -566,7 +566,6 @@ sub set_template_of_template {
 	    $user::template_of_template{"$key"} = $cfg{"$key"};
 	}
     }
-    print "Loading $cfg_file.\n";
 }
 
 sub unalias {
@@ -581,7 +580,6 @@ sub unalias {
 	}
     }
 
-    foreach (%job) { print $_ , "\n";}
     if ($job{exe}) {
         $job{exe0} = $job{exe};
         delete($job{exe});
