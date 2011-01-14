@@ -57,7 +57,6 @@ $env_d = { 'host'     => $xcropt::options{host},
            'sched'    => $xcropt::options{sched},
            'xd'       => $xcropt::options{xd},
            'p5l'      => $xcropt::options{p5l},
-           'queue'    => $xcropt::options{queue},
 };
 #	   'location' => 'local' };
 my @Env = ($env_d);
@@ -327,6 +326,7 @@ sub add_host {
                 . File::Spec->catfile($env->{xd}, 'lib', 'cpan');
         }
     }
+=comment
     unless (defined $env->{sched}) {
         my @sched = &xcr_qx($env, 'echo $XCRJOBSCHED');
         chomp($sched[0]);
@@ -345,6 +345,7 @@ sub add_host {
 	    $env->{queue} = ' ';
         }
     }
+=cut
     if ( $xcropt::options{verbose} >= 3 ) {
 	foreach my $key (keys(%$env)) {
 	    print $key . ': ' . $env->{$key} . "\n";
