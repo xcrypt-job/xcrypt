@@ -4,7 +4,7 @@ use base qw(sandbox core);
     'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
     'exe0@' => sub { '../bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
     'arg0_0@' => sub { $_[0]->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]; },
-    'RANGE0' => [40],
+#    'RANGE0' => [40],
     'RANGE2' => [0],
 #    'RANGES' => [[45],[0],[0]],
     'JS_cpu' => 1,
