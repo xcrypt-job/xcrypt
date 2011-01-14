@@ -69,6 +69,13 @@ GetOptions
      # define other command-line options...
     );
 
+if (defined $ENV{XCRJOBSCHED}) {
+    warn 'The environment variable $XCRJOBSCHED is obsolete.  Use ~/.xcryptrc';
+}
+if (defined $ENV{XCRQUEUE}) {
+    warn 'The environment variable $XCRQUEUE is obsolete.  Use ~/.xcryptrc';
+}
+
 my $added_path = File::Spec->catfile($ENV{XCRYPT}, 'lib') . ':'
     . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib') . ':'
     . File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan') . ':'
