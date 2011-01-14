@@ -246,8 +246,14 @@ Then, continue the following installation procedure:
 \texttt{\$ cd \$XCRYPT/cpan; ./do-install.sh}
 \end{screen}
 
+If necessary, edit \texttt{\$XCRYPT/etc/xcryptrc} along your
+environment.
+
 \section{Execution}
 
+If necessary, edit \texttt{\$HOME/.xcryptrc} along your environment.
+
+\if0
 Edit \texttt{\$HOME/.xcryptrc} as follows,
 \begin{boxnote}
 \begin{verbatim}
@@ -264,7 +270,7 @@ along your environment\footnote{\texttt{SGE}, \texttt{t2k\_tsukuba},
 \texttt{t2k\_tokyo}, \texttt{t2k\_kyoto}, and \texttt{sh} are
 available.  In the case of \texttt{sh}, jobs are dealt with as
 processes in OS.  The default is \texttt{sh}}.
-
+\fi
 
 Next, move to the working directory (e.g., \texttt{\$HOME/wd})
 \begin{screen}
