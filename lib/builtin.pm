@@ -936,7 +936,7 @@ sub submit {
             }
             ## after_in_xcrypt()
 #            if (check_status_for_after ($self)) {
-                my $after_in_xcrypt_return = $self->EVERY::after_in_xcrypt(@{$self->{VALUE}});
+                my $after_in_xcrypt_return = $self->EVERY::LAST::after_in_xcrypt(@{$self->{VALUE}});
                 foreach my $key (keys %{$after_in_xcrypt_return}) {
                     if ($key eq 'user::after_in_xcrypt' and $self->{after_in_xcrypt} ne '') {
 			$self->{after_in_xcrypt_return} = ${$after_in_xcrypt_return}{$key};
