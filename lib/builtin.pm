@@ -922,7 +922,7 @@ sub submit {
                     $self->{after_bkup} = $self->{after};
                     delete $self->{after};
                 }
-                my $after_return = $self->EVERY::after(@{$self->{VALUE}});
+                my $after_return = $self->EVERY::LAST::after(@{$self->{VALUE}});
                 foreach my $key (keys %{$after_return}) {
                     if ($key eq 'user::after' and $self->{after} ne '') {
 			$self->{after_return} = ${$after_return}{$key};
