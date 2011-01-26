@@ -1,8 +1,9 @@
 # Config file for torque
 use config_common;
 use File::Spec;
-
-$jsconfig::jobsched_config{"torque"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     qsub_command => "/opt/torque/bin/qsub",
     qdel_command => "/opt/torque/bin/qdel",
     qstat_command => "/opt/torque/bin/qstat",

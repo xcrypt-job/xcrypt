@@ -1,5 +1,9 @@
 # Config file for Tsukuba SGE
-$jsconfig::jobsched_config{"t2k-tsukuba"} = {
+use config_common;
+use File::Spec;
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     qsub_command => "/opt/sge/local/bin/qsub2",
     qdel_command => "/opt/sge/local/bin/qdel",
     qstat_command => "/opt/sge/bin/lx24-amd64/qstat",

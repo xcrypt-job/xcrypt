@@ -1,8 +1,9 @@
 # Config file for XBS
 use config_common;
 use File::Spec;
-
-$jsconfig::jobsched_config{"XBS"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "xqsub",
     qdel_command => "xqdel",

@@ -1,7 +1,8 @@
 # Config file for sh
 use config_common;
-
-$jsconfig::jobsched_config{"muramasa"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "/home/spara/abet/xcrypt/lib/config/run-output-pid.sh",
     qdel_command => "kill -9",

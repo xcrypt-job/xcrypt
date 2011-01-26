@@ -1,8 +1,9 @@
 # Config file for Tokyo Hitachi NQS
 use config_common;
 use File::Spec;
-
-$jsconfig::jobsched_config{"t2k_tokyo"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "/opt/hitachi/nqs/bin/qsub",
     qdel_command => "/opt/hitachi/nqs/bin/qdel",

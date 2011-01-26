@@ -4,7 +4,9 @@ use File::Spec;
 use File::Basename;
 #use xcropt;
 use Cwd;
-$jsconfig::jobsched_config{"condor"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "$ENV{XCRYPT}/lib/config/condor_submit",
     qdel_command => "/opt/condor-7.2.2/bin/condor_rm",
