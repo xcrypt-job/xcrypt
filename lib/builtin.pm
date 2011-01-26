@@ -76,7 +76,12 @@ sub nocheck_separator { $separator_check = 0; }
 sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-    if ($env->{host} eq $env_d->{host}) {
+my $localhost = qx/hostname/;
+chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
+    if ($env->{host} eq $username . '@' . $localhost) {
+#    if ($env->{host} eq $env_d->{host}) {
         qx/which $cmd0[0]/;
     } else {
         my $ssh = $Host_Ssh_Hash{$env->{host}};
@@ -183,7 +188,12 @@ sub rmt_cmd {
 sub xcr_cmd {
     my $cmd =shift;
     my $env =shift;
-    unless ($env->{host} eq $env_d->{host}) {
+my $localhost = qx/hostname/;
+chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
+    unless ($env->{host} eq $username . '@' . $localhost) {
+#    unless ($env->{host} eq $env_d->{host}) {
         rmt_cmd($cmd, $env, @_);
     } else {
         if ($cmd eq 'exist') {
@@ -284,7 +294,12 @@ sub repeat {
 
 sub add_host {
     my ($env) = @_;
-    unless ($env->{host} eq $env_d->{host}) {
+my $localhost = qx/hostname/;
+chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
+    unless ($env->{host} eq $username . '@' . $localhost) {
+#    unless ($env->{host} eq $env_d->{host}) {
         unless (exists $Host_Ssh_Hash{$env->{host}}) {
             my ($user, $host) = split(/@/, $env->{host});
             my $ssh = Net::OpenSSH->new($host, (user => $user));
