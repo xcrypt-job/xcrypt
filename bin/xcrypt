@@ -13,16 +13,14 @@ use Data::Dumper;
 use lib ("$ENV{XCRYPT}/lib/cpan");
 use Config::Simple;
 
-my $localhost = qx/hostname/;
-chomp $localhost;
+my $host = qx/hostname/;
+chomp $host;
 my $username = qx/whoami/;
 chomp $username;
 my $wd = Cwd::getcwd();
 
 our %options = (
-#    'localhost' => $localhost,  # Obsolete
-    'ini' => 'default',
-    'host' => $username . '@' . $localhost,
+    'host' => $username . '@' . $host,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
 #    'p5l' => $ENV{PERL5LIB},
@@ -42,7 +40,6 @@ our %options = (
 
 GetOptions
     (\%options,
-     'ini=s',
      'compile_only',
      'print_log',
      'xbs-auto',
@@ -50,7 +47,6 @@ GetOptions
      'shared',
      'scratch',
      #
-#     'localhost=s',  # Obsolete
      'host=s',
      'wd=s',
      'xd=s',
