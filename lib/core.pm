@@ -378,7 +378,6 @@ sub qsub {
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
         if ($xcropt::options{verbose} >= 1) { print "$cmdline\n"; }
 
-    foreach (%{$self->{env}}) { print $_, "\n"; }
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
         if ( @qsub_output == 0 ) { die "qsub command failed"; }
 
