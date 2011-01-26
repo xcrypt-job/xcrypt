@@ -1,5 +1,9 @@
 # Config file for SGE
-$jsconfig::jobsched_config{"SGE"} = {
+use config_common;
+use File::Spec;
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     qsub_command => "/usr/bin/qsub",
     qdel_command => "/usr/bin/qdel",
     qstat_command => "/usr/bin/qstat",

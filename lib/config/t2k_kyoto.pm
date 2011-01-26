@@ -1,8 +1,9 @@
 # Config file for Kyoto Fujitsu NQS
 use config_common;
 use File::Spec;
-
-$jsconfig::jobsched_config{"t2k_kyoto"} = {
+use File::Basename qw(basename);
+my $myname = basename(__FILE__, '.pm');
+$jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "/thin/local/bin/qsub",
     qdel_command => '/usr/bin/qdel -K',

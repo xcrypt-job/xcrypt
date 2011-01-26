@@ -3,27 +3,23 @@ use base qw(sandbox core);
 my $default = &get_local_env();
 my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
 		      'wd' => '/home/spara/abet/xcrypt/sample',
-		      'sched' => 'sh',
-		     });
+		      'sched' => 'muramasa'});
 my $env1 = &add_host({'host' => 'abet@t2k.ccs.tsukuba.ac.jp',
-		      'sched' => 't2k_tsukuba',
-		     });
+		      'sched' => 't2k_tsukuba'});
 my $env2 = &add_host({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp',
-		      'sched' => 't2k_tokyo',
-		     });
+		      'sched' => 't2k_tokyo'});
 my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
-		      'sched' => 't2k_kyoto',
-});
+		      'sched' => 't2k_kyoto'});
 
 %template = (
 'id'            => 'job4',
 'JS_cpu'        => '1',
 'JS_memory'     => '1GB',
-'JS_queue'      => [' ',  'ESCIENCE', 'debug', 'gh10034'],
+'JS_queue@'      => [' ',  'ESCIENCE', 'debug', 'gh10034', ' '],
 'JS_group'      => 'gh10034', # for t2k-kyoto only
 'JS_limit_time' => 300,
 'exe0@'         => sub { "echo $VALUE[0] > job4_$VALUE[0]"; },
 'RANGE0'        => [0,     1,     2,     3,     4       ],
-'env@'          => [$env0, $env0, $env2, $env3, $default],
+'env@'          => [$env0, $env1, $env2, $env3, $default],
 );
 &prepare_submit_sync(%template);

@@ -9,35 +9,17 @@ use base qw(sandbox core);
 #    'RANGES' => [[45],[0],[0]],
     'JS_cpu' => 1,
     'JS_memory' => '1GB',
-#    'JS_queue' => 'gh10034',
+    'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'JS_limit_time' => 60,
-    'before_in_xcrypt' => sub { my $self = shift;
-    		      print "$self->{id}\n";
-    		      return sub {print 'before'};
-    },
     'before' => sub { my $self = shift;
     		      print "$self->{exe0}\n";
-    		      return sub {print 'before'};
-    },
-    'before_in_job' => sub { my $self = shift;
-   		      print "before_in\n";
-    		      return sub {print 'before_in'};
-    },
+    		      return sub {print 'before'}; },
     'before_to_job' => 0,
-    'after_in_xcrypt' => sub { my $self = shift;
-   		      print "$VALUE[0]\n";
-    		      return sub {print 'after'};
-    },
-    'after' => sub { my $self = shift;
-   		      print "$VALUE[2]\n";
-    		      return sub {print 'after'};
-    },
-    'after_in_job' => sub { my $self = shift;
-   		      print "after_in\n";
-    		      return sub {print 'after_in'};
-    },
-    'after_to_job' => 0,
+    'after' =>  sub { my $self = shift;
+		      print "$self->{arg0_0}\n";
+		      return sub {print 'after'}; },
+    'after_to_job' => 1,
 );
 
 # If defined, called when ^C is pressed.
