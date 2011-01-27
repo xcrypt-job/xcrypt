@@ -81,8 +81,7 @@ sub get_xxx_return {
 sub return_write {
     my $self    = shift;
     my $summons = shift;
-#    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
-    my $return_file =  File::Spec->catfile("$self->{workdir}", "$self->{id}_return");
+    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
     open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file";
     flock RETURN_W, 2;
     if (exists $self->{"transfer_reference_level"}) {
@@ -95,14 +94,6 @@ sub return_write {
     $dumper .= "\n\r\n";
     print RETURN_W "$dumper";
     close(RETURN_W);
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    unless ($self->{env}->{host} eq $username . '@' . $localhost) {
-	&put_into($self->{env}, $return_file, '.');
-	unlink $return_file;
-    }
 }
 
 sub data_dumper {
