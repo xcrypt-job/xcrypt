@@ -56,7 +56,6 @@ $env_d = { 'host'     => $xcropt::options{host},
            'wd'       => $xcropt::options{wd},
            'sched'    => $xcropt::options{sched},
            'xd'       => $xcropt::options{xd},
-           'p5l'      => $xcropt::options{p5l},
 };
 #	   'location' => 'local' };
 my @Env = ($env_d);
@@ -323,22 +322,6 @@ chomp $username;
             $env->{xd} = $xd[0];
         } else {
             die "Set the environment varialble \$XCRYPT at $env->{host}\n";
-        }
-    }
-    unless (defined $env->{p5l}) {
-        my @p5l = &xcr_qx($env, 'echo $PERL5LIB');
-        chomp($p5l[0]);
-        unless ($p5l[0] eq '') {
-            $env->{p5l} = $p5l[0] . ':'
-                . $env->{xd} . ':'
-                . File::Spec->catfile($env->{xd}, 'lib') . ':'
-                . File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
-                . File::Spec->catfile($env->{xd}, 'lib', 'cpan');
-        } else {
-            $env->{p5l} = $env->{xd} . ':'
-                . File::Spec->catfile($env->{xd}, 'lib') . ':'
-                . File::Spec->catfile($env->{xd}, 'lib', 'algo', 'lib') . ':'
-                . File::Spec->catfile($env->{xd}, 'lib', 'cpan');
         }
     }
 =comment
