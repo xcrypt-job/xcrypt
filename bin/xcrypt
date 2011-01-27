@@ -20,6 +20,7 @@ chomp $username;
 my $wd = Cwd::getcwd();
 
 our %options = (
+    'config' => File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc'),
     'host' => $username . '@' . $host,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
@@ -47,6 +48,7 @@ GetOptions
      'shared',
      'scratch',
      #
+     'config=s',
      'host=s',
      'wd=s',
      'xd=s',
@@ -90,10 +92,10 @@ if (defined $options{'xbs-type'}) {
 }
 
 my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
-unless (-e $cfg_file) {
-    $cfg_file = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
+if (-e $cfg_file) {
+    $options{config} = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
 }
-my $cfg_obj = new Config::Simple($cfg_file);
+my $cfg_obj = new Config::Simple($options{config});
 my %cfg = $cfg_obj->vars();
 foreach my $key (keys %cfg) {
     my @for_getting_real_key = split(/\./, $key);
@@ -104,7 +106,7 @@ foreach my $key (keys %cfg) {
 	}
     }
 }
-print "Loading $cfg_file.\n";
+print "Loading $options{config}.\n";
 
 
 my $xcrfile;

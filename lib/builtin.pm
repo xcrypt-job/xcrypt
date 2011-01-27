@@ -569,11 +569,7 @@ sub do_initialized {
 }
 
 sub set_template_of_template {
-    my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
-    unless (-e $cfg_file) {
-	$cfg_file = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
-    }
-    my $cfg_obj = new Config::Simple($cfg_file);
+    my $cfg_obj = new Config::Simple($xcropt::options{config});
     my %cfg = $cfg_obj->vars();
     foreach my $key (keys %cfg) {
 	my @for_getting_real_key = split(/\./, $key);
