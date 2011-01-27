@@ -24,16 +24,13 @@ our %options = (
     'host' => $username . '@' . $host,
     'wd' => $wd,
     'xd' => $ENV{XCRYPT},
-#    'p5l' => $ENV{PERL5LIB},
+#    'sched' => 'sh',
     'sched' => undef,
-#    'queue' => undef,
-    #
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
 #    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
     'left_message_check_interval' => 3, # ジョブスクリプトが残したメッセージをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
-    #
     'verbose' => 0,               # verbose level
     'stack_size' => 32768,        # Perlスレッドのスタックサイズ
     # define other default values...
@@ -52,7 +49,6 @@ GetOptions
      'host=s',
      'wd=s',
      'xd=s',
-#     'p5l=s',
      'sched=s',
 #     'queue=s',
      #

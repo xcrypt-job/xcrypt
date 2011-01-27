@@ -137,8 +137,6 @@ sub make_jobscript_header {
         push (@header, @{mkarray($others)});
     }
     ## Environment variables
-    push (@header, 'PERL5LIB=' . $self->{env}->{p5l});
-    push (@header, 'export PERL5LIB');
     $self->{jobscript_header} = \@header;
 }
 
