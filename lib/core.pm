@@ -222,15 +222,15 @@ sub make_in_job_script {
     push (@body, $self->data_dumper());
    #push (@body, $self->{$memb_evalstr});
     if ($memb_evalstr eq 'before_in_job' and (exists $self->{before}) and $self->{before_to_job} == 1) {
-        push (@body, '$self->return_write("before", &before($self));');
+        push (@body, '$self->return_write("before", ".", &before($self));');
     }
     if (ref ($self->{$memb_evalstr}) eq 'CODE') {
-        push (@body, '$self->return_write("'.$memb_evalstr.'", &{$self->{'.$memb_evalstr.'}}());');
+        push (@body, '$self->return_write("'.$memb_evalstr.'",  ".", &{$self->{'.$memb_evalstr.'}}());');
     } elsif (exists $self->{$memb_evalstr}) {
-        push (@body, '$self->return_write("'.$memb_evalstr.'", $self->{'.$memb_evalstr.'});');
+        push (@body, '$self->return_write("'.$memb_evalstr.'",  ".", $self->{'.$memb_evalstr.'});');
     }
     if ($memb_evalstr eq 'after_in_job' and (exists $self->{after}) and $self->{after_to_job} == 1) {
-        push (@body, '$self->return_write("after", &after($self));');
+        push (@body, '$self->return_write("after", ".", &after($self));');
     }
     $self->{$memb_script} = \@body;
 }

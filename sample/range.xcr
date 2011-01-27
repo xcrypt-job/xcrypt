@@ -34,3 +34,5 @@ sub sigint_handler {
 my @jobs = &prepare(%template1);
 &submit(@jobs);
 &sync(@jobs);
+print return_transmission::get_before_return($jobs[0]), "\n";
+print return_transmission::get_after_return($jobs[0]), "\n";
