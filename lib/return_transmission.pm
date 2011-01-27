@@ -81,7 +81,9 @@ sub get_xxx_return {
 sub return_write {
     my $self    = shift;
     my $summons = shift;
-    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
+    my $dir = shift;
+#    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
+    my $return_file =  File::Spec->catfile($dir, "$self->{id}_return");
     open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file";
     flock RETURN_W, 2;
     if (exists $self->{"transfer_reference_level"}) {

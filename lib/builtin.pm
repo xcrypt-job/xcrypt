@@ -842,7 +842,7 @@ sub submit {
                 foreach my $key (keys %{$before_in_xcrypt_return}) {
                     if ($key eq 'user::before_in_xcrypt' and $self->{before_in_xcrypt} ne '') {
 			$self->{before_in_xcrypt_return} = ${$before_in_xcrypt_return}{$key};
-                        $self->return_write("before_in_xcrypt", ${$before_in_xcrypt_return}{$key});
+                        $self->return_write("before_in_xcrypt", $self->{workdir}, ${$before_in_xcrypt_return}{$key});
                     }
                 }
 #            }
@@ -856,7 +856,7 @@ sub submit {
                 foreach my $key (keys %{$before_return}) {
                     if ($key eq 'user::before' and $self->{before} ne '') {
 			$self->{before_return} = ${$before_return}{$key};
-                        $self->return_write("before", ${$before_return}{$key});
+                        $self->return_write("before", $self->{workdir}, ${$before_return}{$key});
                     }
                 }
                 if (exists $self->{before_bkup}) {
@@ -920,7 +920,7 @@ sub submit {
                 foreach my $key (keys %{$after_return}) {
                     if ($key eq 'user::after' and $self->{after} ne '') {
 			$self->{after_return} = ${$after_return}{$key};
-                        $self->return_write("after", ${$after_return}{$key});
+                        $self->return_write("after", $self->{workdir}, ${$after_return}{$key});
                     }
                 }
                 if (exists $self->{after_bkup}) {
@@ -934,7 +934,7 @@ sub submit {
                 foreach my $key (keys %{$after_in_xcrypt_return}) {
                     if ($key eq 'user::after_in_xcrypt' and $self->{after_in_xcrypt} ne '') {
 			$self->{after_in_xcrypt_return} = ${$after_in_xcrypt_return}{$key};
-                        $self->return_write("after_in_xcrypt", ${$after_in_xcrypt_return}{$key});
+                        $self->return_write("after_in_xcrypt", $self->{workdir}, ${$after_in_xcrypt_return}{$key});
                     }
                 }
 #            }
