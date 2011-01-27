@@ -44,13 +44,14 @@ sub get_xxx_return {
     my $self   = shift;
     my $get_id = shift;
     if ($get_id eq "") {$get_id = $self->{id}};
-    my $return_file;
-    my $return_dir =  File::Spec->catfile($self->{env}->{wd}, "${get_id}");
-    if (-d $return_dir) {
-        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}", "${get_id}_return");
-    } else {
-        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}_return");
-    }
+#    my $return_file;
+#    my $return_dir =  File::Spec->catfile($self->{env}->{wd}, "${get_id}");
+#    if (-d $return_dir) {
+#        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}", "${get_id}_return");
+#    } else {
+#        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}_return");
+#    }
+    my $return_file = File::Spec->catfile($self->{workdir}, "${get_id}_return");
     my $get_nm = shift;
     sleep 1;
     open (RETURN_R, "+< $return_file") or warn "Cannot open $return_file";

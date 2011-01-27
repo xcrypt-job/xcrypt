@@ -14,6 +14,12 @@ use lib ("$ENV{XCRYPT}/lib/cpan");
 use Config::Simple;
 
 our %options = (
+     'config' => undef,
+     #
+     'host' => undef,
+     'wd' => undef,
+     'xd' => undef,
+     'sched' => undef,
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
 #    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
@@ -72,15 +78,15 @@ unless (defined $options{config}) {
     } else {
 	$options{config} = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
     }
-    my $cfg_obj = new Config::Simple($options{config});
-    my %cfg = $cfg_obj->vars();
-    foreach my $key (keys %cfg) {
-	my @for_getting_real_key = split(/\./, $key);
-	if ($for_getting_real_key[0] eq 'environment') {
-	    my $real_key = $for_getting_real_key[1];
-	    unless (defined $options{"$real_key"}) {
-		$options{"$real_key"} = $cfg{"$key"};
-	    }
+}
+my $cfg_obj = new Config::Simple($options{config});
+my %cfg = $cfg_obj->vars();
+foreach my $key (keys %cfg) {
+    my @for_getting_real_key = split(/\./, $key);
+    if ($for_getting_real_key[0] eq 'environment') {
+	my $real_key = $for_getting_real_key[1];
+	unless (defined $options{"$real_key"}) {
+	    $options{"$real_key"} = $cfg{"$key"};
 	}
     }
 }

@@ -870,6 +870,14 @@ sub submit {
 		$self->{'staging_files'}->stage_in_local();
 	    }
             ## start()
+my $localhost = qx/hostname/;
+chomp $localhost;
+my $username = qx/whoami/;
+chomp $username;
+unless ($self->{env}->{host} eq $username . '@' . $localhost) {
+#	    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), $self->{workdir});
+	    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+}
             if (check_status_for_start ($self)) {
                 $self->start();
             }
@@ -883,6 +891,10 @@ sub submit {
 	    if (check_status_for_wait_job_done ($self)) {
 		&jobsched::wait_job_done ($self);
 	    }
+unless ($self->{env}->{host} eq $username . '@' . $localhost) {
+#    &get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), $self->{workdir});
+    &get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+}
 
             ## ジョブスクリプトの最終行の処理を終えたからといって
             ## after()をしてよいとは限らないが……

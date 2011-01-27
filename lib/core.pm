@@ -137,6 +137,12 @@ sub make_jobscript_header {
         push (@header, @{mkarray($others)});
     }
     ## Environment variables
+    my $p5l =
+	File::Spec->catfile($self->{env}->{xd}, 'lib') . ':' .
+	File::Spec->catfile($self->{env}->{xd}, 'lib', 'cpan') . ':' .
+	File::Spec->catfile($self->{env}->{xd}, 'lib', 'algo', 'lib');
+    push (@header, 'PERL5LIB=' . $p5l);
+    push (@header, 'export PERL5LIB');
     $self->{jobscript_header} = \@header;
 }
 
