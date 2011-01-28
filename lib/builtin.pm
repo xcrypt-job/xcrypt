@@ -11,6 +11,7 @@ get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander get_expander set_separator get_separator check_separator nocheck_separator
 filter
 set_template_of_template
+async_in_job
 );
 
 use strict;
@@ -979,6 +980,15 @@ sub filter {
         }
     }
     return @ret;
+}
+
+sub async_in_job(&@) {
+    my $code = shift;
+    foreach my $self (@_) {
+	$self->{exe0} = $code->($self, $self->{VALUES});
+	submit($self);
+    }
+    return @_;
 }
 
 1;
