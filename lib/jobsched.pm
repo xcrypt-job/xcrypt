@@ -246,11 +246,11 @@ sub set_job_status_according_to_signal {
     my $sig = get_signal_status ($self);
     my $stat = get_job_status ($self);
     if ($sig eq 'sig_abort') {
-        unless ( $stat eq 'aborted' || $stat eq 'finished') { 
+        unless ( $stat eq 'aborted' || $stat eq 'finished') {
             set_job_aborted ($self, $tim);
         }
     } elsif ($sig eq 'sig_cancel') {
-        unless ( $stat eq 'aborted' ) { 
+        unless ( $stat eq 'aborted' ) {
             set_job_aborted ($self, $tim);
         }
         return 'aborted';

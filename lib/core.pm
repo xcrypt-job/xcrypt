@@ -60,12 +60,7 @@ sub start {
         &qsub_make($self);
         # Returns request ID
 	$self->{request_id} = (&qsub($self));
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    if ($self->{env}->{host} eq $username . '@' . $localhost) {
-#	if ($self->{env}->{host} eq $builtin::env_d->{host}) {
+	if ($self->{env}->{location} eq 'local') {
 	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} local $self->{env}->{sched} . $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
 	} else {
 	    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
@@ -268,12 +263,7 @@ sub update_script_file {
     my $file_base = shift;
     my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    unless ($self->{env}->{host} eq $username . '@' . $localhost) {
-#    unless ($self->{env}->{host} eq $builtin::env_d->{host}) {
+    if ($self->{env}->{location} eq 'remote') {
 	&put_into($self->{env}, $file, '.');
 	unlink $file;
     }
@@ -419,12 +409,7 @@ sub qdel {
     if ($req_id) {
         # execute qdel
         my $command_string = any_to_string_spc ("$qdel_command ", $req_id);
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    if ($self->{env}->{host} eq $username . '@' . $localhost) {
-#	if ($self->{env}->{host} eq $builtin::env_d->{host}) {
+	if ($self->{env}->{location} eq 'local') {
 	    if (cmd_executable ($command_string, $self->{env})) {
 		print "Deleting $self->{id} (request ID: $req_id)\n";
 		exec_async ($command_string);

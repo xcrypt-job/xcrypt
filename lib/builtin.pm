@@ -56,9 +56,9 @@ $env_d = { 'host'     => $xcropt::options{host},
            'wd'       => $xcropt::options{wd},
            'sched'    => $xcropt::options{sched},
            'xd'       => $xcropt::options{xd},
+           'location' => 'local',
 };
-#	   'location' => 'local' };
-my @Env = ($env_d);
+my @Env;
 sub get_local_env { return $env_d; }
 sub get_all_envs { return @Env; }
 ##
@@ -75,12 +75,7 @@ sub nocheck_separator { $separator_check = 0; }
 sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    if ($env->{host} eq $username . '@' . $localhost) {
-#    if ($env->{host} eq $env_d->{host}) {
+    if ($env->{location} eq 'local') {
         qx/which $cmd0[0]/;
     } else {
         my $ssh = $Host_Ssh_Hash{$env->{host}};
@@ -187,12 +182,7 @@ sub rmt_cmd {
 sub xcr_cmd {
     my $cmd =shift;
     my $env =shift;
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    unless ($env->{host} eq $username . '@' . $localhost) {
-#    unless ($env->{host} eq $env_d->{host}) {
+    if ($env->{location} eq 'remote') {
         rmt_cmd($cmd, $env, @_);
     } else {
         if ($cmd eq 'exist') {
@@ -293,12 +283,16 @@ sub repeat {
 
 sub add_host {
     my ($env) = @_;
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-    unless ($env->{host} eq $username . '@' . $localhost) {
-#    unless ($env->{host} eq $env_d->{host}) {
+    my $localhost = qx/hostname/;
+    chomp $localhost;
+    my $username = qx/whoami/;
+    chomp $username;
+    if ($env->{host} eq $username . '@' . $localhost) {
+	$env->{location} = 'local';
+    } else {
+	$env->{location} = 'remote';
+    }
+    if ($env->{location} eq 'remote') {
         unless (exists $Host_Ssh_Hash{$env->{host}}) {
             my ($user, $host) = split(/@/, $env->{host});
             my $ssh = Net::OpenSSH->new($host, (user => $user));
@@ -324,26 +318,6 @@ chomp $username;
             die "Set the environment varialble \$XCRYPT at $env->{host}\n";
         }
     }
-=comment
-    unless (defined $env->{sched}) {
-        my @sched = &xcr_qx($env, 'echo $XCRJOBSCHED');
-        chomp($sched[0]);
-        unless ($sched[0] eq '') {
-            $env->{sched} = $sched[0];
-        } else {
-            die "Set the environment varialble \$XCRJOBSCHED at $env->{host}\n";
-        }
-    }
-    unless (defined $env->{queue}) {
-        my @queue = &xcr_qx($env, 'echo $XCRQUEUE');
-        chomp($queue[0]);
-        unless ($queue[0] eq '') {
-            $env->{queue} = $queue[0];
-        } else {
-	    $env->{queue} = ' ';
-        }
-    }
-=cut
     if ( $xcropt::options{verbose} >= 3 ) {
 	foreach my $key (keys(%$env)) {
 	    print $key . ': ' . $env->{$key} . "\n";
@@ -870,13 +844,9 @@ sub submit {
 		$self->{'staging_files'}->stage_in_local();
 	    }
             ## start()
-my $localhost = qx/hostname/;
-chomp $localhost;
-my $username = qx/whoami/;
-chomp $username;
-unless ($self->{env}->{host} eq $username . '@' . $localhost) {
-#	    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), $self->{workdir});
-	    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+if ($self->{env}->{location} eq 'remote') {
+    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+    unlink File::Spec->catfile($self->{workdir}, "$self->{id}_return");
 }
             if (check_status_for_start ($self)) {
                 $self->start();
@@ -891,9 +861,9 @@ unless ($self->{env}->{host} eq $username . '@' . $localhost) {
 	    if (check_status_for_wait_job_done ($self)) {
 		&jobsched::wait_job_done ($self);
 	    }
-unless ($self->{env}->{host} eq $username . '@' . $localhost) {
-#    &get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), $self->{workdir});
+if ($self->{env}->{location} eq 'remote') {
     &get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+    &rmt_unlink($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
 }
 
             ## ジョブスクリプトの最終行の処理を終えたからといって
