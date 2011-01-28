@@ -9,7 +9,6 @@ use File::Temp qw/tempfile/;
 use File::Basename;
 use Getopt::Long qw(:config pass_through);
 use Data::Dumper;
-
 use lib ("$ENV{XCRYPT}/lib/cpan");
 use Config::Simple;
 
