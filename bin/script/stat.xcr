@@ -3,55 +3,14 @@ use Getopt::Long;
 use jobsched;
 use common;
 use Net::OpenSSH;
+use Data::Dumper;
+use Text::CSV_XS;
 
 our %options = ();
-
-my %keys = ('help' => '    show all the options',
-	    'match=s' => ' show matched jobs',
-	    'status=s' => 'show jobs of the state',
-	    'output' => "  show standard outputs",
-	    'error' => "   show standard errors",
-	    'batch' => "   show batch job scripts",
-    );
-GetOptions(\%options, keys(%keys));
-
-my $Inventory_Path = $xcropt::options{inventory_path};
-if (defined $options{'help'}) {
-    foreach my $key (keys(%keys)) {
-	print $key . '  ' . $keys{$key}, "\n";
-    }
-} else {
-    if ($#ARGV == -1) {
-	foreach my $id (&jobsched::get_last_job_id) {
-	    if (defined $options{'match'}) {
-		if ($id =~ /$options{match}/) {
-		    &print_stat($id);
-		}
-	    } elsif (defined $options{'status'}) {
-		if (&jobsched::get_last_job_state($id) =~ /$options{status}/) {
-		    &print_stat($id);
-		}
-	    } else {
-		&print_stat($id);
-	    }
-	}
-    } else {
-	foreach my $id (@ARGV) {
-	    if (defined $options{'match'}) {
-		if ($id =~ /$options{match}/) {
-		    &print_stat($id);
-		}
-	    } elsif (defined $options{'status'}) {
-		if (&jobsched::get_last_job_state($id) =~ /$options{status}/) {
-		    &print_stat($id);
-		}
-	    } else {
-		&print_stat($id);
-	    }
-	}
-
-    }
-}
+my @output_order = ();
+my @file_types = qw(stdout stderr batch);
+my @row = ();
+my @job_statuses = qw(initialized prepared submitted queued running done finished aborted);
 
 my %ssh_opts = (
     copy_attrs => 1,      # -p preserver file attributes
@@ -61,42 +20,222 @@ my %ssh_opts = (
     quiet => 1,           # Quiet. Does not show progress
     );
 
-sub print_stat {
-    my $id = shift;
-    print "$id = ". &jobsched::get_last_job_state($id);
-    if ( &jobsched::get_last_job_request_id($id) ) {
-	print " (request_ID=" . &jobsched::get_last_job_request_id($id) . "_at_" . &jobsched::get_last_job_userhost($id) . ")";
-    }
-    print "\n";
-    if (defined $options{'output'}) {
-	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
-				      &jobsched::get_last_job_stdout($id));
-	&print_stat_body($id, 'output', $tmp);
-    }
-    if (defined $options{'error'}) {
-	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
-				      &jobsched::get_last_job_stderr($id));
-	&print_stat_body($id, 'error', $tmp);
-    }
-    if (defined $options{'batch'}) {
-	my $tmp = File::Spec->catfile(&jobsched::get_last_job_workdir($id),
-				      &jobsched::get_last_job_script($id));
-	&print_stat_body($id, 'batch', $tmp);
+my %keys = ('help' => '    show all the options',
+            'empty=s{,3}' => ' show empty files',
+            'no_empty=s{,3}' => 'shbow no_empty files',
+            'match=s' => ' show matched jobs',
+            'status=s' => ' show jobs of the state',
+            'ls=s{,3}' => ' show filenames',
+            'cat=s{,3}' => ' show files',
+            'stat' => ' show the state of jobs ',
+            'csv' => '     show output of the data type',
+    );
+
+GetOptions(\%options, 
+            'help',
+            'empty=s{,3}' => \&set_filter_option,
+            'no_empty=s{,3}' => \&set_filter_option,
+            'match=s',
+            'status=s',
+            'ls=s{,3}' => \&set_output_option,
+            'cat=s{,3}' => \&set_output_option,
+            'stat' => \&set_output_option,
+            'csv'
+                 );
+
+if (defined $options{empty} and defined $options{no_empty}) {
+    foreach my $file_type (@file_types) {
+        if (defined $options{empty}{$file_type} and defined $options{no_empty}{$file_type}) {
+            warn "no_output because empty and no_empty set";
+        }
     }
 }
 
+if (defined $options{status} and (grep {$_ =~ $options{status}} @job_statuses) == ()) {
+    die "error status";
+}
 
-sub print_stat_body {
-    my ($id, $type, $file) = @_;
-    print '=' . $id . "'s $type" . "=\n";
-    unless (&jobsched::get_last_job_userhost($id) eq 'local') {
-	unless(-e $file) {
-	    my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
-	    $ssh = Net::OpenSSH->new($host, (user => $user));
-	    $ssh->scp_get(\%ssh_opts, File::Spec->catfile(&jobsched::get_last_job_prefix($id), $file), $file) or warn $ssh->error;
-	}
+if (defined $options{csv}) {
+    my @check_opts = qw(stat ls cat);
+    
+    foreach my $check_opt (@check_opts) {
+        if (defined $options{$check_opt}) {
+            $options{csv}{$check_opt} = 1;
+        }
     }
+    
+    if (keys (%{$options{csv}}) == ()) {
+        foreach my $check_opt (@check_opts) {
+            $options{csv}{$check_opt} = 1;
+        }
+        &set_output_option('stat');
+        foreach my $file_type (@file_types) {
+            &set_output_option('ls', $file_type);
+            &set_output_option('cat', $file_type);
+        }
+    }
+}
+
+if (!defined $options{stat} and !defined $options{ls} and !defined $options{cat}) {
+    &set_output_option('stat');
+}
+
+if (defined $options{help}) {
+    foreach my $key (keys(%keys)) {
+        print $key . '  ' . $keys{$key}, "\n";
+    }
+} else {
+    my @ids = ();
+    
+    if ($#ARGV == -1) {
+        @ids = &jobsched::get_last_job_id;
+    } else {
+        @ids = @ARGV;
+    }
+    
+    foreach my $id (@ids) {
+        if (&is_filtering($id)) { next; }
+        
+        foreach my $output_type (@output_order) {
+            if ($output_type eq 'print_stat') {
+                &{$output_type}($id);
+            } else {
+                my ($output_type, $file_type) = split (':', $output_type);
+                &{$output_type}($id, $file_type);
+            }
+        }
+        
+    }
+}
+
+sub set_output_option {
+    my ($optname, $file_type) = @_;
+    
+    if ($optname eq 'stat') {
+        $options{$optname} = 1;
+        push (@output_order, 'print_'.$optname);
+    } else {
+        unless (grep {$_ eq $file_type} @file_types) {
+            unshift (@ARGV, $file_type);
+            return;
+        }
+        $options{$optname}{$file_type} = 1;
+        push (@output_order, 'print_'.$optname .':'.$file_type);
+    }
+}
+
+sub set_filter_option {
+    my ($optname, $file_type) = @_;
+    
+    if ( (grep {$_ eq $file_type} @file_types) == () ) {
+        unshift (@ARGV, $file_type);
+        return;
+    }
+    
+    if (defined $options{ls} or defined $options{cat} or defined $options{stat}) {
+        return;
+    }
+    $options{$optname}{$file_type} = 1;
+}
+
+sub is_filtering {
+    my $id = shift;
+    
+    if (defined $options{match} and $id !~ /$options{match}/) { return 1; } 
+    if (defined $options{status} and &jobsched::get_last_job_state($id) !~ /$options{status}/) { return 1; } 
+    
+    my @filters = qw(empty no_empty); 
+    foreach my $filter (@filters) {
+        unless (defined $options{$filter}) { next; }
+        foreach my $file_type (keys (%{$options{$filter}})) {
+            my $file = &get_file_path($id, $file_type);
+            &get_remote_file($id, $file);
+            if ($filter eq 'empty' and -s $file) { 
+                return 1;
+            } elsif ($filter eq 'no_empty' and -z $file) {
+                return 1;
+            }
+        }    
+    }
+}
+
+sub print_stat {
+    my $id = shift;
+    
+    if (defined $options{csv} and defined $options{csv}{stat}) {
+        push (@row, 'status', $id, &jobsched::get_last_job_state($id), &jobsched::get_last_job_request_id($id));
+        &print_csv('stat', $file_type);
+    } elsif (defined $options{stat}) {
+        print "$id = ". &jobsched::get_last_job_state($id);
+        if ( &jobsched::get_last_job_request_id($id) ) {
+            print " (request_ID=" . &jobsched::get_last_job_request_id($id) . ")";
+        }
+        print "\n";
+    }
+}
+
+sub print_cat {
+    my ($id, $file_type) = @_;
+    
+    my $file = &get_file_path($id, $file_type);
+    &get_remote_file($id, $file);
     open(my $out, $file) or die $!;
-    foreach (<$out>) { print "$_"; }
+    if (defined $options{csv} and defined $options{csv}{cat}) {
+        push (@row,  join('',<$out>));
+        &print_csv('cat', $file_type);
+    } elsif ($options{cat}{$file_type} == 1)  {
+        foreach (<$out>) { print "\t$_"; }
+    }
     close($out);
+}
+
+sub print_ls {
+    my ($id, $file_type) = @_;
+    
+    my $file = &get_file_path($id, $file_type);
+    &get_remote_file($id, $file);
+    if (defined $options{csv} and defined $options{csv}{ls}) {
+        push (@row, $file_type, $file);
+        &print_csv('ls', $file_type);
+    } elsif ($options{ls}{$file_type} == 1) {
+        print $file . "\n";
+    }
+}
+
+sub print_csv {
+    my ($output_type, $file_type) = @_;
+    if ($output_type ne 'stat' and ($options{ls}{$file_type} == 1 and $options{cat}{$file_type} == 1) and $#row != 2) {
+        return;
+    }
+    my $csv = Text::CSV_XS->new({binary => 1});
+    $csv->combine(@row) or die $csv->error_diag();
+    print $csv->string(), "\n";
+    @row = ();
+}
+
+sub get_file_path {
+    my ($id, $file_type) = @_;
+    
+    if ($file_type eq 'stdout') {
+        return File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+                                        &jobsched::get_last_job_stdout($id));
+    } elsif ($file_type eq 'stderr') {
+        return File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+                                        &jobsched::get_last_job_stderr($id));
+    } elsif ($file_type eq 'batch') {
+        return File::Spec->catfile(&jobsched::get_last_job_workdir($id),
+                                        &jobsched::get_last_job_script($id));
+    }
+}
+
+sub get_remote_file {
+    my ($id, $file) = @_;
+    
+    unless (&jobsched::get_last_job_userhost($id) eq 'local') {
+        unless(-e $file) {
+            my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
+            my $ssh = Net::OpenSSH->new($host, (user => $user));
+            $ssh->scp_get(\%ssh_opts, File::Spec->catfile(&jobsched::get_last_job_prefix($id), $file), $file) or warn $ssh->error;
+        }
+    }
 }

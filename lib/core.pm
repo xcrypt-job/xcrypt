@@ -214,7 +214,7 @@ sub make_in_job_script {
     my @body = ();
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
     push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
-    if (exists $self->{transfer_reference_level}) {
+    if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
         push (@body, '$Data::Dumper::Maxdepth = '.$self->{transfer_reference_level}.';');
     } else {
         push (@body, '$Data::Dumper::Maxdepth = '. $Data::Dumper::Maxdepth .';');
@@ -370,7 +370,6 @@ sub qsub {
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
-        if ($xcropt::options{verbose} >= 1) { print "$cmdline\n"; }
 
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
         if ( @qsub_output == 0 ) { die "qsub command failed"; }
