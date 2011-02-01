@@ -884,6 +884,10 @@ sub submit {
 	    if(defined $self->{JS_stage_in_files}){
 		$self->{'staging_files'}->stage_in_local();
 	    }
+            ## job_info()
+            if (defined $xcropt::options{jobinfo}) {
+                &job_info($self);
+            }
             ## start()
 if ($self->{env}->{location} eq 'remote') {
     &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
