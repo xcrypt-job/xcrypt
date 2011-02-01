@@ -782,6 +782,46 @@ sub check_status_for_set_job_finished {
     }
 }
 
+sub job_info {
+    my $self = shift;
+    my $job_info = '';
+    #id
+    $job_info .= "$self->{id}\n";
+    #qsub_command
+    &core::make_qsub_options($self);
+    my $sched = $self->{env}->{sched};
+    my %cfg = %{$jsconfig::jobsched_config{$sched}};
+    my $qsub_command = $cfg{qsub_command};
+    if ($xcropt::options{xqsub}) {
+	$qsub_command = "xqsub --to $sched";
+    }
+    #$job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}}\n";
+    $job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}} $self->{jobscript_file}\n";
+    
+    #exe_args
+    my $max_of_exe = &get_max_index_of_exe(%$self);
+    my $max_of_second = &get_max_index_of_second_arg_of_arg(%$self);
+    foreach my $j (0..$max_of_exe) {
+        if ($self->{"exe$j"}) {
+            my @args = ();
+            for ( my $i = 0; $i <= $max_of_second; $i++ ) {
+                if ($self->{"arg$j".'_'."$i"}) {
+                    push(@args, $self->{"arg$j".'_'."$i"});
+                }
+            }
+            my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
+            $job_info .= "\texe = $cmd\n";
+        }
+    }
+    foreach my $key (keys %{$self}) {
+        if ($key =~ /JS_/) {
+            $job_info .= "\t$key = $self->{$key}\n";
+        }
+    }
+    
+    print "$job_info";
+}
+
 sub submit {
     my @array = @_;
     my $slp = 0;
