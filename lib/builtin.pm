@@ -5,10 +5,10 @@ our @EXPORT = qw(cmd_executable
 get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
-unalias expand_make do_initialized
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
 get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
-set_expander get_expander set_separator get_separator check_separator nocheck_separator
+set_expander get_expander
+set_separator get_separator check_separator nocheck_separator
 filter
 set_template_of_template
 async_in_job
@@ -37,7 +37,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
 
 # Permitted job template member names.
-my @allkeys = ('id', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
+my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
 'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return');
 my @allprefixes = ('JS_');
@@ -331,10 +331,10 @@ sub add_host {
 sub expand {
     my %job = @_;
     my $max_of_range = &get_max_index_of_range(%job);
-    my @range;
+    my @value;
     if (defined $job{'RANGES'}) {
-        @range = &times(@{$job{'RANGES'}});
-    } elsif ( $max_of_range != -1 ) {
+        @value = &times(@{$job{'RANGES'}});
+    } elsif ( $max_of_range != -1 ) { # for compatibility only
         my @ranges = ();
         for ( my $i = 0; $i <= $max_of_range; $i++ ) {
             if ( exists($job{"RANGE$i"}) ) {
@@ -349,7 +349,7 @@ sub expand {
                 push(@ranges, $job{"RANGE$i"});
             }
         }
-        @range = &times(@ranges);
+        @value = &times(@ranges);
     # } elsif (&MAX(\%job)) { # when parameters except RANGE* exist
     #     my @params = (0..(&MIN(\%job)-1));
     #     foreach (@params) {
@@ -357,9 +357,9 @@ sub expand {
     # 	    push(@objs, $self);
     #     }
     } else {
-        @range = ([]);
+        @value = ([]);
     }
-    return @range;
+    return @value;
 }
 
 sub add_key           { foreach my $i (@_) { push(@allkeys,     $i); } }
@@ -377,6 +377,7 @@ sub max {
     return $max;
 }
 
+# for compatibility only
 sub get_max_index {
     my $arg = shift;
     my %job = @_;
@@ -415,6 +416,7 @@ sub get_max_index {
     return $max;
 }
 
+# for compatibility only
 sub get_max_index_of_range             { return &get_max_index('range',  @_); }
 sub get_max_index_of_exe               { return &get_max_index('exe',    @_); }
 sub get_max_index_of_arg               { return &get_max_index('arg',    @_); }
@@ -465,13 +467,13 @@ sub times {
 
 our $count = 0;
 sub do_initialized {
-    my %job = %{$_[0]};
+    my %template = %{$_[0]};
     shift;
-    my @range = @_;
-    $job{'VALUE'} = \@range;
+    my @value = @_;
+    $template{'VALUE'} = \@value;
     my $tmp = 0;
-    # foreach (@range) {
-    # 	$job{"VALUE$tmp"} = $_;
+    # foreach (@value) {
+    # 	$template{"VALUE$tmp"} = $_;
     # 	$tmp++;
     # }
         if ($separator_check) {
@@ -481,41 +483,41 @@ sub do_initialized {
     }
 
     # generate job objects
-    unless (defined $job{"id$expander"}) {
-        $job{id} = join($separator, ($job{id}, @_));
+    unless (defined $template{"id$expander"}) {
+        $template{id} = join($separator, ($template{id}, @_));
     }
 #    foreach my $k (@allkeys) {
-    foreach my $tmp_k (keys(%job)) {
+    foreach my $tmp_k (keys(%template)) {
         my ($k , $after_k) = split(/$expander/, $tmp_k);
         my $members = "$k" . $expander;
 
-        if ( exists($job{"$members"}) ) {
-            local $user::self = \%job;
-            local @user::VALUE = @range;
-            unless ( ref($job{"$members"}) ) {
+        if ( exists($template{"$members"}) ) {
+            local $user::self = \%template;
+            local @user::VALUE = @value;
+            unless ( ref($template{"$members"}) ) {
                 warn "Can't dereference $members.  Instead evaluate $members";
-                @_ = (\%job, @range);
-                $job{"$k"} = eval($job{$members});
-            } elsif ( ref($job{"$members"}) eq 'CODE' ) {
-#foreach my $i (0..$#range) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$range[$i];"; };
-                $job{"$k"} = &{$job{"$members"}}(\%job, @range);
-            } elsif ( ref($job{"$members"}) eq 'ARRAY' ) {
-                my @tmp = @{$job{"$members"}};
-                $job{"$k"} = $tmp[$count];
-            } elsif ( ref($job{"$members"}) eq 'SCALAR' ) {
-                $job{"$k"} = ${$job{"$members"}};
+                @_ = (\%template, @value);
+                $template{"$k"} = eval($template{$members});
+            } elsif ( ref($template{"$members"}) eq 'CODE' ) {
+#foreach my $i (0..$#value) { my $tmp = "user::RANGE$i"; eval "\$$tmp = \$value[$i];"; };
+                $template{"$k"} = &{$template{"$members"}}(\%template, @value);
+            } elsif ( ref($template{"$members"}) eq 'ARRAY' ) {
+                my @tmp = @{$template{"$members"}};
+                $template{"$k"} = $tmp[$count];
+            } elsif ( ref($template{"$members"}) eq 'SCALAR' ) {
+                $template{"$k"} = ${$template{"$members"}};
             } else {
                 die "Can't interpret $members\n";
             }
         }
     }
-    my $self = user->new(\%job);
+    my $self = user->new(\%template);
 
     # aliases
     # if (defined $self->{exe0}) {
     #     $self->{exe} = $self->{exe0};
     # }
-    # my $max_of_arg = &get_max_index_of_arg(%job);
+    # my $max_of_arg = &get_max_index_of_arg(%template);
     # foreach my $i (0..$max_of_arg) {
     #     if (defined $self->{"arg0_$i"}) {
     #         $self->{"arg$i"} = $self->{"arg0_$i"};
@@ -540,67 +542,43 @@ sub set_template_of_template {
 }
 
 sub unalias {
-    my %job = @_;
+    my %template = @_;
 
     foreach my $key (keys %user::template_of_template) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq 'template') {
-	    unless (defined $job{$for_getting_real_key[1]}) {
-		$job{$for_getting_real_key[1]} = $user::template_of_template{$key};
+	    unless (defined $template{$for_getting_real_key[1]}) {
+		$template{$for_getting_real_key[1]} = $user::template_of_template{$key};
 	    }
 	}
     }
 
-    # if ($job{exe}) {
-    #     $job{exe0} = $job{exe};
-    #     delete($job{exe});
+    # if ($template{exe}) {
+    #     $template{exe0} = $template{exe};
+    #     delete($template{exe});
     # }
-    # if ($job{"exe$expander"}) {
-    #     $job{"exe0$expander"} = $job{"exe$expander"};
-    #     delete($job{"exe$expander"});
+    # if ($template{"exe$expander"}) {
+    #     $template{"exe0$expander"} = $template{"exe$expander"};
+    #     delete($template{"exe$expander"});
     # }
-    # my $max_of_arg = &get_max_index_of_arg(%job);
+    # my $max_of_arg = &get_max_index_of_arg(%template);
     # foreach my $i (0..$max_of_arg) {
-    #     if ($job{"arg$i"}) {
-    #         $job{"arg0_$i"} = $job{"arg$i"};
-    #         delete($job{"arg$i"});
+    #     if ($template{"arg$i"}) {
+    #         $template{"arg0_$i"} = $template{"arg$i"};
+    #         delete($template{"arg$i"});
     #     }
     # }
     # foreach my $i (0..$max_of_arg) {
-    #     if ($job{"arg$i$expander"}) {
-    #         $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
-    #         delete($job{"arg$i$expander"});
+    #     if ($template{"arg$i$expander"}) {
+    #         $template{"arg0_$i$expander"} = $template{"arg$i$expander"};
+    #         delete($template{"arg$i$expander"});
     #     }
     # }
-    return %job;
+    return %template;
 }
 
-
-sub expand_make {
+sub disble_keys_without_by_add_key {
     my %job = @_;
-
-    # add_key for built-in keys "exe*", "arg*" and ":*"
-    my $max_of_exe    = &get_max_index_of_exe(%job);
-    my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
-    my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
-    for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
-    for ( my $i = 0; $i <= $max_of_first; $i++ ) {
-        push(@allkeys, "arg$i");
-        for ( my $j = 0; $j <= $max_of_second; $j++ ) {
-            push(@allkeys, "arg$i".'_'."$j");
-        }
-    }
-    foreach my $key (keys(%job)) {
-        if ($key =~ /\A:/) {
-            if ($key =~ /"$expander"\Z/) {
-                $/ = $expander;
-                chomp $key;
-            }
-            push(@allkeys, $key);
-        }
-    }
-
-    # disble keys without by add_key
     foreach my $key (keys(%job)) {
         my $exist = 0;
         foreach my $ukey (@allkeys) {
@@ -630,27 +608,49 @@ sub expand_make {
         }
         $exist = 0;
     }
+    return %job;
+}
 
-    # expand
-    my @range = &expand(%job);
-    my @objs;
-    my $self;
-    foreach (@range) {
-        $self = &do_initialized(\%job, @{$_});
-        $count++;
-        push(@objs, $self);
+sub add_exes_args_colon { # w.r.t. exes and args for compatibility only
+    my %job = @_;
+    my $max_of_exe    = &get_max_index_of_exe(%job);
+    my $max_of_first  = &get_max_index_of_first_arg_of_arg(%job);
+    my $max_of_second = &get_max_index_of_second_arg_of_arg(%job);
+    for ( my $i = 0; $i <= $max_of_exe; $i++ )   { push(@allkeys, "exe$i"); }
+    for ( my $i = 0; $i <= $max_of_first; $i++ ) {
+        push(@allkeys, "arg$i");
+        for ( my $j = 0; $j <= $max_of_second; $j++ ) {
+            push(@allkeys, "arg$i".'_'."$j");
+        }
     }
-    return @objs;
+    foreach my $key (keys(%job)) {
+        if ($key =~ /\A:/) {
+            if ($key =~ /"$expander"\Z/) {
+                $/ = $expander;
+                chomp $key;
+            }
+            push(@allkeys, $key);
+        }
+    }
+    return %job;
 }
 
 sub prepare{
     $count = 0;
     my %template = &unalias(@_);
-    my @objs = &expand_make(%template);
+    %template = &add_exes_args_colon(%template); # for compatibility
+    %template = &disble_keys_without_by_add_key(%template);
+    my @value = &expand(%template);
+    my @jobs;
+    foreach my $v (@value) {
+        my $self = &do_initialized(\%template, @{$v});
+        $count++;
+        push(@jobs, $self);
+    }
 #    foreach (@objs) {
 #        &jobsched::set_job_prepared($_);
 #    }
-    return @objs;
+    return @jobs;
 }
 
 sub check_status_for_initially {
