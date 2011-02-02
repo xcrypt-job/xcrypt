@@ -4,7 +4,7 @@ sub func0
 {
 	$job = shift;
 	print "User function"."\n";
-	if($job->{arg0} > 10)
+	if($job->{arg0_0} > 10)
 	{
 		return 1;
 	}
@@ -37,9 +37,9 @@ sub func1
 	print $j2{'arg0'}, "\n";
 =cut
 	my %j1 = (
-		'id' => $job->{id}."_".($job->{arg0}-1),
-		'exe' => $job->{exe},
-		'arg0' => $job->{arg0}-1,
+		'id' => $job->{id}."_".($job->{arg0_0}-1),
+		'exe0' => $job->{exe0},
+		'arg0_0' => $job->{arg0_0}-1,
 		'queue' => $job->{queue},
 		'canDivideFunc' => $job->{canDivideFunc},
 		'divideFunc' => $job->{divideFunc},
@@ -48,9 +48,9 @@ sub func1
 		'ofname' => $job->{ofname}
 	);
 	my %j2 = (
-		'id' => $job->{id}."_".($job->{arg0}-2),
-		'exe' => $job->{exe},
-		'arg0' => $job->{arg0}-2,
+		'id' => $job->{id}."_".($job->{arg0_0}-2),
+		'exe0' => $job->{exe0},
+		'arg0_0' => $job->{arg0_0}-2,
 		'canDivideFunc' => $job->{canDivideFunc},
 		'divideFunc' => $job->{divideFunc},
 		'mergeFunc' => $job->{mergeFunc},
@@ -87,8 +87,8 @@ sub func2
 
 %template = (
     'id' => 'job0',
-    'exe' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
-    'arg0' => 13,
+    'exe0' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
+    'arg0_0' => 13,
     'canDivideFunc' => \&func0,
     'divideFunc' => \&func1,
     'mergeFunc' => \&func2,

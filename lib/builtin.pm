@@ -512,15 +512,16 @@ sub do_initialized {
     my $self = user->new(\%job);
 
     # aliases
-    if (defined $self->{exe0}) {
-        $self->{exe} = $self->{exe0};
-    }
-    my $max_of_arg = &get_max_index_of_arg(%job);
-    foreach my $i (0..$max_of_arg) {
-        if (defined $self->{"arg0_$i"}) {
-            $self->{"arg$i"} = $self->{"arg0_$i"};
-        }
-    }
+    # if (defined $self->{exe0}) {
+    #     $self->{exe} = $self->{exe0};
+    # }
+    # my $max_of_arg = &get_max_index_of_arg(%job);
+    # foreach my $i (0..$max_of_arg) {
+    #     if (defined $self->{"arg0_$i"}) {
+    #         $self->{"arg$i"} = $self->{"arg0_$i"};
+    #     }
+    # }
+
     &jobsched::entry_job_id ($self);
 #    &jobsched::set_job_initialized($self); # -> core.pm
     return $self;
@@ -550,27 +551,27 @@ sub unalias {
 	}
     }
 
-    if ($job{exe}) {
-        $job{exe0} = $job{exe};
-        delete($job{exe});
-    }
-    if ($job{"exe$expander"}) {
-        $job{"exe0$expander"} = $job{"exe$expander"};
-        delete($job{"exe$expander"});
-    }
-    my $max_of_arg = &get_max_index_of_arg(%job);
-    foreach my $i (0..$max_of_arg) {
-        if ($job{"arg$i"}) {
-            $job{"arg0_$i"} = $job{"arg$i"};
-            delete($job{"arg$i"});
-        }
-    }
-    foreach my $i (0..$max_of_arg) {
-        if ($job{"arg$i$expander"}) {
-            $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
-            delete($job{"arg$i$expander"});
-        }
-    }
+    # if ($job{exe}) {
+    #     $job{exe0} = $job{exe};
+    #     delete($job{exe});
+    # }
+    # if ($job{"exe$expander"}) {
+    #     $job{"exe0$expander"} = $job{"exe$expander"};
+    #     delete($job{"exe$expander"});
+    # }
+    # my $max_of_arg = &get_max_index_of_arg(%job);
+    # foreach my $i (0..$max_of_arg) {
+    #     if ($job{"arg$i"}) {
+    #         $job{"arg0_$i"} = $job{"arg$i"};
+    #         delete($job{"arg$i"});
+    #     }
+    # }
+    # foreach my $i (0..$max_of_arg) {
+    #     if ($job{"arg$i$expander"}) {
+    #         $job{"arg0_$i$expander"} = $job{"arg$i$expander"};
+    #         delete($job{"arg$i$expander"});
+    #     }
+    # }
     return %job;
 }
 
