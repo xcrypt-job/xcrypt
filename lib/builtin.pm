@@ -885,10 +885,6 @@ sub submit {
                 &job_info($self);
             }
             ## start()
-if ($self->{env}->{location} eq 'remote') {
-    &put_into($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
-    unlink File::Spec->catfile($self->{workdir}, "$self->{id}_return");
-}
             if (check_status_for_start ($self)) {
                 $self->start();
             }

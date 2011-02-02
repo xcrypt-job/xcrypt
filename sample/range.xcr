@@ -19,7 +19,7 @@ use base qw(sandbox core);
     'before' => sub { my $self = shift;
     		      print "$self->{exe0}\n";
     		      return 5; },
-    'before_to_job' => 0,
+    'before_to_job' => 1,
     'after' =>  sub { my $self = shift;
 		      print "$self->{arg0_0}\n";
 		      return 10; },
