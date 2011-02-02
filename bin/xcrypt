@@ -25,6 +25,7 @@ our %options = (
 
 GetOptions
     (\%options,
+     'jobinfo',
      'compile_only',
      'print_log',
      'xbs-auto',
@@ -83,7 +84,9 @@ foreach my $key (keys %cfg) {
 	}
     }
 }
-print "Loading $options{config}.\n";
+if (defined $xcropt::options{print_log}) {
+    print "Loading $options{config}.\n";
+}
 my $host = qx/hostname/;
 chomp $host;
 my $username = qx/whoami/;
