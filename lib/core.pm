@@ -259,10 +259,10 @@ sub update_script_file {
     my $file_base = shift;
     my $file = File::Spec->catfile($self->{workdir}, $file_base);
     write_string_array ($file, @_);
-    if ($self->{env}->{location} eq 'remote') {
-	&put_into($self->{env}, $file, '.');
-	unlink $file;
-    }
+#    if ($self->{env}->{location} eq 'remote') {
+#	&put_into($self->{env}, $file, '.');
+#	unlink $file;
+#    }
 }
 
 # Make/Update a jobscript file of $self->{jobscript_header} and $self->{jobscript_body}
@@ -319,8 +319,24 @@ sub make_qsub_options {
     $self->{qsub_options} = \@contents;
 }
 
-sub before {}
-sub after {}
+sub before_in_xcrypt {
+    my $self = shift;
+#    if ($self->{env}->{location} eq 'remote') {
+#	my $file = File::Spec->catfile($self->{workdir}, "$self->{id}_return");
+#	if (-e $file) {
+#	    print "hoge\n";
+#	    &put_into($self->{env}, $file, '.');
+#	    unlink $file;
+#	}
+#    }
+}
+sub after_in_xcrypt {
+    my $self = shift;
+#    if ($self->{env}->{location} eq 'remote') {
+#	&get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
+#	&rmt_unlink($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
+#    }
+}
 
 # Submit a job specified by a jop object ($self) by executing "qsub"
 # after creating a job script file and a string of command-line option.

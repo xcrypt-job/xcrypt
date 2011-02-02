@@ -898,11 +898,6 @@ sub submit {
 	    if (check_status_for_wait_job_done ($self)) {
 		&jobsched::wait_job_done ($self);
 	    }
-if ($self->{env}->{location} eq 'remote') {
-    &get_from($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"), '.');
-    &rmt_unlink($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
-}
-
             ## ジョブスクリプトの最終行の処理を終えたからといって
             ## after()をしてよいとは限らないが……
 	    # my $flag0 = 0;
