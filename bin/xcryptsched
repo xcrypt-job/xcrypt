@@ -1,0 +1,2 @@
+#!/bin/sh
+xcrypt ${XCRYPT}/bin/script/sched.xcr "$@"
