@@ -36,6 +36,7 @@ sub get_last_job_signal     { return $Last_Job{$_[0]}{signal};     }
 sub get_last_job_userhost   { return $Last_Job{$_[0]}{userhost};   }
 sub get_last_job_sched      { return $Last_Job{$_[0]}{sched};      }
 sub get_last_job_prefix     { return $Last_Job{$_[0]}{prefix};     }
+sub get_last_job_location   { return $Last_Job{$_[0]}{location};   }
 sub get_last_job_workdir    { return $Last_Job{$_[0]}{workdir};    }
 sub get_last_job_script     { return $Last_Job{$_[0]}{script};     }
 sub get_last_job_stdout     { return $Last_Job{$_[0]}{stdout};     }
@@ -327,15 +328,16 @@ sub read_log {
             if ($_ =~ /^:transition\s+(\S+)\s+(\S+)\s+([0-9]+)/ ) {
                 my ($id, $stat, $time) = ($1, $2, $3);
                 $Last_Job{$id}{state} = $stat;
-            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
+            } elsif ($_ =~ /^:reqID\s+(\S+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/ ) {
                 $Last_Job{$1}{request_id} = $2;
                 $Last_Job{$1}{userhost}   = $3;
                 $Last_Job{$1}{sched}      = $4;
                 $Last_Job{$1}{prefix}     = $5;
-                $Last_Job{$1}{workdir}    = $6;
-                $Last_Job{$1}{script}     = $7;
-                $Last_Job{$1}{stdout}     = $8;
-                $Last_Job{$1}{stderr}     = $9;
+                $Last_Job{$1}{location}   = $6;
+                $Last_Job{$1}{workdir}    = $7;
+                $Last_Job{$1}{script}     = $8;
+                $Last_Job{$1}{stdout}     = $9;
+                $Last_Job{$1}{stderr}     = $10;
             } elsif ($_ =~ /^:signal\s+(\S+)\s+(\S+)/ ) {
                 my ($id, $sig) = ($1, $2);
                 if ( $sig eq 'unset' ) {
