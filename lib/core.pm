@@ -45,7 +45,7 @@ sub new {
     set_member_if_empty ($self, 'qsub_options', []);
 
     &jobsched::set_job_initialized($self); # <- builtin.pm
-    &jobsched::set_job_prepared($self); # no diff between initialized and prepared now
+    &jobsched::set_job_prepared($self); # for compatibility, the same as initialized
 
     return bless $self, $class;
 }

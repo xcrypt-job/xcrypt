@@ -31,8 +31,8 @@ sub sigint_handler {
   print "User's SIGINT handler is called.\n";
 }
 
-my @jobs = &prepare(%template1);
-&submit(@jobs);
+my @jobs = &prepare_submit(%template1);
+#&submit(@jobs);
 &sync(@jobs);
 print return_transmission::get_before_return($jobs[0]), "\n";
 print return_transmission::get_after_return($jobs[0]), "\n";

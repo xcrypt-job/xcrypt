@@ -635,24 +635,6 @@ sub add_exes_args_colon { # w.r.t. exes and args for compatibility only
     return %job;
 }
 
-sub prepare{
-    $count = 0;
-    my %template = &unalias(@_);
-    %template = &add_exes_args_colon(%template); # for compatibility
-    %template = &disble_keys_without_by_add_key(%template);
-    my @value = &expand(%template);
-    my @jobs;
-    foreach my $v (@value) {
-        my $self = &do_initialized(\%template, @{$v});
-        $count++;
-        push(@jobs, $self);
-    }
-#    foreach (@objs) {
-#        &jobsched::set_job_prepared($_);
-#    }
-    return @jobs;
-}
-
 sub check_status_for_initially {
     my $self = shift;
     my $sig = jobsched::get_signal_status($self);
@@ -974,14 +956,35 @@ sub sync {
     return @_;
 }
 
-sub prepare_submit {
+sub prepare{
+    $count = 0;
     my %template = &unalias(@_);
-    my @objs = &expand_make(%template);
-    foreach (@objs) {
-#        &jobsched::set_job_prepared($_);
-        &submit($_);
+    %template = &add_exes_args_colon(%template); # for compatibility
+    %template = &disble_keys_without_by_add_key(%template);
+    my @value = &expand(%template);
+    my @jobs;
+    foreach my $v (@value) {
+        my $self = &do_initialized(\%template, @{$v});
+        $count++;
+        push(@jobs, $self);
     }
-    return @objs;
+    return @jobs;
+}
+
+sub prepare_submit {
+    $count = 0;
+    my %template = &unalias(@_);
+    %template = &add_exes_args_colon(%template); # for compatibility
+    %template = &disble_keys_without_by_add_key(%template);
+    my @value = &expand(%template);
+    my @jobs;
+    foreach my $v (@value) {
+        my $self = &do_initialized(\%template, @{$v});
+        $count++;
+        &submit($self);
+        push(@jobs, $self);
+    }
+    return @jobs;
 }
 
 sub submit_sync {
