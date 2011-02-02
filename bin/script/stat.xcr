@@ -231,7 +231,8 @@ sub get_file_path {
 sub get_remote_file {
     my ($id, $file) = @_;
     
-    unless (&jobsched::get_last_job_userhost($id) eq 'local') {
+#    unless (&jobsched::get_last_job_userhost($id) eq 'local') {
+    if (&jobsched::get_last_job_location($id) eq 'remote') {
         unless(-e $file) {
             my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
             my $ssh = Net::OpenSSH->new($host, (user => $user));
