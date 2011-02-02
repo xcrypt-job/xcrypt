@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+use strict;
+use File::Spec;
+use jsconfig;
+use Data::Dumper;
+
+$Data::Dumper::Pad = "\t";
+
+my $self = {
+    'JS_stderr' => 'xxx',
+    'JS_stdout' => 'xxx',
+};
+
+foreach my $sched ( keys %jsconfig::jobsched_config ) {
+    print $sched . "\n";
+    foreach ( sort keys %{$jsconfig::jobsched_config{$sched}} ) {
+        if (ref ($jsconfig::jobsched_config{$sched}{$_}) eq 'CODE' ) {
+            my $optname = '';
+            my $mb_name = '';
+            if ( $_ =~ /^qsub_option_(.*)/ ) {
+                $optname = $1;
+                $mb_name = "JS_$1";
+            } elsif ( $_ =~ /^jobscript_option_(.*)/ ) {
+                $optname = $1;
+                $mb_name = "JS_$1";
+            }
+            print "\t\$" . $_ . '    ' . &{$jsconfig::jobsched_config{$sched}{$_}}($self, $mb_name) . "\n";
+        } else {
+            print Data::Dumper->Dump([$jsconfig::jobsched_config{$sched}{$_}],[$_]);
+        }
+    }
+    print "\n";
+}

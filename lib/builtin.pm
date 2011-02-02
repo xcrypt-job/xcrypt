@@ -797,7 +797,7 @@ sub job_info {
     }
     #$job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}}\n";
     $job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}} $self->{jobscript_file}\n";
-    
+
     #exe_args
     my $max_of_exe = &get_max_index_of_exe(%$self);
     my $max_of_second = &get_max_index_of_second_arg_of_arg(%$self);
@@ -818,7 +818,7 @@ sub job_info {
             $job_info .= "\t$key = $self->{$key}\n";
         }
     }
-    
+
     print "$job_info";
 }
 
@@ -879,11 +879,6 @@ sub submit {
                     delete $self->{before_bkup};
                 }
             }
-	    ## stage_in_local処理
-	    #beforeした後にstage_in_localの処理をする
-	    if(defined $self->{JS_stage_in_files}){
-		$self->{'staging_files'}->stage_in_local();
-	    }
             ## job_info()
             if (defined $xcropt::options{jobinfo}) {
                 &job_info($self);
@@ -929,14 +924,6 @@ if ($self->{env}->{location} eq 'remote') {
 
 	    ## NFS が書き込んでくれる*経験的*待ち時間
 	    sleep 3;
-	    ## ステージアウトファイルの展開
-	    if(defined $self->{JS_stage_out_files}){
-		$self->{'staging_files'}->stage_out_local();
-	    }
-	    ## ステージングアーカイブファイルの削除
-	    if(defined $self->{JS_stage_in_files} or defined $self->{JS_stage_out_files}){
-		$self->{'staging_files'}->dispose();
-	    }
             ## after()
             if (check_status_for_after ($self)) {
                 if ($self->{after_to_job} == 1 and (exists $self->{after})) {

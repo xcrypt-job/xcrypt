@@ -226,7 +226,7 @@ sub make_in_job_script {
         push (@body, '$self->return_write("before", ".", &before($self));');
     }
     if (ref ($self->{$memb_evalstr}) eq 'CODE') {
-        push (@body, '$self->return_write("'.$memb_evalstr.'", ".", &{$self->{'.$memb_evalstr.'}}($self, @ARGV));');
+        push (@body, '$self->return_write("'.$memb_evalstr.'", ".", &{$self->{'.$memb_evalstr.'}}());');
     } elsif (exists $self->{$memb_evalstr}) {
         push (@body, '$self->return_write("'.$memb_evalstr.'",  ".", $self->{'.$memb_evalstr.'});');
     }
