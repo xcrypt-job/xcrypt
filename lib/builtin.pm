@@ -31,7 +31,6 @@ use Config::Simple;
 use Cwd;
 use common;
 use jsconfig;
-use file_stager;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;

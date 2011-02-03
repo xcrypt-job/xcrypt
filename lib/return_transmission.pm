@@ -43,14 +43,13 @@ sub get_xxx_return {
     my $self   = shift;
     my $get_id = shift;
     if ($get_id eq "") {$get_id = $self->{id}};
-#    my $return_file;
-#    my $return_dir =  File::Spec->catfile($self->{env}->{wd}, "${get_id}");
-#    if (-d $return_dir) {
-#        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}", "${get_id}_return");
-#    } else {
-#        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}_return");
-#    }
-    my $return_file = File::Spec->catfile($self->{workdir}, "${get_id}_return");
+    my $return_file;
+    my $return_dir =  File::Spec->catfile($self->{env}->{wd}, "${get_id}");
+    if (-d $return_dir) {
+        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}", "${get_id}_return");
+    } else {
+        $return_file =  File::Spec->catfile($self->{env}->{wd}, "${get_id}_return");
+    }
     my $get_nm = shift;
     sleep 1;
     open (RETURN_R, "+< $return_file") or warn "Cannot open $return_file";
@@ -81,13 +80,11 @@ sub get_xxx_return {
 sub return_write {
     my $self    = shift;
     my $summons = shift;
-    my $dir = shift;
-#    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
-    my $return_file =  File::Spec->catfile($dir, "$self->{id}_return");
+    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
     open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file";
     flock RETURN_W, 2;
-    if (exists $self->{"transfer_reference_level"}) {
-        $Data::Dumper::Maxdepth = $self->{"transfer_reference_level"};
+    if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
+        $Data::Dumper::Maxdepth = $self->{transfer_reference_level};
     }
     my $dumper = Data::Dumper->Dump([@_],["${summons}"]);
     $dumper =~ s/([\[\{])\n\s+(\')/$1$2/g;
@@ -108,7 +105,7 @@ sub data_dumper {
             $dump_self{$k} = $self->{$k};
         }
     }
-    if (exists $self->{transfer_reference_level}) {
+    if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
         $Data::Dumper::Maxdepth = $self->{transfer_reference_level};
     }
     my $dumper = Data::Dumper->Dump([\%dump_self],['self']);
@@ -208,6 +205,10 @@ sub dump_ref {
     my $evaledVal = eval $v;
     if ($evaledVal =~ /^ARRAY/ or $evaledVal =~ /^HASH/) {
         my $dumper = Data::Dumper->Dump([$evaledVal], ["$k"]);
+        return $dumper;
+    } elsif ($evaledVal =~ /^REF/) {
+        my $dumper = Data::Dumper->Dump([$evaledVal], ["$k"]);
+        $dumper =~ s/^(.*\s+=\s+)(\\+)(\[[.\s]+)/$1$3/;
         return $dumper;
     } elsif (ref (\&$v) eq 'CODE') {
         my $dumper = Data::Dumper->Dump([\&$evaledVal], ["$k"]);

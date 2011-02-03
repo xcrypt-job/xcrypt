@@ -11,7 +11,6 @@ use jobsched;
 use jsconfig;
 #use xcropt;
 use common;
-use file_stager;
 use builtin;
 use return_transmission;
 
@@ -40,8 +39,6 @@ sub new {
     set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
-    # file staging information
-    set_member_if_empty ($self, 'staging_files', file_stager->new($self));
     set_member_if_empty ($self, 'qsub_options', []);
 
     &jobsched::set_job_initialized($self); # <- builtin.pm
@@ -167,10 +164,6 @@ sub make_jobscript_body {
     # inventory_write.pl をやめて touch に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push (@body, 'touch ' . $self->{id} . '_is_running');
-    ## ステージインジョブを呼び出す（アーカイブファイルの展開）
-    if (defined($self->{JS_stage_in_files})){
-    	$self->{before_in_job} = $self->{'staging_files'}->stage_in_job() . $self->{before_in_job};
-    }
     # Do before_in_job
 #    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
     if ( $self->{before_in_job} or $self->{before_to_job} == 1 ) { push (@body, "perl $self->{before_in_job_file}"); } # for return_transmission
@@ -192,10 +185,6 @@ sub make_jobscript_body {
     # Do after_in_job
 #    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
     if ( $self->{after_in_job} or $self->{after_to_job} == 1 ) { push (@body, "perl $self->{after_in_job_file}"); } # for return_transmission
-    ## ステージアウトジョブを呼び出す（ステージアウトアーカイブファイルの作成）
-    if (defined($self->{JS_stage_out_files})){
-    	$self->{after_in_job} .= $self->{'staging_files'}->stage_out_job();
-    }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     # inventory_write.pl をやめて touch に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
