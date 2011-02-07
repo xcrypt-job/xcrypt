@@ -828,12 +828,12 @@ sub submit {
 	    }
             ## Manually handle a signal message once.
             jobsched::left_signal_message_check ($self);
-            ## initially()
+            ## Invoke initially()
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
             }
             $self->EVERY::initially(@{$self->{VALUE}});
-            ## before_in_xcrypt()
+            ## Invoke before_in_xcrypt()
 #            if (check_status_for_before ($self)) {
                 my $before_in_xcrypt_return = $self->EVERY::before_in_xcrypt(@{$self->{VALUE}});
                 foreach my $key (keys %{$before_in_xcrypt_return}) {
@@ -843,9 +843,10 @@ sub submit {
                     }
                 }
 #            }
-            ## before()
+            ## Invoke before() (except user's before() if before_to_job is 1)
             if (check_status_for_before ($self)) {
                 if ($self->{before_to_job} == 1 and (exists $self->{before})) {
+                    # Eliminate user's before() temporarily.
                     $self->{before_bkup} = $self->{before};
                     delete $self->{before};
                 }
@@ -857,15 +858,16 @@ sub submit {
                     }
                 }
                 if (exists $self->{before_bkup}) {
+                    # Restore user's before() from before_bkup
                     $self->{before} = $self->{before_bkup};
                     delete $self->{before_bkup};
                 }
             }
-            ## job_info()
+            ## Print job information by employing job_info()
             if (defined $xcropt::options{jobinfo}) {
                 &job_info($self);
             }
-            ## start()
+            ## Invoke start() (job submission)
             if (check_status_for_start ($self)) {
                 $self->start();
             }
@@ -897,9 +899,10 @@ sub submit {
 
 	    ## NFS が書き込んでくれる*経験的*待ち時間
 	    sleep 3;
-            ## after()
+            ## Invoke after()
             if (check_status_for_after ($self)) {
                 if ($self->{after_to_job} == 1 and (exists $self->{after})) {
+                    # Eliminate user's after() temporarily.
                     $self->{after_bkup} = $self->{after};
                     delete $self->{after};
                 }
@@ -911,11 +914,12 @@ sub submit {
                     }
                 }
                 if (exists $self->{after_bkup}) {
+                    # Restore user's after() from after_bkup
                     $self->{after} = $self->{after_bkup};
                     delete $self->{after_bkup};
                 }
             }
-            ## after_in_xcrypt()
+            ## Invoke after_in_xcrypt()
 #            if (check_status_for_after ($self)) {
                 my $after_in_xcrypt_return = $self->EVERY::LAST::after_in_xcrypt(@{$self->{VALUE}});
                 foreach my $key (keys %{$after_in_xcrypt_return}) {
