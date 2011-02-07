@@ -49,7 +49,7 @@ sub start {
                     no strict 'refs';
                     if (ref($self->{"dry_exe$1"}) eq 'CODE') {
                         $self->{$key} .= "perl $self->{id}_dry_exe${1}.pl $self->{$bkup}";
-                        $self->make_in_job_script($self, "dry_exe$1", "dry_exe{$1}_script");
+                        $self->make_in_job_script($self, "dry_exe{$1}_script", "dry_exe$1");
                         $self->update_script_file ("$self->{id}_dry_exe${1}.pl", @{$self->{"dry_exe{$1}_script"}});
                     } elsif (*{$self->{"dry_exe$1"}}{SCALAR}) {
                         $self->{$key} .= $self->{"dry_exe$1"} . "\n";

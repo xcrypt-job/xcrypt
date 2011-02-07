@@ -192,10 +192,15 @@ sub make_jobscript_body {
     $self->{jobscript_body} = \@body;
 }
 
-# Create a perl script file for before/after_in_job
+# Generate the contents of the perl script and saves it to $self->{$memb_script}.
+# The script (1) defines '$self' as a dumped job object, and
+# (2) For each $name in @names:
+# (2.1) calls the dumped method $self->{$name} by passing @{$self->{VALUE}} as arguments.
+# (2.2) writes the return value to the "$self->{id}_return" by employing return_write().
 sub make_in_job_script {
-    my ($self, $memb_evalstr, $memb_script) = @_;
+    my ($self, $memb_script, @names) = @_;
     my @body = ();
+    ## Header
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
     push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
     if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
@@ -203,19 +208,13 @@ sub make_in_job_script {
     } else {
         push (@body, '$Data::Dumper::Maxdepth = '. $Data::Dumper::Maxdepth .';');
     }
-   #push (@body, Data::Dumper->Dump([$self],['self']));
+    ## Dumps the job object itself
     push (@body, $self->data_dumper());
-   #push (@body, $self->{$memb_evalstr});
-    if ($memb_evalstr eq 'before_in_job' and (exists $self->{before}) and $self->{before_to_job} == 1) {
-        push (@body, '$self->return_write("before", ".", &before($self));');
-    }
-    if (ref ($self->{$memb_evalstr}) eq 'CODE') {
-        push (@body, '$self->return_write("'.$memb_evalstr.'", ".", &{$self->{'.$memb_evalstr.'}}());');
-    } elsif (exists $self->{$memb_evalstr}) {
-        push (@body, '$self->return_write("'.$memb_evalstr.'",  ".", $self->{'.$memb_evalstr.'});');
-    }
-    if ($memb_evalstr eq 'after_in_job' and (exists $self->{after}) and $self->{after_to_job} == 1) {
-        push (@body, '$self->return_write("after", ".", &after($self));');
+    ## Calling the dumped method and writing the return value.
+    foreach my $name (@names) {
+        if (ref ($self->{$name}) eq 'CODE') {
+            push (@body, '$self->return_write("'.$name.'", ".", &{$self->{'.$name.'}}($self, @{$self->{VALUE}}));');
+        }
     }
     $self->{$memb_script} = \@body;
 }
@@ -232,12 +231,34 @@ sub make_in_job_script {
 
 sub make_before_in_job_script {
     my $self = shift;
-    make_in_job_script ($self, 'before_in_job', 'before_in_job_script');
+    my @names = ();
+    if ((exists $self->{before}) and $self->{before_to_job} == 1) {
+        push (@names, 'before');
+    }
+    if (ref ($self->{before_in_job}) eq 'CODE') {
+        push (@names, 'before_in_job')
+    }
+    if ($#names < 0) {
+        $self->{before_in_job_script} = ();
+    } else {
+        make_in_job_script ($self, 'before_in_job_script', @names);
+    }
 }
 
 sub make_after_in_job_script {
     my $self = shift;
-    make_in_job_script ($self, 'after_in_job', 'after_in_job_script');
+    my @names = ();
+    if (ref ($self->{after_in_job}) eq 'CODE') {
+        push (@names, 'after_in_job')
+    }
+    if ((exists $self->{after}) and $self->{after_to_job} == 1) {
+        push (@names, 'after');
+    }
+    if ($#names < 0) {
+        $self->{after_in_job_script} = ();
+    } else {
+        make_in_job_script ($self, 'after_in_job_script', @names);
+    }
 }
 
 # Make/Update script file

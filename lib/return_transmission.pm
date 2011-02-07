@@ -118,8 +118,6 @@ sub data_dumper {
         }
     }
     push (@body, 'bless $self;');
-    push (@body, 'sub before {if ($self->{before}) {&{$self->{before}}($self, @{$self->{VALUE}})};}');
-    push (@body, 'sub after  {if ($self->{after} ) {&{$self->{after}}($self, @{$self->{VALUE}})};}');
     # Data_Dumper(User Script)
     while (my ($k,$v) = each %user::) {
         if ($k =~ /^[a-zA-Z]+/ and $k !~ /\:$/) {
