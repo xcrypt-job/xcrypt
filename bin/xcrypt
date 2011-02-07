@@ -27,7 +27,6 @@ GetOptions
     (\%options,
      'jobinfo',
      'compile_only',
-     'print_log',
      'xbs-auto',
      'xbs-type=s',
      'shared',
@@ -84,7 +83,7 @@ foreach my $key (keys %cfg) {
 	}
     }
 }
-if (defined $xcropt::options{print_log}) {
+if ( $options{verbose} >= 1 ) {
     print "Loading $options{config}.\n";
 }
 my $host = qx/hostname/;
