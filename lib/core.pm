@@ -38,6 +38,7 @@ sub new {
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
+    set_member_if_empty ($self, 'exe_in_job_file', "$self->{id}_exe_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
     set_member_if_empty ($self, 'qsub_options', []);
 
@@ -165,26 +166,39 @@ sub make_jobscript_body {
 #    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push (@body, 'touch ' . $self->{id} . '_is_running');
     # Do before_in_job
-#    if ( $self->{before_in_job} ) { push (@body, "perl $self->{before_in_job_file}"); }
-    if ( $self->{before_in_job} or $self->{before_to_job} == 1 ) { push (@body, "perl $self->{before_in_job_file}"); } # for return_transmission
+    if ( $self->{before_in_job} 
+         || ($self->{before} && $self->{before_to_job} == 1 )){
+        push (@body, "perl $self->{before_in_job_file}"); 
+    }
     # Execute the program
     my $max_of_exe = &builtin::get_max_index_of_exe(%$self);
     my $max_of_second = &builtin::get_max_index_of_second_arg_of_arg(%$self);
-    foreach my $j (0..$max_of_exe) {
-	if ($self->{"exe$j"}) {
-	    my @args = ();
-	    for ( my $i = 0; $i <= $max_of_second; $i++ ) {
-		if ($self->{"arg$j".'_'."$i"}) {
-		    push(@args, $self->{"arg$j".'_'."$i"});
-		}
+    if ( ref $self->{exe} eq 'CODE' ) {
+        # $self->{exe} is used.
+        if ($max_of_exe>=0) {
+            warn '['.$self->{id}.']: {exe0}..{exe'.$max_of_exe.'} is ignored because {exe} is defined as a function.';            
+        }
+        push (@body, "perl $self->{exe_in_job_file}"); 
+    } else {
+        # $self->{exe0} .. $self->{exe$max_of_exe} are used.
+        foreach my $j (0..$max_of_exe) { 
+            if ($self->{"exe$j"}) {
+                my @args = ();
+                for ( my $i = 0; $i <= $max_of_second; $i++ ) {
+                    if ($self->{"arg$j".'_'."$i"}) {
+                        push(@args, $self->{"arg$j".'_'."$i"});
+                    }
 	    }
-	    my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
-	    push (@body, $cmd);
-	}
+                my $cmd = $self->{"exe$j"} . ' ' . join(' ', @args);
+                push (@body, $cmd);
+            }
+        }
     }
     # Do after_in_job
-#    if ( $self->{after_in_job} ) { push (@body, "perl $self->{after_in_job_file}"); }
-    if ( $self->{after_in_job} or $self->{after_to_job} == 1 ) { push (@body, "perl $self->{after_in_job_file}"); } # for return_transmission
+    if ( $self->{after_in_job} 
+         || ($self->{after} && $self->{after_to_job} == 1 )){
+        push (@body, "perl $self->{after_in_job_file}"); 
+    }
     # Set the job's status to "done" (should set to "aborted" when failed?)
     # inventory_write.pl をやめて touch に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
@@ -219,16 +233,6 @@ sub make_in_job_script {
     $self->{$memb_script} = \@body;
 }
 
-# original
-#sub make_in_job_script {
-#    my ($self, $memb_evalstr, $memb_script) = @_;
-#    my @body = ();
-#    push (@body, 'use data_extractor;', 'use data_generator;');
-#    push (@body, Data::Dumper->Dump([$self],['self']));
-#    push (@body, $self->{$memb_evalstr});
-#    $self->{$memb_script} = \@body;
-#}
-
 sub make_before_in_job_script {
     my $self = shift;
     my @names = ();
@@ -239,9 +243,18 @@ sub make_before_in_job_script {
         push (@names, 'before_in_job')
     }
     if ($#names < 0) {
-        $self->{before_in_job_script} = ();
+        $self->{before_in_job_script} = [];
     } else {
         make_in_job_script ($self, 'before_in_job_script', @names);
+    }
+}
+
+sub make_exe_in_job_script {
+    my $self = shift;
+    if (ref ($self->{exe}) eq 'CODE') {
+        make_in_job_script ($self, 'exe_in_job_script', 'exe');
+    } else {
+        $self->{exe_in_job_script} = [];
     }
 }
 
@@ -255,7 +268,7 @@ sub make_after_in_job_script {
         push (@names, 'after');
     }
     if ($#names < 0) {
-        $self->{after_in_job_script} = ();
+        $self->{after_in_job_script} = [];
     } else {
         make_in_job_script ($self, 'after_in_job_script', @names);
     }
@@ -288,6 +301,13 @@ sub update_before_in_job_file {
     $self->update_script_file ($self->{before_in_job_file}, @{$self->{before_in_job_script}});
 }
 
+# Make/Update a perl script file for exe_in_job
+sub update_exe_in_job_file {
+    my $self = shift;
+    $self->update_script_file ($self->{exe_in_job_file}, @{$self->{exe_in_job_script}});
+}
+
+
 # Make/Update a perl script file for after_in_job
 sub update_after_in_job_file {
     my $self = shift;
@@ -299,6 +319,7 @@ sub update_all_script_files {
     my $self = shift;
     $self->update_jobscript_file();
     $self->update_before_in_job_file();
+    $self->update_exe_in_job_file();
     $self->update_after_in_job_file();
 }
 
@@ -365,6 +386,7 @@ sub qsub_make {
         &{$cfg{modify}} ($self);
     }
     $self->make_before_in_job_script();
+    $self->make_exe_in_job_script();
     $self->make_after_in_job_script();
     $self->update_all_script_files();
 }
