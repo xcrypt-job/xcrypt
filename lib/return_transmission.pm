@@ -87,6 +87,7 @@ sub return_write {
     my $self    = shift;
     my $summons = shift;
     my $prefix = shift;
+    my $val = shift;
 #    my $return_file =  File::Spec->catfile($self->{env}->{wd}, "$self->{workdir}", "$self->{id}_return");
     my $return_file =  File::Spec->catfile($prefix, "$self->{id}_return");
     open (RETURN_W, "+>> $return_file") or warn "Cannot open $return_file";
@@ -94,7 +95,7 @@ sub return_write {
     if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
         $Data::Dumper::Maxdepth = $self->{transfer_reference_level};
     }
-    my $dumper = Data::Dumper->Dump([@_],["${summons}"]);
+    my $dumper = Data::Dumper->Dump([$val],["${summons}"]);
     $dumper =~ s/([\[\{])\n\s+(\')/$1$2/g;
     $dumper =~ s/([\',]{1})\n\s+(\')/$1$2/g;
     $dumper =~ s/(\')\n\s+([\]\}])/$1$2/g;

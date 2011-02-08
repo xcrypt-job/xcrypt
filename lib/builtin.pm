@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_template_of_template
-async_in_job
+spawn
 );
 
 use strict;
@@ -804,6 +804,10 @@ sub job_info {
     print "$job_info";
 }
 
+##################################################
+# Keys are refs to job objects spawned in the inner-most join{} scope.
+our %Spawned=();
+
 sub submit {
     my @array = @_;
     my $slp = 0;
@@ -944,6 +948,8 @@ sub submit {
 
 sub sync {
     my @jobs = @_;
+    # If any jobs are not specified, all the jobs submitted in this lexical scope.
+    if ($#jobs  < 0) { @jobs = map {jobsched::find_job_by_id($_)} (keys %Spawned); }
     foreach (@jobs) {
         if ( $xcropt::options{verbose} >= 2 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
@@ -952,6 +958,7 @@ sub sync {
         if ( $xcropt::options{verbose} >= 2 ) {
             print "$_->{id} finished.\n";
         }
+        delete ($Spawned{$_->{id}});
     }
     foreach (@jobs) {
         &jobsched::exit_job_id($_);
@@ -1011,13 +1018,41 @@ sub filter {
     return @ret;
 }
 
-sub async_in_job(&@) {
-    my $code = shift;
-    foreach my $self (@_) {
-	$self->{exe0} = $code->($self, $self->{VALUES});
-	submit($self);
+## Constructs for executing perl code as a job.
+my $n_spawned_job=0;
+sub generate_new_job_id {
+    my $prefix = 'spawned_job_';
+    local $jobsched::Warn_job_not_found_by_id=0;
+    while (1) {
+        my $candidate = $prefix.sprintf("%03d", $n_spawned_job++);
+        unless (jobsched::find_job_by_id($candidate)
+                || jobsched::get_last_job_state ($candidate)) {
+            return $candidate;
+        }
     }
-    return @_;
 }
+
+sub spawn(&@) {
+    my $code = shift;
+    my %template = ('exe' => $code, @_);
+    unless (defined $template{id}) {
+        $template{id} = generate_new_job_id();
+    }
+    my @jobs = prepare_submit (%template);
+    foreach my $job (@jobs) {
+        $Spawned{$job->{id}}=1;
+    }
+    return @jobs;
+}
+
+sub join(&) {
+    my $code = shift;
+    my $joined_code = sub {
+        local %Spawned=();
+        $code->();
+        sync;
+    };
+    $joined_code->();
+}    
 
 1;
