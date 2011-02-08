@@ -6,8 +6,13 @@ use base qw(sandbox core);
 
 %template1 = (
     'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
-    'exe0@' => sub { '../bin/fib '.($VALUE[0] + $VALUE[2])." > "; },
-    'arg0_0@' => sub { $_[0]->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]; },
+    'exe' => sub {
+        my $self=shift;
+        print "exe: $self->{id}\n";
+        system ('../bin/fib '.($VALUE[0] + $VALUE[2])." > "
+                .$self->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]);
+        return 100;
+    },
 #    'RANGE0' => [40],
 #    'RANGE2' => [0],
     'RANGES' => [[40,41,42],[0],[0]],
@@ -16,13 +21,17 @@ use base qw(sandbox core);
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'JS_limit_time' => 60,
-    'before' => sub { my $self = shift;
-    		      print "$self->{exe0}\n";
-    		      return 5; },
+    'before' => sub {
+        my $self = shift;
+        print "before: $self->{id}\n";
+        return 5;
+    },
     'before_to_job' => 1,
-    'after' =>  sub { my $self = shift;
-		      print "$self->{arg0_0}\n";
-		      return 10; },
+    'after' =>  sub {
+        my $self = shift;
+        print "after: $self->{arg0_0}\n";
+        return 10;
+    },
     'after_to_job' => 1,
 );
 
@@ -35,4 +44,5 @@ my @jobs = &prepare_submit(%template1);
 #&submit(@jobs);
 &sync(@jobs);
 print return_transmission::get_before_return($jobs[0]), "\n";
+print return_transmission::get_exe_return($jobs[0]), "\n";
 print return_transmission::get_after_return($jobs[0]), "\n";
