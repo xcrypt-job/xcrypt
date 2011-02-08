@@ -41,7 +41,9 @@ sub new {
     set_member_if_empty ($self, 'exe_in_job_file', "$self->{id}_exe_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
     set_member_if_empty ($self, 'qsub_options', []);
-
+    set_member_if_empty ($self, 'not_transfer_info', []);
+    push (@{$self->{not_transfer_info}}, 'before_in_job_script', 'exe_in_job_script', 'after_in_job_script');
+    
     &jobsched::set_job_initialized($self); # <- builtin.pm
     &jobsched::set_job_prepared($self); # for compatibility, the same as initialized
 
