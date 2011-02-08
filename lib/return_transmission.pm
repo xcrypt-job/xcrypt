@@ -27,6 +27,12 @@ sub get_before_return {
     if ($get_id eq "") {$get_id = $self->{id}};
     return &get_xxx_return($self, $get_id, 'before');
 }
+sub get_exe_return {
+    my $self = shift;
+    my $get_id = shift;
+    if ($get_id eq "") {$get_id = $self->{id}};
+    return &get_xxx_return($self, $get_id, 'exe');
+}
 sub get_after_in_job_return {
     my $self   = shift;
     my $get_id = shift;
@@ -118,6 +124,7 @@ sub data_dumper {
         }
     }
     push (@body, 'bless $self;');
+    push (@body, '@VALUE = @{$self->{VALUE}};');
     # Data_Dumper(User Script)
     while (my ($k,$v) = each %user::) {
         if ($k =~ /^[a-zA-Z]+/ and $k !~ /\:$/) {
