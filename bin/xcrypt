@@ -144,10 +144,10 @@ sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}
 sub start  {my $self = shift;$self->SUPER::start();}
 sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}
 sub after_in_xcrypt  {local ($self, @VALUE) = @_; if ($self->{after_in_xcrypt} ) {&{$self->{after_in_xcrypt}}($self, @VALUE)};}
-$SIG{HUP} =  sub {(bless{},"user")->EVERY::sighup_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};
+$SIG{HUP} =  sub {(bless{},"user")->EVERY::sighup_handler(); print "Xcrypt is aborted by SIGHUP.\n"; exit(1);};
 $SIG{INT} =  sub {(bless{},"user")->EVERY::sigint_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};
-$SIG{ABRT} = sub {(bless{},"user")->EVERY::sigabrt_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};
-$SIG{TERM} = sub {(bless{},"user")->EVERY::sigterm_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};
+$SIG{ABRT} = sub {(bless{},"user")->EVERY::sigabrt_handler(); print "Xcrypt is aborted by SIGABRT.\n"; exit(1);};
+$SIG{TERM} = sub {(bless{},"user")->EVERY::sigterm_handler(); print "Xcrypt is aborted by SIGTERM.\n"; exit(1);};
 unless ($xcropt::options{scratch}) { &jobsched::read_log(); }
 &jobsched::invoke_abort_check();
 &jobsched::invoke_left_message_check();
