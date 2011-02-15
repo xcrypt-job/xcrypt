@@ -815,6 +815,8 @@ sub submit {
     # my @coros = ();
 
     foreach my $self (@array) {
+        # Take a snapshot of the Perl(Xcrypt) environment for *_in_job_scripts
+        $self->make_dumped_environment();
         # Create a job thread.
         my $job_coro = Coro::async {
             my $self = $_[0];
