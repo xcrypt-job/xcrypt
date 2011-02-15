@@ -4,11 +4,13 @@ use base qw(sandbox core);
 # or
 # fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
 
-foreach my $i (40,41,42) {
+$template_of_template{transfer_variable}=['$i'];
+
+foreach  $i (35..45) {
     spawn {
         my $self=shift;
         print "exe: $self->{id}\n";
-        system ('../bin/fib '.$self->{':i'}." > $self->{id}_out");
-    } (':i' => $i);
+        system ("../bin/fib $i > out");
+    };
 }
 sync;
