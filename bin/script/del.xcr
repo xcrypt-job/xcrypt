@@ -89,7 +89,7 @@ sub qdel {
 	    }
 	    # execute qdel
 	    my $command_string = any_to_string_spc ("$qdel_command ", &jobsched::get_last_job_request_id($id));
-	    if (&jobsched::get_last_job_userhost($id) eq 'local') {
+	    if (&jobsched::get_last_job_location($id) eq 'local') {
 #        if (cmd_executable ($command_string, $self->{env})) {
 		exec_async ($command_string);
 #        } else {
