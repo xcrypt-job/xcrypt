@@ -12,6 +12,7 @@ set_separator get_separator check_separator nocheck_separator
 filter
 set_template_of_template
 spawn
+add_cmd_before_exe add_cmd_after_exe
 );
 
 use strict;
@@ -826,10 +827,6 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
             }
-	    ## set JS_queue if undefined
-	    unless (defined $self->{JS_queue}) {
-		$self->{JS_queue} = $self->{env}->{queue};
-	    }
             ## Manually handle a signal message once.
             jobsched::left_signal_message_check ($self);
             ## Invoke initially()
@@ -1016,6 +1013,19 @@ sub filter {
         }
     }
     return @ret;
+}
+
+our @Jobscript_pre_body = ();
+sub add_cmd_before_exe{
+    foreach my $cmd (@_) {
+	push(@Jobscript_pre_body, $cmd);
+    }
+}
+our @Jobscript_post_body = ();
+sub add_cmd_after_exe{
+    foreach my $cmd (@_) {
+	push(@Jobscript_post_body, $cmd);
+    }
 }
 
 ## Constructs for executing perl code as a job.

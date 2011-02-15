@@ -169,6 +169,7 @@ sub make_jobscript_body {
     push (@body, 'touch ' . $self->{id} . '_is_running');
     # Do before_in_job by executing the perl script created by make_before_in_job_script
     push (@body, "perl $self->{before_in_job_file}");
+    push(@body, @builtin::Jobscript_pre_body);
     # Execute the program
     my $max_of_exe = &builtin::get_max_index_of_exe(%$self);
     my $max_of_second = &builtin::get_max_index_of_second_arg_of_arg(%$self);
@@ -199,6 +200,7 @@ sub make_jobscript_body {
             }
         }
     }
+    push(@body, @builtin::Jobscript_post_body);
     # Do after_in_job by executing the perl script created by make_after_in_job_script
     push (@body, "perl $self->{after_in_job_file}"); 
     # Set the job's status to "done" (should set to "aborted" when failed?)
