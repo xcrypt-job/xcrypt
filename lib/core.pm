@@ -167,11 +167,8 @@ sub make_jobscript_body {
     # inventory_write.pl をやめて touch に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push (@body, 'touch ' . $self->{id} . '_is_running');
-    # Do before_in_job
-    if ( $self->{before_in_job} 
-         || ($self->{before} && $self->{before_to_job} == 1 )){
-        push (@body, "perl $self->{before_in_job_file}"); 
-    }
+    # Do before_in_job by executing the perl script created by make_before_in_job_script
+    push (@body, "perl $self->{before_in_job_file}");
     # Execute the program
     my $max_of_exe = &builtin::get_max_index_of_exe(%$self);
     my $max_of_second = &builtin::get_max_index_of_second_arg_of_arg(%$self);
@@ -202,11 +199,8 @@ sub make_jobscript_body {
             }
         }
     }
-    # Do after_in_job
-    if ( $self->{after_in_job} 
-         || ($self->{after} && $self->{after_to_job} == 1 )){
-        push (@body, "perl $self->{after_in_job_file}"); 
-    }
+    # Do after_in_job by executing the perl script created by make_after_in_job_script
+    push (@body, "perl $self->{after_in_job_file}"); 
     # Set the job's status to "done" (should set to "aborted" when failed?)
     # inventory_write.pl をやめて touch に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
@@ -214,7 +208,7 @@ sub make_jobscript_body {
     $self->{jobscript_body} = \@body;
 }
 
-# Generate the contents of the perl script and saves it to $self->{$memb_script}.
+# Generate the contents of a perl script and saves it to $self->{$memb_script}.
 # The script (1) defines '$self' as a dumped job object, and
 # (2) For each $name in @names:
 # (2.1) calls the dumped method $self->{$name} by passing @{$self->{VALUE}} as arguments.
@@ -250,11 +244,8 @@ sub make_before_in_job_script {
     if (ref ($self->{before_in_job}) eq 'CODE') {
         push (@names, 'before_in_job')
     }
-    if ($#names < 0) {
-        $self->{before_in_job_script} = [];
-    } else {
-        make_in_job_script ($self, 'before_in_job_script', @names);
-    }
+    # Calls it even if @names is empty because child methods may add code
+    make_in_job_script ($self, 'before_in_job_script', @names);
 }
 
 sub make_exe_in_job_script {
@@ -275,11 +266,8 @@ sub make_after_in_job_script {
     if ((exists $self->{after}) and $self->{after_to_job} == 1) {
         push (@names, 'after');
     }
-    if ($#names < 0) {
-        $self->{after_in_job_script} = [];
-    } else {
-        make_in_job_script ($self, 'after_in_job_script', @names);
-    }
+    # Calls it even if @names is empty because child methods may add code
+    make_in_job_script ($self, 'after_in_job_script', @names);
 }
 
 # Make/Update script file
