@@ -37,6 +37,7 @@ sub new {
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
     set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
+    set_member_if_empty ($self, 'dumped_environment', []);
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
     set_member_if_empty ($self, 'exe_in_job_file', "$self->{id}_exe_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
@@ -210,13 +211,10 @@ sub make_jobscript_body {
     $self->{jobscript_body} = \@body;
 }
 
-# Generate the contents of a perl script and saves it to $self->{$memb_script}.
-# The script (1) defines '$self' as a dumped job object, and
-# (2) For each $name in @names:
-# (2.1) calls the dumped method $self->{$name} by passing @{$self->{VALUE}} as arguments.
-# (2.2) writes the return value to the "$self->{id}_return" by employing return_write().
-sub make_in_job_script {
-    my ($self, $memb_script, @names) = @_;
+# Take a snapshot of the Perl(Xcrypt) environment for *_in_job_scripts
+# and write it to $self->{dumped_environment}
+sub make_dumped_environment {
+    my ($self) = @_;
     my @body = ();
     ## Header
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
@@ -228,6 +226,19 @@ sub make_in_job_script {
     }
     ## Dumps the job object itself
     push (@body, $self->data_dumper());
+    $self->{dumped_environment} = \@body;
+}
+
+# Generate the contents of a perl script and saves it to $self->{$memb_script}.
+# The script (1) defines '$self' as a dumped job object, and
+# (2) For each $name in @names:
+# (2.1) calls the dumped method $self->{$name} by passing @{$self->{VALUE}} as arguments.
+# (2.2) writes the return value to the "$self->{id}_return" by employing return_write().
+sub make_in_job_script {
+    my ($self, $memb_script, @names) = @_;
+    my @body = ();
+    ## The snapshot of the Perl(Xcyrpt) environment
+    push (@body, @{$self->{dumped_environment}});
     ## Calling the dumped method and writing the return value.
     foreach my $name (@names) {
         if (ref ($self->{$name}) eq 'CODE') {
