@@ -18,7 +18,7 @@ sub start {
     $self->NEXT::start();
 }
 
-sub after_in_xcrypt {
+sub after {
     my $self = shift;
     if ($self->{successor}) {
 	my @jobs;

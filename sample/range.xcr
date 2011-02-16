@@ -21,10 +21,15 @@ use base qw(sandbox core);
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
     'JS_limit_time' => 60,
+    'before_in_xcrypt' => sub {
+        my $self = shift;
+        print "before_in_xcrypt: $self->{id}\n";
+        return 5;
+    },
     'before' => sub {
         my $self = shift;
         print "before: $self->{id}\n";
-        return 5;
+        return 4;
     },
     'before_to_job' => 1,
     'after' =>  sub {
@@ -43,6 +48,7 @@ sub sigint_handler {
 my @jobs = &prepare_submit(%template1);
 #&submit(@jobs);
 &sync(@jobs);
+print $jobs[0]->{before_in_xcrypt_return}, "\n";
 print return_transmission::get_before_return($jobs[0]), "\n";
 print return_transmission::get_exe_return($jobs[0]), "\n";
 print return_transmission::get_after_return($jobs[0]), "\n";

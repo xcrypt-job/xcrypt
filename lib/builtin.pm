@@ -837,15 +837,11 @@ sub submit {
             }
             $self->EVERY::initially(@{$self->{VALUE}});
             ## Invoke before_in_xcrypt()
-#            if (check_status_for_before ($self)) {
-                my $before_in_xcrypt_return = $self->EVERY::before_in_xcrypt(@{$self->{VALUE}});
-                foreach my $key (keys %{$before_in_xcrypt_return}) {
-                    if ($key eq 'user::before_in_xcrypt' and $self->{before_in_xcrypt} ne '') {
-			$self->{before_in_xcrypt_return} = ${$before_in_xcrypt_return}{$key};
-                        $self->return_write("before_in_xcrypt", $self->{workdir}, ${$before_in_xcrypt_return}{$key});
-                    }
-                }
-#            }
+	    if (defined $self->{before_in_xcrypt}) {
+                my $before_in_xcrypt_return = $self->before_in_xcrypt(@{$self->{VALUE}});
+		$self->{before_in_xcrypt_return} = $before_in_xcrypt_return;
+		$self->return_write("before_in_xcrypt", $self->{workdir}, $before_in_xcrypt_return);
+	    }
             ## Invoke before() (except user's before() if before_to_job is 1)
             if (check_status_for_before ($self)) {
                 if ($self->{before_to_job} == 1 and (exists $self->{before})) {
@@ -923,15 +919,11 @@ sub submit {
                 }
             }
             ## Invoke after_in_xcrypt()
-#            if (check_status_for_after ($self)) {
-                my $after_in_xcrypt_return = $self->EVERY::LAST::after_in_xcrypt(@{$self->{VALUE}});
-                foreach my $key (keys %{$after_in_xcrypt_return}) {
-                    if ($key eq 'user::after_in_xcrypt' and $self->{after_in_xcrypt} ne '') {
-			$self->{after_in_xcrypt_return} = ${$after_in_xcrypt_return}{$key};
-                        $self->return_write("after_in_xcrypt", $self->{workdir}, ${$after_in_xcrypt_return}{$key});
-                    }
-                }
-#            }
+	    if (defined $self->{after_in_xcrypt}) {
+                my $after_in_xcrypt_return = $self->after_in_xcrypt(@{$self->{VALUE}});
+		$self->{after_in_xcrypt_return} = $after_in_xcrypt_return;
+		$self->return_write("after_in_xcrypt", $self->{workdir}, $after_in_xcrypt_return);
+	    }
 
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {

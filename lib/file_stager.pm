@@ -59,7 +59,7 @@ sub new {
 ##  ファイルステージング前処理
 ##  stage_in_local:ステージインアーカイブファイル作成
 #####################################################################################
-sub before_in_xcrypt{
+sub before {
 	my $self = shift;
 	# stage_in_localの呼び出し
 	stage_in_local($self);
@@ -97,7 +97,7 @@ sub make_after_in_job_script {
 ##  ファイルステージングの後処理
 ##  stage_out_local:ステージアウトファイルの配置
 #################################################################################
-sub after_in_xcrypt{
+sub after {
 	my $self = shift;
 	# stage_out_localの呼び出し
 	stage_out_local($self);

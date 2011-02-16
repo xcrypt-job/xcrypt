@@ -359,11 +359,11 @@ sub make_qsub_options {
     $self->{qsub_options} = \@contents;
 }
 
-sub before_in_xcrypt {
+sub before {
     my $self = shift;
 }
 
-sub after_in_xcrypt {
+sub after {
     my $self = shift;
     if ($self->{env}->{location} eq 'remote') {
 	my $file = File::Spec->catfile($self->{workdir}, "$self->{id}_return");
