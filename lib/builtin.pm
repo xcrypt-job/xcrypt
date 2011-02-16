@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
-spawn spawn_before spawn_after spawn_before_in_xcrypt spawn_after_in_xcrypt
+spawn _before_ _after_ _before_in_xcrypt_ _after_in_xcrypt_
 add_cmd_before_exe add_cmd_after_exe
 );
 
@@ -1056,19 +1056,19 @@ sub spawn(&@) {
     }
     return @jobs;
 }
-sub spawn_before(&@) {
+sub _before_(&@) {
     my $code = shift;
     return ('before', $code, @_);
 }
-sub spawn_after(&@) {
+sub _after_(&@) {
     my $code = shift;
     return ('after', $code, @_);
 }
-sub spawn_before_in_xcrypt(&@) {
+sub _before_in_xcrypt_(&@) {
     my $code = shift;
     return ('before_in_xcrypt', $code, @_);
 }
-sub spawn_after_in_xcrypt(&@) {
+sub _after_in_xcrypt_(&@) {
     my $code = shift;
     return ('after_in_xcrypt', $code, @_);
 }
