@@ -4,7 +4,7 @@ use base qw(sandbox core);
 # or
 # fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
 
-$template_of_template{transfer_variable}=['$i'];
+$TEMPLATE{transfer_variable}=['$i'];
 
 foreach  $i (35..45) {
     spawn {
