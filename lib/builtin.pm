@@ -10,7 +10,7 @@ get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
-set_template_of_template
+set_TEMPLATE
 spawn
 add_cmd_before_exe add_cmd_after_exe
 );
@@ -529,14 +529,14 @@ sub do_initialized {
     return $self;
 }
 
-sub set_template_of_template {
+sub set_TEMPLATE {
     my $cfg_obj = new Config::Simple($xcropt::options{config});
     my %cfg = $cfg_obj->vars();
     foreach my $key (keys %cfg) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq 'template') {
 	    my $real_key = $for_getting_real_key[1];
-	    $user::template_of_template{"$key"} = $cfg{"$key"};
+	    $user::TEMPLATE{"$key"} = $cfg{"$key"};
 	}
     }
 }
@@ -544,11 +544,11 @@ sub set_template_of_template {
 sub unalias {
     my %template = @_;
 
-    foreach my $key (keys %user::template_of_template) {
+    foreach my $key (keys %user::TEMPLATE) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq 'template') {
 	    unless (defined $template{$for_getting_real_key[1]}) {
-		$template{$for_getting_real_key[1]} = $user::template_of_template{$key};
+		$template{$for_getting_real_key[1]} = $user::TEMPLATE{$key};
 	    }
 	}
     }

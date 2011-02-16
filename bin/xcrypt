@@ -137,8 +137,8 @@ use jobsched;
 use data_generator;
 use data_extractor;
 our @VALUE = ();
-our %template_of_template;
-&set_template_of_template();
+our %TEMPLATE;
+&set_TEMPLATE();
 sub before_in_xcrypt {local ($self, @VALUE) = @_; if ($self->{before_in_xcrypt}) {&{$self->{before_in_xcrypt}}($self, @VALUE)};}
 sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}
 sub start  {my $self = shift;$self->SUPER::start();}
