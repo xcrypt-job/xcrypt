@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
-spawn
+spawn spawn_before spawn_after spawn_before_in_xcrypt spawn_after_in_xcrypt
 add_cmd_before_exe add_cmd_after_exe
 );
 
@@ -1043,7 +1043,7 @@ sub generate_new_job_id {
         }
     }
 }
-
+## spawn {} [spawn_before {}] [spawn_after {}] [spawn_before_in_xcrypt {}] [spawn_after_in_xcrypt {}]
 sub spawn(&@) {
     my $code = shift;
     my %template = ('exe' => $code, @_);
@@ -1055,6 +1055,22 @@ sub spawn(&@) {
         $Spawned{$job->{id}}=1;
     }
     return @jobs;
+}
+sub spawn_before(&@) {
+    my $code = shift;
+    return ('before', $code, @_);
+}
+sub spawn_after(&@) {
+    my $code = shift;
+    return ('after', $code, @_);
+}
+sub spawn_before_in_xcrypt(&@) {
+    my $code = shift;
+    return ('before_in_xcrypt', $code, @_);
+}
+sub spawn_after_in_xcrypt(&@) {
+    my $code = shift;
+    return ('after_in_xcrypt', $code, @_);
 }
 
 sub join(&) {

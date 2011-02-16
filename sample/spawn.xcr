@@ -11,6 +11,9 @@ foreach  $i (35..45) {
         my $self=shift;
         print "exe: $self->{id}\n";
         system ("../bin/fib $i > out");
+    } spawn_after_in_xcrypt {
+        my $self = shift;
+        print 'The job '. $self->{id} ." is finished.\n";
     };
 }
 sync;
