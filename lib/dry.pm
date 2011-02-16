@@ -129,7 +129,7 @@ sub delete_sub {
     }
 }
 
-sub before_in_xcrypt {}
-sub after_in_xcrypt {}
+sub before {}
+sub after {}
 
 1;
