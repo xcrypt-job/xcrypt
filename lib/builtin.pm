@@ -39,7 +39,9 @@ use File::Spec;
 # Permitted job template member names.
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
-'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return');
+'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
+'cmd_before_exe', 'cmd_after_exe'
+);
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -1009,16 +1011,17 @@ sub filter {
     return @ret;
 }
 
-our @Jobscript_pre_body = ();
 sub add_cmd_before_exe{
+    my $self = shift;
     foreach my $cmd (@_) {
-	push(@Jobscript_pre_body, $cmd);
+	push(@{$self->{'cmd_before_exe'}}, $cmd);
     }
 }
-our @Jobscript_post_body = ();
 sub add_cmd_after_exe{
+    my $self = shift;
     foreach my $cmd (@_) {
-	push(@Jobscript_post_body, $cmd);
+	print $cmd ,"\n";
+	push(@{$self->{'cmd_after_exe'}}, $cmd);
     }
 }
 
