@@ -13,8 +13,8 @@ use jsconfig;
 
 &add_key('JS_stage_in_files', 'JS_stage_out_files');
 
-## 作成したzipファイル名のリスト
-our %all_zip_file_list = ();
+## 作成したファイル(ステージングスクリプト、zipファイル)名のリスト
+our %all_make_file_list = ();
 
 # コンストラクタ
 sub new {
@@ -49,6 +49,16 @@ sub new {
 	$self->{stage_in_files_set} = $cfg{stage_in_files};
 	$self->{stage_out_files_set}= $cfg{stage_out_files};
 
+	# Xcrypt内部ファイルの設定
+	my @xcr_stage_in_files_list = ();	# ステージインファイル
+	$self->{xcr_stage_in_files_list} = \@xcr_stage_in_files_list;
+	my @xcr_stage_out_files_list = ();	# ステージアウトファイル
+	$self->{xcr_stage_out_files_list} = \@xcr_stage_out_files_list;
+
+	# ステージングスクリプト
+	$self->{stage_in_job_file} = "stage_in_" . $self->{id} . ".sh";
+	$self->{stage_out_job_file} = "stage_out_" . $self->{id} . ".sh";
+	
 	# 初期化完了フラグ
 	$self->{file_stager_initialized} = 1;
 
@@ -59,46 +69,34 @@ sub new {
 ##  ファイルステージング前処理
 ##  stage_in_local:ステージインアーカイブファイル作成
 #####################################################################################
-sub before {
+sub before{
 	my $self = shift;
+
 	# stage_in_localの呼び出し
 	stage_in_local($self);
-}
 
-#####################################################################################
-##  ファイルステージングジョブ内前処理
-##  stage_in_job  :ステージインファイルの配置処理スクリプトを
-##                 before_in_jobの先頭に追加
-#####################################################################################
-sub make_before_in_job_script {
-    my $self = shift;
-    $self->core::make_before_in_job_script();
-    # ステージインファイルの配置処理スクリプトを追加
-    if(defined($self->{stage_in_list})){
-	    @{$self->{before_in_job_script}} = (@{stage_in_job($self)}, @{$self->{before_in_job_script}});
-    }
-}
+	# ジョブスクリプトへステージイン実行スクリプトを追加
+	if(defined($self->{stage_in_list})){
+		$self->add_cmd_before_exe("if [ -f $self->{stage_in_job_file} ]; then");
+		$self->add_cmd_before_exe("/bin/sh $self->{stage_in_job_file}");
+		$self->add_cmd_before_exe("fi");
+	}
 
-####################################################################################
-##  ファイルステージングジョブ内後処理
-##  stage_out_job :ステージアウトアーカイブファイル作成スクリプトを
-##                 after_in_jobスクリプトの末尾に追加
-####################################################################################
-sub make_after_in_job_script {
-    my $self = shift;
-    $self->core::make_after_in_job_script();
-    # ステージアウトアーカイブファイル作成スクリプトを追加
-    if(defined($self->{stage_out_list})){
-    	@{$self->{after_in_job_script}} = (@{$self->{after_in_job_script}}, @{stage_out_job($self)});
-    }
+	# ジョブスクリプトへステージアウト実行スクリプトを追加
+	if(defined($self->{stage_out_list})){
+		$self->add_cmd_after_exe("if [ -f $self->{stage_out_job_file} ]; then");
+		$self->add_cmd_after_exe("/bin/sh $self->{stage_out_job_file}");
+		$self->add_cmd_after_exe("fi");
+	}
 }
 
 #################################################################################
 ##  ファイルステージングの後処理
 ##  stage_out_local:ステージアウトファイルの配置
 #################################################################################
-sub after {
+sub after{
 	my $self = shift;
+
 	# stage_out_localの呼び出し
 	stage_out_local($self);
 }
@@ -123,14 +121,27 @@ sub finally{
 	my $stage_in_zip_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_zip_file});
 	if(-f $stage_in_zip_file){
 		unlink($stage_in_zip_file);
-		delete($all_zip_file_list{$self->{stage_in_zip_file}});
+		delete($all_make_file_list{$self->{stage_in_zip_file}});
 	}
 
 	# ステージアウトアーカイブファイルの削除
 	my $stage_out_zip_file = $self->{stage_out_zip_file};
 	if(-f $stage_out_zip_file){
 		unlink($stage_out_zip_file);
-		delete($all_zip_file_list{$self->{stage_out_zip_file}});
+		delete($all_make_file_list{$self->{stage_out_zip_file}});
+	}
+
+	# ステージインスクリプトの削除
+	my $stage_in_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_job_file});
+	if(-f $stage_in_job_file){
+		unlink($stage_in_job_file);
+		delete($all_make_file_list{$self->{stage_in_job_file}});
+	}
+	# ステージアウトスクリプトの削除
+	my $stage_out_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_out_job_file});
+	if(-f $stage_out_job_file){
+		unlink($stage_out_job_file);
+		delete($all_make_file_list{$self->{stage_out_job_file}});
 	}
 }
 
@@ -139,16 +150,16 @@ sub finally{
 #  一時ファイルを削除する
 #######################################################################################################
 sub sigint_handler {
-	foreach my $zip_file(keys %all_zip_file_list){
-		if(-f $zip_file){
-			unlink($zip_file);
+	foreach my $file(keys %all_make_file_list){
+		if(-f $file){
+			unlink($file);
 		}
 	}
 }
 sub sigterm_handler{
-	foreach my $zip_file(keys %all_zip_file_list){
-		if(-f $zip_file){
-			unlink($zip_file);
+	foreach my $file(keys %all_make_file_list){
+		if(-f $file){
+			unlink($file);
 		}
 	}
 }
@@ -342,7 +353,7 @@ sub analyze{
 ###############################################################################
 sub stage_in_local{	
     my $self = shift;
-    
+
     # コンストラクタの実行確認
 	unless(defined($self->{file_stager_initialized})) {
 		unless(defined($self->{package_err_displayed}))
@@ -385,7 +396,7 @@ sub stage_in_local{
 			warn "Cannot create the tmpdir '$tmpdir' at $self->{id}_stage_in\n";
 			return;
 		}
-		
+
 		# ステージインファイルのシンボリックリンクを一時ディレクトリに作成
 		my $jobdir = getcwd();
 		my $index = 0;
@@ -416,9 +427,10 @@ sub stage_in_local{
 
 		# ステージイン対象ファイルが１つでもある場合
 		my $stage_in_zip_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_zip_file});
+		my $stage_in_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_job_file});
 		if($is_exists_stage_in_file) {
 			# シグナルハンドリング処理用にファイル名を記憶
-			$all_zip_file_list{$stage_in_zip_file} = '';
+			$all_make_file_list{$stage_in_zip_file} = '';
 		    
 		    # シンボリックリンクからzipファイルを作成
 		    chdir($tmpdir);
@@ -426,43 +438,90 @@ sub stage_in_local{
 		    system("/usr/bin/zip $self->{stage_in_zip_file} -r $args >/dev/null 2>&1");
 			chdir($jobdir);
 			move("$tmpdir/$self->{stage_in_zip_file}", "$self->{workdir}");
+
+			# ステージインzipファイルがある場合
+			if(-f $stage_in_zip_file){
+				# stage_in_job.shの作成
+				if(defined($self->{stage_in_list})){
+					my $ret = open (STAGE_IN, "> $stage_in_job_file");
+					if($ret) {
+						my $stage_in_script = stage_in_job($self);
+						print STAGE_IN "$stage_in_script";
+						close(STAGE_IN);
+						$all_make_file_list{$self->{stage_in_job_file}} = '';
+					}
+					else{
+						warn "Cannot open $self->{stage_in_job_file} at $self->{id}_stage_in\n";
+					}
+				}
+			}
+			else{
+				warn "Cannot create the '$stage_in_zip_file' at $self->{id}_stage_in\n";
+			}
 		}
 		else {
 			warn "Any staging object file doesn't exist at $self->{id}_stage_in\n";
 		}
 		rmtree($tmpdir); 
 	}
-
+	
+	# ステージアウトの処理
+	if(defined($self->{stage_out_list})) {
+		# stage_out_job.shの作成
+			my $stage_out_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_out_job_file});
+			my $ret = open (STAGE_OUT, "> $stage_out_job_file");
+			if($ret) {
+				my $sage_out_script = stage_out_job($self);
+				print STAGE_OUT "$sage_out_script";
+				close(STAGE_OUT);
+				$all_make_file_list{$self->{stage_out_job_file}} = '';
+			}
+			else{
+				warn "Cannot open $self->{stage_out_job_file} at $self->{id}_stage_out\n";
+			}
+	}
+	
 	# ジョブスケジューラにステージインIFの定義がある場合、転送ファイルリストを渡す
 	if(defined($self->{"stage_in_files_set"})) {
 		my $stage_in_zip_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_zip_file});
-		my @file_list = ();
 		if(-f $stage_in_zip_file) {
-			push(@file_list, $self->{stage_in_zip_file});
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{stage_in_zip_file});
 		}
-		push(@file_list, $self->{before_in_job_file});
-		if(defined($self->{stage_out_list})){
-			push(@file_list, $self->{after_in_job_file});
+		my $stage_in_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_in_job_file});
+		if(-f $stage_in_job_file){
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{stage_in_job_file});
 		}
-		if(@file_list > 0) {
-			$self->{"stage_in_files_set"}(@file_list);
+		my $stage_out_job_file = File::Spec->catfile($self->{workdir}, $self->{stage_out_job_file});
+		if (-f $stage_out_job_file){
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{stage_out_job_file});
+		}
+		if(defined($self->{before_in_job_file})){
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{before_in_job_file});
+		}
+		if(defined($self->{after_in_job_file})){
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{after_in_job_file});
+		}
+		if(defined($self->{exe_in_job_file})){
+			push(@{$self->{xcr_stage_in_files_list}}, $self->{exe_in_job_file});
+		}
+		if(@{$self->{xcr_stage_in_files_list}} > 0){
+			$self->{"stage_in_files_set"}(@{$self->{xcr_stage_in_files_list}});
 		}
 	}
 	
 	# ジョブスケジューラにステージアウトIFの定義がある場合、転送ファイルリストを渡す
 	if(defined($self->{"stage_out_files_set"})) {
-		my @file_list = ();
-		my $running_file = $self->{id} . "_is_running";
-		push(@file_list, $running_file);
-		my $done_file = $self->{id} . "_is_done";
-		push(@file_list, $done_file);
-		# ステージアウトの処理
 		if(defined($self->{stage_out_list})) {
-			# シグナルハンドリング処理用にファイル名を記憶
-			$all_zip_file_list{$self->{stage_out_zip_file}} = '';
-			push(@file_list, $self->{"stage_out_zip_file"});
+			$all_make_file_list{$self->{stage_out_zip_file}} = '';
+			push(@{$self->{xcr_stage_out_files_list}}, $self->{"stage_out_zip_file"});
+		}	
+		my $running_file = $self->{id} . "_is_running";
+		push(@{$self->{xcr_stage_out_files_list}}, $running_file);
+		my $done_file = $self->{id} . "_is_done";
+		push(@{$self->{xcr_stage_out_files_list}}, $done_file);
+		if(@{$self->{xcr_stage_out_files_list}} > 0){
+			$self->{"stage_out_files_set"}(@{$self->{xcr_stage_out_files_list}});
 		}
-		$self->{"stage_out_files_set"}(@file_list);
 	}
 }
 
@@ -491,69 +550,86 @@ sub stage_in_job{
 	}
 
 	# ステージインアーカイブファイルを展開する文字列の作成
-	my $stage_in_files_list_text = join(',', map {"'" . $_ . "'";} @stage_in_files);
+	my $stage_in_files_list_text = join(' ', map {"'" . $_ . "'";} @stage_in_files);
 $cmd .= <<__STAGE_IN_SCRIPT__;
-use File::Path;
-use File::Copy;
-use File::Basename;
-use File::Spec;
-use Cwd;
-
-my \$jobdir = getcwd();
-unless(-f "$self->{stage_in_zip_file}") {
-	warn "'$self->{stage_in_zip_file}' not found\\n";
-}
-chdir("$self->{staging_base_dir}") or warn "failed to chdir '$self->{staging_base_dir}': \$!\\n";
-unless(-f "$self->{stage_in_zip_file}"){
-	chdir(\$jobdir) or warn "failed to chdir '\$jobdir': \$!\\n";
-	move("$self->{stage_in_zip_file}", "$self->{staging_base_dir}") or warn "failed to move. from '$self->{stage_in_zip_file}' to '$self->{staging_base_dir}'.\\n";
-	chdir("$self->{staging_base_dir}");
-}
-my \$tmpdir = \$\$ . '_' . $self->{id};
-mkdir(\$tmpdir, 0777) or warn "Failed to create the directory '\$tmpdir': \$!\\n";
-move("$self->{stage_in_zip_file}", "\$tmpdir");
-chdir(\$tmpdir);
-system("/usr/bin/unzip $self->{stage_in_zip_file} >/dev/null 2>&1");
-unless(-d "0/"){
-	warn "Cannot Decompression the zipfile '$self->{stage_in_zip_file} at $self->{id}_stage_in'\\n";
-}
-chdir(\$jobdir);
-my \$index = 0;
-
-foreach my \$stage_in_file ($stage_in_files_list_text){
-	chdir("$self->{staging_base_dir}");
-	if(\$stage_in_file eq ''){
-		warn "The forwarding site is empty at $self->{id}_stage_in\\n";
-	}
-	else{
-		my \$tmp_index_dir = File::Spec->catfile("\$tmpdir", \$index );
-		my \$ahead = File::Spec->rel2abs(\$stage_in_file);
-		if(\$stage_in_file =~ /\\/\$/){
-			\$ahead = \$ahead . '/';
-		}
-		my \$result = chdir(\$tmp_index_dir);
-		if(\$result == 1){
-			my \@filelist = glob("./*");
-			if(\@filelist == 0){
-				warn "The zip file is empty at $self->{id}_stage_in\\n";
-			}
-			foreach my \$stage_file(\@filelist){
-				if(-f \$stage_file){
-					move(\$stage_file, \$ahead) or warn "Failed to stage in '\$stage_file': \$!\\n";
-				}
-			}
-		}
-	}
-	chdir(\$jobdir);
-	++ \$index;
-}
-chdir("$self->{staging_base_dir}");
-rmtree(\$tmpdir);
-chdir(\$jobdir);
-0;
+#!/bin/sh
+jobdir=`pwd`
+if [ -f "$self->{stage_in_zip_file}" ];then
+	:
+else
+	printf "'$self->{stage_in_zip_file}' not found\\n" 1>&2
+	exit 99
+fi
+cd "$self->{staging_base_dir}"
+if [ \$\? -ne 0 ]; then
+	printf "failed to chdir '$self->{staging_base_dir}'\\n" 1>&2
+	exit 99
+fi
+if [ -f "$self->{stage_in_zip_file}" ];then
+	:
+else
+	cd "\$jobdir"
+	if [ \$\? -ne 0 ]; then
+		printf "failed to chdir '\$jobdir'\\n" 1>&2
+		exit 99
+	fi
+	mv "$self->{stage_in_zip_file}" "$self->{staging_base_dir}"
+	if [ \$\? -ne 0 ]; then
+		printf "failed to move. from '$self->{stage_in_zip_file}' to '$self->{staging_base_dir}'.\\n" 1>&2
+		exit 99
+	fi
+	cd "$self->{staging_base_dir}"
+fi
+tmpdir=\$\$_$self->{id}
+mkdir "\$tmpdir"
+if [ \$\? -ne 0 ]; then
+	printf "Failed to create the directory '\$tmpdir'\\n" 1>&2
+	exit 99
+fi
+mv "$self->{stage_in_zip_file}" "\$tmpdir"
+cd "\$tmpdir"
+/usr/bin/unzip "$self->{stage_in_zip_file}" >/dev/null 2>&1
+if [ -d "0/" ]; then
+	:
+else
+	printf "Cannot Decompression '$self->{stage_in_zip_file} at $self->{id}_stage_in'\\n" 1>&2
+	cd "\$jobdir"
+	/bin/rm -rf "\$tmpdir"
+	exit 99
+fi
+cd "\$jobdir"
+index=0
+for stage_in_file in $stage_in_files_list_text
+do
+	cd "$self->{staging_base_dir}"
+	if [ "\$stage_in_file" ]; then
+		:
+	else
+		printf "The forwarding site is empty at $self->{id}_stage_in\\n" 1>&2
+	fi
+	tmp_index_dir=`pwd`/"\$tmpdir"/\$index
+	ahead=`pwd`/"\$stage_in_file"
+	cd "\$tmp_index_dir"
+	if [ \$\? -eq 0 ]; then
+		for stage_file in ./*
+		do
+			if [ -f "\$stage_file" ]; then
+				mv "\${stage_file}" "\${ahead}"
+				if [ \$\? -ne 0 ]; then
+					printf "Failed to stage in '\$stage_file'\\n" 1>&2
+				fi
+			fi
+		done
+	fi
+	cd "\$jobdir"
+	index=`expr \$index + 1`
+done
+cd "$self->{staging_base_dir}"
+/bin/rm -rf "\$tmpdir"
+cd "\$jobdir"
+exit 0
 __STAGE_IN_SCRIPT__
-	my @cmd = split(/\n/, $cmd);
-	return \@cmd;
+	return $cmd;
 }
 
 ###############################################################################
@@ -581,68 +657,75 @@ sub stage_out_job{
 	}
 
 	# ステージアウトファイルをアーカイブするスクリプト文字列の作成
-	my $stage_out_files_list_text = join(',', map {"'" . $_ . "'";} @stage_out_files);
+	my $stage_out_files_list_text = join(' ', map {"'" . $_ . "'";} @stage_out_files);
 $cmd .= <<__STAGE_OUT_SCRIPT__;
-use File::Path;
-use File::Copy;
-use File::Spec;
-use File::Basename;
-use Cwd;
-my \$jobdir = Cwd::getcwd();
-chdir("$self->{staging_base_dir}") or die "Failed to chdir '$self->{staging_base_dir}': \$!\\n";
-my \$tmpdir = \$\$ . "_" . $self->{id};
-\$tmpdir = File::Spec->rel2abs(\$tmpdir);
-mkdir(\$tmpdir, 0777) or die "Failed to create the directory '\$tmpdir': \$!\\n";
-chdir(\$jobdir);
-my \$index = 0;
-
-my \$exists_stage_out_file = 0;
-foreach my \$stage_out_file($stage_out_files_list_text) {
-	chdir("$self->{staging_base_dir}");
-	my \@tmp_file_list = glob(\$stage_out_file);
-	my \@file_list = ();
-	foreach my \$tmp_file(\@tmp_file_list) {
-		if(-f \$tmp_file) {
-			push(\@file_list, \$tmp_file);
-		}
-		else {
-			warn "stage_out_file '\$tmp_file' doesn't exist\\n";
-		}
-	}
-
-	my \$tmp_index_dir = File::Spec->catfile( \$tmpdir, \$index );
-	mkdir(\$tmp_index_dir);
-	foreach my \$stage_file(\@file_list) {
-		my \$former_file = File::Spec->rel2abs(\$stage_file);
-		chdir(\$tmp_index_dir);
-		symlink(\$former_file, basename(\$former_file));
-		chdir(\$jobdir);
-		\$exists_stage_out_file = 1;
-	}
-	++ \$index;
-}
-if(\$exists_stage_out_file) {
-	chdir(\$tmpdir);
-	my \$args = join(' ', (0..\$index-1));
-	system("/usr/bin/zip $self->{stage_out_zip_file} -r \$args >/dev/null 2>&1");
-	if(-f "$self->{stage_out_zip_file}"){
-		chdir(\$jobdir);
-		move("\$tmpdir/$self->{stage_out_zip_file}", ".") or warn "Failed to create the zip file '$self->{stage_out_zip_file}'\\n";
-		chdir("$self->{staging_base_dir}");
-	}
-	else{
-		warn "Cannot create the zipfile '$self->{stage_out_zip_file}'\\n";
-	}
-	chdir(\$jobdir);
-}
-else {
-	warn "Any staging object file doesn't exist\\n";
-}
-rmtree(\$tmpdir);
-0;
+#!/bin/sh
+jobdir=`pwd`
+cd "$self->{staging_base_dir}"
+if [ \$\? -ne 0 ]; then
+	printf "Failed to chdir '$self->{staging_base_dir}'\\n" 1>&2
+	exit 99
+fi
+tmpdir=\$\$_$self->{id}
+tmpdir=`pwd`/"\$tmpdir"
+mkdir "\$tmpdir"
+if [ \$\? -ne 0 ]; then
+	printf "Failed to create the directory '\$tmpdir'\\n" 1>&2
+	exit 99
+fi
+cd "\$jobdir"
+index=0
+exists_stage_out_file=0
+for stage_out_file in $stage_out_files_list_text
+do
+	cd "$self->{staging_base_dir}"
+	tmp_file_list=`/bin/ls \$stage_out_file`
+	tmp_index_dir="\$tmpdir"/"\$index"
+	mkdir "\$tmp_index_dir"
+	for stage_file in \$tmp_file_list
+	do
+		if [ -f "\$stage_file" ]; then
+			former_file=`pwd`/"\$stage_file"
+			cd "\$tmp_index_dir"
+			former_file_basename=`basename "\$former_file"`
+			ln -s "\$former_file" "\$former_file_basename"
+			exists_stage_out_file=1
+		else
+			printf "stage_out_file '\$stage_file' doesn't exist\\n" 1>&2
+		fi
+		cd "\$jobdir"
+		cd "$self->{staging_base_dir}"
+	done
+	index=`expr \$index + 1`
+done
+if [ \$exists_stage_out_file -eq 1 ]; then
+	cd "\$tmpdir"
+	arg=""
+	i=0
+	while [ \$i -lt \$index ];
+	do
+		arg=\${arg}" \$i"
+		i=`expr \$i + 1`
+	done
+	/usr/bin/zip "$self->{stage_out_zip_file}" -r \$arg >/dev/null 2>&1
+	if [ -f "$self->{stage_out_zip_file}" ]; then
+		cd "\$jobdir"
+		mv "\$tmpdir/$self->{stage_out_zip_file}" .
+		if [ \$\? -ne 0 ]; then
+			printf "Failed to create the zip file '$self->{stage_out_zip_file}'\\n" 1>&2
+		fi
+		cd "$self->{staging_base_dir}"
+	else
+		printf "Cannot create '$self->{stage_out_zip_file}'\n" 1>&2
+	fi
+	cd \$jobdir
+else
+	printf "Any staging object file doesn't exist\\n" 1>&2
+fi
+/bin/rm -rf "\$tmpdir"
+exit 0
 __STAGE_OUT_SCRIPT__
-    my @cmd = split(/\n/, $cmd);
-	return \@cmd;
+	return $cmd;
 }
 
 ###############################################################################
@@ -687,7 +770,7 @@ sub stage_out_local{
 
 		# アーカイブファイルの存在有無を確認
 		unless(-f $self->{stage_out_zip_file}) {
-			warn "'$self->{stage_out_zip_file}' not found\n";
+			#warn "'$self->{stage_out_zip_file}' not found\n";
 			return;
 		}
 
@@ -703,6 +786,7 @@ sub stage_out_local{
 		
 		# アーカイブファイルの展開
 		chdir($tmpdir);
+		copy("$self->{stage_out_zip_file}", "$ENV{HOME}/cvs/xcrypt/xcrypt-hg/");
 		system("/usr/bin/unzip $self->{stage_out_zip_file}>/dev/null 2>&1");
 		unless(-d "0/"){
 			warn "Cannot Decompression the zipfile '$self->{stage_out_zip_file} at $self->{id}_stage_out'\n";
