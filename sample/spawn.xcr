@@ -1,0 +1,19 @@
+use base qw(sandbox core);
+
+# $ xcrypt --host b30331@thin.kudpc.kyoto-u.ac.jp --wd /home/b/b30331/xcrypt/sample --sched t2k_kyoto --xd /home/b/b30331/xcrypt range.xcr
+# or
+# fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
+
+$TEMPLATE{transfer_variable}=['$i'];
+
+foreach  $i (35..45) {
+    spawn {
+        my $self=shift;
+        print "exe: $self->{id}\n";
+        system ("../bin/fib $i > out");
+    }_after_in_xcrypt_{
+        my $self = shift;
+        print 'The job '. $self->{id} ." is finished.\n";
+    };
+}
+sync;

@@ -18,22 +18,19 @@ sub start {
     $self->NEXT::start();
 }
 
-sub before {}
-
 sub after {
     my $self = shift;
     if ($self->{successor}) {
-	my @objs;
+	my @jobs;
 	foreach (@{$self->{successor}}) {
 	    no strict 'refs';
-	    my $foo = 'user::' . $_;
-	    my %bar = %$foo;
-	    delete $bar{successor};
-	    my @job = &prepare(%bar);
-	    push(@objs, $job[0]);
+	    my $tmp = 'user::' . $_;
+	    my %template = %$tmp;
+	    delete $template{successor};
+	    my @job = &prepare_submit(%template);
+	    push(@jobs, $job[0]);
 	}
-	&submit(@objs);
-	&sync(@objs);
+	&sync(@jobs);
     }
 }
 

@@ -10,8 +10,9 @@ get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
 set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
-set_template_of_template
-async_in_job
+set_TEMPLATE
+spawn _before_ _after_ _before_in_xcrypt_ _after_in_xcrypt_
+add_cmd_before_exe add_cmd_after_exe
 );
 
 use strict;
@@ -31,7 +32,6 @@ use Config::Simple;
 use Cwd;
 use common;
 use jsconfig;
-use file_stager;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
 use File::Spec;
@@ -39,7 +39,9 @@ use File::Spec;
 # Permitted job template member names.
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
-'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return');
+'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
+'cmd_before_exe', 'cmd_after_exe'
+);
 my @allprefixes = ('JS_');
 my $nil = 'nil';
 
@@ -529,14 +531,14 @@ sub do_initialized {
     return $self;
 }
 
-sub set_template_of_template {
+sub set_TEMPLATE {
     my $cfg_obj = new Config::Simple($xcropt::options{config});
     my %cfg = $cfg_obj->vars();
     foreach my $key (keys %cfg) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq 'template') {
 	    my $real_key = $for_getting_real_key[1];
-	    $user::template_of_template{"$key"} = $cfg{"$key"};
+	    $user::TEMPLATE{"$key"} = $cfg{"$key"};
 	}
     }
 }
@@ -544,11 +546,11 @@ sub set_template_of_template {
 sub unalias {
     my %template = @_;
 
-    foreach my $key (keys %user::template_of_template) {
+    foreach my $key (keys %user::TEMPLATE) {
 	my @for_getting_real_key = split(/\./, $key);
 	if ($for_getting_real_key[0] eq 'template') {
 	    unless (defined $template{$for_getting_real_key[1]}) {
-		$template{$for_getting_real_key[1]} = $user::template_of_template{$key};
+		$template{$for_getting_real_key[1]} = $user::TEMPLATE{$key};
 	    }
 	}
     }
@@ -775,6 +777,9 @@ sub job_info {
     my $sched = $self->{env}->{sched};
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
+    if ($xcropt::options{xqsub}) {
+        $qsub_command = "xqsub --to $sched";
+    }
     #$job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}}\n";
     $job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}} $self->{jobscript_file}\n";
 
@@ -802,12 +807,18 @@ sub job_info {
     print "$job_info";
 }
 
+##################################################
+# Keys are refs to job objects spawned in the inner-most join{} scope.
+our %Spawned=();
+
 sub submit {
     my @array = @_;
     my $slp = 0;
     # my @coros = ();
 
     foreach my $self (@array) {
+        # Take a snapshot of the Perl(Xcrypt) environment for *_in_job_scripts
+        $self->make_dumped_environment();
         # Create a job thread.
         my $job_coro = Coro::async {
             my $self = $_[0];
@@ -820,30 +831,23 @@ sub submit {
                     print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
             }
-	    ## set JS_queue if undefined
-	    unless (defined $self->{JS_queue}) {
-		$self->{JS_queue} = $self->{env}->{queue};
-	    }
             ## Manually handle a signal message once.
             jobsched::left_signal_message_check ($self);
-            ## initially()
+            ## Invoke initially()
             unless (check_status_for_initially ($self)) {
                 Coro::terminate();
             }
             $self->EVERY::initially(@{$self->{VALUE}});
-            ## before_in_xcrypt()
-#            if (check_status_for_before ($self)) {
-                my $before_in_xcrypt_return = $self->EVERY::before_in_xcrypt(@{$self->{VALUE}});
-                foreach my $key (keys %{$before_in_xcrypt_return}) {
-                    if ($key eq 'user::before_in_xcrypt' and $self->{before_in_xcrypt} ne '') {
-			$self->{before_in_xcrypt_return} = ${$before_in_xcrypt_return}{$key};
-                        $self->return_write("before_in_xcrypt", $self->{workdir}, ${$before_in_xcrypt_return}{$key});
-                    }
-                }
-#            }
-            ## before()
+            ## Invoke before_in_xcrypt()
+	    if (defined $self->{before_in_xcrypt}) {
+                my $before_in_xcrypt_return = $self->before_in_xcrypt(@{$self->{VALUE}});
+		$self->{before_in_xcrypt_return} = $before_in_xcrypt_return;
+		$self->return_write("before_in_xcrypt", $self->{workdir}, $before_in_xcrypt_return);
+	    }
+            ## Invoke before() (except user's before() if before_to_job is 1)
             if (check_status_for_before ($self)) {
                 if ($self->{before_to_job} == 1 and (exists $self->{before})) {
+                    # Eliminate user's before() temporarily.
                     $self->{before_bkup} = $self->{before};
                     delete $self->{before};
                 }
@@ -855,11 +859,16 @@ sub submit {
                     }
                 }
                 if (exists $self->{before_bkup}) {
+                    # Restore user's before() from before_bkup
                     $self->{before} = $self->{before_bkup};
                     delete $self->{before_bkup};
                 }
             }
-            ## start()
+            ## Print job information by employing job_info()
+            if (defined $xcropt::options{jobinfo}) {
+                &job_info($self);
+            }
+            ## Invoke start() (job submission)
             if (check_status_for_start ($self)) {
                 $self->start();
             }
@@ -891,9 +900,10 @@ sub submit {
 
 	    ## NFS が書き込んでくれる*経験的*待ち時間
 	    sleep 3;
-            ## after()
+            ## Invoke after()
             if (check_status_for_after ($self)) {
                 if ($self->{after_to_job} == 1 and (exists $self->{after})) {
+                    # Eliminate user's after() temporarily.
                     $self->{after_bkup} = $self->{after};
                     delete $self->{after};
                 }
@@ -905,20 +915,17 @@ sub submit {
                     }
                 }
                 if (exists $self->{after_bkup}) {
+                    # Restore user's after() from after_bkup
                     $self->{after} = $self->{after_bkup};
                     delete $self->{after_bkup};
                 }
             }
-            ## after_in_xcrypt()
-#            if (check_status_for_after ($self)) {
-                my $after_in_xcrypt_return = $self->EVERY::LAST::after_in_xcrypt(@{$self->{VALUE}});
-                foreach my $key (keys %{$after_in_xcrypt_return}) {
-                    if ($key eq 'user::after_in_xcrypt' and $self->{after_in_xcrypt} ne '') {
-			$self->{after_in_xcrypt_return} = ${$after_in_xcrypt_return}{$key};
-                        $self->return_write("after_in_xcrypt", $self->{workdir}, ${$after_in_xcrypt_return}{$key});
-                    }
-                }
-#            }
+            ## Invoke after_in_xcrypt()
+	    if (defined $self->{after_in_xcrypt}) {
+                my $after_in_xcrypt_return = $self->after_in_xcrypt(@{$self->{VALUE}});
+		$self->{after_in_xcrypt_return} = $after_in_xcrypt_return;
+		$self->return_write("after_in_xcrypt", $self->{workdir}, $after_in_xcrypt_return);
+	    }
 
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {
@@ -934,6 +941,8 @@ sub submit {
 
 sub sync {
     my @jobs = @_;
+    # If any jobs are not specified, all the jobs submitted in this lexical scope.
+    if ($#jobs  < 0) { @jobs = map {jobsched::find_job_by_id($_)} (keys %Spawned); }
     foreach (@jobs) {
         if ( $xcropt::options{verbose} >= 2 ) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
@@ -942,6 +951,7 @@ sub sync {
         if ( $xcropt::options{verbose} >= 2 ) {
             print "$_->{id} finished.\n";
         }
+        delete ($Spawned{$_->{id}});
     }
     foreach (@jobs) {
         &jobsched::exit_job_id($_);
@@ -1009,13 +1019,71 @@ sub filter {
     return @ret;
 }
 
-sub async_in_job(&@) {
-    my $code = shift;
-    foreach my $self (@_) {
-	$self->{exe0} = $code->($self, $self->{VALUES});
-	submit($self);
+sub add_cmd_before_exe{
+    my $self = shift;
+    foreach my $cmd (@_) {
+	push(@{$self->{'cmd_before_exe'}}, $cmd);
     }
-    return @_;
 }
+sub add_cmd_after_exe{
+    my $self = shift;
+    foreach my $cmd (@_) {
+	print $cmd ,"\n";
+	push(@{$self->{'cmd_after_exe'}}, $cmd);
+    }
+}
+
+## Constructs for executing perl code as a job.
+my $n_spawned_job=0;
+sub generate_new_job_id {
+    my $prefix = 'spawned_job_';
+    local $jobsched::Warn_job_not_found_by_id=0;
+    while (1) {
+        my $candidate = $prefix.sprintf("%03d", $n_spawned_job++);
+        unless (jobsched::find_job_by_id($candidate)
+                || jobsched::get_last_job_state ($candidate)) {
+            return $candidate;
+        }
+    }
+}
+## spawn {} [spawn_before {}] [spawn_after {}] [spawn_before_in_xcrypt {}] [spawn_after_in_xcrypt {}]
+sub spawn(&@) {
+    my $code = shift;
+    my %template = ('exe' => $code, @_);
+    unless (defined $template{id}) {
+        $template{id} = generate_new_job_id();
+    }
+    my @jobs = prepare_submit (%template);
+    foreach my $job (@jobs) {
+        $Spawned{$job->{id}}=1;
+    }
+    return @jobs;
+}
+sub _before_(&@) {
+    my $code = shift;
+    return ('before', $code, @_);
+}
+sub _after_(&@) {
+    my $code = shift;
+    return ('after', $code, @_);
+}
+sub _before_in_xcrypt_(&@) {
+    my $code = shift;
+    return ('before_in_xcrypt', $code, @_);
+}
+sub _after_in_xcrypt_(&@) {
+    my $code = shift;
+    return ('after_in_xcrypt', $code, @_);
+}
+
+sub join(&) {
+    my $code = shift;
+    my $joined_code = sub {
+        local %Spawned=();
+        $code->();
+        sync;
+    };
+    $joined_code->();
+}    
 
 1;
