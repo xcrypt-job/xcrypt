@@ -52,6 +52,35 @@ sub new {
 ###############################################
 #     << 設定をジョブに反映 >>                                                                 #
 ###############################################
+sub start {
+    my $self = shift;
+    if ($self->{dry} >= 1) {
+        foreach my $key (keys(%$self)) {
+            if ($key =~ /\Aexe([0-9]+)\Z/) {
+                my $bkup = 'Bkup_exe'.$1;
+                $self->{$bkup} = $self->{$key};
+                $self->{$key} = "\#\# dry_run \#\#\n";
+                if (defined $self->{"dry_exe$1"} and ($self->{dry} == 1 or $self->{dry} == 2)) {
+                    no strict 'refs';
+                    if (ref($self->{"dry_exe$1"}) eq 'CODE') {
+                        $self->{$key} .= "perl $self->{id}_dry_exe${1}.pl $self->{$bkup}";
+                        $self->make_in_job_script($self, "dry_exe{$1}_script", "dry_exe$1");
+                        $self->update_script_file ("$self->{id}_dry_exe${1}.pl", @{$self->{"dry_exe{$1}_script"}});
+                    } elsif (*{$self->{"dry_exe$1"}}{SCALAR}) {
+                        $self->{$key} .= $self->{"dry_exe$1"} . "\n";
+                        $self->{$key} .= "\#".$self->{$bkup};
+                    } else {
+                        die "error dry_exe";
+                    }
+                } else {
+                    $self->{$key} .= "\#".$self->{$bkup};
+                }
+            }
+        }
+    }
+    $self->NEXT::start();
+}
+
 sub initially {
     my $self = shift;
     
@@ -160,6 +189,7 @@ sub delete_sub {
     }
 }
 
+<<<<<<< /share/home-spara/tasuku/xcrypt-909/xcrypt/lib/dry.pm.orig
 sub before_in_xcrypt {}
 
 sub start {
@@ -168,6 +198,13 @@ sub start {
 }
 
 sub after_in_xcrypt {}
+||||||| /tmp/dry.pm~base.fZvTU9
+sub before_in_xcrypt {}
+sub after_in_xcrypt {}
+=======
+sub before {}
+sub after {}
+>>>>>>> /tmp/dry.pm~other.4n7ANN
 
 ###############################################
 #     << dry_exe引数抽出 >>                                                                   #

@@ -320,7 +320,7 @@ sub read_log {
             warn "Failed to open the log file $Logfile in read mode.";
             return 0;
         }
-	if (defined $xcropt::options{print_log}) {
+	if ( $xcropt::options{verbose} >= 1 ) {
 	    print "Reading the log file $Logfile\n";
 	}
         while (<$LOG>) {
@@ -348,20 +348,20 @@ sub read_log {
             }
         }
         foreach my $id (keys %Last_Job) {
-	    if (defined $xcropt::options{print_log}) {
+	    if ( $xcropt::options{verbose} >= 1 ) {
 		print "$id = $Last_Job{$id}{state}";
 	    }
             if ( $Last_Job{$id}{state} ) {
-		if (defined $xcropt::options{print_log}) {
+		if ( $xcropt::options{verbose} >= 1 ) {
 		    print " (request_ID=$Last_Job{$id}{request_id})";
 		}
             }
-		if (defined $xcropt::options{print_log}) {
-		    print "\n";
-		}
+	    if ( $xcropt::options{verbose} >= 1 ) {
+		print "\n";
+	    }
         }
         close ($LOG);
-	if (defined $xcropt::options{print_log}) {
+	if ( $xcropt::options{verbose} >= 1 ) {
 	    print "Finished reading the log file $Logfile\n";
 	}
     }

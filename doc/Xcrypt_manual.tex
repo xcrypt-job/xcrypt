@@ -75,7 +75,7 @@ Xcrypt also requires the following outer modules:
 \item Joshua Nathaniel Pritikin's Event,
 \item Salvador Fandi\~no's Net-OpenSSH,
 \item Daniel Muey's Recursive,
-\item H.Merijn Brand and Jochen Wiedmann's Text-CSV_XS,
+\item H.Merijn Brand and Jochen Wiedmann's Text-CSV\_XS,
 \end{itemize}
 and wants Marc Lehmann's AnyEvent, common::sense, and Guard (warns if
 none).  These modules are bundled with Xcrypt.
@@ -1069,9 +1069,6 @@ reads the \textit{xcryptrc}, \texttt{\~{}/.xcryptrc}, or \texttt{\$XCRYPT/etc/xc
 \section{\texttt{--sched} \textit{job\_scheduler}}
 
 takes a batch job scheduler.
-\section{\texttt{--print\_log}}
-
-prints the log (in particular, status of job objects), in detail.
 
 \section{\texttt{--compile\_only}}
 
@@ -1456,6 +1453,7 @@ job script and submits the job to a job scheduler.  Note that this
 required procedure is skipped unless \|start|s in children classes call
 the \|start| in the \|core|.
 
+\if0
 \subsection{\texttt{before\_in\_job}}
 
 The definition of this method is serialized (using the Data::Dumper
@@ -1478,7 +1476,6 @@ Xcrypt is referred to only if it is specified by the
 \texttt{transfer\_variable} job template member.  Updates of the
 transferred variable are not reflected to the Xcrypt process.
 
-\if0
 \subsection{\texttt{after\_isready}}
 
 In Xcrypt, a completion notice of a job submitted by the method
