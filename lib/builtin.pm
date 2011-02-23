@@ -775,9 +775,6 @@ sub job_info {
     my $sched = $self->{env}->{sched};
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
-    if ($xcropt::options{xqsub}) {
-	$qsub_command = "xqsub --to $sched";
-    }
     #$job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}}\n";
     $job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}} $self->{jobscript_file}\n";
 
@@ -861,10 +858,6 @@ sub submit {
                     $self->{before} = $self->{before_bkup};
                     delete $self->{before_bkup};
                 }
-            }
-            ## job_info()
-            if (defined $xcropt::options{jobinfo}) {
-                &job_info($self);
             }
             ## start()
             if (check_status_for_start ($self)) {
@@ -968,6 +961,14 @@ sub prepare{
         $count++;
         push(@jobs, $self);
     }
+    
+    ## job_info()
+    if (defined $xcropt::options{jobinfo}) {
+        foreach my $self (@jobs) {
+             &job_info($self);
+        }
+    }
+    
     return @jobs;
 }
 
