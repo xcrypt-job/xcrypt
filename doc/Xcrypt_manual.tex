@@ -144,10 +144,17 @@ detail.
 
 \section{Job Object}
 
-Xcrypt's job object are implemented as Perl's objects (blessed hash
+Xcrypt's job objects are implemented as Perl's objects (blessed hash
 references).  In Xcrypt, job objects should be typically created from
 templates by a built-in function \texttt{\&prepare}
 (Chapter~\ref{chapfun} in detail).
+
+\section{Environment Object}
+
+Xcrypt's environment objects are implemented as Perl's objects
+(blessed hash references).  In Xcrypt, environment objects should be
+typically created from hash references by a built-in function
+\texttt{\&add\_host} (Chapter~\ref{chapfun} in detail).
 
 
 \section{Procedure}
@@ -737,6 +744,64 @@ sync(@jobs);
 \end{boxnote}
 \vspace{\baselineskip}
 
+\section{\texttt{add\_host}}
+
+This function takes a hash that denotes a host (containing its
+environment), and returns a reference that denotes it.
+
+Entries of \texttt{host} and \texttt{sched} are required.  By
+default, \texttt{wd} and \texttt{xd} have the values of \texttt{\$HOME} and
+\texttt{\$XCRYPT} as values, respectively.
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+add_host(\|\|%\textit{env});
+\end{alltt}
+\end{boxnote}
+
+\subsubsection{\example}
+
+\begin{boxnote}
+\begin{alltt}
+$env = add_host(\{'host' => '\texttt{foo@bar}',
+                 'sched' => '\texttt{torque}',
+                 'wd' => '\texttt{/home/foo/myapp}',
+                 'xd' => '\texttt{/usr/local/share/xcrypt}'\});
+%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
+\end{alltt}
+\end{boxnote}
+
+\begin{boxnote}
+\begin{alltt}
+$env = add_host(\{'host' => '\texttt{foo@bar}', 'sched' => '\texttt{torque}'\});
+%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
+\end{alltt}
+\end{boxnote}
+
+\section{\texttt{get\_local\_env}}
+
+This function returns a reference that denotes the local host
+(containing its environment).
+
+\subsubsection{\format}
+
+\begin{boxnote}
+\begin{alltt}
+get_local_env();
+\end{alltt}
+\end{boxnote}
+
+\subsubsection{\example}
+
+\begin{boxnote}
+\begin{alltt}
+$env = get_local_env();
+%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
+\end{alltt}
+\end{boxnote}
+
 \section{\texttt{xcr\_exist}}
 
 This function returns 1 if \texttt{\$file} exists (0 unless) at
@@ -876,50 +941,6 @@ put_into(\|\|%\textit{env}, $file);
 \end{boxnote}
 \vspace{\baselineskip}
 
-
-\section{\texttt{add\_host}}
-
-This function takes a hash that denotes a host (containing its
-environment), and returns a reference that denotes it.
-
-\subsubsection{\format}
-
-\begin{boxnote}
-\begin{alltt}
-add_host(\|\|%\textit{env});
-\end{alltt}
-\end{boxnote}
-
-\subsubsection{\example}
-
-\begin{boxnote}
-\begin{alltt}
-$env = add_host(\{'host' => '\textit{foo@bar}', 'wd' => '\textit{/home/foo}'\});
-%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
-\end{alltt}
-\end{boxnote}
-
-\section{\texttt{get\_local\_env}}
-
-This function returns a reference that denotes the local host
-(containing its environment).
-
-\subsubsection{\format}
-
-\begin{boxnote}
-\begin{alltt}
-get_local_env();
-\end{alltt}
-\end{boxnote}
-
-\subsubsection{\example}
-
-\begin{boxnote}
-\begin{alltt}
-$env = get_local_env();
-%template = ('id' => '\textit{myjob}', 'exe0' => '\textit{./myexe}', 'env' => $env);
-\end{alltt}
-\end{boxnote}
 
 
 \section{\texttt{add\_key}}

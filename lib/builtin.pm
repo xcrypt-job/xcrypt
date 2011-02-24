@@ -778,7 +778,7 @@ sub job_info {
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
     my $qsub_command = $cfg{qsub_command};
     if ($xcropt::options{xqsub}) {
-	$qsub_command = "xqsub --to $sched";
+        $qsub_command = "xqsub --to $sched";
     }
     #$job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}}\n";
     $job_info .= "\tqsub = $qsub_command @{$self->{qsub_options}} $self->{jobscript_file}\n";
@@ -971,6 +971,14 @@ sub prepare{
         $count++;
         push(@jobs, $self);
     }
+    
+    ## job_info()
+    if (defined $xcropt::options{jobinfo}) {
+        foreach my $self (@jobs) {
+             &job_info($self);
+        }
+    }
+    
     return @jobs;
 }
 
