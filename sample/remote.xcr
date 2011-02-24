@@ -2,15 +2,14 @@ use base qw(sandbox core);
 
 my $default = &get_local_env();
 my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
+		      'sched' => 'muramasa',
 		      'wd' => '/home/spara/abet/xcrypt/sample',
-		      'xd' => '/home/spara/abet/xcrypt',
-		      'sched' => 'muramasa'});
+		      'xd' => '/home/spara/abet/xcrypt'});
 my $env1 = &add_host({'host' => 'abet@t2k.ccs.tsukuba.ac.jp',
 		      'sched' => 't2k_tsukuba'});
 my $env2 = &add_host({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp',
 		      'sched' => 't2k_tokyo'});
 my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
-		      'xd' => '/home/b/b30331/xcrypt',
 		      'sched' => 't2k_kyoto'});
 
 %template = (
