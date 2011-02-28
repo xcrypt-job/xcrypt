@@ -1028,7 +1028,6 @@ sub add_cmd_before_exe{
 sub add_cmd_after_exe{
     my $self = shift;
     foreach my $cmd (@_) {
-	print $cmd ,"\n";
 	push(@{$self->{'cmd_after_exe'}}, $cmd);
     }
 }
