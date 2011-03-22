@@ -11,7 +11,7 @@ foreach  $i (35..45) {
         my $self=shift;
         print "exe: $self->{id}\n";
         system ("../bin/fib $i > out");
-    }_after_in_xcrypt_{
+    }_after_{
         my $self = shift;
         print 'The job '. $self->{id} ." is finished.\n";
     };
