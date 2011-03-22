@@ -57,7 +57,7 @@ my %ssh_opts = (
     );
 
 GetOptions(\%options, 
-            'help',
+            'help' => sub {$options{help}=1;},
             'empty=s{,3}' => \&set_option,
             'no_empty=s{,3}' => \&set_option,
             'name=s' => \&set_regexp_option,
@@ -65,7 +65,7 @@ GetOptions(\%options,
             'ls=s{,3}' => \&set_option,
             'cat=s{,3}' => \&set_option,
             'stat' => \&set_option,
-            'csv'
+            'csv'=> sub {$options{csv}=1;}
                  );
 
 if (defined $options{help}) {
