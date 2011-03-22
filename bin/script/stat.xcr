@@ -58,12 +58,12 @@ my %ssh_opts = (
 
 GetOptions(\%options, 
             'help' => sub {$options{help}=1;},
-            'empty=s{,3}' => \&set_option,
-            'no_empty=s{,3}' => \&set_option,
+            'empty=s' => \&set_option,
+            'no_empty=s' => \&set_option,
             'name=s' => \&set_regexp_option,
             'status=s' => \&set_regexp_option,
-            'ls=s{,3}' => \&set_option,
-            'cat=s{,3}' => \&set_option,
+            'ls=s' => \&set_option,
+            'cat=s' => \&set_option,
             'stat' => \&set_option,
             'csv'=> sub {$options{csv}=1;}
                  );
