@@ -131,6 +131,10 @@ sub make_jobscript_header {
     } else {
         push (@header, @{mkarray($others)});
     }
+    ## Other user defined preamble
+    if ( defined $self->{JS_user_preamble} ) {
+        push (@header, @{mkarray($self->{JS_user_preamble})});
+    }
     ## Environment variables
     my $p5l =
 	File::Spec->catfile($self->{env}->{xd}, 'lib') . ':' .
@@ -358,6 +362,10 @@ sub make_qsub_options {
                 warn "Error in config file $self->{env}->{sched}: $k is neither scalar nor CODE."
             }
         }
+    }
+    # User defined qsub options
+    if ( defined $self->{JS_user_qsub_options} ) {
+        push (@contents, @{mkarray($self->{JS_user_qsub_options})});
     }
     $self->{qsub_options} = \@contents;
 }
