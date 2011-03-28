@@ -48,6 +48,8 @@ sub new {
     set_member_if_empty ($self, 'cmd_before_exe', []);
     set_member_if_empty ($self, 'cmd_after_exe', []);
 
+    set_member_if_empty ($self, 'header', []);
+
     &jobsched::set_job_initialized($self); # <- builtin.pm
     &jobsched::set_job_prepared($self); # for compatibility, the same as initialized
 
@@ -222,10 +224,12 @@ sub make_jobscript_body {
 # and write it to $self->{dumped_environment}
 sub make_dumped_environment {
     my ($self) = @_;
-    my @body = ();
+#    my @body = ();
+    my @body = @{$self->{'header'}};
     ## Header
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
     push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
+    push (@body, 'use Config::Simple; use File::Copy::Recursive;'); # since these modules are convenient
     if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
         push (@body, '$Data::Dumper::Maxdepth = '.$self->{transfer_reference_level}.';');
     } else {

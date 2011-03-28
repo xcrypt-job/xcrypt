@@ -12,6 +12,7 @@ set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
 spawn _before_ _after_ _before_in_xcrypt_ _after_in_xcrypt_
+add_package
 add_cmd_before_exe add_cmd_after_exe
 );
 
@@ -40,7 +41,8 @@ use File::Spec;
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
 'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
-'cmd_before_exe', 'cmd_after_exe'
+'cmd_before_exe', 'cmd_after_exe',
+'header'
 );
 my @allprefixes = ('JS_');
 my $nil = 'nil';
@@ -166,12 +168,14 @@ sub rmt_cmd {
         &rmt_cmd('system', $env, "rm -f $fullpath");
     } elsif ($cmd eq 'get') {
         my ($file, $to) = @_;
+	unless (defined $to) { $to = '.'; }
         unless ($xcropt::options{shared}) {
             my $fullpath = File::Spec->catfile($env->{wd}, $file);
             &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
         }
     } elsif ($cmd eq 'put') {
         my ($file, $to) = @_;
+	unless (defined $to) { $to = '.'; }
         unless ($xcropt::options{shared}) {
             my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
             &ssh_command($env, $ssh, 'put', $file, $fullpath);
@@ -1017,6 +1021,13 @@ sub filter {
         }
     }
     return @ret;
+}
+
+sub add_package {
+    my $self = shift;
+    foreach my $pack (@_) {
+	push(@{$self->{'header'}}, $pack);
+    }
 }
 
 sub add_cmd_before_exe{
