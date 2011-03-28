@@ -6,7 +6,7 @@ use base qw(sandbox core);
 
 $TEMPLATE{transfer_variable}=['$i'];
 
-foreach  $i (35..45) {
+foreach  $i (35, 36) {
     spawn {
         my $self=shift;
         print "exe: $self->{id}\n";
