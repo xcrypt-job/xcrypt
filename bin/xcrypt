@@ -135,11 +135,11 @@ if (defined $options{compile_only}) {
 }
 print $TMP <<'EOH';
 package user;
-use builtin;
 use File::Spec;
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
+use builtin;
 use Coro;
 use jobsched;
 use data_generator;
