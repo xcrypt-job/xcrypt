@@ -271,7 +271,7 @@ sub make_before_in_job_script {
         push (@names, 'before');
     }
     if (ref ($self->{before_in_job}) eq 'CODE') {
-        push (@names, 'before_in_job')
+        push (@names, 'before_in_job');
     }
     # Calls it even if @names is empty because child methods may add code
     make_in_job_script ($self, 'before_in_job_script', @names);
