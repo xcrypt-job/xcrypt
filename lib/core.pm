@@ -227,6 +227,11 @@ sub make_dumped_environment {
 #    my @body = ();
     my @body = @{$self->{'header'}};
     ## Header
+    push (@body, 'use File::Spec;');
+    push (@body, 'use lib (File::Spec->catfile($ENV{XCRYPT}, "lib"));');
+    push (@body, 'use lib (File::Spec->catfile($ENV{XCRYPT}, "lib", "cpan"));');
+    push (@body, 'use lib (File::Spec->catfile($ENV{XCRYPT}, "lib", "algo", "lib"));');
+
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
     push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
     push (@body, 'use Config::Simple; use File::Copy::Recursive;'); # since these modules are convenient

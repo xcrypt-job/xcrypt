@@ -11,7 +11,7 @@ use File::Basename;
 use Cwd;
 use File::Spec;
 use Coro::AnyEvent;
-use Net::OpenSSH;
+#use Net::OpenSSH;
 
 ##
 sub mkarray ($) {

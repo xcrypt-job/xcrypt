@@ -18,6 +18,10 @@ add_cmd_before_exe add_cmd_after_exe
 
 use strict;
 use English;
+use File::Spec;
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use NEXT;
 use Coro;
 use Coro::Signal;
@@ -25,7 +29,7 @@ use Coro::AnyEvent;
 use Cwd;
 use Data::Dumper;
 use File::Basename;
-use Net::OpenSSH;
+#use Net::OpenSSH;
 use Config::Simple;
 
 # use jobsched;
@@ -35,7 +39,6 @@ use common;
 use jsconfig;
 
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
-use File::Spec;
 
 # Permitted job template member names.
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',

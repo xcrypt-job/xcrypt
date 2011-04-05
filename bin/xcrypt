@@ -4,12 +4,14 @@ package xcrypt;
 use strict;
 use Cwd;
 use File::Copy;
-use File::Spec;
 use File::Temp qw/tempfile/;
 use File::Basename;
 use Getopt::Long qw(:config pass_through);
 use Data::Dumper;
-use lib ("$ENV{XCRYPT}/lib/cpan");
+use File::Spec;
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use Config::Simple;
 
 our %options = (
@@ -111,7 +113,8 @@ if ($xcrfile !~ /\.xcr\Z/) {
 }
 
 mkdir $options{inventory_path}, 0755;
-my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', DIR => "$options{inventory_path}", SUFFIX => '.pm' );
+#my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', DIR => "$options{inventory_path}", SUFFIX => '.pm' );
+my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', SUFFIX => '.pm' );
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
 print $HEADER 'my ' . $dumper . "\n";
@@ -133,6 +136,10 @@ if (defined $options{compile_only}) {
 print $TMP <<'EOH';
 package user;
 use builtin;
+use File::Spec;
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
+use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use Coro;
 use jobsched;
 use data_generator;
