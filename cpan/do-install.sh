@@ -11,7 +11,6 @@ if [ "x$XCR_CPAN_BASE" = "x" ]; then
 fi
 
 LIBS="Config-Simple-4.59 Data-Dumper-2.125 File-Copy-Recursive-0.38 EV-3.9 Event-1.13 AnyEvent-5.24 common-sense-3.0 Guard-1.021 Coro-5.21-without-conftest Net-OpenSSH-0.47 Error-0.17016 Text-CSV_XS-0.80"
-#LIBS="Net-SSH-Perl-1.34 Math-Pari-2.01080604"
 
 echo "Removing CPAN working directories."
 for i in $LIBS
