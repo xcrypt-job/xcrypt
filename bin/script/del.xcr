@@ -2,8 +2,6 @@ use base qw(core);
 use File::Spec;
 use Getopt::Long;
 use common;
-use Net::OpenSSH;
-#use Net::SSH;
 
 our %options = ();
 
