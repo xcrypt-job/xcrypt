@@ -3,6 +3,7 @@ use File::Spec;
 use Getopt::Long;
 use common;
 use Net::OpenSSH;
+#use Net::SSH;
 
 our %options = ();
 
@@ -16,6 +17,7 @@ my %keys = ('help' => '        show all the options',
     );
 GetOptions(\%options, keys(%keys));
 
+my %Host_Ssh_Hash;
 my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'help'}) {
     foreach my $key (keys(%keys)) {
@@ -58,13 +60,14 @@ sub del {
 
 sub qdel {
     my ($id) = @_;
-    my $user;
-    my $host;
-    my $ssh;
     if (defined &jobsched::get_last_job_request_id($id)) {
 	if (&jobsched::get_last_job_location($id) eq 'remote') {
-	    ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
-	    $ssh = Net::OpenSSH->new($host, (user => $user));
+	    unless (exists $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)}) {
+		my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
+		my $ssh = Net::OpenSSH->new($host, (user => $user));
+		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
+		$Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)} = $ssh;
+	    }
 	}
 	my $running_file =
 	    File::Spec->catfile(&jobsched::get_last_job_prefix($id),
@@ -78,8 +81,11 @@ sub qdel {
 	    unlink $running_file;
 	    unlink $done_file;
 	} else {
+	    my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
 	    $ssh->system("rm -f $running_file") or warn $ssh->error;
+#	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $running_file");
 	    $ssh->system("rm -f $done_file") or warn $ssh->error;
+#	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $done_file");
 	}
 	if ((&jobsched::get_last_job_state($id) eq 'queued') ||
 	    (&jobsched::get_last_job_state($id) eq 'running')) {
@@ -97,7 +103,9 @@ sub qdel {
 #        }
 	    } else {
 		print "Deleting $id (request ID: " . &jobsched::get_last_job_request_id($id) . ")\n";
+		my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
 		$ssh->system("$command_string") or warn $ssh->error;
+#		Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "$command_string");
 	    }
 	}
     } else {
