@@ -29,7 +29,7 @@ use Coro::AnyEvent;
 use Cwd;
 use Data::Dumper;
 use File::Basename;
-#use Net::OpenSSH;
+use Net::OpenSSH;
 use Config::Simple;
 
 # use jobsched;

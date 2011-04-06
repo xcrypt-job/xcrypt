@@ -2,11 +2,11 @@ use base qw(core);
 use Getopt::Long;
 use jobsched;
 use common;
-use Net::OpenSSH;
 use Data::Dumper;
 use Text::CSV_XS;
-use strict;
+#use strict;
 use warnings;
+use File::Basename;
 
 our %options = ();                         # xcryptstatのオプション
 my @command_order = ();            # コマンドラインオプション指定順序
@@ -67,6 +67,8 @@ GetOptions(\%options,
             'stat' => \&set_option,
             'csv'=> sub {$options{csv}=1;}
                  );
+
+my %Host_Ssh_Hash;
 
 if (defined $options{help}) {
     foreach (@help) {
@@ -314,10 +316,25 @@ sub get_remote_file {
     
     unless (&jobsched::get_last_job_location($id) eq 'local') {
         unless(-f $file) {
-            my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
-            my $ssh = Net::OpenSSH->new($host, (user => $user));
+
+	    unless (exists $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)}) {
+		my ($user, $host) = split(/@/, &jobsched::get_last_job_userhost($id));
+		my $ssh = Net::OpenSSH->new($host, (user => $user));
+		$ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
+		$Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)} = $ssh;
+	    }
+
+	    my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
             $ssh->scp_get(\%ssh_opts, File::Spec->catfile(&jobsched::get_last_job_prefix($id), $file), $file) or warn $ssh->error;
+	    # $scp = Net::SCP->new($host, $user) or die $scp->{errstr};
+	    # $scp->login($user) or die $scp->{errstr};
+	    # $scp->cwd(dirname(File::Spec->catfile(&jobsched::get_last_job_prefix($id), $file))) or die $scp->{errstr};
+	    # $scp->get(basename($file)) or die $scp->{errstr};
+	    # rename basename($file),
+	    # File::Spec->catfile(&jobsched::get_last_job_workdir($id), basename($file));
+	    # $scp->quit;
         }
     }
 }
+
 

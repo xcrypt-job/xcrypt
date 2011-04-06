@@ -13,7 +13,6 @@ use Coro::AnyEvent;
 use Coro::Signal;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
-#use Net::OpenSSH;
 
 use builtin;
 use common;
