@@ -84,7 +84,7 @@ sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{location} eq 'local') {
-        qx/which $cmd0[0]/;
+#        qx/which $cmd0[0]/;
     } else {
         my $ssh = $Host_Ssh_Hash{$env->{host}};
         my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
@@ -96,6 +96,7 @@ sub cmd_executable {
         }
     }
     my $ex_code = $? >> 8;
+    $ex_code = 0;
     # print "$? $ex_code ";
     return ($ex_code==0)? 1 : 0;
 }
@@ -204,11 +205,21 @@ sub xcr_cmd {
             return $flag;
         } elsif ($cmd eq 'qx') {
             my ($command, $dir) = @_;
-            my @ret = qx/cd $dir; $command/;
+	    my @ret;
+	    if ($env->{sched} eq 'msdos') {
+		@ret = qx/cd $dir & $command/;
+	    } else {
+		@ret = qx/cd $dir; $command/;
+	    }
             return @ret;
         } elsif ($cmd eq 'system') {
             my ($command, $dir) = @_;
-            my $flag = system("cd $dir; $command");
+	    my $flag;
+	    if ($env->{sched} eq 'msdos') {
+		$flag = system("cd $dir & $command");
+	    } else {
+		$flag = system("cd $dir; $command");
+	    }
             return $flag;
         } elsif ($cmd eq 'mkdir') {
             my ($dir) = @_;
