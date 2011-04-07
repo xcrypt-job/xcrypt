@@ -36,7 +36,7 @@ sub new {
     ## Job script related members
     set_member_if_empty ($self, 'jobscript_header', []);
     set_member_if_empty ($self, 'jobscript_body', []);
-    set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.sh");
+    set_member_if_empty ($self, 'jobscript_file', "$self->{id}_$self->{env}->{sched}.bat");
     set_member_if_empty ($self, 'dumped_environment', []);
     set_member_if_empty ($self, 'before_in_job_file', "$self->{id}_before_in_job.pl");
     set_member_if_empty ($self, 'exe_in_job_file', "$self->{id}_exe_in_job.pl");
@@ -173,10 +173,10 @@ sub make_jobscript_body {
         push (@body, @{mkarray($preamble)});
     }
     # Set the job's status to "running"
-    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    # inventory_write.pl をやめて touch に
+#    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
+    # inventory_write.pl をやめて mkdir に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
-    push (@body, 'touch ' . $self->{id} . '_is_running');
+    push (@body, 'mkdir ' . $self->{id} . '_is_running');
     push(@body, @{$self->{'cmd_before_exe'}});
     # Do before_in_job by executing the perl script created by make_before_in_job_script
     push (@body, "perl $self->{before_in_job_file}");
@@ -214,9 +214,9 @@ sub make_jobscript_body {
     push (@body, "perl $self->{after_in_job_file}"); 
     push(@body, @{$self->{'cmd_after_exe'}});
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    # inventory_write.pl をやめて touch に
+    # inventory_write.pl をやめて mkdir に
 #    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
-    push (@body, 'touch ' . $self->{id} . '_is_done');
+    push (@body, 'mkdir ' . $self->{id} . '_is_done');
     $self->{jobscript_body} = \@body;
 }
 
@@ -438,9 +438,8 @@ sub qsub {
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
-
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
-        if ( @qsub_output == 0 ) { die "qsub command failed"; }
+#        if ( @qsub_output == 0 ) { die "qsub command failed"; }
 
         # Get request ID from qsub's output
         my $req_id;
