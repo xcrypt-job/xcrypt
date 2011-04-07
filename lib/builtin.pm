@@ -84,7 +84,7 @@ sub cmd_executable {
     my ($cmd, $env) = @_;
     my @cmd0 = split(/\s+/,$cmd);
     if ($env->{location} eq 'local') {
-#        qx/which $cmd0[0]/;
+        qx/which $cmd0[0]/;
     } else {
         my $ssh = $Host_Ssh_Hash{$env->{host}};
         my @flags = &ssh_command($env, $ssh, 'system', "which $cmd0[0]");
@@ -96,7 +96,6 @@ sub cmd_executable {
         }
     }
     my $ex_code = $? >> 8;
-    $ex_code = 0;
     # print "$? $ex_code ";
     return ($ex_code==0)? 1 : 0;
 }
