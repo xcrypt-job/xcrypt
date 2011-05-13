@@ -189,7 +189,6 @@ sub delete_sub {
     }
 }
 
-<<<<<<< /share/home-spara/tasuku/xcrypt-909/xcrypt/lib/dry.pm.orig
 sub before_in_xcrypt {}
 
 sub start {
@@ -198,13 +197,8 @@ sub start {
 }
 
 sub after_in_xcrypt {}
-||||||| /tmp/dry.pm~base.fZvTU9
-sub before_in_xcrypt {}
-sub after_in_xcrypt {}
-=======
 sub before {}
 sub after {}
->>>>>>> /tmp/dry.pm~other.4n7ANN
 
 ###############################################
 #     << dry_exe°ú¿ôÃê½Ð >>                                                                   #
