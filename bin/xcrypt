@@ -113,8 +113,8 @@ if ($xcrfile !~ /\.xcr\Z/) {
 }
 
 mkdir $options{inventory_path}, 0755;
-#my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', DIR => "$options{inventory_path}", SUFFIX => '.pm' );
-my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', SUFFIX => '.pm' );
+my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', DIR => "$options{inventory_path}", SUFFIX => '.pm' );
+#my($HEADER, $tmp_filename) = tempfile( 'tempXXXXX', SUFFIX => '.pm' );
 print $HEADER 'package xcropt;' . "\n";
 my $dumper = Data::Dumper->Dump([\%options],['options_tmp']);
 print $HEADER 'my ' . $dumper . "\n";

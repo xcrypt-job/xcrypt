@@ -8,7 +8,7 @@ use File::Copy;
 use File::Spec;
 use File::Basename;
 use Cwd;
-use xcropt;
+#use xcropt;
 use jsconfig;
 
 &add_key('JS_stage_in_files', 'JS_stage_out_files');
