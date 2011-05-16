@@ -16,9 +16,9 @@ sub quote($) {
 	return $file;
 }
 
-# ----------- εγΒε¦«εγ΅εγΌεβΏιοΞε΅ριοΜε£κ ------------ #
+# ----------- γƒ‘γƒ©γƒ΅γƒΌγ‚Ώε—γ‘ε–γ‚ ------------ #
 
-# κΎΚθΚ² check
+# εΌ•ζ•° check
 if( @ARGV != 5 ) {
     usage();
     exit 1;
@@ -33,21 +33,21 @@ if( $Getopt::Long::error || !defined($stdout) || !defined($stderr) || @others !=
     exit 1;
 }
 
-# εγ¬ε¦µεγΪε¦«εγªεγ®ε¤¥εγ¬εβ―εγ°ε¦¬εγΒε¤»ιπ
+# γƒ†γƒ³γƒγƒ©γƒªγƒ‡γ‚£γƒ¬γ‚―γƒγƒªγƒ‘γ‚Ήε
 my $tmpdir = $ENV{'XCR_TMP_DIR'};
 if(!defined($tmpdir)) {
-	$tmpdir = ".";	# λόªλμ®η®ΤεΆ¬εβ²εΆ²εβ«εγ¬εγ³εγ
+	$tmpdir = ".";	# ζªζ‡ε®γªγ‚‰γ°γ‚«γƒ¬γƒ³γƒ
 }
 
-#εβΈεγ§εγΜε¤»εβ―εγªεγΞε¥θεγΚε¤£εβ¤εγ«ιπ
+#γ‚Έγƒ§γƒ–γ‚Ήγ‚―γƒªγƒ—γƒγƒ•γ‚΅γ‚¤γƒ«ε
 my $jobscript = $others[0];
 
-# Condorεβ³εγάε¦µεγ²ε¥ρεβΉιπ
+# Condorγ‚³γƒγƒ³γƒ‰γƒ‘γ‚Ήε
 my $command_path = "/opt/condor-7.2.2/bin";
 my $condor_submit_command = File::Spec->catfile( $command_path, "condor_submit" );
 my $condor_rm_command = File::Spec->catfile( $command_path, "condor_rm" );
 
-# ----------- submit description file θΏΨθ―π ------------ #
+# ----------- submit description file δ½ζ ------------ #
 
 my $Submit_file = File::Spec->catfile($tmpdir, "jd.$$.sub");
 open(SUBFILE, ">$Submit_file") || die "$0: cannot open submit description file. (file: $Submit_file)\n";
@@ -59,11 +59,11 @@ print SUBFILE "universe = vanilla \n";
 print SUBFILE "+out = \"$stdout\" \n";
 print SUBFILE "+err = \"$stderr\" \n";
 print SUBFILE "Executable = $jobscript \n";
-# ιε¥ικΦε¥υεβ΅εβ¤εγ«ρα”
+# ε…¥ε›γƒ•γ‚΅γ‚¤γƒ«ι”
 if( exists($ENV{'XCR_INPUTFILE'}) ) {
 	print SUBFILE "transfer_input_files = $ENV{'XCR_INPUTFILE'} \n";
 }
-# ιηΊικΦε¥υεβ΅εβ¤εγ«ρα”
+# ε‡Ίε›γƒ•γ‚΅γ‚¤γƒ«ι”
 if( exists($ENV{'XCR_OUTPUTFILE'}) ) {
 	print SUBFILE "transfer_output_files = $ENV{'XCR_OUTPUTFILE'} \n";
 }
@@ -71,11 +71,11 @@ print SUBFILE "+XCRJobRequestName = \"$ENV{'LOGNAME'}\" \n";
 print SUBFILE "Queue \n";
 close( SUBFILE );
 
-# -----------εβΈεγ§εγΜε¤»εβ―εγªεγΞε¥θεα«κ°ήκ΅Έε¥ρεγΌεγήε¥γεβ·εγ§εγ³εα®θ½Πη΄Ά  ------------ #
+# -----------γ‚Έγƒ§γƒ–γ‚Ήγ‚―γƒªγƒ—γƒγ«ε®θ΅γƒ‘γƒΌγƒγƒƒγ‚·γƒ§γƒ³γ®δ»ε   ------------ #
 chmod 0755, $jobscript;
 
 
-# ----------- condor_submit εβ³εγάε¦µεγ²η®ήκ΅ ------------ #
+# ----------- condor_submit γ‚³γƒγƒ³γƒ‰ε®θ΅ ------------ #
 
 my $cmd = quote( $condor_submit_command );
 $cmd .= " " . quote( $Submit_file );
