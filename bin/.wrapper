@@ -1,0 +1,7 @@
+#!/bin/sh
+XCRYPT=/home/abet/xcrypt
+PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
+PATH=$XCRYPT/bin:$PATH
+export XCRYPT PERL5LIB PATH
+progname=`basename $0`
+exec $XCRYPT/bin/src/$progname "$@"
