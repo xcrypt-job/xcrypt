@@ -1,3 +1,1 @@
-#!/bin/sh
-xcrypt ${XCRYPT}/bin/script/del.xcr "$@"
-#perl ${XCRYPT}/bin/script/del.xcr.pl "$@"
+.wrapper
