@@ -76,7 +76,7 @@ sub workdir_member_file {
     unless ($self->{$member}) {
         warn "The job object $self->{id} does not have a member '$member'";
     }
-    return $self->{$member};
+    return File::Spec->catfile($self->{workdir}, $self->{$member});
 }
 
 # not a method
@@ -174,9 +174,7 @@ sub make_jobscript_body {
     }
     # Set the job's status to "running"
 #    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    # inventory_write.pl をやめて mkdir に
-#    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
-    push (@body, 'mkdir ' . $self->{id} . '_is_running');
+    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push(@body, @{$self->{'cmd_before_exe'}});
     # Do before_in_job by executing the perl script created by make_before_in_job_script
     push (@body, "perl $self->{before_in_job_file}");
@@ -215,8 +213,7 @@ sub make_jobscript_body {
     push(@body, @{$self->{'cmd_after_exe'}});
     # Set the job's status to "done" (should set to "aborted" when failed?)
     # inventory_write.pl をやめて mkdir に
-#    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
-    push (@body, 'mkdir ' . $self->{id} . '_is_done');
+    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
     $self->{jobscript_body} = \@body;
 }
 

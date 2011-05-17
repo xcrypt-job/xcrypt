@@ -20,8 +20,14 @@ our %options = (
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
     'left_message_check_interval' => 3, # ジョブスクリプトが残したメッセージをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
-    'verbose' => 0,               # verbose level
-    'stack_size' => 32768,        # Perlスレッドのスタックサイズ
+    'delete_left_message_file' => 1, # delete *_is_done/running after read
+    'delete_in_job_files' => 1,  # delete *_before/after/exe_in_job.pl after a job finished
+    'delete_return_file' => 0,   # delete *_return after a job finished
+    'delete_job_script' => 0,    # delete a job script after a job finished
+    'delete_stdout' => 0,        # delete a stdout file after a job finished
+    'delete_stderr' => 0,        # delete a stderr file after a job finished
+    'verbose' => 0,              # verbose level
+    'stack_size' => 32768,       # Perlスレッドのスタックサイズ
     # define other default values...
     );
 
@@ -45,6 +51,12 @@ GetOptions
      'abort_check_interval=i',
      'left_message_check_interval=i',
      'inventory_path=s',
+     'delete_left_message_file+',
+     'delete_job_script+',
+     'delete_in_job_files+',
+     'delete_return_file+',
+     'delete_stdout+',
+     'delete_stderr+',
      'verbose=i',
      'stack_size=i',
      # define other command-line options...
