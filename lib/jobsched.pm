@@ -104,19 +104,7 @@ sub qstat {
 sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
-    return 'touch ' . $self->{id} . '_is_' . $stat;
-    ## Obsolete
-    # status_name_to_level ($stat); # Valid status name?
-    # my $write_command=File::Spec->catfile($self->{env}->{xd}, 'bin', $Inventory_Write_Cmd);
-    # my $timeout = $xcropt::options{comm_timeout};
-    # if ( $Inventory_Port > 0 ) {
-    #     return "$write_command $self->{id} $stat sock $Inventory_Host $Inventory_Port $timeout";
-    # } else {
-    #     my $dir = File::Spec->catfile($self->{env}->{wd}, $Lockdir);
-    #     my $req = File::Spec->catfile($self->{env}->{wd}, $Reqfile);
-    #     my $ack = File::Spec->catfile($self->{env}->{wd}, $Ackfile);
-    #     return "$write_command $self->{id} $stat file $dir $req $ack $timeout";
-    # }
+    return 'mkdir ' . $self->{id} . '_is_' . $stat;
 }
 
 ##############################
@@ -569,6 +557,9 @@ sub left_transition_message_check {
                     set_job_status_according_to_signal($self);
                     $self->qdel();
                 }
+                if ( $xcropt::options{delete_left_message_file} ) {
+                    xcr_unlink ($self->{env}, left_message_file_name($self, 'running'));
+                }
             }
         }
         if ( get_job_status($self) eq 'running') {
@@ -582,6 +573,9 @@ sub left_transition_message_check {
                 } else {
                     set_job_status_according_to_signal($self);
                     $self->qdel();
+                }
+                if ( $xcropt::options{delete_left_message_file} ) {
+                    xcr_unlink ($self->{env}, left_message_file_name($self, 'done'));
                 }
             }
         }

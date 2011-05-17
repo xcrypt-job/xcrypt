@@ -19,6 +19,7 @@ add_cmd_before_exe add_cmd_after_exe
 use strict;
 use English;
 use File::Spec;
+use File::Path;
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
@@ -236,7 +237,7 @@ sub xcr_cmd {
             symlink($file, File::Spec->catfile($dir, $link));
         } elsif ($cmd eq 'unlink') {
             my ($file) = @_;
-            unlink $file;
+            File::Path::rmtree ($file);
         } else {
             die ;
         }
@@ -947,6 +948,24 @@ sub submit {
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
             if (check_status_for_set_job_finished ($self)) {
                 &jobsched::set_job_finished($self);
+            }
+            ## Delete created files
+            if ( $xcropt::options{delete_in_job_files} ) {
+                xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
+                xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
+                xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
+            }
+            if ( $xcropt::options{delete_return_file} ) {
+                xcr_unlink ($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
+            }
+            if ( $xcropt::options{delete_job_script} ) {
+                xcr_unlink ($self->{env}, $self->workdir_member_file('jobscript_file'));
+            }
+            if ( $xcropt::options{delete_stdout} ) {
+                xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stdout'));
+            }
+            if ( $xcropt::options{delete_stderr} ) {
+                xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stderr'));
             }
         } $self;
         # push (@coros, $job_coro);
