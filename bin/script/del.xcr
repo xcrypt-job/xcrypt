@@ -4,39 +4,103 @@ use Getopt::Long;
 use common;
 
 our %options = ();
+my @job_statuses = qw(initialized prepared submitted queued running done finished aborted); # ジョブ状態一覧
 
-my %keys = ('help' => '        show all the options',
-	    'all' => "         delete all the jobs",
-	    'clean' => "       delete all the jobs and clean the history",
-	    'cancel' => "      the same as uninitialized",
-	    'invalidate' => "  the same as finish",
-	    'uninitialize' => "delete jobs with making uninitialized",
-	    'finish' => "      delete jobs with making finished",
+my @help = (
+    q /xcryptdel [--help] [--all] [--clean]/,
+    q /          [--cancel] [--invalidate] [--ununinitialize] [--finish]/,
+    q /          [--name regexp] [--status regexp]/,
+    q //,
+    q /Options:/,
+    q /--help          shows this message/,
+    q //,
+    q /[delete options]/,
+    q /--all           delete all the jobs./,
+    q /--clean         delete all the jobs and clean the history./,
+    q /--name          delete jobs the name matches of regexp./,
+    q /--status        delete jobs the status name matches the regexp./,
+    q //,
+    q /[state options]/,
+    q /--cancel        the same as uninitialized./,
+    q /--invalidate    the same as finish./,
+    q /--uninitialize  delete jobs with making uninitialized./,
+    q /--finish        delete jobs with making finished./,
+);
+
+
+my %keys = ('help', 'all', 'clean', 'cancel', 'invalidate', 'uninitialize', 'finish', 'name', 'status');
+GetOptions(\%options,
+            'help'   ,
+            'all'   ,
+            'clean'   ,
+            'cancel'   ,
+            'invalidate'   ,
+            'uninitialize'   ,
+            'finish'   ,
+	    'name=s'   => \&set_regexp_option,
+	    'status=s' => \&set_regexp_option,
     );
-GetOptions(\%options, keys(%keys));
+
+print "job_statuses = @job_statuses\n";
 
 my %Host_Ssh_Hash;
 my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'help'}) {
-    foreach my $key (keys(%keys)) {
-	print $key . '  ' . $keys{$key}, "\n";
+    foreach (@help) {
+        print $_ . "\n";
+    }
+    exit;
+}
+if (defined $options{'clean'} || defined $options{'all'}) {
+    foreach my $id (&jobsched::get_last_job_id) {
+        &del($id);
+    }
+    if (defined $options{'clean'}) {
+        my $count = 0;
+        while (-e "$Inventory_Path.$count") {
+            $count++;
+        }
+        rename $Inventory_Path, "$Inventory_Path.$count";
+    }
+} elsif (defined $options{'name'} || defined $options{'status'}) {
+    my @last_ids = &jobsched::get_last_job_id;
+    unless (@last_ids) {
+        print "logfile or job's info not exists\n";
+        exit;
+    }
+    if (defined $options{'name'}) {
+        foreach my $id (@{$options{'name'}}) {
+            my @del_job_ids = grep {$_ =~ /$id/} @last_ids;
+            foreach my $id (@del_job_ids) {
+                &del($id);
+            }
+        }
+    } else {
+        foreach my $id (@last_ids) {
+            my $last_job_state = &jobsched::get_last_job_state($id);
+            if (grep {&jobsched::get_last_job_state($id) =~ /$_/} @{$options{'status'}}) {
+                &del($id);
+            }
+        }
     }
 } else {
-    if (defined $options{'clean'} || defined $options{'all'}) {
-	foreach my $id (&jobsched::get_last_job_id) {
-	    &del($id);
-	}
-	if (defined $options{'clean'}) {
-	    my $count = 0;
-	    while (-e "$Inventory_Path.$count") {
-		$count++;
-	    }
-	    rename $Inventory_Path, "$Inventory_Path.$count";
-	}
-    } else {
-	foreach my $id (@ARGV) {
-	    &del($id);
-	}
+    foreach my $id (@ARGV) {
+        &del($id);
+    }
+}
+
+sub set_regexp_option {
+    my ($optname, @regexps) = @_;
+    
+    foreach my $regexp (@regexps) {
+        if ($optname eq 'status' and (!grep {$_ =~ $regexp} @job_statuses)) {
+            print STDERR 'error status regexp' . "\n";
+        }
+        if (exists $options{$optname}) {
+            push (@{$options{$optname}}, $regexp);
+        } else {
+            $options{$optname} = [$regexp];
+        }
     }
 }
 
@@ -46,12 +110,12 @@ sub del {
     print "$id is deleted by user.\n";
     if ($options{'invalidate'} || $options{'finish'}) {
 	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_uninitialized');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id .'_to_be_finished'));
+	system('mkdir '. File::Spec->catfile($Inventory_Path, $id .'_to_be_finished'));
 	print "$id is finished by user.\n";
     }
     if ($options{'cancel'} || $options{'uninitialize'}) {
 	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_finished');
-	system('touch '. File::Spec->catfile($Inventory_Path, $id.'_to_be_uninitialized'));
+	system('mkdir '. File::Spec->catfile($Inventory_Path, $id.'_to_be_uninitialized'));
 	print "$id is uninitialized by user.\n";
     }
 }
