@@ -41,8 +41,6 @@ GetOptions(\%options,
 	    'status=s' => \&set_regexp_option,
     );
 
-print "job_statuses = @job_statuses\n";
-
 my %Host_Ssh_Hash;
 my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'help'}) {
