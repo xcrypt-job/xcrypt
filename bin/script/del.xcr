@@ -168,7 +168,8 @@ sub qdel {
 #		Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "$command_string");
 	    }
 	}
-    } else {
-	die "any job of id:$id doesn't exist";
-    }
+    } 
+#   else {
+#       die "any job of id:$id doesn't exist";
+#   }
 }
