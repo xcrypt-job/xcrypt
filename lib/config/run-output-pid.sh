@@ -27,5 +27,5 @@ if [ 'x' = "x$1" ]; then
     exit -1
 fi
 
-/bin/sh `basename $1` > $STDOFILE 2> $STDEFILE &
+/bin/sh $1 > $STDOFILE 2> $STDEFILE &
 echo $!
