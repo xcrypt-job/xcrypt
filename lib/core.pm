@@ -416,7 +416,7 @@ sub qsub_make {
 sub qsub {
     my $self = shift;
 
-    my $scriptfile = $self->workdir_member_file('jobscript_file');
+    my $scriptfile = $self->{jobscript_file};
     my $qsub_options = join(' ', @{$self->{qsub_options}});
 
     # Set job's status "submitted"
@@ -435,6 +435,7 @@ sub qsub {
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        # xcr_qx() chdirs to working directory, executes $cmdline, and returns the stdout string.
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
 #        if ( @qsub_output == 0 ) { die "qsub command failed"; }
 
