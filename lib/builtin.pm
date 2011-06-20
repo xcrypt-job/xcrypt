@@ -917,7 +917,8 @@ sub submit {
             # }
 
 	    ## NFS が書き込んでくれる*経験的*待ち時間
-	    sleep 3;
+	    #sleep 10;
+	    Coro::AnyEvent::sleep 10;
             ## Invoke after()
             if (check_status_for_after ($self)) {
                 if ($self->{after_to_job} == 1 and (exists $self->{after})) {
