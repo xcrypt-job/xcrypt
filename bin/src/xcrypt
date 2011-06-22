@@ -46,6 +46,10 @@ GetOptions
      'xd=s',
      'sched=s',
      #
+     # 使用頻度が高そうなので特別扱い
+     'node=i',
+     'queue=s',
+     #
 #     'port=i',         # Obsolete
 #     'comm_timeout=i', # Obsolete
      'abort_check_interval=i',
@@ -61,7 +65,6 @@ GetOptions
      'stack_size=i',
      # define other command-line options...
     );
-
 if (defined $ENV{XCRJOBSCHED}) { warn 'The environment variable $XCRJOBSCHED is obsolete.  Use ~/.xcryptrc'; }
 if (defined $ENV{XCRQUEUE}) { warn 'The environment variable $XCRQUEUE is obsolete.  Use ~/.xcryptrc'; }
 
