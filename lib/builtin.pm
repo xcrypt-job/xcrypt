@@ -559,6 +559,11 @@ sub set_TEMPLATE {
 	    $user::TEMPLATE{"$key"} = $cfg{"$key"};
 	}
     }
+    foreach my $i ('queue', 'node') {
+	if (defined $xcropt::options{$i}) {
+	    $user::TEMPLATE{'template.JS_' . $i} = $xcropt::options{$i};
+	}
+    }
 }
 
 sub unalias {
@@ -917,8 +922,8 @@ sub submit {
             # }
 
 	    ## NFS が書き込んでくれる*経験的*待ち時間
-	    #sleep 10;
-	    Coro::AnyEvent::sleep 10;
+	    #sleep 3;
+	    Coro::AnyEvent::sleep 3;
             ## Invoke after()
             if (check_status_for_after ($self)) {
                 if ($self->{after_to_job} == 1 and (exists $self->{after})) {
@@ -1127,6 +1132,6 @@ sub join(&) {
         sync;
     };
     $joined_code->();
-}    
+}
 
 1;
