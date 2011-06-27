@@ -45,7 +45,8 @@ my @help = (q /xcryptstat [--help] [--csv] [--name regexp] [--status regex] [--e
     q //,
     q /If no output options are specified, --stat is added as the last option/,
     q /(if --csv is not specified)/,
-    q /or outputs all the information xcryptstat supports (otherwise)./,
+   #q /or outputs all the information xcryptstat supports (otherwise)./,
+    q /or outputs option the --stat and --ls of xcryptstat supports (otherwise).
 );
 
 my %ssh_opts = (
@@ -86,16 +87,16 @@ if (defined $options{csv}) {
         }
     }
     
-    unless (grep { $_ =~ /^csv_.+/} keys (%options)) {
+    #unless (grep { $_ =~ /^csv_.+/} keys (%options)) {
         foreach my $check_opt (@check_opts) {
             $options{'csv_' . $check_opt} = 1;
         }
         &set_option('stat');
         foreach my $file_type (@file_types) {
             &set_option('ls', $file_type);
-            &set_option('cat', $file_type);
+            #&set_option('cat', $file_type);
         }
-    }
+    #}
     &output_csv('jobID', 'status', 'requestID', 'stdout_name', 'stdout', 'stderr_name', 'stderr', 'batch_name', 'batch');
 }
 
@@ -199,7 +200,11 @@ sub set_option {
             return;
         }
         if (exists $options{$optname}) {
-            push (@{$options{$optname}}, $file_type);
+            if ((grep { $_ eq "$file_type"} @{$options{$optname}}) > 0) {
+                return;
+            } else {
+                push (@{$options{$optname}}, $file_type);
+            }
         } else {
             $options{$optname} = [$file_type];
         }
