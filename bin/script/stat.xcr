@@ -46,7 +46,7 @@ my @help = (q /xcryptstat [--help] [--csv] [--name regexp] [--status regex] [--e
     q /If no output options are specified, --stat is added as the last option/,
     q /(if --csv is not specified)/,
    #q /or outputs all the information xcryptstat supports (otherwise)./,
-    q /or outputs option the --stat and --ls of xcryptstat supports (otherwise).
+    q /or outputs option the --stat and --ls of xcryptstat supports (otherwise)./,
 );
 
 my %ssh_opts = (

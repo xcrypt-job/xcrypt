@@ -14,6 +14,13 @@ use common;
 use builtin;
 use return_transmission;
 
+###
+# configuration for Data::Dumper
+$Data::Dumper::Deparse  = 1;
+$Data::Dumper::Deepcopy = 1;
+$Data::Dumper::Maxdepth = 5;
+###
+
 my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that system administrative files are created in.
 
 my $cwd = Cwd::getcwd();
@@ -529,5 +536,27 @@ sub invalidate {
     $self->qdel_if_queued_or_running();
     jobsched::set_job_status_according_to_signal ($self);
 }
+
+### Save the member values into a log file
+sub save {
+    my ($self, $mb_name) = @_;
+    my $dumper = Data::Dumper->Dump([$self->{$mb_name}],['savedval']);
+    $dumper =~ s/([\[\{])\n\s+(\')/$1$2/g;
+    $dumper =~ s/([\',]{1})\n\s+(\')/$1$2/g;
+    $dumper =~ s/(\')\n\s+([\]\}])/$1$2/g;
+    $dumper =~ s/^(\$savedval = )(.*)$/$2/g;
+    jobsched::write_log (":savedval $self->{id} $mb_name $dumper\n");
+}
+
+# Restore the member values save()ed in the log file
+sub restore {
+    my ($self) = @_;
+    my $savedval = jobsched::get_last_job_savedval($self->{id});
+    if ( $savedval ) {
+        foreach my $k (keys %$savedval) {
+            $self->{$k} = $savedval->{$k};
+        }
+    }
+}    
 
 1;
