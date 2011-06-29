@@ -27,7 +27,7 @@ my $Inventory_Path = $xcropt::options{inventory_path}; # The directory that syst
 # Log File
 my $Logfile = File::Spec->catfile($Inventory_Path, 'transitions.log');
 # Hash table (key,val)=(job ID, the last state, request_id, signal, user@host, sched, prefix, workdir, script, stdout, and stderr in the previous Xcrypt execution)
-my %Last_Job = ();
+our %Last_Job = ();
 sub get_last_job_id         { return keys(%Last_Job);              }
 sub get_last_job_state      { return $Last_Job{$_[0]}{state};      }
 sub get_last_job_request_id { return $Last_Job{$_[0]}{request_id}; }
@@ -40,6 +40,7 @@ sub get_last_job_workdir    { return $Last_Job{$_[0]}{workdir};    }
 sub get_last_job_script     { return $Last_Job{$_[0]}{script};     }
 sub get_last_job_stdout     { return $Last_Job{$_[0]}{stdout};     }
 sub get_last_job_stderr     { return $Last_Job{$_[0]}{stderr};     }
+sub get_last_job_savedval   { return $Last_Job{$_[0]}{savedval};   }
 
 # Hash table (key,val)=(job ID, job objcect)
 my %Job_ID_Hash = ();
@@ -331,7 +332,11 @@ sub read_log {
                     delete ($Last_Job{$id}{signal});
                 } else {
                     $Last_Job{$id}{signal} = $sig;
-                }
+                } 
+            } elsif ($_ =~ /^:savedval\s+(\S+)\s+(\S+)\s+(.*)$/ ) {
+                my ($id, $mbname, $val) = ($1, $2, $3);
+                $Last_Job{$1}{savedval}{$2} = eval ($3);
+                print "readlog: \$Last_Job{$1}{savedval}{$2} <-- $Last_Job{$1}{savedval}{$2}\n";
             }
         }
         foreach my $id (keys %Last_Job) {

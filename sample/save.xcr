@@ -1,0 +1,23 @@
+# Sumit just a single job.
+use base qw (core);
+
+%template = (
+    'id' => 'job0',
+    'exe0' => 'bin/fib-file',
+    'arg0_0' => "dat/num40",
+    'arg0_1' => "out_0",
+    );
+@jobs=&prepare_submit_sync (%template);
+my $self = $jobs[0];
+$self->restore();
+if ($self->{result}) {
+    print "restored: $self->{result}\n";
+} else {
+    open (my $IN, '<', "$self->{arg0_1}");
+    while (<$IN>) {
+        chomp;
+        $self->{result} = $_;
+    }
+    print "calclated: $self->{result}\n";
+    $self->save('result');
+}
