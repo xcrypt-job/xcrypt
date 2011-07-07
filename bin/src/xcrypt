@@ -14,6 +14,12 @@ use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use Config::Simple;
 
+my @verboses = ();
+push(@verboses, ['verbose_transition', 'verbose_abort'          ]);                                                                   # verbose_level0
+push(@verboses, ['verbose_sync'      , 'verbose_readlog'        , 'verbose_laststat', 'verbose_leftmessage', 'verbose_abortcheck']);  # verbose_level1
+push(@verboses, ['verbose_periodic'  , 'verbose_hosts'          ]);                                                                   # verbose_level2
+push(@verboses, ['verbose_coro'      , 'verbose_leftmessage_all']);                                                                   # verbose_level3
+
 our %options = (
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
 #    'comm_timeout' => 60, # timeout for inventory_write.pl       # Obsolete
@@ -102,6 +108,13 @@ foreach my $key (keys %cfg) {
 }
 if ( $options{verbose} >= 1 ) {
     print "Loading $options{config}.\n";
+}
+for (my $i=0; $i <= $#verboses; $i++) {
+    if ( $options{verbose} >= $i ) {
+        foreach my $key (@{$verboses[$i]}) {
+            $options{$key} = '';
+        }
+    }
 }
 my $host = qx/hostname/;
 chomp $host;
