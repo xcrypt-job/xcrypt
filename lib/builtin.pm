@@ -292,7 +292,7 @@ sub repeat {
     if ($new_coro) {
         push (@periodic_threads, $new_coro);
     }
-    if ( $xcropt::options{verbose} >= 2 ) {
+    if (defined $xcropt::options{verbose_periodic}) {
         print "periodic = (";
         foreach (@periodic_threads) {
             print "$_ "
@@ -339,7 +339,7 @@ sub add_host {
             die "Set the environment varialble \$XCRYPT at $env->{host}\n";
         }
     }
-    if ( $xcropt::options{verbose} >= 3 ) {
+    if (defined $xcropt::options{verbose_hosts}) {
 	foreach my $key (keys(%$env)) {
 	    print $key . ': ' . $env->{$key} . "\n";
 	}
@@ -846,7 +846,7 @@ sub submit {
         my $job_coro = Coro::async {
             my $self = $_[0];
             # Output message on entering/leaving the Coro thread.
-            if ( $xcropt::options{verbose} >= 3 ) {
+            if (defined $xcropt::options{verbose_coro}) {
                 Coro::on_enter {
                     print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
@@ -886,10 +886,6 @@ sub submit {
                     $self->{before} = $self->{before_bkup};
                     delete $self->{before_bkup};
                 }
-            }
-            ## Print job information by employing job_info()
-            if (defined $xcropt::options{jobinfo}) {
-                &job_info($self);
             }
             ## Invoke start() (job submission)
             if (check_status_for_start ($self)) {
@@ -986,11 +982,11 @@ sub sync {
     # If any jobs are not specified, all the jobs submitted in this lexical scope.
     if ($#jobs  < 0) { @jobs = map {jobsched::find_job_by_id($_)} (keys %Spawned); }
     foreach (@jobs) {
-        if ( $xcropt::options{verbose} >= 2 ) {
+        if (defined $xcropt::options{verbose_sync}) {
             print "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
         $_->{thread}->join;
-        if ( $xcropt::options{verbose} >= 2 ) {
+        if (defined $xcropt::options{verbose_sync}) {
             print "$_->{id} finished.\n";
         }
         delete ($Spawned{$_->{id}});
@@ -1132,6 +1128,6 @@ sub join(&) {
         sync;
     };
     $joined_code->();
-}
+}    
 
 1;

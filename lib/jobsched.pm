@@ -182,7 +182,7 @@ sub set_job_status {
         warn_if_illegal_transition ($self, $stat, $tim);
     }
     write_log (":transition $self->{id} $stat $tim\n");
-    if ( $xcropt::options{verbose} >= 0 ) { print "$self->{id} <= $stat\n"; }
+    if (defined $xcropt::options{verbose_transition}) { print "$self->{id} <= $stat\n"; }
     {
         $self->{status} = $stat;
         $self->{last_update} = $tim;
@@ -308,7 +308,7 @@ sub read_log {
             warn "Failed to open the log file $Logfile in read mode.";
             return 0;
         }
-	if ( $xcropt::options{verbose} >= 1 ) {
+	if (defined $xcropt::options{verbose_readlog}) {
 	    print "Reading the log file $Logfile\n";
 	}
         while (<$LOG>) {
@@ -332,7 +332,7 @@ sub read_log {
                     delete ($Last_Job{$id}{signal});
                 } else {
                     $Last_Job{$id}{signal} = $sig;
-                } 
+                }
             } elsif ($_ =~ /^:savedval\s+(\S+)\s+(\S+)\s+(.*)$/ ) {
                 my ($id, $mbname, $val) = ($1, $2, $3);
                 $Last_Job{$1}{savedval}{$2} = eval ($3);
@@ -340,20 +340,20 @@ sub read_log {
             }
         }
         foreach my $id (keys %Last_Job) {
-	    if ( $xcropt::options{verbose} >= 1 ) {
+	    if (defined $xcropt::options{verbose_laststat}) {
 		print "$id = $Last_Job{$id}{state}";
 	    }
             if ( $Last_Job{$id}{state} ) {
-		if ( $xcropt::options{verbose} >= 1 ) {
+		if (defined $xcropt::options{verbose_laststat}) {
 		    print " (request_ID=$Last_Job{$id}{request_id})";
 		}
             }
-	    if ( $xcropt::options{verbose} >= 1 ) {
+	    if (defined $xcropt::options{verbose_laststat}) {
 		print "\n";
 	    }
         }
         close ($LOG);
-	if ( $xcropt::options{verbose} >= 1 ) {
+	if (defined $xcropt::options{verbose_readlog}) {
 	    print "Finished reading the log file $Logfile\n";
 	}
     }
@@ -482,7 +482,9 @@ sub check_and_write_aborted {
     {
         # %unchecked <- ($job, $job_ID) that is included in %Running_Jobs but not displayed by qstat
         %unchecked = %Running_Jobs;
-        print "check_and_write_aborted:\n";
+        if (defined $xcropt::options{verbose_abortcheck}) {
+            print "check_and_write_aborted:\n";
+        }
         my @ids = qstat();
         foreach (@ids) {
             my $job = $unchecked{$_};
@@ -507,7 +509,9 @@ sub check_and_write_aborted {
 	    my $status = get_job_status($aborted_job);
 	    unless (($status eq 'done') || ($status eq 'finished')
                     || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
-		print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
+                if (defined $xcropt::options{verbose_abort}) {
+		    print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
+                }
                 if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
                     local $Warn_illegal_transition = undef;
                     set_job_finished ($aborted_job);
@@ -551,7 +555,7 @@ sub left_transition_message_check {
     foreach my $req_id (keys %Running_Jobs) {
         my $self = $Running_Jobs{$req_id};
         if ( get_job_status($self) eq 'queued') {
-            if ( $xcropt::options{verbose} >= 2 ) {
+            if (defined $xcropt::options{verbose_leftmessage_all}) {
                 print "check if ". left_message_file_name($self, 'running')
                     . " exists at $self->{env}->{host}\n";
             }
@@ -568,7 +572,7 @@ sub left_transition_message_check {
             }
         }
         if ( get_job_status($self) eq 'running') {
-            if ( $xcropt::options{verbose} >= 2 ) {
+            if (defined $xcropt::options{verbose_leftmessage_all}) {
                 print "check if ". left_message_file_name($self, 'done')
                     . " exists at $self->{env}->{host}.\n";
             }
@@ -621,7 +625,7 @@ sub left_signal_message_check {
 }
 
 sub left_message_check {
-    if ( $xcropt::options{verbose} >= 2 ) { print "left_message_check:\n"; }
+    if (defined $xcropt::options{verbose_leftmessage}) { print "left_message_check:\n"; }
     # Transition to running/done
     left_transition_message_check ();
     # Signal
