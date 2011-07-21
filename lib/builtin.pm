@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
-spawn _before_ _after_ _before_in_xcrypt_ _after_in_xcrypt_
+spawn _before_ _after_ _initially_ _finally_ _before_in_xcrypt_ _after_in_xcrypt_
 add_package
 add_cmd_before_exe add_cmd_after_exe
 );
@@ -43,8 +43,8 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 
 # Permitted job template member names.
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
-'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
-'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
+'initially', 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
+'finally', 'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
 'cmd_before_exe', 'cmd_after_exe',
 'header'
 );
@@ -1103,6 +1103,10 @@ sub spawn(&@) {
     }
     return @jobs;
 }
+sub _initially_(&@) {
+    my $code = shift;
+    return ('initially', $code, @_);
+}
 sub _before_(&@) {
     my $code = shift;
     return ('before', $code, @_);
@@ -1110,6 +1114,10 @@ sub _before_(&@) {
 sub _after_(&@) {
     my $code = shift;
     return ('after', $code, @_);
+}
+sub _finally_(&@) {
+    my $code = shift;
+    return ('finally', $code, @_);
 }
 sub _before_in_xcrypt_(&@) {
     my $code = shift;
@@ -1128,6 +1136,6 @@ sub join(&) {
         sync;
     };
     $joined_code->();
-}    
+}
 
 1;
