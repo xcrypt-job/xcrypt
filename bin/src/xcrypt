@@ -177,11 +177,13 @@ use data_extractor;
 our @VALUE = ();
 our %TEMPLATE;
 &set_TEMPLATE();
+sub initially {local ($self, @VALUE) = @_; if ($self->{initially}) {&{$self->{initially}}($self, @VALUE)};}
 sub before_in_xcrypt {local ($self, @VALUE) = @_; if ($self->{before_in_xcrypt}) {&{$self->{before_in_xcrypt}}($self, @VALUE)};}
 sub before {local ($self, @VALUE) = @_; if ($self->{before}) {&{$self->{before}}($self, @VALUE)};}
 sub start  {my $self = shift;$self->SUPER::start();}
 sub after  {local ($self, @VALUE) = @_; if ($self->{after} ) {&{$self->{after}}($self, @VALUE)};}
 sub after_in_xcrypt  {local ($self, @VALUE) = @_; if ($self->{after_in_xcrypt} ) {&{$self->{after_in_xcrypt}}($self, @VALUE)};}
+sub finally {local ($self, @VALUE) = @_; if ($self->{finally}) {&{$self->{finally}}($self, @VALUE)};}
 $SIG{HUP} =  sub {(bless{},"user")->EVERY::sighup_handler(); print "Xcrypt is aborted by SIGHUP.\n"; exit(1);};
 $SIG{INT} =  sub {(bless{},"user")->EVERY::sigint_handler(); print "Xcrypt is aborted by SIGINT.\n"; exit(1);};
 $SIG{ABRT} = sub {(bless{},"user")->EVERY::sigabrt_handler(); print "Xcrypt is aborted by SIGABRT.\n"; exit(1);};
