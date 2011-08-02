@@ -622,7 +622,6 @@ sub disble_keys_without_by_add_key {
                     || ($key =~ /\ARANGES\Z/)
                     || ($key =~ /\AVALUE\Z/))
             {
-                print $key, "\n";
                 warn "$key doesn't work.  Use :$key or &add_key(\'$key\').\n";
                 delete $job{"$key"};
             }
