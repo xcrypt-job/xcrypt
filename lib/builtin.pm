@@ -169,7 +169,7 @@ sub rmt_cmd {
     } elsif ($cmd eq 'unlink') {
         my ($file) = @_;
         my $fullpath = File::Spec->catfile($env->{wd}, $file);
-        &rmt_cmd('system', $env, "rm -f $fullpath");
+        &rmt_cmd('system', $env, "rm -rf $fullpath");
     } elsif ($cmd eq 'get') {
         my ($file, $to) = @_;
 	unless (defined $to) { $to = '.'; }
