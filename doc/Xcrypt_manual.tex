@@ -527,9 +527,13 @@ by default.
 
 \section{\texttt{RANGE}\textit{i}}
 
+Its value is an array.  The value is used for creating job objects.
+In detail, see Section~\ref{sec:prepare}.
+
+
+\if0
 \textit{key}\texttt{@} denotes the one whose postfix is the
 character \texttt{@} (e.g., \texttt{exe0@}).
-
 
 Any word of ASCII printable characters except
 \begin{center}
@@ -541,6 +545,13 @@ is available for \texttt{RANGE}\textit{i}'s values.
 
 values are array references, function references, (or scalar although
 not recommended).
+\fi
+
+\if0
+\section{\texttt{RANGES}}
+
+Its value is an array of arrays (of values of \texttt{RANGE}\textit{i}s).
+\fi
 
 \section{\texttt{id}}
 
@@ -705,18 +716,22 @@ For example,
 \end{boxnote}
 \vspace{\baselineskip}
 
-creates 4 job objects.  This is the same as
+creates 4 job objects.
+
+\if0
+  This is the same as
 \begin{boxnote}
 \begin{alltt}
 %mytemplate = (
     'id@' => sub \{ "\textit{myjob}$VALUE[0]_$VALUE[1]"; \},
     'exe0@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
-    'RANGES' => [[0,1],[2,4]]
+    'RANGES' => [[0,2],[0,4],[1,4],[2,4]]
 );
 @jobs = prepare(%mytemplate);
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
+\fi
 
 \section{\texttt{submit}}\label{sec:submit}
 
