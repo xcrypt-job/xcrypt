@@ -669,6 +669,8 @@ prepare(%template);
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
+\noindent
+where \texttt{\$VALUE[0]} is the value of \texttt{RANGE0}.
 
 \if0
 
@@ -707,7 +709,7 @@ For example,
 \begin{boxnote}
 \begin{alltt}
 %mytemplate = (
-    'id@' => sub \{ "\textit{myjob}$VALUE[0]_$VALUE[1]"; \},
+    'id@' => sub \{ "\textit{myjob} $VALUE[0]_$VALUE[1]"; \},
     'exe0@' => sub \{ "./\textit{myexe} $VALUE[0] $VALUE[1]"; \},
     'RANGE0' => [0,1],
     'RANGE1' => [2,4]
@@ -716,8 +718,11 @@ For example,
 \end{alltt}
 \end{boxnote}
 \vspace{\baselineskip}
-
-creates 4 job objects.
+\noindent
+creates 4 job objects of
+$(\mbox{\texttt{RANGE0}},\mbox{\texttt{RANGE1}}) = (0,2), (0,4),(1,2),
+(1,4)$, which can be referred by \texttt{\$VALUE[0]} and
+\texttt{\$VALUE[1]}, respectively.
 
 \if0
   This is the same as
