@@ -142,9 +142,9 @@ sub qdel {
 	    unlink $done_file;
 	} else {
 	    my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
-	    $ssh->system("rm -f $running_file") or warn $ssh->error;
+	    $ssh->system("rm -rf $running_file") or warn $ssh->error;
 #	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $running_file");
-	    $ssh->system("rm -f $done_file") or warn $ssh->error;
+	    $ssh->system("rm -rf $done_file") or warn $ssh->error;
 #	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $done_file");
 	}
 	if ((&jobsched::get_last_job_state($id) eq 'queued') ||
