@@ -65,16 +65,11 @@ sub new {
 
 sub start {
     my $self = shift;
-    my $stat = &jobsched::get_job_status($self);
-    if ( $stat eq 'done' ) {
-        print "Skipping " . $self->{id} . " because already $stat.\n";
-    } else {
-        # print "$self->{id}: calling qsub.\n";
-        &qsub_make($self);
-        # Returns request ID
-	$self->{request_id} = (&qsub($self));
-	&jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
-    }
+    # print "$self->{id}: calling qsub.\n";
+    &qsub_make($self);
+    # Returns request ID
+    $self->{request_id} = (&qsub($self));
+    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
 }
 
 sub workdir_member_file {
@@ -460,7 +455,6 @@ sub qsub {
         if ( $req_id < 0 ) { die "Can't extract request ID from qsub output." }
         # Remember request ID
 	$self->{request_id} = $req_id;
-        # Set job's status "queued"
         return $req_id;
     } else {
         die "$qsub_command is not executable";
