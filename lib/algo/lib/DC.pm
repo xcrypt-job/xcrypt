@@ -3,6 +3,8 @@ package DC;
 use strict;
 use NEXT;
 use builtin;
+use Coro;
+use Coro::AnyEvent;
 
 &add_key('ofname', 'mergeFunc','divideFunc','canDivideFunc');
 
@@ -17,76 +19,19 @@ sub new
 sub start
 {
 	my $self = shift;
-	print "\tstart DC\n";
-	$self->NEXT::start();
-}
-
-sub before
-{
-	my $self = shift;
 	print "\tbefore DC\n";
 	
-	#if( &{$self->{canDivideFunc}}($self) )
-	if( $self->{arg0_0} > 10 )
+	if( &{$self->{canDivideFunc}}($self) )
 	{
-		#{
-		#	no strict "refs";
-			my @children = &{$self->{divideFunc}}($self);
-		
-			#my @children = $self{divideFunc}->{$self};
-			my @jobs = ();
-			foreach my $child (@children)
-			{
-				push(@jobs, &builtin::prepare(%{$child}));
-			}
-#			my @results = &builtin::submit_sync(@jobs);
-	# submit by myself
-	my @objs;
-	foreach my $job (@jobs) {
-	    &jobsched::inventory_write($job, 'prepared');
-	    &user::before($job);
-	    &user::start($job);
-	}
-	push(@objs, @jobs);
-    # after by myself
-    foreach my $job (@objs) {
-	&jobsched::wait_job_done ($job->{'id'});
-#		my $stat = &jobsched::get_job_status($job->{'id'});
-#		if ($stat eq 'done') {
-#		    print $job->{'id'} . "\'s post-processing finished.\n";
-	$job->after();
-	until ((-e "$job->{'id'}/$job->{'stdofile'}")
-	       && (-e "$job->{'id'}/$job->{'stdefile'}")) {
-	    sleep(1);
-	}
-	&jobsched::inventory_write($job, "finished");
-#		}
-    }
-    # sync by myself
-    my @results = &sync(@objs);
-
-			&{$self->{mergeFunc}}($self->{id}."/".$self->{ofname}, @results);
-			$self->{exe0} = "echo hoge";
-		#}
-	}
-#	$self->NEXT::before();
-}
-
-sub after
-{
-#	my $self = shift;
-	print "\tafter DC\n";
-#	$self->NEXT::after();
-}
-
-sub divide
-{
-	
-}
-
-sub merge
-{
-
+            my @children = &{$self->{divideFunc}}($self);
+            submit_sync (@children);
+            &{$self->{mergeFunc}}($self, @children);
+            jobsched::set_job_submitted ($self);
+            system (jobsched::inventory_write_cmdline($self,'running'));
+            system (jobsched::inventory_write_cmdline($self,'done'));
+	} else {
+            $self->NEXT::start();
+        }
 }
 
 1;

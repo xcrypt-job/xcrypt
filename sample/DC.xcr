@@ -1,6 +1,10 @@
+# Sample of DC.pm module (Divide and Conquer)
+# Compute Fib(n) by dividing a job for Fib(n) into jobs for Fib(n-1) and Fib(n-2) recursively
 use base qw(DC core);
 
-sub func0
+# Returns 1 (true) if the $job can be divided into equivalent multiple jobs.
+# Returns 0 (false) otherwise.
+sub can_divde
 {
 	$job = shift;
 	print "User function"."\n";
@@ -14,38 +18,19 @@ sub func0
 	}
 }
 
-sub func1
+# Divides $job into equivalent multiple jobs and returns an array of them.
+sub divide
 {
 	my $job = shift;
 	print "User Function divide"."\n";
 
-=comment
-	my %j1;
-	foreach (keys(%$job)) {
-	    $j1{"$_"}= $job->{"$_"};
-	}
-	$j1{'id'} = $j1{'id'}."_".($j1{'arg0'}-1);
-	$j1{'arg0'} = $j1{'arg0'}-1;
-	my %j2;
-	foreach (keys(%$job)) {
-	    $j2{"$_"}= $job->{"$_"};
-	}
-	$j2{'id'} = $j2{'id'}."_".($j2{'arg0'}-2);
-	$j2{'arg0'} = $j2{'arg0'}-2;
-
-	print $j1{'arg0'}, "\n";
-	print $j2{'arg0'}, "\n";
-=cut
 	my %j1 = (
 		'id' => $job->{id}."_".($job->{arg0_0}-1),
 		'exe0' => $job->{exe0},
 		'arg0_0' => $job->{arg0_0}-1,
-		'queue' => $job->{queue},
 		'canDivideFunc' => $job->{canDivideFunc},
 		'divideFunc' => $job->{divideFunc},
 		'mergeFunc' => $job->{mergeFunc},
-		'group' => $job->{group},
-		'ofname' => $job->{ofname}
 	);
 	my %j2 = (
 		'id' => $job->{id}."_".($job->{arg0_0}-2),
@@ -54,31 +39,29 @@ sub func1
 		'canDivideFunc' => $job->{canDivideFunc},
 		'divideFunc' => $job->{divideFunc},
 		'mergeFunc' => $job->{mergeFunc},
-		'queue' => $job->{queue},
-		'group' => $job->{group},
-		'ofname' => $job->{ofname}
 	);
-
 	my @children = ();
-	push(@children, \%j1);
-	push(@children, \%j2);
+	push(@children, prepare(%j1));
+	push(@children, prepare(%j2));
 	return @children;
 }
 
-sub func2
+# Merges the results of @children jobs as the result of the $parent job.
+sub merge
 {
-	my $ofname = shift;
-	#my @results = @{shift};
+	my ($parent, @children) = @_;
 	print "User Function merge"."\n";
 	my $val = 0;
-	foreach my $result (@_)
+	foreach my $child (@children)
 	{
-		open(FH,"<".$result->{id}."/".$result->{ofname});
+		open(FH,"<".$children->{JS_stdout});
 		my $line = <FH>;
+                chomp ($line);
 		$val += $line;
 		print $line."\n";
 		close(FH);
 	}
+        my $ofname = $parent->{JS_stdout};
 	print $ofname."\n";
 	open(OUT,">".$ofname);
 	print OUT $val;
@@ -89,12 +72,9 @@ sub func2
     'id' => 'job0',
     'exe0' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
     'arg0_0' => 13,
-    'canDivideFunc' => \&func0,
-    'divideFunc' => \&func1,
-    'mergeFunc' => \&func2,
-    'queue' => 'gh10034',
-    'group' => 'gh10034',
-    'ofname' => 'out'
+    'canDivideFunc' => \&can_divde,
+    'divideFunc' => \&divide,
+    'mergeFunc' => \&merge,
 );
 
 @results = &prepare_submit_sync(%template);
