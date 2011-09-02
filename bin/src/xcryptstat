@@ -6,5 +6,5 @@
 #     fi
 # done
 
-xcrypt ${XCRYPT}/bin/script/stat.xcr "$@"
+xcrypt ${XCRYPT}/bin/script/stat.xcr -- "$@"
 #perl ${XCRYPT}/bin/script/stat.xcr.pl "$@"

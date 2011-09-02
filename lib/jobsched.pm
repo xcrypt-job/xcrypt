@@ -182,7 +182,7 @@ sub set_job_status {
         warn_if_illegal_transition ($self, $stat, $tim);
     }
     write_log (":transition $self->{id} $stat $tim\n");
-    if (defined $xcropt::options{verbose_transition}) { print "$self->{id} <= $stat\n"; }
+    if ($xcropt::options{verbose_transition}) { print STDERR "$self->{id} <= $stat\n"; }
     {
         $self->{status} = $stat;
         $self->{last_update} = $tim;
@@ -308,8 +308,8 @@ sub read_log {
             warn "Failed to open the log file $Logfile in read mode.";
             return 0;
         }
-	if (defined $xcropt::options{verbose_readlog}) {
-	    print "Reading the log file $Logfile\n";
+	if ($xcropt::options{verbose_readlog}) {
+	    print STDERR "Reading the log file $Logfile\n";
 	}
         while (<$LOG>) {
             chomp;
@@ -340,21 +340,17 @@ sub read_log {
             }
         }
         foreach my $id (keys %Last_Job) {
-	    if (defined $xcropt::options{verbose_laststat}) {
-		print "$id = $Last_Job{$id}{state}";
-	    }
-            if ( $Last_Job{$id}{state} ) {
-		if (defined $xcropt::options{verbose_laststat}) {
-		    print " (request_ID=$Last_Job{$id}{request_id})";
+	    if ($xcropt::options{verbose_laststat}) {
+		print STDERR "$id = $Last_Job{$id}{state}";
+		if ( $Last_Job{$id}{state} ) {
+		    print STDERR " (request_ID=$Last_Job{$id}{request_id})";
 		}
-            }
-	    if (defined $xcropt::options{verbose_laststat}) {
-		print "\n";
+		print STDERR "\n";
 	    }
         }
         close ($LOG);
-	if (defined $xcropt::options{verbose_readlog}) {
-	    print "Finished reading the log file $Logfile\n";
+	if ($xcropt::options{verbose_readlog}) {
+	    print STDERR "Finished reading the log file $Logfile\n";
 	}
     }
 }
@@ -482,8 +478,8 @@ sub check_and_write_aborted {
     {
         # %unchecked <- ($job, $job_ID) that is included in %Running_Jobs but not displayed by qstat
         %unchecked = %Running_Jobs;
-        if (defined $xcropt::options{verbose_abortcheck}) {
-            print "check_and_write_aborted:\n";
+        if ($xcropt::options{verbose_abortcheck}) {
+            print STDERR "check_and_write_aborted:\n";
         }
         my @ids = qstat();
         foreach (@ids) {
@@ -509,7 +505,7 @@ sub check_and_write_aborted {
 	    my $status = get_job_status($aborted_job);
 	    unless (($status eq 'done') || ($status eq 'finished')
                     || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
-                if (defined $xcropt::options{verbose_abort}) {
+                if ($xcropt::options{verbose_abort}) {
 		    print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
                 }
                 if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
@@ -625,7 +621,7 @@ sub left_signal_message_check {
 }
 
 sub left_message_check {
-    if (defined $xcropt::options{verbose_leftmessage}) { print "left_message_check:\n"; }
+    if (defined $xcropt::options{verbose_leftmessage}) { print STDERR "left_message_check:\n"; }
     # Transition to running/done
     left_transition_message_check ();
     # Signal

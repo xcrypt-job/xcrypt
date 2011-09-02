@@ -15,10 +15,56 @@ use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use Config::Simple;
 
 my @verboses = ();
-push(@verboses, ['verbose_transition', 'verbose_abort'          ]);                                                                   # verbose_level0
-push(@verboses, ['verbose_sync'      , 'verbose_readlog'        , 'verbose_laststat', 'verbose_leftmessage', 'verbose_abortcheck']);  # verbose_level1
-push(@verboses, ['verbose_periodic'  , 'verbose_hosts'          ]);                                                                   # verbose_level2
-push(@verboses, ['verbose_coro'      , 'verbose_leftmessage_all']);                                                                   # verbose_level3
+push(@verboses, []);                                                                                                                  # verbose_level0
+push(@verboses, ['verbose_transition', 'verbose_abort'          ]);                                                                   # verbose_level1
+push(@verboses, ['verbose_sync'      , 'verbose_readlog'        , 'verbose_laststat', 'verbose_leftmessage', 'verbose_abortcheck']);  # verbose_level2
+push(@verboses, ['verbose_periodic'  , 'verbose_hosts'          ]);                                                                   # verbose_level3
+push(@verboses, ['verbose_coro'      , 'verbose_leftmessage_all']);                                                                   # verbose_level4
+
+my @help = (
+'Usage: xcrypt <options> file.xcr',
+'Options:',
+'--help              Show this message and exit',
+'--[no]jobinfo       Print job information when prepare()ing the job (default: no)',
+'--compile_only      Compile the Xcrypt script into Perl script and exit without executing it',
+'--xbs-auto',
+'--xbs-type=s',
+'--shared',
+'--scratch           Not read execution log file even if it exists. Execute all the jobs from the beginning',
+'--config=<path>     Specify configulation file (default: ~/.xcryptrc or INSTALLDIR/etc/xcryptrc)',
+'--host=<hostname>   Do remote execution on hostname',
+'--wd=<directory>    Working directory on remote host (remote execution only)',
+'--xd=<directory>    Xcrypt installation directory on remote host (remote execution only)',
+'--sched=<scheduler> Specify (overwrite) a default batch scheduler',
+'--node=<num>        Specify (overwrite) a default number of nodes that a job acquires',
+'--queue=<name>      Specify (overwrite) a default queue jobs to be submitted',
+'--abort_check_interval=<num>        Interval time for checking whether submitted jobs are aborted [sec] (default: 19)',
+'--left_message_check_interval=<num> Interval time for checking message files from jobs [sec] (default: 3)',
+'--inventory_path=<directory>        Directory to save log files (default: ./inv_watch/)', 
+'--[no]delete_left_message_file      Delete message files *_is_[running|done] automatically when a job finishes (default: yes)',
+'--[no]delete_job_script             Delete a job script automatically when a job finishes (default: no)',
+'--[no]delete_in_job_file            Delete a perl script script for executing in a job *_[before|exe|after]_in_job.pl automatically when the job finishes (default: no)',
+'--[no]delete_return_file            Delete a job\'s return value file *_return automatically when the job finishes (default: no)',
+'--[no]delete_stdout                 Delete a job\'s standard output file *_stdout automatically when the job finishes (default: no)',
+'--[no]delete_stderr                 Delete a job\'s standard error file *_stderr automatically when the job finishes (default: no)',
+'--verbose=[0|1|2|3|4]               Set verbosity level (default: 1)',
+'Verbose options:',
+'Validated when verbosity level >= 1',
+'--[no]verbose_abort       Display message when a job is aborted',
+'--[no]verbose_transition  Display jobs\' state transitions',
+'Validated when verbosity level >= 2',
+'--[no]verbose_abortcheck  Display message when Xcrypt starts checking whether submitted jobs are aborted',
+'--[no]verbose_laststat    Display the jobs\' last statuses when reading a log file',
+'--[no]verbose_leftmessage Display message when Xcrypt starts checking message files from jobs',
+'--[no]verbose_readlog     Display message when Xcrypt starts and finishes reading an execution log file',
+'--[no]verbose_sync        Display message when starting and finishing sync()ing jobs',
+'Validated when verbosity level >= 3',
+'--[no]verbose_hosts       Display host information when add_hsot() is called',
+'--[no]verbose_periodic    Display message when a user defined timer function is called',
+'Validated when verbosity level >= 4',
+'--[no]verbose_leftmessage_all Display message when checking a message file from a job for each file',
+'--[no]verbose_coro        Display message when entering/leaving Coro threads (for debugging)',
+	    );
 
 our %options = (
 #    'port' => 0, # インベントリ通知待ち受けポート．0ならNFS経由  # Obsolete
@@ -27,19 +73,20 @@ our %options = (
     'left_message_check_interval' => 3, # ジョブスクリプトが残したメッセージをチェックする間隔(sec)
     'inventory_path' => 'inv_watch',
     'delete_left_message_file' => 1, # delete *_is_done/running after read
-    'delete_in_job_files' => 1,  # delete *_before/after/exe_in_job.pl after a job finished
+    'delete_in_job_file' => 1,  # delete *_before/after/exe_in_job.pl after a job finished
     'delete_return_file' => 0,   # delete *_return after a job finished
     'delete_job_script' => 0,    # delete a job script after a job finished
     'delete_stdout' => 0,        # delete a stdout file after a job finished
     'delete_stderr' => 0,        # delete a stderr file after a job finished
-    'verbose' => 0,              # verbose level
+    'verbose' => 1,              # verbose level
     'stack_size' => 32768,       # Perlスレッドのスタックサイズ
     # define other default values...
     );
 
 GetOptions
     (\%options,
-     'jobinfo',
+     'help',
+     'jobinfo+',
      'compile_only',
      'xbs-auto',
      'xbs-type=s',
@@ -51,26 +98,36 @@ GetOptions
      'wd=s',
      'xd=s',
      'sched=s',
-     #
      # 使用頻度が高そうなので特別扱い
      'node=i',
      'queue=s',
      #
-#     'port=i',         # Obsolete
-#     'comm_timeout=i', # Obsolete
      'abort_check_interval=i',
      'left_message_check_interval=i',
      'inventory_path=s',
      'delete_left_message_file+',
      'delete_job_script+',
-     'delete_in_job_files+',
+     'delete_in_job_file+',
      'delete_return_file+',
      'delete_stdout+',
      'delete_stderr+',
      'verbose=i',
+     'verbose_abort+', 'verbose_transition+',
+     'verbose_abortcheck+', 'verbose_laststat+', 'verbose_leftmessage+', 'verbose_readlog+', 'verbose_sync+',
+     'verbose_hosts+', 'verbose_periodic+',
+     'verbose_coro+', 'verbose_leftmessage_all+',
      'stack_size=i',
      # define other command-line options...
     );
+
+# Print help message
+if ($options{help}) {
+    foreach (@help) {
+        print $_ . "\n";
+    }
+    exit;
+}
+
 if (defined $ENV{XCRJOBSCHED}) { warn 'The environment variable $XCRJOBSCHED is obsolete.  Use ~/.xcryptrc'; }
 if (defined $ENV{XCRQUEUE}) { warn 'The environment variable $XCRQUEUE is obsolete.  Use ~/.xcryptrc'; }
 
@@ -106,13 +163,15 @@ foreach my $key (keys %cfg) {
 	}
     }
 }
-if ( $options{verbose} >= 1 ) {
+if ( $options{verbose} >= 2 ) {
     print "Loading $options{config}.\n";
 }
 for (my $i=0; $i <= $#verboses; $i++) {
     if ( $options{verbose} >= $i ) {
         foreach my $key (@{$verboses[$i]}) {
-            $options{$key} = '';
+	    unless  (defined $options{$key}) {
+		$options{$key} = '';
+	    }
         }
     }
 }
