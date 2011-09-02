@@ -81,7 +81,7 @@ sub read_output_file {
 }
 
 my %template = (
-    'id' => 'job0',
+    'id' => 'jobDC',
     'exe0' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
     'arg0_0' => $n,
     'canDivideFunc' => \&can_divde,

@@ -1,11 +1,14 @@
+# A simple sample of abort(), cancel(), and invalidate() methods.
+# abort():      Executing job is aborted to be retried. Do nothing for finished job
+# cancel():     Executing and Finished job is aborted to be retried.
+# invalidate(): Executing job is aborted and it is never reexecuted. Do nothing for finished job
+
 use base qw(core);
 
 %template1 = (
-    'id@' => sub { "jobfib_$VALUE[0]" },
+    'id@' => sub { "jobabrt_$VALUE[0]" },
     'exe0@' => sub { 'bin/fib ' . ($VALUE[0]) . " > out_$VALUE[0]"},
-    'RANGE0' => [39..44],
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
+    'RANGE0' => [60,61,62,40,41,42],
 );
 
 @jobs = &prepare_submit(%template1);
@@ -16,3 +19,15 @@ $jobs[2]->invalidate();
 $jobs[3]->abort();
 $jobs[4]->cancel();
 $jobs[5]->invalidate();
+
+# Try
+# % xcrypt abort.xcr
+# and then execute
+# % xcryptstat
+# _60 is "aborted"  becaause it is abort()ed during execution.
+# _40 is "finished" becaause it is abort()ed after execution finished.
+# Cancel()ed jobs, _61 and _41, become "aborted" even if it is applied to a finished job.
+# Finish()ed jobs, _61 and _42, become "finished" even if it is applied to a running job.
+# Try
+# % xcrypt abort.xcr
+# again. Only "aborted" jobs are reexecuted.
