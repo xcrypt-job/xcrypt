@@ -292,12 +292,12 @@ sub repeat {
     if ($new_coro) {
         push (@periodic_threads, $new_coro);
     }
-    if (defined $xcropt::options{verbose_periodic}) {
-        print "periodic = (";
+    if ($xcropt::options{verbose_periodic}) {
+        print STDERR "periodic = (";
         foreach (@periodic_threads) {
-            print "$_ "
+            print STDERR "$_ "
         }
-        print ")\n";
+        print STDERR ")\n";
     }
     return $new_coro;
 }
@@ -339,9 +339,9 @@ sub add_host {
             die "Set the environment varialble \$XCRYPT at $env->{host}\n";
         }
     }
-    if (defined $xcropt::options{verbose_hosts}) {
+    if ($xcropt::options{verbose_hosts}) {
 	foreach my $key (keys(%$env)) {
-	    print $key . ': ' . $env->{$key} . "\n";
+	    print STDERR $key . ': ' . $env->{$key} . "\n";
 	}
     }
     push(@Env, $env);
@@ -845,12 +845,12 @@ sub submit {
         my $job_coro = Coro::async {
             my $self = $_[0];
             # Output message on entering/leaving the Coro thread.
-            if (defined $xcropt::options{verbose_coro}) {
+            if ($xcropt::options{verbose_coro}) {
                 Coro::on_enter {
-                    print "enter ". $self->{id} .": nready=". Coro::nready ."\n";
+                    print STDERR "enter ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
                 Coro::on_leave {
-                    print "leave ". $self->{id} .": nready=". Coro::nready ."\n";
+                    print STDERR "leave ". $self->{id} .": nready=". Coro::nready ."\n";
                 };
             }
             ## Manually handle a signal message once.
@@ -951,7 +951,7 @@ sub submit {
                 &jobsched::set_job_finished($self);
             }
             ## Delete created files
-            if ( $xcropt::options{delete_in_job_files} ) {
+            if ( $xcropt::options{delete_in_job_file} ) {
                 xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
                 xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
                 xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
@@ -981,12 +981,12 @@ sub sync {
     # If any jobs are not specified, all the jobs submitted in this lexical scope.
     if ($#jobs  < 0) { @jobs = map {jobsched::find_job_by_id($_)} (keys %Spawned); }
     foreach (@jobs) {
-        if (defined $xcropt::options{verbose_sync}) {
-            print "Waiting for $_->{id}($_->{thread}) finished.\n";
+        if ($xcropt::options{verbose_sync}) {
+            print STDERR "Waiting for $_->{id}($_->{thread}) finished.\n";
         }
         $_->{thread}->join;
-        if (defined $xcropt::options{verbose_sync}) {
-            print "$_->{id} finished.\n";
+        if ($xcropt::options{verbose_sync}) {
+            print STDERR "$_->{id} finished.\n";
         }
         delete ($Spawned{$_->{id}});
     }
@@ -1010,7 +1010,7 @@ sub prepare{
     }
     
     ## job_info()
-    if (defined $xcropt::options{jobinfo}) {
+    if ($xcropt::options{jobinfo}) {
         foreach my $self (@jobs) {
              &job_info($self);
         }

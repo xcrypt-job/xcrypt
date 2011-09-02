@@ -1,12 +1,13 @@
 # Sample of DC.pm module (Divide and Conquer)
 # Compute Fib(n) by dividing a job for Fib(n) into jobs for Fib(n-1) and Fib(n-2) recursively
 use base qw(DC core);
+use strict;
 
 # Returns 1 (true) if the $job can be divided into equivalent multiple jobs.
 # Returns 0 (false) otherwise.
 sub can_divde
 {
-	$job = shift;
+	my $job = shift;
 	print "User function"."\n";
 	if($job->{arg0_0} > 10)
 	{
@@ -54,12 +55,7 @@ sub merge
 	my $val = 0;
 	foreach my $child (@children)
 	{
-		open(FH,"<".$children->{JS_stdout});
-		my $line = <FH>;
-                chomp ($line);
-		$val += $line;
-		print $line."\n";
-		close(FH);
+	    $val += read_output_file ($child->{JS_stdout});
 	}
         my $ofname = $parent->{JS_stdout};
 	print $ofname."\n";
@@ -68,15 +64,26 @@ sub merge
 	close(OUT);
 }
 
-%template = (
+sub read_output_file {
+    my $file = shift;
+    open(FH, '<', $file);
+    my $line = <FH>;
+    chomp ($line);
+    print $line."\n";
+    close(FH);
+}
+
+my $n = 13;
+my %template = (
     'id' => 'job0',
     'exe0' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
-    'arg0_0' => 13,
+    'arg0_0' => $n,
     'canDivideFunc' => \&can_divde,
     'divideFunc' => \&divide,
     'mergeFunc' => \&merge,
 );
 
-@results = &prepare_submit_sync(%template);
-#foreach (@results) { print $_->{stdout} , "\n"; }
-#print "---------------\n";
+my @jobs = &prepare_submit_sync(%template);
+my $result = read_output_file ($jobs[0]->{JS_stdout});
+
+print "Fib($n) = $result\n";
