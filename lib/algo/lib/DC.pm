@@ -8,18 +8,9 @@ use Coro::AnyEvent;
 
 &add_key('ofname', 'mergeFunc','divideFunc','canDivideFunc');
 
-sub new
-{
-	my $class = shift;
-	my $self = $class->NEXT::new(@_);
-	print "\tnew DC\n";
-	return bless $self, $class;
-}
-
 sub start
 {
 	my $self = shift;
-	print "\tbefore DC\n";
 	
 	if( &{$self->{canDivideFunc}}($self) )
 	{
