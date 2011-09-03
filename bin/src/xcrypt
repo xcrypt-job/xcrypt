@@ -28,7 +28,7 @@ my @help = (
 '--[no]jobinfo       Print job information when prepare()ing the job (default: no)',
 '--compile_only      Compile the Xcrypt script into Perl script and exit without executing it',
 '--xbs-auto          Use XBS (http://www.il.is.s.u-tokyo.ac.jp/~yamamoto/xbs/) internally for generating job scripts (of an inferred type)',
-'--xbs-type=s        Use XBS (http://www.il.is.s.u-tokyo.ac.jp/~yamamoto/xbs/) internally for generating job scripts of the type',
+'--xbs-type=<type>   Use XBS (http://www.il.is.s.u-tokyo.ac.jp/~yamamoto/xbs/) internally for generating job scripts of the XBS\'s type',
 '--shared            Not copy files between local and remote sites in remote-execution mode',
 '--scratch           Not read execution log file even if it exists. Execute all the jobs from the beginning',
 '--config=<path>     Specify configulation file (default: ~/.xcryptrc or INSTALLDIR/etc/xcryptrc)',
