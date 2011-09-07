@@ -5,9 +5,9 @@ use base qw(sandbox core);
     'exe0@' => sub{ "time ./$_[0] $_[1] 0" },
     'linkedfile0' => 'bin/minimax',
     'linkedfile1' => 'bin/alphabeta',
-#    'linkedfile2' => 'bin/inversetree',
-#    'arg0_2' => '0',               # position
-#    'arg0_3' => 'tree1',           # static evaluation
+    'linkedfile2' => 'bin/inversetree',
+#     'arg0_2' => '0',               # position
+#     'arg0_3' => 'tree1',           # static evaluation
 );
 
 &prepare_submit_sync(%template,
