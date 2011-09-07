@@ -1,3 +1,10 @@
 #!/bin/sh
-xcrypt ${XCRYPT}/bin/script/del.xcr -- "$@"
+
+for ARG in $@;
+do
+  echo $ARG | grep -q '^--help$' && \
+      exec xcrypt ${XCRYPT}/bin/script/del.xcr -- --help
+done
+exec xcrypt ${XCRYPT}/bin/script/del.xcr "$@"
+
 #perl ${XCRYPT}/bin/script/del.xcr.pl "$@"

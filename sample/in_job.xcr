@@ -1,0 +1,14 @@
+# A simple sample of before_in_job and after_in_job
+use base qw (core);
+
+%template = (
+             'id' => 'job_injob',
+             'exe0' => 'bin/fib-file', # or exe0
+             'arg0_0' => "dat/num40",   # or arg0_0
+             'arg0_1' => "out_0",       # or arg0_1
+             # This procedure runs in the job before executing fib-file
+             'before_in_job' => sub {print STDERR $self->{arg0_0}. "\n";},
+             # This procedure runs in the job after executing fib-file
+             'after_in_job' =>  sub {print STDOUT $self->{exe0}. "\n";},
+             );
+@jobs=&prepare_submit_sync (%template);
