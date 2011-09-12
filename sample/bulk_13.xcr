@@ -6,7 +6,8 @@ use base qw(bulk sandbox core);
 
 %template = (
     'id'          => 'job13',
-    'exe'         => './fib.pl',
+    'exe'         => 'bin/fib',
+    'arg0@'  => '$R0 + $R2;'
     'arg1'        => '> out',
     'linkedfile0' => 'common/fib.pl',
 );
@@ -14,7 +15,6 @@ use base qw(bulk sandbox core);
 @jobs = &prepare(%template,
     'RANGE0' => [1],
     'RANGE2' => [2],
-    'arg0@'  => '$R0 + $R2;'
 );
 
 my @bulkedjobs = &bulk::bulk('bulk13', @jobs);
