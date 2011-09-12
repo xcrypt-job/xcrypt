@@ -82,7 +82,7 @@ sub read_output_file {
 
 my %template = (
     'id' => 'jobDC',
-    'exe0' => "$ENV{'XCRYPT'}/sample/DC/fib.out",
+    'exe0' => "$ENV{'XCRYPT'}/sample/bin/fib-stdo",
     'arg0_0' => $n,
     'canDivideFunc' => \&can_divde,
     'divideFunc' => \&divide,
@@ -93,3 +93,4 @@ my @jobs = &prepare_submit_sync(%template);
 my $result = read_output_file ($jobs[0]->{JS_stdout});
 
 print "Fib($n) = $result\n";
+
