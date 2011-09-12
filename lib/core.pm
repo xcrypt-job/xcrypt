@@ -94,8 +94,8 @@ sub apply_push_if_valid_arg ($&@) {
 # The result is stored in @{$self->{jobscript_header}} and @{$self->{jobscript_body}}
 sub make_jobscript {
     my $self = shift;
-    $self->make_jobscript_header($self);
-    $self->make_jobscript_body($self);
+    $self->make_jobscript_header();
+    $self->make_jobscript_body();
 }
 
 sub make_jobscript_header {
@@ -431,6 +431,10 @@ sub qsub {
     unless ( defined $qsub_command ) {
 	die "qsub_command is not defined in $sched.pm";
     }
+
+    # Delete garbage message files if exist.
+    xcr_unlink ($self->{env}, jobsched::left_message_file_name($self, 'running'));
+    xcr_unlink ($self->{env}, jobsched::left_message_file_name($self, 'done'));
 
     my $flag;
     $flag = cmd_executable ($qsub_command, $self->{env});

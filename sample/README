@@ -1,0 +1,30 @@
+All samples can be executed by
+% xcrypt <filename>.xcr
+Since some scripts requires execution files in the bin/ subdirectories,
+apply Makefile in bin/ before trying those xcr files.
+
+You can delete all the job executiion history by:
+% xcryptdel --clean
+Otherwise, the jobs once executed are skipped (or resumed) when you run the same
+Xcrypt script again.
+
+You can view the status of submitted jobs (by Xcrypt) by:
+% xcryptstat
+
+All of these commands show the detail of usage with the '--help' option.
+
+=== The list of sample scripts ===
+DC.xcr:
+(Execute it after do "make" in the DC/ directory)
+Sample of DC.pm module (Divide and Conquer)
+Compute Fib(n) by dividing a job for Fib(n) into jobs for Fib(n-1) and Fib(n-2) recursively
+
+abort.xcr:
+A sample of using three kinds of methods for interrupting jobs.
+
+in_job.xcr:
+A sample of before_in_job and after_in_job.
+
+bulk_num.xcr:
+bulk_tim.xcr:
+A sample of unifying multiple jobs into a bulk job using the bulk.pm module.

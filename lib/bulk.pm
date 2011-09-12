@@ -85,7 +85,7 @@ sub bulk {
             $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
             $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
             # Job script related members
-            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.sh";
+            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
             $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
             $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
             $bulk_job->{'before'}             = $bulk{before};
@@ -113,7 +113,7 @@ sub bulk {
         $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
         $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
         # Job script related members
-        $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.sh";
+        $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
         $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
         $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
         $bulk_job->{'before'}             = $bulk{before};
@@ -185,15 +185,13 @@ sub bulk {
             }
         }
         foreach my $bulk_job (@bulk_jobs) {
-            # Entry job's
+            # Entry the bulk job's into the system job hash table
             &jobsched::entry_job_id ($bulk_job);
-            &jobsched::set_job_initialized($bulk_job);
-            &jobsched::set_job_prepared($bulk_job);
             # stderr & stdout
             $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
             $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
             # Job script related members
-            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.sh";
+            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
             $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
             $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
             $bulk_job->{'before'}             = $bulk{before};
@@ -208,6 +206,11 @@ sub bulk {
     }
 }
 
+sub is_bulk {
+    my $self = shift;
+    return (defined $self->{bulk_jobs});
+}
+
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
@@ -216,37 +219,32 @@ sub new {
 
 sub start {
     my $self = shift;
-    if ( $self->{exe} ne '' ) {
+    if ( !($self->is_bulk()) ) {
         return $self->NEXT::start();
     } else {
-        # 前回done, finishedになったジョブならとばす．
-        my $stat = &jobsched::get_job_status($self);
-        if ( $stat eq 'done' ) {
-            print "Skipping " . $self->{id} . " because already $stat.\n";
-        } else {
-            $self->qsub_make();
-            foreach my $sub_self (@{$self->{bulk_jobs}}) {
-                $sub_self->make_before_in_job_script();
-                $sub_self->make_after_in_job_script();
-                $sub_self->update_all_script_files();
-            }
-            foreach my $sub_self (@{$self->{bulk_jobs}}) {
-                &jobsched::set_job_submitted($sub_self);
-            }
-            $self->{request_id} = $self->qsub();
-            foreach my $sub_self (@{$self->{bulk_jobs}}) {
-                $sub_self->{request_id} = $self->{request_id};
-                &set_job_status($sub_self, "queued");
-                &set_job_status($sub_self, "running");
-            }
-            return $self->{request_id};
+        foreach my $sub_self (@{$self->{bulk_jobs}}) {
+            $sub_self->qsub_make();
         }
+        # Indirectly calls overridden make_jobscript_body()
+        $self->qsub_make();
+        foreach my $sub_self (@{$self->{bulk_jobs}}) {
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'running'));
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'done'));
+            &jobsched::set_job_submitted($sub_self);
+        }
+        $self->{request_id} = $self->qsub();
+        foreach my $sub_self (@{$self->{bulk_jobs}}) {
+            # &jobsched::set_job_queued($sub_self);
+            $sub_self->{request_id} = $self->{request_id};
+        }
+        return $self->{request_id};
+        &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
     }
 }
 
 sub initially {
     my $self = shift;
-    if ($self->{exe} eq '') {
+    if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
             $sub_self->initially($sub_self);
         }
@@ -255,7 +253,7 @@ sub initially {
 
 sub before {
     my $self = shift;
-    if ($self->{exe} eq '') {
+    if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
             if ($sub_self->{before_to_job} != 1) {
                 $sub_self->before($sub_self);
@@ -266,11 +264,17 @@ sub before {
 
 sub after {
     my $self = shift;
-    if ($self->{exe} eq '') {
+    if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            &set_job_status($sub_self, "done");
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'running'));
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'done'));
+            {
+                local $jobsched::Warn_illegal_transition = 0;
+                jobsched::set_job_done($sub_self);
+            }
             if ($sub_self->{after_to_job} != 1) {
                 $sub_self->after($sub_self);
+                builtin::delete_created_files ($sub_self);
             }
         }
     }
@@ -278,60 +282,60 @@ sub after {
 
 sub finally {
     my $self = shift;
-    if ($self->{exe} eq '') {
+    if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            &set_job_status($sub_self, "finished");
+            &jobsched::set_job_finished($sub_self);
             $sub_self->finally($sub_self);
         }
     }
 }
 
-sub set_job_status {
-    my ($self, $stat, $tim) = @_;
-    unless ($tim) { $tim = time(); }
-    &jobsched::write_log(":transition $self->{id} $stat $tim\n");
-    print "$self->{id} <= $stat\n";
-}
 
-# Create a job script from information of the job object.
-# The result is stored in @{$self->{jobscript_header}} and @{$self->{jobscript_body}}
-sub make_jobscript {
+sub make_jobscript_body {
     my $self = shift;
-    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
-    if ($xcropt::options{'xbs-type'}) {
-        %cfg = %{$jsconfig::jobsched_config{"xbs-type"}};
+    if (!(is_bulk($self))) {
+        # Call parent if $self is not a bulk job
+        return $self->NEXT::make_jobscript_body();
     }
-    # make_jobscript_header
-    $self->make_jobscript_header($self);
+    # A copy of core::make_job_script_body except between '<*****' and '*****>'
+    my @body = ();
+    my %cfg = %{$jsconfig::jobsched_config{$self->{env}->{sched}}};
+    ## Job script body
     # Chdir to the job's working directory
     my $wkdir_str = File::Spec->catfile($self->{env}->{wd}, $self->{workdir});
     if (defined ($cfg{jobscript_workdir})) {
         my $js_wkdir = $cfg{jobscript_workdir};
-        unless (ref ($js_wkdir)) {
+        unless ( ref($js_wkdir) ) {
             $wkdir_str = $js_wkdir;
-        } elsif (ref ($js_wkdir) eq 'CODE') {
+        } elsif ( ref($js_wkdir) eq 'CODE' ) {
             $wkdir_str = &$js_wkdir($self);
         } else {
             warn "Error in config file $self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
         }
     }
-    
-    push (@{$self->{jobscript_body}}, "cd $wkdir_str");
+    # <*****
+    push (@body, 'ORIG_BULK_PWD=`pwd`');
+    # *****>
+    push (@body, "cd $wkdir_str");
+    ## preamble
+    my $preamble = $cfg{jobscript_body_preamble};
+    if ( ref($preamble) eq 'CODE' ) {
+        push (@body, &$preamble($self));
+    } else {
+        push (@body, @{mkarray($preamble)});
+    }
     # Set the job's status to "running"
-    push (@{$self->{jobscript_body}}, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
-    push (@{$self->{jobscript_body}}, 'touch ' . $self->{id} . '_is_running');
-    # Do before_in_job
-    if ( $self->{before_in_job} or $self->{before_to_job} == 1 ) { push (@{$self->{jobscript_body}}, "perl $self->{before_in_job_file}"); }
-    # make_jobscript_body
+#    push (@body, "sleep 1"); # running が早すぎて queued がなかなか勝てないため
+    push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
+    push(@body, @{$self->{'cmd_before_exe'}});
+    # Do before_in_job by executing the perl script created by make_before_in_job_script
+    push (@body, "perl $self->{before_in_job_file}");
+    # <*****
+    # Execute the program
     foreach my $sub_self (@{$self->{bulk_jobs}}) {
-        $sub_self->make_jobscript_header($sub_self);
-        $sub_self->make_jobscript_body($sub_self);
-        #push (@{$self->{jobscript_body}}, @{$sub_self->{jobscript_body}});
-        
         my %sub_cfg = %{$jsconfig::jobsched_config{$sub_self->{env}->{sched}}};
-        if ($xcropt::options{'xbs-type'}) {
-            %sub_cfg = %{$jsconfig::jobsched_config{"XBS"}};
-        }
+        # Return to original directory
+        push (@body, 'cd $ORIG_BULK_PWD');
         # Chdir to the job's working directory
         my $sub_wkdir_str = File::Spec->catfile($sub_self->{env}->{wd}, $sub_self->{workdir});
         if (defined ($sub_cfg{jobscript_workdir})) {
@@ -342,16 +346,23 @@ sub make_jobscript {
                 $sub_wkdir_str = &$js_wkdir($sub_self);
             } else {
                 warn "Error in config file $sub_self->{env}->{sched}: jobscript_workdir is neither scalar nor CODE."
-            }
+                }
         }
         my $jobscript_file = File::Spec->catfile($sub_wkdir_str, $sub_self->{jobscript_file});
-        push (@{$self->{jobscript_body}}, "perl $jobscript_file");
+        push (@body, "sh $jobscript_file");
     }
-    # Do after_in_job
-    #push (@{$self->{jobscript_body}}, "cd $wkdir_str");
-    if ( $self->{after_in_job} or $self->{after_to_job} == 1 ) { push (@{$self->{jobscript_body}}, "perl $self->{after_in_job_file}"); }
+    # Return to original directory
+    push (@body, 'cd $ORIG_BULK_PWD');
+    # Re-enter to workdir of the bulk job
+    push (@body, "cd $wkdir_str");
+    # *****>
+    # Do after_in_job by executing the perl script created by make_after_in_job_script
+    push (@body, "perl $self->{after_in_job_file}"); 
+    push(@body, @{$self->{'cmd_after_exe'}});
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    push (@{$self->{jobscript_body}}, 'touch ' . $self->{id} . '_is_done');
+    # inventory_write.pl をやめて mkdir に
+    push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
+    $self->{jobscript_body} = \@body;    
 }
 
 1;

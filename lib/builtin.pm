@@ -951,23 +951,7 @@ sub submit {
                 &jobsched::set_job_finished($self);
             }
             ## Delete created files
-            if ( $xcropt::options{delete_in_job_file} ) {
-                xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
-                xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
-                xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
-            }
-            if ( $xcropt::options{delete_return_file} ) {
-                xcr_unlink ($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
-            }
-            if ( $xcropt::options{delete_job_script} ) {
-                xcr_unlink ($self->{env}, $self->workdir_member_file('jobscript_file'));
-            }
-            if ( $xcropt::options{delete_stdout} ) {
-                xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stdout'));
-            }
-            if ( $xcropt::options{delete_stderr} ) {
-                xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stderr'));
-            }
+            delete_created_files ($self);
         } $self;
         # push (@coros, $job_coro);
         $self->{thread} = $job_coro;
@@ -976,6 +960,30 @@ sub submit {
     return @array;
 }
 
+### Delete created managing files according to command line option settings.
+sub delete_created_files
+{
+    my $self = shift;
+    if ( $xcropt::options{delete_in_job_file} ) {
+        xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
+        xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
+        xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
+    }
+    if ( $xcropt::options{delete_return_file} ) {
+        xcr_unlink ($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
+    }
+    if ( $xcropt::options{delete_job_script} ) {
+        xcr_unlink ($self->{env}, $self->workdir_member_file('jobscript_file'));
+    }
+    if ( $xcropt::options{delete_stdout} ) {
+        xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stdout'));
+    }
+    if ( $xcropt::options{delete_stderr} ) {
+        xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stderr'));
+    }
+}
+
+### Waits for submitted jobs to be finished
 sub sync {
     my @jobs = @_;
     # If any jobs are not specified, all the jobs submitted in this lexical scope.
