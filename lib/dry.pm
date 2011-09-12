@@ -15,9 +15,9 @@ my %default_options = (                  # dryのデフォルト設定値
 
 our %options = %default_options;   # dryの設定値 (dry, dry_qsub, dry_exe0, dry_exe1...)
 
-###############################################
-#     << 初期設定 >>                                                                               #
-###############################################
+###################################################################################################
+#     << 初期設定 >>                                                                              #
+###################################################################################################
 sub initialize {
     my %add_options = @_;
     foreach my $key (keys %add_options) {
@@ -30,59 +30,25 @@ sub initialize {
     }
 }
 
-###############################################
+###################################################################################################
 #     << 設定値検証 >>                                                                            #
-###############################################
+###################################################################################################
 sub check_dry_value {
     my ($key, $value) = @_;
     
-    if ($key eq 'dry' and $value !~ /\A[0-3]\Z/) {
+    if ($key eq 'dry' and $value !~ /\A[0-4]\Z/) {
         die "error $key";
     } elsif ($key eq 'dry_qsub' and ($value ne 'host' and $value ne 'local')) {
         die "error $key";
     }
 }
 
+###################################################################################################
+#     << 設定をジョブに反映 >>                                                                    #
+###################################################################################################
 sub new {
     my $class = shift;
     my $self = $class->NEXT::new(@_);
-    return bless $self, $class;
-}
-
-###############################################
-#     << 設定をジョブに反映 >>                                                                 #
-###############################################
-sub start {
-    my $self = shift;
-    if ($self->{dry} >= 1) {
-        foreach my $key (keys(%$self)) {
-            if ($key =~ /\Aexe([0-9]+)\Z/) {
-                my $bkup = 'Bkup_exe'.$1;
-                $self->{$bkup} = $self->{$key};
-                $self->{$key} = "\#\# dry_run \#\#\n";
-                if (defined $self->{"dry_exe$1"} and ($self->{dry} == 1 or $self->{dry} == 2)) {
-                    no strict 'refs';
-                    if (ref($self->{"dry_exe$1"}) eq 'CODE') {
-                        $self->{$key} .= "perl $self->{id}_dry_exe${1}.pl $self->{$bkup}";
-                        $self->make_in_job_script($self, "dry_exe{$1}_script", "dry_exe$1");
-                        $self->update_script_file ("$self->{id}_dry_exe${1}.pl", @{$self->{"dry_exe{$1}_script"}});
-                    } elsif (*{$self->{"dry_exe$1"}}{SCALAR}) {
-                        $self->{$key} .= $self->{"dry_exe$1"} . "\n";
-                        $self->{$key} .= "\#".$self->{$bkup};
-                    } else {
-                        die "error dry_exe";
-                    }
-                } else {
-                    $self->{$key} .= "\#".$self->{$bkup};
-                }
-            }
-        }
-    }
-    $self->NEXT::start();
-}
-
-sub initially {
-    my $self = shift;
     
     if (defined $self->{dry}) {
         &check_dry_value('dry', $self->{dry});
@@ -133,6 +99,7 @@ sub initially {
         &delete_sub($self, 'before', 'after', 'before_in_xcrypt', 'after_in_xcrypt');
     }
     
+    
     if ($self->{dry} >= 1) {
         foreach my $key (keys(%$self)) {
             if ($key =~ /\Aexe([0-9]+)\Z/) {
@@ -145,8 +112,6 @@ sub initially {
                     if (ref($self->{"dry_exe$1"}) eq 'CODE') {
                         $self->{"dry_exe${1}_sub"} = &get_dry_exe_sub;
                         $self->{$key} .= "perl $self->{id}_dry_exe${1}.pl\n";
-                        $self->make_in_job_script("dry_exe${1}_sub", "dry_exe${1}_script");
-                        $self->update_script_file ("$self->{id}_dry_exe${1}.pl", @{$self->{"dry_exe${1}_script"}});    
                     } elsif (ref($self->{"dry_exe$1"}) eq 'ARRAY' or ref($self->{"dry_exe$1"}) eq 'HASH' or ref($self->{"dry_exe$1"}) eq 'REF') {
                         die "error dry_exe";
                     } else {
@@ -158,11 +123,26 @@ sub initially {
         }
     }
     
+    return bless $self, $class;
 }
 
-###############################################
+###################################################################################################
+#     << dry_exeスクリプト生成>>                                                                  #
+###################################################################################################
+sub initially {
+    my $self = shift;
+    
+    if ($self->{dry} >= 1) {
+        foreach my $dry_exe (grep {$_ =~ /^dry_exe[\d]+$/} keys(%$self)) {
+            $self->make_in_job_script($dry_exe . "_script", $dry_exe . "_sub");
+            $self->update_script_file ($self->{id} . "_" . $dry_exe . ".pl", @{$self->{$dry_exe ."_script"}});    
+        }
+    }
+}
+
+###################################################################################################
 #     << 関数再定義 >>                                                                            #
-###############################################
+###################################################################################################
 sub redefine_sub {
     my @redefine_subs = @_;
     
@@ -175,9 +155,9 @@ sub redefine_sub {
     } 
 }
 
-###############################################
-#     << サブルーチン削除 >>                                                                   #
-###############################################
+###################################################################################################
+#     << サブルーチン削除 >>                                                                      #
+###################################################################################################
 sub delete_sub {
     my $self = shift;
     my @delete_subs = @_;
@@ -193,16 +173,18 @@ sub before_in_xcrypt {}
 
 sub start {
     my $self = shift;
-    $self->NEXT::start();
+    if ($self->{dry} < 4) {
+        $self->NEXT::start();
+    } else {
+        $self->{signal} = 'sig_invalidate';
+    }
 }
 
 sub after_in_xcrypt {}
-sub before {}
-sub after {}
 
-###############################################
-#     << dry_exe引数抽出 >>                                                                   #
-###############################################
+###################################################################################################
+#     << dry_exe引数抽出 >>                                                                       #
+###################################################################################################
 sub get_dry_exe_sub {
     return sub{
         my $self = $main::self;
