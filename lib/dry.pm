@@ -94,7 +94,7 @@ sub new {
             delete $self->{before_to_job};
         }
     }
-    if ($self->{dry} == 3) {
+    if ($self->{dry} >= 3) {
         &redefine_sub('before_in_xcrypt', 'after_in_xcrypt', 'before', 'after');
         &delete_sub($self, 'before', 'after', 'before_in_xcrypt', 'after_in_xcrypt');
     }
