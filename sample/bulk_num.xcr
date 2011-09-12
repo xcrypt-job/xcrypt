@@ -1,0 +1,21 @@
+# A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
+# Limit the number of jos in each bulk job up to 3.
+use base qw(bulk core);
+
+&bulk::initialize(
+    'max_num' => "3",    # unify up to 3 jobs.
+ );
+
+%template = 
+    (
+     'RANGE0'  => [30,40],
+     'RANGE1'  => [0..4],
+     'id'          => 'jobbulknum',
+     'exe0'        => 'bin/fib',
+     'arg0_0@' => sub {$VALUE[0] + $VALUE[1];},
+     );
+
+@jobs = &prepare(%template);
+@bulkedjobs = &bulk::bulk('bulknum', @jobs);
+&submit(@bulkedjobs);
+&sync(@bulkedjobs);

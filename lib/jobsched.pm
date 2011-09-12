@@ -283,7 +283,7 @@ sub warn_if_illegal_transition {
       }
   }
   if ( $ok == 0 ) {
-      warn "[$self->{id}] transition to $stat at $tim but the previous status is $last_stat (expects one of @expect_stats).";
+      warn "[$self->{id}] transition to $stat at $tim but the previous status is $last_stat (expects ".join(' or ', @expect_stats).").";
   }
 }
 
