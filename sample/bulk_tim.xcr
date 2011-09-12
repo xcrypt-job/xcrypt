@@ -1,0 +1,28 @@
+# A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
+# Limit the number of jos in each bulk job up to 3.
+use base qw(bulk core);
+
+&bulk::initialize(
+    # unify jobs to the extent that the sum of the jobs' {time} do not exceed 16384
+    'max_time' => 16384,
+ );
+
+%template = 
+    (
+     'RANGE0'  => [30,40],
+     'RANGE1'  => [0..4],
+     'id'          => 'jobbulktime',
+     'exe0'        => 'bin/fib',
+     'arg0_0@' => sub {$VALUE[0] + $VALUE[1];},
+     # Set estimated job's time
+     'time@'   => sub { 2 ** ($VALUE[0]+$VALUE[1]-30);},
+     );
+
+@jobs = &prepare(%template);
+print "ID              \testimated time\n";
+foreach my $j (@jobs) {
+    print "$j->{id}\t$j->{time}\n";
+}
+@bulkedjobs = &bulk::bulk('bulktim', @jobs);
+&submit(@bulkedjobs);
+&sync(@bulkedjobs);
