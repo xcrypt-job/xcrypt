@@ -44,3 +44,6 @@ n_section_method.xcr:
 range.xcr:
 A sample of RANGE parameters
 Sumit multiple jobs simultaneously
+
+remote.xcr:
+A sample of remote job submission.
