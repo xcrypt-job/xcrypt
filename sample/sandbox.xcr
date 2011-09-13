@@ -1,17 +1,36 @@
-# Sumit multiple jobs sequentially (sandbox)
-use base qw (sandbox limit core);
-limit::initialize(1);
+# A sample of the sandbox module: automatically create a directrory for each job
+# and execute jobs in the directoryies (sandboxes).
+# Derived from range.xcr:
+# * Added 'sandbox' in the use statement in the first line
+# * Added 'copiedfile0' or 'linkedfile0' parameter.
+# * (Changed the value of exe0)
+# * (Changed the value of id}
+use base qw (sandbox core);
 
 %template = (
-    'id' => 'job', 
-    'RANGE0' => [40..45],      
-    'exe@' => sub {"./fib $_[0] > out$_[0]"},
-    'copiedfile0' => './bin/fib',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
+    'id' => 'jobsndbox',
+    # 10 jobs that are characterized by (30,0), (30,1), ..., (30,4), (40,0), ...,(40,4)
+    'RANGE0' => [30,40],      
+    'RANGE1' => [0..4],
+    # All the jobs have parameter 'exe0' whose value is './fib'
+    'exe0' => './fib',
+    # The specified file is copied into each sandbox directory.
+    # You can add copied file by copiedfile1, copiedfile2, ...
+    # 'copiedfile0' => './bin/fib',
+    # Use linkedfile<i> to make a symbolic link instead of copying a file.
+    'linkedfile0' => './bin/fib',
+    # For parameter whose value is different for each job:
+    # * Parameter name is postfixed by '@'
+    # * Parameter value is defined as function that returns a parameter value
+    # In the function, $VALUE[i] can be used to refer to the assigned value
+    # from the RANGE[i], and $self can be used to refer to the job object.
+    'arg0_0@' => sub {$VALUE[0]+$VALUE[1]},
+    'arg0_1@' => sub {"> out_$self->{id}"},
+    # Exectuted asynchronously before submitting a job
     'before' => sub {
         print "Submitting $self->{id}\n";
     },
+    # Exectuted asynchronously after the job is done
     'after' => sub {
         print "$self->{id} finished\n";
     } 
