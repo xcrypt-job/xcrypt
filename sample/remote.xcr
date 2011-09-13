@@ -1,3 +1,7 @@
+# A sample of remote job submission.
+# Four jobs are submitted in the four differnt systems.
+# You need to install Xcrypt in the systems to which you can login by OpenSSH
+# and modify account information in add_host in order to use this script.
 use base qw(sandbox core);
 
 my $default = &get_local_env();
@@ -13,7 +17,7 @@ my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
 		      'sched' => 't2k_kyoto'});
 
 %template = (
-'id'            => 'job4',
+'id'            => 'jobremote',
 'JS_cpu'        => '1',
 'JS_memory'     => '1GB',
 'JS_queue@'      => [' ',  'ESCIENCE', 'debug', 'gh10034', ' '],
