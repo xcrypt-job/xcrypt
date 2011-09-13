@@ -47,3 +47,6 @@ Sumit multiple jobs simultaneously
 
 remote.xcr:
 A sample of remote job submission.
+
+repeat.xcr:
+A sample of repeat(): user defined timer events
