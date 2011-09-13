@@ -1,54 +1,33 @@
-use base qw(sandbox core);
-
-# $ xcrypt --host b30331@thin.kudpc.kyoto-u.ac.jp --wd /home/b/b30331/xcrypt/sample --sched t2k_kyoto --xd /home/b/b30331/xcrypt range.xcr
-# or
-# fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
-
-%template1 = (
-    'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
-    'exe' => sub {
-        my $self=shift;
-        print "exe: $self->{id}\n";
-        system ('../bin/fib '.($VALUE[0] + $VALUE[2])." > "
-                .$self->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]);
-        return 100;
-    },
-#    'RANGE0' => [40],
-#    'RANGE2' => [0],
-    'RANGES' => [[40,41,42],[0],[0]],
-    'JS_cpu' => 1,
-    'JS_memory' => '1GB',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
-    'JS_limit_time' => 60,
-    'before_in_xcrypt' => sub {
-        my $self = shift;
-        print "before_in_xcrypt: $self->{id}\n";
-        return 5;
-    },
-    'before' => sub {
-        my $self = shift;
-        print "before: $self->{id}\n";
-        return 4;
-    },
-    'before_to_job' => 1,
-    'after' =>  sub {
-        my $self = shift;
-        print "after: $self->{arg0_0}\n";
-        return 10;
-    },
-    'after_to_job' => 1,
-);
+# A sample of user defined signal handler.
+# Push CTRL+C during the execution of this script to try this functionality.
+use base qw(core);
 
 # If defined, called when ^C is pressed.
 sub sigint_handler {
   print "User's SIGINT handler is called.\n";
 }
 
-my @jobs = &prepare_submit(%template1);
-#&submit(@jobs);
-&sync(@jobs);
-print $jobs[0]->{before_in_xcrypt_return}, "\n";
-print return_transmission::get_before_return($jobs[0]), "\n";
-print return_transmission::get_exe_return($jobs[0]), "\n";
-print return_transmission::get_after_return($jobs[0]), "\n";
+%template = (
+    'id' => 'jobsig',
+    # 10 jobs that are characterized by (30,0), (30,1), ..., (30,4), (40,0), ...,(40,4)
+    'RANGE0' => [30,40],      
+    'RANGE1' => [0..4],
+    # All the jobs have parameter 'exe0' whose value is './bin/fib'
+    'exe0' => './bin/fib',
+    # For parameter whose value is different for each job:
+    # * Parameter name is postfixed by '@'
+    # * Parameter value is defined as function that returns a parameter value
+    # In the function, $VALUE[i] can be used to refer to the assigned value
+    # from the RANGE[i], and $self can be used to refer to the job object.
+    'arg0_0@' => sub {$VALUE[0]+$VALUE[1]},
+    'arg0_1@' => sub {"> out_$self->{id}"},
+    # Exectuted asynchronously before submitting a job
+    'before' => sub {
+        print "Submitting $self->{id}\n";
+    },
+    # Exectuted asynchronously after the job is done
+    'after' => sub {
+        print "$self->{id} finished\n";
+    } 
+    );
+prepare_submit_sync (%template);
