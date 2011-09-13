@@ -6,6 +6,8 @@ use base qw(core);
 
 # Add user defined job parameters
 &add_key('added0', 'added1');
+# Any member names prefixed by 'prefix' are validated..
+&add_prefix_of_key('prefix');
 
 my @jobs = &prepare(
     'id' => 'jobcustom',
@@ -15,6 +17,8 @@ my @jobs = &prepare(
     # User-defined members added by add_key()
     'added0' => 100,
     'added1@' => sub { $VALUE[0] + 10; },
+    'prefix0' => 300,
+    'prefix1@' => sub { $VALUE[0] + 30; },
     # Member names prefixed by ':' can be used without add_key()
     ':auto0' => 0,
     ':auto1@' => sub { $VALUE[0]; },
@@ -25,7 +29,8 @@ my @jobs = &prepare(
 
 foreach my $j (@jobs) {
     print $j->{id}."\n";
-    foreach my $p (':auto0', ':auto1', 'added0', 'added1', 'unadd0', 'unadd1') {
+    foreach my $p (':auto0', ':auto1', 'added0', 'added1',
+                   'prefix0', 'prefix1', 'unadd0', 'unadd1') {
 	print "$p:\t" . $j->{"$p"} . "\n";
     }
 }
