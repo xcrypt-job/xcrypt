@@ -9,26 +9,22 @@ use data_extractor;
     'linkedfile0' => 'bin/minushalf.pl',
 # Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
     'before' => sub {
-	my $input = data_generator->new("$ENV{'PWD'}/dat/template.dat", "$ENV{'PWD'}/" . $self->{'id'} . "/template.dat");
-	$input->replace_key_value("param", $self->{'x'});
-	$input->execute();
+	my $in = data_generator->new('dat/template.dat', $self->{'id'}.'/template.dat');
+	$in->replace_key_value("param", $self->{'x'});
+	$in->execute();
     },
     'after'  => sub {
 	my $stat = &jobsched::get_job_status($self);
-#	unless ($stat eq 'finished') {
-	    my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
-	    my $tmp2 = data_extractor->new("$tmp1");
-	    $tmp2->extract_line_nn('end');
-	    my @output = $tmp2->execute();
-	    $self->{'y'} = $output[0];
-#	}
+	my $out = data_extractor->new($self->{'id'}.'/output.dat');
+	$out->extract_line_nn('end');
+	my @output = $out->execute();
+	$self->{'y'} = $output[0];
     }
     );
 # 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
 my ($x, $y) = &n_section_method::n_section_method(
-#    %job, 'partition' => 12, 'epsilon' => 0.01,
-    %job, 'partition' => 4, 'epsilon' => 0.01,
+    %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
     );
-print 'The value is ' . $y . ' when x = ' . $x . ".\n";
+print 'The value is '.$y.' when x = '.$x.".\n";
