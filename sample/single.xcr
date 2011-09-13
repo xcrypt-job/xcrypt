@@ -2,15 +2,22 @@
 use base qw (core);
 
 %template = (
-    'id' => 'job0',
-    'exe' => 'bin/fib-file dat/num40 out',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
+    # The job name
+    'id' => 'jobsingle',
+    # Command line to be executed in the job
+    'exe0' => 'bin/fib-file dat/num40 jobsingle_out',
+    # You also can write as following.
+    # 'exe0'   => 'bin/fib-file dat/num40',
+    # 'arg0_0' => 'jobsingle_out',
+    # Exectuted before submitting a job (optional)
     'before' => sub {
         print "Submitting $self->{id}\n";
     },
+    # Exectuted after the job is done (optional)
     'after' => sub {
         print "$self->{id} finished\n";
     } 
     );
+
+# Execute the job
 @jobs=&prepare_submit_sync (%template);
