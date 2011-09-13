@@ -1,28 +1,25 @@
 use base qw(sandbox n_section_method core);
-use Data_Generation;
-use Data_Extraction;
+use data_generator;
+use data_extractor;
 
 &n_section_method::del_extra_job();
 %job = (
     'id' => 'job0',
-    'exe' => './minushalf.pl template.dat',
+    'exe0' => './minushalf.pl template.dat',
     'linkedfile0' => 'bin/minushalf.pl',
-    'JS_group' => 'gh10034',
-    'JS_queue' => 'gh10034',
 # Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
     'before' => sub {
-	my $input = CF("$ENV{'PWD'}/dat/template.dat",
-		       "$ENV{'PWD'}/" . $self->{'id'});
-	$input->KR("param", $self->{'x'});
-	$input->do();
+	my $input = data_generator->new("$ENV{'PWD'}/dat/template.dat", "$ENV{'PWD'}/" . $self->{'id'} . "/template.dat");
+	$input->replace_key_value("param", $self->{'x'});
+	$input->execute();
     },
     'after'  => sub {
 	my $stat = &jobsched::get_job_status($self);
 #	unless ($stat eq 'finished') {
 	    my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
-	    my $tmp2 = EF("file:$tmp1");
-	    $tmp2->ED('L/E');
-	    my @output = $tmp2->ER();
+	    my $tmp2 = data_extractor->new("$tmp1");
+	    $tmp2->extract_line_nn('end');
+	    my @output = $tmp2->execute();
 	    $self->{'y'} = $output[0];
 #	}
     }

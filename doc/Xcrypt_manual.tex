@@ -402,6 +402,7 @@ write as follows,
 \end{verbatim}
 \end{boxnote}
 
+\if0
 \section{\texttt{bulk\_simple}}
 
 This module gathers jobs and returns one job of the same denotation.
@@ -421,7 +422,12 @@ my @bulk = &bulk_simple::bulk($template, @jobs0, @jobs1);
 \end{boxnote}
 
 For advanced users, a more sophisticated module \texttt{bulk.pm} is
-also provided.  In detail, see \texttt{doc/bulk\_module\_manual.pdf}.
+also provided.  In detail, see \texttt{doc/bulk\_module\_manual.pdf}.  \fi
+
+\section{\texttt{bulk}}
+
+This module gathers jobs and returns one job of the same denotation.
+In detail, see the manual \texttt{bulk\_module\_manual.pdf}.
 
 \section{\texttt{successor}}
 
