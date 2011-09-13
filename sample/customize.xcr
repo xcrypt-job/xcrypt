@@ -1,27 +1,32 @@
-use base qw(limit dry core);
+# A sample of add_key()
+use base qw(core);
 
+# &nocheck_separator();
+# &set_separator('-');
+
+# Add user defined job parameters
 &add_key('added0', 'added1');
-&nocheck_separator();
-&set_separator('-');
-&limit::initialize(2);
 
 my @jobs = &prepare(
-    'id' => 'job2',
+    'id' => 'jobcustom',
     'exe0' => 'echo',
-    'arg0_0@' => sub { "$_[0]"; },
-#    ':dry' => 0,
+    'arg0_0@' => sub { $VALUE[0]; },
     'RANGE0' => [0..3],
-#    ':auto0' => 0,
-#    ':auto1@' => sub { "$_[0]"; },
+    # User-defined members added by add_key()
     'added0' => 100,
-    'added1@' => sub { $_[0] + 10; },
+    'added1@' => sub { $VALUE[0] + 10; },
+    # Member names prefixed by ':' can be used without add_key()
+    ':auto0' => 0,
+    ':auto1@' => sub { $VALUE[0]; },
+    # These members are ignored and cause warning because these are used without add_key()
     'unadd0' => 200,
-    'unadd1@' => sub { $_[0] + 20; }
+    'unadd1@' => sub { $VALUE[0] + 20; }
     );
 
-foreach my $i (0..3) {
-    foreach my $j (':auto0', ':auto1', 'added0', 'added1', 'unadd0', 'unadd1') {
-	print "$j:\t" . $jobs[$i]{"$j"} . "\n";
+foreach my $j (@jobs) {
+    print $j->{id}."\n";
+    foreach my $p (':auto0', ':auto1', 'added0', 'added1', 'unadd0', 'unadd1') {
+	print "$p:\t" . $j->{"$p"} . "\n";
     }
 }
 

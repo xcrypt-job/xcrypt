@@ -28,3 +28,7 @@ A sample of before_in_job and after_in_job.
 bulk_num.xcr:
 bulk_tim.xcr:
 A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
+
+customize.xcr:
+A sample of add_key()
+
