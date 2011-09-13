@@ -35,3 +35,8 @@ A sample of add_key()
 invalidate.xcr:
 A sample of using the invalidate.pm module.
 A job is automatically killed when its running time exceeds specified time.
+
+n_section_method.xcr:
+# A sample of
+# * the n_section_method module
+# * the data_generator and data_extractor libraries

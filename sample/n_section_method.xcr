@@ -1,32 +1,46 @@
+# A sample of
+# * the n_section_method module
+# * the data_generator and data_extractor libraries
 use base qw(sandbox n_section_method core);
 use data_generator;
 use data_extractor;
 
 &n_section_method::del_extra_job();
 %job = (
-    'id' => 'job0',
+    'id' => 'jobnsec',
     'exe0' => './minushalf.pl template.dat',
     'linkedfile0' => 'bin/minushalf.pl',
-# Parameter is assigned to 'x'.  Assign a value to 'y' by yourself.
+    # In before method, prepare for executing a job (e.g. preparing input files)
+    # using the input value assigned to $self->{x}
     'before' => sub {
-	my $input = data_generator->new("$ENV{'PWD'}/dat/template.dat", "$ENV{'PWD'}/" . $self->{'id'} . "/template.dat");
+        # Open the file specified as 1st argument as a template file
+        # to generate a file whose path is specified by 2nd argument.
+	my $input = data_generator->new("$ENV{'PWD'}/dat/template.dat",
+                                        "$ENV{'PWD'}/" . $self->{'id'} . "/template.dat");
+        # The value of 'param' in the template file is replaced by $self->{x}
+        # in the generated file.
 	$input->replace_key_value("param", $self->{'x'});
+        # Execute this to do generate the file
 	$input->execute();
     },
+    # In after method, assign the output value to $self->{y}
+    # by extracting the job's output file.
     'after'  => sub {
-	my $stat = &jobsched::get_job_status($self);
-#	unless ($stat eq 'finished') {
-	    my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
-	    my $tmp2 = data_extractor->new("$tmp1");
-	    $tmp2->extract_line_nn('end');
-	    my @output = $tmp2->execute();
-	    $self->{'y'} = $output[0];
-#	}
+        my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
+        # Open the file specified as 1st argument to be read.
+        my $tmp2 = data_extractor->new("$tmp1");
+        # Extract only the last line.
+        $tmp2->extract_line_nn('end');
+        # Execute this to do extract the file.
+        my @output = $tmp2->execute();
+        # Get the 0-th column of the last line of the file.
+        $self->{'y'} = $output[0];
     }
     );
-# 12-section method, the interval [-1,10], the error 0.01, f(-1)=0.5, f(10)=-5.
+# 4- or 12-section method, the interval [-1,10], the error 0.01.
+# f(-1)=0.5 (positive), f(10)=-5 (negative)
 my ($x, $y) = &n_section_method::n_section_method(
-#    %job, 'partition' => 12, 'epsilon' => 0.01,
+#   %job, 'partition' => 12, 'epsilon' => 0.01,
     %job, 'partition' => 4, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
