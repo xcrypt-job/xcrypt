@@ -1,23 +1,39 @@
-# Sumit just a single job.
+# A sample of using the save()/restore() method.
+# Save the specified parameter values job object and
+# Resotre the values in the next execution of the script.
+# Execute this script (at least) twice to see this functionality.
 use base qw (core);
+use data_extractor;
 
 %template = (
-    'id' => 'job0',
+    'id' => 'jobsave',
     'exe0' => 'bin/fib-file',
     'arg0_0' => "dat/num40",
-    'arg0_1' => "out_0",
+    'arg0_1' => "jobsave_OUT",
     );
+
+# In the second (or later) execution, the job execution is skipped
 @jobs=&prepare_submit_sync (%template);
 my $self = $jobs[0];
+
+# No effect in the first execution.
+# In the second (or later) execution, the value of $self->{result} calculated
+# in the first execution is restored.
 $self->restore();
+
 if ($self->{result}) {
+    # In the second (or later) execution, executed here
+    # because $self->{result} is resotred by resotre()
     print "restored: $self->{result}\n";
 } else {
-    open (my $IN, '<', "$self->{arg0_1}");
-    while (<$IN>) {
-        chomp;
-        $self->{result} = $_;
-    }
+    # Executed here in the first execution.
+    my $ohandler = data_extractor->new($self->{arg0_1});
+    # Extract 1st line
+    $ohandler->extract_line_nn(1);
+    # Extract the last column
+    $ohandler->extract_column_nn('end');
+    my @output = $ohandler->execute();
+    $self->{result} = $output[0];
     print "calclated: $self->{result}\n";
     $self->save('result');
 }

@@ -23,6 +23,6 @@ int main (int argc, char** argv)
     perror ("Failed to open output file");
     exit (1);
   }
-  fprintf (fp2, "fib(%d)=%d\n", n, fib(n));
+  fprintf (fp2, "fib(%d)= %d\n", n, fib(n));
   return 0;
 }
