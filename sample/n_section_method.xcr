@@ -15,34 +15,32 @@ use data_extractor;
     'before' => sub {
         # Open the file specified as 1st argument as a template file
         # to generate a file whose path is specified by 2nd argument.
-	my $input = data_generator->new("$ENV{'PWD'}/dat/template.dat",
-                                        "$ENV{'PWD'}/" . $self->{'id'} . "/template.dat");
+	my $in = data_generator->new('dat/template.dat',
+                                     $self->{'id'}.'/template.dat');
         # The value of 'param' in the template file is replaced by $self->{x}
         # in the generated file.
-	$input->replace_key_value("param", $self->{'x'});
+	$in->replace_key_value("param", $self->{'x'});
         # Execute this to do generate the file
-	$input->execute();
+	$in->execute();
     },
     # In after method, assign the output value to $self->{y}
     # by extracting the job's output file.
     'after'  => sub {
-        my $tmp1 = "$ENV{'PWD'}/".$self->{'id'}."/output.dat";
         # Open the file specified as 1st argument to be read.
-        my $tmp2 = data_extractor->new("$tmp1");
+	my $out = data_extractor->new($self->{'id'}.'/output.dat');
         # Extract only the last line.
-        $tmp2->extract_line_nn('end');
+	$out->extract_line_nn('end');
         # Execute this to do extract the file.
-        my @output = $tmp2->execute();
+	my @output = $out->execute();
         # Get the 0-th column of the last line of the file.
-        $self->{'y'} = $output[0];
+	$self->{'y'} = $output[0];
     }
     );
-# 4- or 12-section method, the interval [-1,10], the error 0.01.
+# 12-section method, the interval [-1,10], the error 0.01.
 # f(-1)=0.5 (positive), f(10)=-5 (negative)
 my ($x, $y) = &n_section_method::n_section_method(
-#   %job, 'partition' => 12, 'epsilon' => 0.01,
-    %job, 'partition' => 4, 'epsilon' => 0.01,
+    %job, 'partition' => 12, 'epsilon' => 0.01,
     'x_left'  => -1,  'x_right' => 10,
     'y_left'  => 0.5, 'y_right' => -5
     );
-print 'The value is ' . $y . ' when x = ' . $x . ".\n";
+print 'The value is '.$y.' when x = '.$x.".\n";
