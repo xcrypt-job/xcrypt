@@ -1,12 +1,20 @@
+# A sample of repeat(): user defined timer events
 use base qw(core);
 
 %template = (
-    'id' => 'job6',
-    'exe' => 'sleep 10'
+    'id'   => 'jobrep',
+    'exe0' => 'sleep 10'
 );
 
 my @jobs = &prepare_submit(%template);
-&repeat('print "hogehoge\n";');
-$hoge = 'hoge';
-&repeat(sub {print STDOUT "$hoge\n";}, 3);
+
+# The specified statement is evaluated every n seconds
+# (n is the system-defined default value. You can specify n
+# explicitly by the second argument)
+&repeat('print "foo\n";');
+
+# You can also define a timer event as a function.
+$bar = 'baz';
+&repeat(sub {print STDOUT "$bar\n";}, 3);
+
 &sync(@jobs);
