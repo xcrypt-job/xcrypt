@@ -28,8 +28,8 @@ sub start {
 		$stat = &jobsched::get_job_status($self);
 		$time_now = time();
 		my $elapsed = $time_now - $time_init;
-		print $elapsed, "\n";
 		if ($self->{allotted_time} < $elapsed) {
+                    print "Running time of $self->{id} exeeded $elapsed sec. Invalidates it.\n";
 		    $self->invalidate();
 		    $stat = 'done';
 		}

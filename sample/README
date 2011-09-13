@@ -32,3 +32,6 @@ A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
 customize.xcr:
 A sample of add_key()
 
+invalidate.xcr:
+A sample of using the invalidate.pm module.
+A job is automatically killed when its running time exceeds specified time.

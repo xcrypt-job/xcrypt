@@ -1,12 +1,13 @@
+# A sample of using the invalidate.pm module.
+# A job is automatically killed when its running time exceeds specified time.
 use base qw (invalidate core);
 
 %template = (
-    'id@' => sub { "job6_$VALUE[0]" },
+    'RANGE0' => [3,7,40],
+    'id@' => sub { "jobinval_$VALUE[0]" },
     'exe0' => 'bin/fib 44 > out_44',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
+    # A job running mor than $VALUE[0] seconds is automatically killed (forced to be 'finished')
     'allotted_time@' => sub { $VALUE[0] },
-    'RANGE0' => [3,7,20],
 );
 
 &prepare_submit_sync(%template);
