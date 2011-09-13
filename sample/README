@@ -40,3 +40,7 @@ n_section_method.xcr:
 # A sample of
 # * the n_section_method module
 # * the data_generator and data_extractor libraries
+
+range.xcr:
+A sample of RANGE parameters
+Sumit multiple jobs simultaneously
