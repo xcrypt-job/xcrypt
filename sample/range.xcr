@@ -1,54 +1,17 @@
-use base qw(sandbox core);
+# Sumit multiple jobs simultaneously
+use base qw (core);
 
-# $ xcrypt --host b30331@thin.kudpc.kyoto-u.ac.jp --wd /home/b/b30331/xcrypt/sample --sched t2k_kyoto --xd /home/b/b30331/xcrypt range.xcr
-# or
-# fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
-
-%template1 = (
-    'id@' => sub { 'job6_'.$VALUE[0].'_'.$VALUE[2] },
-    'exe' => sub {
-        my $self=shift;
-        print "exe: $self->{id}\n";
-        system ('../bin/fib '.($VALUE[0] + $VALUE[2])." > "
-                .$self->{JS_cpu}.'_'.$VALUE[0].'_'. $VALUE[2]);
-        return 100;
-    },
-#    'RANGE0' => [40],
-#    'RANGE2' => [0],
-    'RANGES' => [[40,41,42],[0],[0]],
-    'JS_cpu' => 1,
-    'JS_memory' => '1GB',
+%template = (
+    'id' => 'job', 
+    'RANGE0' => [40..45],      
+    'exe@' => sub {"./bin/fib $_[0] > out$_[0]"},
     'JS_queue' => 'gh10034',
     'JS_group' => 'gh10034',
-    'JS_limit_time' => 60,
-    'before_in_xcrypt' => sub {
-        my $self = shift;
-        print "before_in_xcrypt: $self->{id}\n";
-        return 5;
-    },
     'before' => sub {
-        my $self = shift;
-        print "before: $self->{id}\n";
-        return 4;
+        print "Submitting $self->{id}\n";
     },
-    'before_to_job' => 1,
-    'after' =>  sub {
-        my $self = shift;
-        print "after: $self->{arg0_0}\n";
-        return 10;
-    },
-    'after_to_job' => 1,
-);
-
-# If defined, called when ^C is pressed.
-sub sigint_handler {
-  print "User's SIGINT handler is called.\n";
-}
-
-my @jobs = &prepare_submit(%template1);
-#&submit(@jobs);
-&sync(@jobs);
-print $jobs[0]->{before_in_xcrypt_return}, "\n";
-print return_transmission::get_before_return($jobs[0]), "\n";
-print return_transmission::get_exe_return($jobs[0]), "\n";
-print return_transmission::get_after_return($jobs[0]), "\n";
+    'after' => sub {
+        print "$self->{id} finished\n";
+    } 
+    );
+prepare_submit_sync (%template);
