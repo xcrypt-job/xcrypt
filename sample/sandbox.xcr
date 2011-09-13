@@ -1,15 +1,19 @@
-use base qw(sandbox core);
+# Sumit multiple jobs sequentially (sandbox)
+use base qw (sandbox limit core);
+limit::initialize(1);
 
 %template = (
-    'id' => 'job2',
-#    'exe' => './fib',
-    'exe0' => 'bin/fib',
-    'arg0_0@' => [40,41],
-    'arg0_1' => '> job2_out1',
-    'RANGE0' => [0,1],
-#    'linkedfile0' => 'bin/fib',
-#    'copiedfile0' => 'bin/fib',
-    'copiedfile20000' => 'bin',
+    'id' => 'job', 
+    'RANGE0' => [40..45],      
+    'exe@' => sub {"./fib $_[0] > out$_[0]"},
+    'copiedfile0' => './bin/fib',
+    'JS_queue' => 'gh10034',
+    'JS_group' => 'gh10034',
+    'before' => sub {
+        print "Submitting $self->{id}\n";
+    },
+    'after' => sub {
+        print "$self->{id} finished\n";
+    } 
     );
-
-&prepare_submit_sync(%template);
+prepare_submit_sync (%template);
