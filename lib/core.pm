@@ -441,6 +441,7 @@ sub qsub {
     if ($flag) {
         # Execute qsub command
 	my $cmdline = "$qsub_command $qsub_options $scriptfile";
+        #print STDERR "$cmdline\n";
         # xcr_qx() chdirs to working directory, executes $cmdline, and returns the stdout string.
 	my @qsub_output = &xcr_qx($self->{env}, "$cmdline", $self->{workdir});
 #        if ( @qsub_output == 0 ) { die "qsub command failed"; }
