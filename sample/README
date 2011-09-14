@@ -66,3 +66,7 @@ A sample of user defined signal handler.
 
 spawn.xcr:
 A sample of spawn{}: Multithreading language like notation for submitting jobs
+
+successor.xcr:
+A sample of the successor module:
+Defining a job which depend on other jobs.
