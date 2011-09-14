@@ -1,23 +1,20 @@
+# A sample of the successor module:
+# Defining a job which depend on other jobs.
 use base qw(successor core);
 
 %parent = (
-    'id' => 'job10',
-    'exe' => 'echo 10',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
-    'successor' => ['child0', 'child2']
+    'id'   => 'jobsuc_prnt',
+    'exe0' => 'echo PARENT',
+    # %child1 and %child2 are automatically submitted after the job is done.
+    'successor' => ['child1', 'child2']
     );
-%child0 = (
-    'id' => 'job11',
-    'exe' => 'echo 11',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034'
+%child1 = (
+    'id'   => 'jobsuc_chld1',
+    'exe0' => 'echo CHILD1',
     );
 %child2 = (
-    'id' => 'job12',
-    'exe' => 'echo 12',
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034'
+    'id'   => 'jobsuc_chld2',
+    'exe0' => 'echo CHILD2',
     );
 
 &prepare_submit_sync(%parent);
