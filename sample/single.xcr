@@ -1,4 +1,4 @@
-# Sumit just a single job.
+# Submit just a single job.
 use base qw (core);
 
 %template = (

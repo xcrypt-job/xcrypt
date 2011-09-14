@@ -1,19 +1,29 @@
+# A sample of spawn{}: Multithreading language like notation for submitting jobs
 use base qw(sandbox core);
 
-# $ xcrypt --host b30331@thin.kudpc.kyoto-u.ac.jp --wd /home/b/b30331/xcrypt/sample --sched t2k_kyoto --xd /home/b/b30331/xcrypt range.xcr
-# or
-# fill the above keys and values in ~/.xcryptrc and $ xcrypt range.xcr
-
+# Global variable named $i can be read (cannot be written) to from spawn bodies.
 $TEMPLATE{transfer_variable}=['$i'];
 
-foreach  $i (10..20) {
+foreach $i (10..20) {
+    # Submit a job that executes the spawn{} body in the job
     spawn {
+        # The job object is given as the first argument
         my $self=shift;
         print "exe: $self->{id}\n";
-        system ("../bin/fib $i > out");
+        # The global variable $i defined in Xcrypt script can be read
+        # because it is contained in $TEMPLATE{transfer_variable}
+        system ("../bin/fib $i > out"); # Use Perl system() function instead of 'exe0'
+    }_before_{
+        # This body is executed in Xcrypt process before submitting the job (optional)
+        my $self = shift;
+        print 'Submitting '. $self->{id} ."\n";
     }_after_{
+        # This body is executed in Xcrypt process after the job is done (optional)
         my $self = shift;
         print 'The job '. $self->{id} ." is finished.\n";
     };
+    # You can set additional parameters as follows (like prepare())
+    # This parenthesis is optional (even 'id'!)
+    # } (id => 'jobspn', JS_cpu => 1);
 }
 sync;
