@@ -1,20 +1,18 @@
+# A sample of taking performance evaluation using Xcrypt and parallel evaluation of LU decomposition
 use base qw(core);
 
 my %job_lu = (
-    'id' => 'job5',
-    'RANGE0' => [1,4],           # # of workers per node
-    'RANGE1' => [2000,4000],     # lu's param
-    'RANGE2' => [1..3],          # # of trials
-    'exe0' => './lu',
-    'linkedfile0' => 'bin/lu',
-    'JS_cpu@' => sub { $_[0]; },
-    'JS_node@' => sub { $_[0]; },
-    'arg0_0@' => sub {"-n $_[0]";},
-    'arg0_1@' => sub {"-i \"0 0 $_[1] 2 0\""},
+    'id' => 'joblu',
+    'RANGE0' => [1,4],        # # of workers
+    'RANGE1' => [2000,4000],  # lu's param (problem size)
+    'RANGE2' => [1..3],       # # of trials
+    'exe0' => 'bin/lu',
+    'JS_cpu@' => sub { $VALUE[0]; },    # # of cpus requested to a batch scheduler
+    'JS_node' => 1,                     # # of nodes requested to a batch scheduler
+    'arg0_0@' => sub {"-n $VALUE[0]";},
+    'arg0_1@' => sub {"-i \"0 0 $VALUE[1] 2 0\""},
     'arg0_2'  => "-a",
-    'JS_queue' => 'gh10034',
-    'JS_group' => 'gh10034',
-    'JS_limit_time' => 180
+    'JS_limit_time' => 180    # Estimated job execution time sent to a batch scheduler
     );
 
 &prepare_submit_sync(%job_lu);
