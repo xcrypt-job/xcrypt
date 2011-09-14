@@ -54,3 +54,15 @@ A sample of repeat(): user defined timer events
 sandbox.xcr:
 A sample of the sandbox module: automatically create a directrory for each job
 and execute jobs in the directoryies (sandboxes).
+
+limit.xcr:
+A sample of the limit module: limits the number of simultaneously running jobs.
+
+single.xcr
+The most simple Xcrypt script: submit just a single job.
+
+signal.xcr:
+A sample of user defined signal handler.
+
+spawn.xcr:
+A sample of spawn{}: Multithreading language like notation for submitting jobs
