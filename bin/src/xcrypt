@@ -59,7 +59,7 @@ my @help = (
 '--[no]verbose_readlog     Display message when Xcrypt starts and finishes reading an execution log file',
 '--[no]verbose_sync        Display message when starting and finishing sync()ing jobs',
 'Validated when verbosity level >= 3',
-'--[no]verbose_hosts       Display host information when add_hsot() is called',
+'--[no]verbose_hosts       Display host information when add_host() is called',
 '--[no]verbose_periodic    Display message when a user defined timer function is called',
 'Validated when verbosity level >= 4',
 '--[no]verbose_leftmessage_all Display message when checking a message file from a job for each file',

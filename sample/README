@@ -71,5 +71,5 @@ successor.xcr:
 A sample of the successor module:
 Defining a job which depend on other jobs.
 
-lu-eval.xcr:
-A sample of taking performance evaluation using Xcrypt and parallel evaluation of LU decomposition
+fib-eval.xcr:
+A sample of taking performance evaluation using Xcrypt and a parallel implementation of Fibonacci
