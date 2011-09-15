@@ -1,3 +1,17 @@
 [template]
+JS_cpu = 1
+JS_node = 1
+# JS_time = 3600
+
 [environment]
 sched = sh
+# shced = SGE
+# sched = XBS
+# sched = aics_kameyama
+# sched = condor
+# sched = msdos
+# sched = sh
+# sched = t2k_kyoto
+# sched = t2k_tokyo
+# sched = t2k_tsukuba
+# sched = torque
