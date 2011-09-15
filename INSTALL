@@ -21,6 +21,10 @@ export PATH=INSTALLDIR/bin:$PATH
 (You should add this setting to the startup file of your login shell such as .bash_profile)
 
 (5)
+Change the value of the XCRYPT environment variable in INSTALLDIR/bin/.wrapper
+to INSTALLDIR.
+
+(6)
 If your system supports a batch scheduler and you want to use it,
 Copy INSTALLDIR/etc/xcryptrc into $HOME/.xcryptrc
 and change the value of sched to the name of scheduler.
