@@ -27,6 +27,6 @@ to INSTALLDIR.
 (6)
 If your system supports a batch scheduler and you want to use it,
 Copy INSTALLDIR/etc/xcryptrc into $HOME/.xcryptrc
-and change the value of sched to the name of scheduler.
-(You can find the pre-installed schedulers in INSTALLDIR/lib/config/*.pm)
-Please read Xcrypt manual to add a new scheduler definition.
+and set the parameter values according to the comments in this file.
+(You can find the pre-installed schedulers in INSTALLDIR/lib/config/*.pm
+Please read Xcrypt manual to add a new scheduler definition.)
