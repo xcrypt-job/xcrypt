@@ -1,7 +1,7 @@
 All samples can be executed by
 % xcrypt <filename>.xcr
 Since some scripts requires execution files in the bin/ subdirectories,
-apply Makefile in bin/ before trying those xcr files.
+apply Makefile in bin/ before trying the following xcr files.
 
 You can delete all the job executiion history by:
 % xcryptdel --clean
@@ -13,63 +13,71 @@ You can view the status of submitted jobs (by Xcrypt) by:
 
 All of these commands show the detail of usage with the '--help' option.
 
-=== The list of sample scripts ===
-DC.xcr:
-(Execute it after do "make" in the DC/ directory)
-Sample of DC.pm module (Divide and Conquer)
-Compute Fib(n) by dividing a job for Fib(n) into jobs for Fib(n-1) and Fib(n-2) recursively
+===== The list of sample scripts =====
+=== Basic examples ===
+single.xcr
+The most simple Xcrypt script: submit just a single job.
 
-abort.xcr:
-A sample of using three kinds of methods for interrupting jobs.
+range.xcr:
+A sample of RANGE parameters
+Sumit multiple jobs simultaneously
+
+limit.xcr:
+A sample of the limit module: limits the number of simultaneously running jobs.
+
+sandbox.xcr:
+A sample of the sandbox module: automatically create a directrory for each job
+and execute jobs in the directoryies (sandboxes).
 
 in_job.xcr:
 A sample of before_in_job and after_in_job.
 
-bulk_num.xcr:
-bulk_tim.xcr:
-A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
+spawn.xcr:
+A sample of spawn{}: Multithreading language like notation for submitting jobs
 
-customize.xcr:
-A sample of add_key()
+=== Practical example ===
+fib-eval.xcr:
+A sample of taking performance evaluation using Xcrypt and a parallel implementation of Fibonacci
 
+=== Using advanced features ===
 invalidate.xcr:
 A sample of using the invalidate.pm module.
 A job is automatically killed when its running time exceeds specified time.
+
+abort.xcr:
+A sample of using three kinds of methods for interrupting jobs.
+
+customize.xcr:
+A sample of add_key(): adding your own job parameters.
+
+repeat.xcr:
+A sample of repeat(): user defined timer events
+
+remote.xcr:
+A sample of remote job submission.
+
+signal.xcr:
+A sample of user defined signal handler.
+
+save.xcr:
+A sample of using the save()/restore() method.
+Save the specified parameter values job object and
+Resotre the values in the next execution of the script.
+
+=== Using algorithm modules ===
+successor.xcr:
+A sample of the successor module:
+Defining a job which depend on other jobs.
+
+bulk_num.xcr:
+bulk_tim.xcr:
+A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
 
 n_section_method.xcr:
 # A sample of
 # * the n_section_method module
 # * the data_generator and data_extractor libraries
 
-range.xcr:
-A sample of RANGE parameters
-Sumit multiple jobs simultaneously
-
-remote.xcr:
-A sample of remote job submission.
-
-repeat.xcr:
-A sample of repeat(): user defined timer events
-
-sandbox.xcr:
-A sample of the sandbox module: automatically create a directrory for each job
-and execute jobs in the directoryies (sandboxes).
-
-limit.xcr:
-A sample of the limit module: limits the number of simultaneously running jobs.
-
-single.xcr
-The most simple Xcrypt script: submit just a single job.
-
-signal.xcr:
-A sample of user defined signal handler.
-
-spawn.xcr:
-A sample of spawn{}: Multithreading language like notation for submitting jobs
-
-successor.xcr:
-A sample of the successor module:
-Defining a job which depend on other jobs.
-
-fib-eval.xcr:
-A sample of taking performance evaluation using Xcrypt and a parallel implementation of Fibonacci
+DC.xcr:
+Sample of DC.pm module (Divide and Conquer)
+Compute Fib(n) by dividing a job for Fib(n) into jobs for Fib(n-1) and Fib(n-2) recursively

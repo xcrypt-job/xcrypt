@@ -30,3 +30,8 @@ Copy INSTALLDIR/etc/xcryptrc into $HOME/.xcryptrc
 and set the parameter values according to the comments in this file.
 (You can find the pre-installed schedulers in INSTALLDIR/lib/config/*.pm
 Please read Xcrypt manual to add a new scheduler definition.)
+
+(7)
+Chdir to INSTALLDIR/sample and execute
+% xcrypt single.xcr
+to check the installation is successfully finished.
