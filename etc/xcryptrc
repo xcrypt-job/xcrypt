@@ -1,9 +1,7 @@
-[template]
-JS_cpu = 1
-JS_node = 1
-# JS_time = 3600
-
 [environment]
+## Choose the batch scheduler you want to use from the followings and uncomment it.
+## (You can also add your own bathch scheduler definition as <newsched>.pm in
+##  <INSTALLDIR>/lib/config/ and set "sched = <newsched>")
 sched = sh
 # shced = SGE
 # sched = XBS
@@ -15,3 +13,35 @@ sched = sh
 # sched = t2k_tokyo
 # sched = t2k_tsukuba
 # sched = torque
+
+[template]
+## All the settings in this section specify the deafult parameter value
+## for submitted jobs. You can overwrite the settings for each job by
+## specifying values in a job template in your Xcrypt script as follows:
+## %jobtemp = (
+##   'id' => 'job_example',
+##   'exe0' => './a.out',
+##   'JS_cpu' =>  16,
+##   'JS_node' => 2,
+##   ... };
+
+## Set (uncomment) these if the batch scheduler requests you to (or you want to)
+## specify the number of CPUs (cores) and the number of nodes a submitted job uses.
+# JS_cpu = 1
+# JS_node = 1
+
+## Set (uncomment) these if the batch scheduler requests you to (or you want to)
+## specify the memory size a submitted job uses.
+# JS_memory = 1.8GB
+
+## Set (uncomment) this if the batch scheduer requests you to (or you want to)
+## specify estimated job execution time.
+# JS_time = 3600
+
+## Set (uncomment) this if the batch scheduer requests you to specify a queue name
+## when submitting a job.
+# JS_queue = queuename
+
+## Set (uncomment) this if the batch scheduer requests you to specify a group name
+## when submitting a job (e.g., T2K Open Supercomputer in Kyoto Univ.).
+# JS_group = groupname
