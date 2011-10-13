@@ -10,6 +10,7 @@ Change the value of the XCRYPT environment variable in source-me.sh to INSTALLDI
 
 (3)
 Run the following commands
+% source source-me.sh
 % cd INSTALLDIR/cpan
 % sh do-install.sh   # Answer 'yes' or just press enter key for all the question.
 
