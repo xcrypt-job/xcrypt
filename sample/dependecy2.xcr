@@ -1,0 +1,21 @@
+# Submit jobs which have dependencies each other
+# (using dependency module)
+use base qw (dependency core);
+
+%template = (
+    'id' => 'jobdep',
+    'RANGE0' => [1..5],
+    'exe0' => "bin/fib",
+    'arg0_0@' => sub {44-$VALUE[0]},
+    );
+
+@jobs = prepare(%template);
+
+# submit jobdep_5 after jobdep_1 finished
+$jobs[4]->{depend_on} = $jobs[0];
+# submit jobdep_3 after jobdep_2 finished (specify by job ID)
+$jobs[2]->{depend_on} = 'jobdep_2';
+# submit jobdep_4 after jobdep_1 and jobdep_3 finished 
+$jobs[3]->{depend_on} = ['jobdep_1', 'jobdep_3'];
+
+submit_sync (@jobs);
