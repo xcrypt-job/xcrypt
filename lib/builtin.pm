@@ -1004,7 +1004,7 @@ sub sync {
     return @_;
 }
 
-sub prepare{
+sub prepare {
     $count = 0;
     my %template = &unalias(@_);
     %template = &add_exes_args_colon(%template); # for compatibility
