@@ -6,7 +6,7 @@ get_from put_into
 rmt_exist rmt_qx rmt_system rmt_mkdir rmt_copy rmt_rename rmt_symlink rmt_unlink
 xcr_exist xcr_qx xcr_system xcr_mkdir xcr_copy xcr_rename xcr_symlink xcr_unlink
 prepare submit sync prepare_submit submit_sync prepare_submit_sync
-get_local_env get_all_envs add_host add_key add_prefix_of_key repeat
+get_local_env get_all_envs add_host add_key add_prefix_of_key find_job_by_id repeat
 set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
@@ -264,6 +264,13 @@ sub xcr_copy    {            xcr_cmd('copy',    @_);                }
 sub xcr_rename  {            xcr_cmd('rename',  @_);                }
 sub xcr_symlink {            xcr_cmd('symlink', @_);                }
 sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
+
+
+# Get job object from job ID
+sub find_job_by_id {
+    my $self = shift;
+    jobsched::find_job_by_id ($_[0]);
+}
 
 my $default_period = 10;
 my @periodic_threads = ();
