@@ -11,6 +11,7 @@ use Coro;
 use Coro::Channel;
 use common;
 use jsconfig;
+use Config::Simple;
 
 our %bulk = ();
 
@@ -107,8 +108,6 @@ sub bulk {
         my $bulk_job      = user->new(\%frame);
         # Entry job's
         &jobsched::entry_job_id ($bulk_job);
-        &jobsched::set_job_initialized($bulk_job);
-        &jobsched::set_job_prepared($bulk_job);
         # stderr & stdout
         $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
         $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
@@ -237,8 +236,8 @@ sub start {
             # &jobsched::set_job_queued($sub_self);
             $sub_self->{request_id} = $self->{request_id};
         }
-        return $self->{request_id};
         &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+        return $self->{request_id};
     }
 }
 
