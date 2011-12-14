@@ -105,7 +105,11 @@ sub qstat {
 sub inventory_write_cmdline {
     my ($self, $stat) = @_;
     status_name_to_level ($stat); # Valid status name?
-    return 'mkdir ' . $self->{id} . '_is_' . $stat;
+    my $cmdline = 'mkdir ' . $self->{id} . '_is_' . $stat;
+    if ($jsconfig::jobsched_config{$self->{env}->{sched}}{'left_message_' . "$stat" . '_file_type'} eq 'file') {
+	$cmdline = 'touch ' . $self->{id} . '_is_' . $stat;
+    }
+    return $cmdline;
 }
 
 ##############################
