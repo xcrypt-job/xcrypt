@@ -6,15 +6,16 @@ use File::Basename;
 use Cwd;
 use File::Basename qw(basename);
 my $myname = basename(__FILE__, '.pm');
+$ENV{"CONDOR_CONFIG"} = "/opt/condor-7.2.2/etc/condor_config";
+$ENV{"CONDOR_BIN"} = "/opt/condor-7.2.2/bin";
 $jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "$ENV{XCRYPT}/lib/config/condor_submit",
-    qdel_command => "/opt/condor-7.2.2/bin/condor_rm",
-    qstat_command => "/opt/condor-7.2.2/bin/condor_q",
+    qdel_command => "$ENV{CONDOR_BIN}/condor_rm",
+    qstat_command => "$ENV{CONDOR_BIN}/condor_q",
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
 	jobscript_workdir => sub { '.'; },
-#    jobscript_workdir => sub { '/home/xcryptuser/mount'; },
     jobscript_option_stage_in_files => sub {
 		my @dummy = ();
 	    return @dummy;
@@ -24,12 +25,14 @@ $jsconfig::jobsched_config{$myname} = {
 	    return @dummy;
     },
     stage_in_files => sub{
-    	my $self = shift;
-    	$ENV{XCR_INPUTFILE}= $self;
+    	my (@file_list) =@_;
+    	my $staging_files = join(',', @file_list);
+    	$ENV{XCR_INPUTFILE}= $staging_files;
     },
     stage_out_files => sub{
-    	my $self = shift;
-    	$ENV{XCR_OUTPUTFILE}= $self;
+    	my (@file_list) =@_;
+    	my $staging_files = join(',', @file_list);
+    	$ENV{XCR_OUTPUTFILE}= $staging_file;
     },
     qsub_option_stdout => workdir_file_option('-o ', 'stdout'),
     qsub_option_stderr => workdir_file_option('-e ', 'stderr'),
