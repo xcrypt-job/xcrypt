@@ -43,7 +43,8 @@ if(!defined($tmpdir)) {
 my $jobscript = $others[0];
 
 # Condorコマンドパス名
-my $command_path = "/opt/condor-7.2.2/bin";
+my $command_path = $ENV{CONDOR_BIN};
+# "/opt/condor-7.2.2/bin";
 my $condor_submit_command = File::Spec->catfile( $command_path, "condor_submit" );
 my $condor_rm_command = File::Spec->catfile( $command_path, "condor_rm" );
 
