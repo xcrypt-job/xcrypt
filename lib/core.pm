@@ -49,9 +49,15 @@ sub new {
     set_member_if_empty ($self, 'exe_in_job_file', "$self->{id}_exe_in_job.pl");
     set_member_if_empty ($self, 'after_in_job_file', "$self->{id}_after_in_job.pl");
     set_member_if_empty ($self, 'qsub_options', []);
-    set_member_if_empty ($self, 'not_transfer_info', []);
-    push (@{$self->{not_transfer_info}}, 'dumped_environment', 'before_in_job_script', 'exe_in_job_script', 'after_in_job_script');       
-    
+    if (!((ref $self->{not_transfer_info}) eq 'ARRAY')) {
+        if ( defined $self->{not_transfer_info} ) {
+            warn "'not_transfer_info' of the job $self->{id} is not a reference to an array";
+        }
+        $self->{not_transfer_info} =  [];
+    }
+    push (@{$self->{not_transfer_info}},
+          'dumped_environment', 'before_in_job_script',
+          'exe_in_job_script', 'after_in_job_script');
     set_member_if_empty ($self, 'cmd_before_exe', []);
     set_member_if_empty ($self, 'cmd_after_exe', []);
 
