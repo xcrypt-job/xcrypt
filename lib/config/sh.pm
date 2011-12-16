@@ -8,6 +8,7 @@ $jsconfig::jobsched_config{$myname} = {
     qdel_command => "kill -9",
     qstat_command => "ps",
     # standard options
+#    left_message_done_file_type => 'file',
     jobscript_preamble => ['#!/bin/sh'],
     jobscript_workdir => sub { '.'; },
     qsub_option_stdout => workdir_file_option('-o ', 'stdout'),
