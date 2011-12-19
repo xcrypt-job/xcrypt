@@ -875,7 +875,7 @@ sub submit {
 	    }
             ## Invoke before() (except user's before() if before_to_job is 1)
             if (check_status_for_before ($self)) {
-                if ($self->{before_to_job} == 1 and (exists $self->{before})) {
+                if ($self->{before_to_job} and (exists $self->{before})) {
                     # Eliminate user's before() temporarily.
                     $self->{before_bkup} = $self->{before};
                     delete $self->{before};
