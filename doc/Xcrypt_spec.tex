@@ -1,5 +1,10 @@
 \documentclass[a4paper,10pt]{jarticle}
 
+%% for hyperref >  6.76i
+%\usepackage{atbegshi}
+%\AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
+%% for hyperref <= 6.76i
+\AtBeginDvi{\special{pdf:tounicode 90ms-RKSJ-UCS2}}
 \usepackage[dvips,dvipdfm,bookmarks=true,%
   bookmarksnumbered=true,% しおりに見出し番号をつける
   bookmarksopen=true,% しおりのツリーを開く
@@ -12,7 +17,14 @@
   bookmarkstype=toc,% PDFしおりに使うべき目次情報
   pdftitle={Xcrypt Language System Specification},%
   pdfauthor={E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}]{hyperref}
-\AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
+
+% abbrevs
+\newcommand\mboxit[1]{\mbox{\textit{#1}}}
+\def\namae{\mboxit{name}}
+\newcommand\dollarit[1]{\mbox{\texttt{\$}\textit{#1}}}
+\newcommand\atmarkit[1]{\mbox{\texttt{@}\textit{#1}}}
+\newcommand\percentit[1]{\mbox{\texttt{\%}\textit{#1}}}
+\newcommand\code[1]{\mbox{\textit{code}$_{\mbox{\textit{#1}}}$}}
 
 \usepackage{tascmac}
 \usepackage{ascmac}
@@ -74,7 +86,7 @@ job, and supports users to process jobs easily.
 \item[request ID]
   バッチスケジューラが，投入されたジョブを識別するためのユニークなID．
 \item[ジョブオブジェクト]
-  Xcrypt上において，これから投入しよがうとする，あるいは投入したジョブを
+  Xcrypt上において，これから投入しようとする，あるいは投入したジョブを
   表現するオブジェクト．下記のジョブIDの文字列などをメンバに持つ．
 \item[ジョブID]
   Xcrypt上でジョブオブジェクトを識別するための文字列．
@@ -159,7 +171,7 @@ Perlとは異ならる．
 \paragraph{引数}
 \begin{itemize}
 \item
-  \texttt{\%}\textit{template}: ジョブテンプレート
+  \percentit{template}: ジョブテンプレート
 \end{itemize}
 \paragraph{返り値}
 \begin{itemize}
@@ -169,12 +181,14 @@ Perlとは異ならる．
   リストコンテキストにおいては生成した全てのジョブオブジェクトを要素に持つ配列
 \end{itemize}
 
+\paragraph{解説}
 引数として与えられたハッシュオブジェクト（ジョブテンプレート）の情報を
 もとに，0個以上のジョブオブジェクトを生成し，返り値として返す．ジョブ
 テンプレートはPerlのハッシュオブジェクトであり，以下の名前のメンバを持
 つことができる．これ以外の名前のメンバが含まれていた場合は，警告メッセー
 ジを表示し，そのメンバは無視される．また，\|id|，\|id@|いずれかの指定
-は必須であり，指定なしに呼び出された場合はエラーを発生する．
+はジョブIDの設定のために必須であり，指定なしに呼び出された場合はエラー
+を発生する．
 
 \begin{enumerate}
   \item \|RANGE|$n$（\textit{n}は自然数），\|RANGES|．ただし，この両者を同時に使用してはならない．
@@ -206,78 +220,75 @@ Perlとは異ならる．
 \begin{itemize}
 \item ジョブテンプレートが\|RANGE|$n$，\|RANGES|をメンバに持たない場合\\
   単一のジョブオブジェクトを生成し，ジョブテンプレートが持つ全てのメンバ
-  と同じ名前・値のメンバを設定する．
-  
-\newcommand\mboxit[1]{\mbox{\textit{#1}}}
-\def\namae{\mboxit{name}}
+  と同じ名前・値のメンバを設定する．  
 
 \item ジョブテンプレートが\|RANGE0|, \ldots, \|RANGE|$n$をメンバに持つ場合\\
-\|RANGE0|, \ldots, \|RANGE|$n$の値は，それぞれPerlの配列への参照
-$\mbox{\texttt{@}}A_0, \ldots, \mbox{\texttt{@}}A_n$でなければならず，
-ジョブオブジェクトは
-$$
-R = \{ (i_0, \ldots, i_n)\ |\ i_0 \le \|$#|A_0, \ldots, i_n \le\|$#|A_n \}
-\quad (i_0, \ldots, i_n は自然数)
-$$
-の各要素に対応してそれぞれ生成する．Rの要素$(i_0, \ldots, i_n)$
-に対応するジョブオブジェクトを$J(i_0, \ldots, i_n)$とすると，
-ジョブテンプレートが``\namae''または``\namae\|@|''
-の名前のメンバを$v_{\mbox{\textit{name}}}$を値として持つような
-{\namae}それぞれに対して（前述の通り，ジョブテンプレートが
-``\namae''と``\namae\|@|''を同時にメンバとして持つことはない．），
-$J(i_0, \ldots, i_n)$のメンバを以下のように設定する．
-\|RANGE0|, \ldots, \|RANGE|$n$および\|RANGES|に対しては以下の設定は
-行わない．また，以下によるもの以外に，メンバ\|VALUE|が
-$\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$を値とする配列への
-参照を値として設定される．
+  \|RANGE0|, \ldots, \|RANGE|$n$の値は，それぞれPerlの配列
+  $\mbox{\texttt{@}}A_0, \ldots, \mbox{\texttt{@}}A_n$への参照でなけれ
+  ばならず，ジョブオブジェクトは
+  $$
+  R = \{ (i_0, \ldots, i_n)\ |\ i_0 \le \|$#|A_0, \ldots, i_n \le\|$#|A_n \}
+  \quad (i_0, \ldots, i_n は自然数)
+  $$
+  の各要素に対応してそれぞれ生成する．$R$の要素$(i_0, \ldots, i_n)$
+  に対応するジョブオブジェクトを$J(i_0, \ldots, i_n)$とすると，
+  ジョブテンプレートが``\namae''または``\namae\|@|''
+  の名前のメンバを$v_{\mbox{\textit{name}}}$を値として持つような
+  {\namae}それぞれに対して（前述の通り，ジョブテンプレートが
+  ``\namae''と``\namae\|@|''を同時にメンバとして持つことはない．），
+  $J(i_0, \ldots, i_n)$のメンバを以下のように設定する．
+  \|RANGE0|, \ldots, \|RANGE|$n$および\|RANGES|に対しては以下の設定は
+  行わない．また，以下によるもの以外に，メンバ\|VALUE|が
+  $\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$を値とする配列への
+  参照を値として設定される．
 
-\begin{enumerate}
-\item ジョブテンプレートが``\namae''をメンバとして持つ場合
   \begin{enumerate}
-  \item $\namae = \|id|$の場合\\
-    $J(i_0, \ldots, i_n)$のメンバ\|id|に\\
-    \quad $v_{\namae}$\|.|\textit{sep}\|.|$i_0$\ldots\|.|\textit{sep}\|.|$i_n$\\
-    を設定する．ただし，\textit{sep}は\|buidin::set_separator|関数で設定された
-    セパレータ文字列である（デフォルトは`\|_|'）．
-  \item $\namae \neq \|id|$の場合\\
-    $J(i_0, \ldots, i_n)$のメンバ''\namae''に$v_{\namae}$を値として設定する．
+  \item ジョブテンプレートが``\namae''をメンバとして持つ場合
+    \begin{enumerate}
+    \item $\namae = \|id|$の場合\\
+      $J(i_0, \ldots, i_n)$のメンバ\|id|に\\
+      \quad $v_{\namae}$\|.|\textit{sep}\|.|$i_0$\ldots\|.|\textit{sep}\|.|$i_n$\\
+      を設定する．ただし，\textit{sep}は\|buidin::set_separator|関数で設定された
+      セパレータ文字列である（デフォルトは`\|_|'）．
+    \item $\namae \neq \|id|$の場合\\
+      $J(i_0, \ldots, i_n)$のメンバ''\namae''に$v_{\namae}$を値として設定する．
+    \end{enumerate}
+  \item ジョブテンプレートが``\namae\|@|''をメンバとして持つ場合
+    \begin{enumerate}
+    \item $v_{\namae}$が配列$\|@|V$への参照の場合\\
+      $J(i_0, \ldots, i_n)$のメンバ''\namae''の値として，
+      $\|$|V\|[|\mboxit{count}\|]|$ %$
+      を設定する．ここで\mboxit{count}は，今回の\|prepare|関数の呼び出しで生成される
+      全てのジョブオブジェクトを直列に並べたときの通し番号であり，以下の式で定まる．
+      $$
+      \begin{array}{l}
+        \mboxit{count} = i_n \times B_{n-1} + \ldots + i_1 \times B_0 + i_0 \\
+        \mbox{where}\quad B_k = \prod_{j=0}^k (\|$#|A_j + 1) %$
+      \end{array}
+      $$
+    \item $v_{\namae}$が関数への参照の場合\\
+      参照先の関数$v_{\namae}$が以下のように呼び出され，
+      その返り値を$J(i_0, \ldots, i_n)$のメンバ''\namae''の値として設定する．
+      \begin{itemize}
+      \item ジョブテンプレートへの参照が第1引数として渡される
+      \item $\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$の値がそれぞれ第2引数--第$(n+2)$引数として渡される
+      \item
+        関数の実行中，変数\|$user::self|を用いて%$
+        生成途中のジョブオブジェクト$J(i_0, \ldots, i_n)$への参照にアクセスできる．
+        このジョブオブジェクトには少なくとも上記1. により決定される
+        メンバが設定済みである．
+      \item
+        関数の実行中，変数\|@user::VALUE|を用いて %$
+        配列\|(|$\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$\|)|にアクセスできる．
+      \end{itemize}
+    \item $v_{\namae}$がスカラ値への参照の場合\\
+      $J(i_0, \ldots, i_n)$のメンバ''\namae''の値として，
+      $v_{\namae}$の参照先のスカラ値を設定する．
+    \item それ以外の場合\\
+      警告を発生し，$J(i_0, \ldots, i_n)$のメンバ''\namae''の値として
+      任意の値を設定する．
+    \end{enumerate}
   \end{enumerate}
-\item ジョブテンプレートが``\namae\|@|''をメンバとして持つ場合
-  \begin{enumerate}
-  \item $v_{\namae}$が配列$\|@|V$への参照の場合
-    $J(i_0, \ldots, i_n)$のメンバ''\namae''の値として，
-    $\|$|V\|[|\mboxit{count}\|]|$ %$
-    を設定する．ここで，\mboxit{count}は\|prepare|関数の呼び出しで生成される
-    全てのジョブオブジェクトを直列に並べたときの通し番号であり，以下の式で定まる．
-    $$
-    \begin{array}{l}
-      \mboxit{count} = i_n \times B_{n-1} + \ldots + i_1 \times B_0 + i_0 \\
-      \mbox{where}\quad B_k = \prod_{j=0}^k (\|$#|A_j + 1) %$
-    \end{array}
-    $$
-  \item $v_{\namae}$が関数への参照の場合\\
-    参照先の関数$v_{\namae}$が以下のように呼び出され，
-    その返り値を$J(i_0, \ldots, i_n)$のメンバ''\namae''の値として設定する．
-    \begin{itemize}
-    \item ジョブテンプレートへの参照が第1引数として渡される
-    \item $\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$の値がそれぞれ第2引数--第$(n+2)$引数として渡される
-    \item
-      関数の実行中，変数\|$user::self|を用いて%$
-      生成途中のジョブオブジェクト$J(i_0, \ldots, i_n)$への参照にアクセスできる．
-      このジョブオブジェクトには少なくとも上記1. により決定される
-      メンバが設定済みである．
-    \item
-      関数の実行中，変数\|@user::VALUE|を用いて %$
-      配列\|(|$\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$\|)|にアクセスできる．
-    \end{itemize}
-  \item $v_{\namae}$がスカラ値への参照の場合\\
-    $J(i_0, \ldots, i_n)$のメンバ''\namae''の値として，
-    $v_{\namae}$の参照先のスカラ値を設定する．
-  \item それ以外の場合\\
-    警告を発生し，$J(i_0, \ldots, i_n)$のメンバ''\namae''の値として
-    任意の値を設定する．
-  \end{enumerate}
-\end{enumerate}
 
 \item ジョブテンプレートが\|RANGES|をメンバに持つ場合\\
   \|RANGES|の値は，配列への参照$R_0, \ldots, R_n$からなる配列への参照
@@ -289,18 +300,26 @@ $\|$|A\|[|i_0\|]|$, \ldots, $\|$|A\|[|i_n\|]|$を値とする配列への
   \|RANGE0| = R_0, \ldots, \|RANGE|n = R_n
   $$
   が設定された場合と同様にジョブオブジェクト列の生成およびメンバの設定を行う．
+
+\item
+  ジョブテンプレートが\|RANGE|$n$，\|RANGES|をメンバに持つかどうかによ
+  らず，ユーザ設定ファイル（\ref{sec:xcryptrc}節）のtemplateセクション
+  に記述されている変数名$N$と対応する値$V$の組それぞれに対して，
+  $N$を名前とするメンバが上記の操作によって設定されなかった場合，
+  当該メンバを値を$V$として追加する．
+
 \end{itemize}
 
 ジョブオブジェクト（列）の生成とメンバ設定の終了後，各ジョブオブジェクトに対して，
 クラスメソッド
 \textit{module-name}$_1$\|::new|, \ldots \textit{module-name}$_n$\|::new|, \|core::new|
 のうち定義されている最初のものを呼び出す．
-\|new|メソッドには第1引数としてモジュール名の文字列\|$class|，%$
-第2引数として対応するジョブオブジェクトへの参照\|$self|が渡される．%$
+\|new|メソッドには第1引数としてモジュール名の文字列\dollarit{class}，
+第2引数として対応するジョブオブジェクトへの参照\dollarit{self}が渡される．
 \|core::new|以外の各\|new|メソッドでは，モジュールの機能を達成するために
 ジョブオブジェクト生成時に必要となる処理が行われる．また，これらのメソッドは，
 $$
-  \|$self = $class->NEXT::new($class, $self);|
+\dollarit{self}\| = |\dollarit{class}\|->NEXT::new(|\dollarit{class}\|, |\dollarit{self}\|);|
 $$
 に相当する処理を1度だけ実行することにより，
 次の\|new|メソッドを呼び出す（すなわち，\|core::new|が必ず1度呼び出される）
@@ -322,7 +341,7 @@ $$
 \item メンバ\|after_in_job_file|が未設定であれば，値を文字列\|"|\textit{id}\|_after_in_job.pl"|として設定する．
 \item メンバ\|qsub_options|が未設定であれば，値を空の配列への参照として設定する．
 \item 
-    メンバ\|not_transfer_info|が未設定であれば，値を
+  メンバ\|not_transfer_info|が未設定であれば，値を
   \|'dumped_environment'|, \|'before_in_job_script'|,
   \|'exe_in_job_script'|, \|'after_in_job_script'|の4つの文字列を要素
   として持つ配列への参照として設定する．\|not_transfer_info|が定義済み
@@ -350,77 +369,325 @@ $$
 \paragraph{引数}
 \begin{itemize}
 \item
-  \texttt{\@}\textit{jobs}: ジョブオブジェクトへの参照の配列
+  \atmarkit{jobs}: ジョブオブジェクトへの参照の配列
 \end{itemize}
 \paragraph{返り値}
 \begin{itemize}
 \item
-  スカラコンテキスト：生成したジョブスレッドの数
+  スカラコンテキスト：渡されたジョブオブジェクトの数
 \item
-  リストコンテキスト：生成したジョブスレッドの配列
+  リストコンテキスト：渡されたジョブオブジェクトの配列自身
 \end{itemize}
 
-\texttt{\@}\textit{jobs}に含まれるそれぞれジョブオブジェクトの参照
-（以下，この参照を持つ変数を\|$self|とする）に対して，%$
+\paragraph{解説}
+\atmarkit{jobs}に含まれるそれぞれジョブオブジェクトの参照
+（以下，この参照を持つ変数を\dollarit{self}とする）に対して，%$
 以下の処理を行う．
 
 \begin{enumerate}
 \item
-  \|$self->make_dumped_environment|メソッド（\ref{sec:make_dumped_environment}節） %$
+  \dollarit{self}\|->make_dumped_environment|メソッド（\ref{sec:make_dumped_environment}節） %$
   を呼び出して，Xcryptの環境をシリアライズした文字列を保存する．
 \item
   以下の処理を非同期に実行するスレッド\footnote{
     ここでいう「スレッド」はCPANのCoroモジュールにおけるスレッドであり，
     非同期に動作するが，複数のスレッドが同時に進行することはない．
-  }（ジョブスレッド）を生成し，そのスレッドを\|$self->{thread}|に代入する．%$
+  }（ジョブスレッド）を生成し，そのスレッドを\dollarit{self}\|->{thread}|に代入する．%$
   \begin{enumerate}
   \item
-    ジョブの状態に基づき，以下の処理を行う．
+    ジョブの状態に応じて，以下の処理を行う．
     \begin{itemize}
     \item ジョブがシグナル（\ref{sec:signal}節）を受けていない場合\\
       ジョブの前回の終了状態（\ref{sec:laststate}節）がfinishedの場合，
-      ジョブの状態をfinishedに強制的に遷移させ，ジョブスレッドを終了する．
+      ジョブの状態をfinishedに遷移させ，ジョブスレッドを終了する．
       前回の終了状態がそれ以外の場合，何も行わない．
     \item ジョブがabortシグナルを受けている場合\\
-      シグナルを解除する．前回の終了状態（\ref{sec:laststate}節）がfinishedの場合，
-      ジョブの状態をfinishedに強制的に遷移させ，ジョブスレッドを終了する．
-      前回の終了状態がそれ以外の場合，前回の終了状態を削除する．
+      シグナルを解除する．前回の終了状態がfinishedの場合，
+      ジョブの状態をfinishedに遷移させ，ジョブスレッドを終了する．
+      前回の終了状態がそれ以外の場合，前回の終了状態の設定を削除する．
     \item ジョブがcancelシグナルを受けている場合\\
-      シグナルの解除，および前回の終了状態の削除を行う．
+      シグナルの解除，および前回の終了状態の設定の削除を行う．
     \item ジョブがinvalidateシグナルを受けている場合\\
-      ジョブの状態をfinishedに強制的に遷移させ，
+      ジョブの状態をfinishedに遷移させ，
       ジョブスレッドを終了する．
     \end{itemize}
   \item
-    \textit{module-name}$_1$\|::initially|, \ldots \textit{module-name}$_n$\|::initially|,
-    \|core::initially|のうち，定義されているものをこの順に全て呼び出す
+    \dollarit{self}\|->initially|,
+    \textit{module-name}$_1$\|::initially|, \ldots
+    \textit{module-name}$_n$\|::initially|, \|core::initially|のうち，
+    定義されているものをこの順に全て呼び出す
   \item
-    \|$self->{before_in_xcrypt}|が定義されていれば呼び出す %$
+    \dollarit{self}\|->{before_in_xcrypt}|が定義されていれば呼び出す．
   \item
-    ジョブがシグナルを受けていない，かつ
-    ジョブの前回の終了状態が設定されていないか，initialized, prepared
-    のいずれかであれば，以下の処理を行う．
+    ジョブの状態に応じて，以下の処理を行う．
     \begin{itemize}
+    \item
+      ジョブがシグナルを受けていない場合\\
+      ジョブの前回の終了状態が設定されていないかinitialized, prepared,
+      abortedのいずれかであれば，
+      \textit{module-name}$_1$\|::before|, \ldots
+      \textit{module-name}$_n$\|::before|のうち，
+      定義されているものをこの順に全て呼び出す．
+      \dollarit{self}\|->{before_to_job}|が偽であれば，
+      さらに\dollarit{self}\|->before|を呼び出す．
+      ジョブの前回の終了状態が上記以外であれば何も行わない．
+    \item
+      ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
+      ジョブの状態をabortedに遷移させる．
+    \item 
+      ジョブがinvalidateシグナルを受けている場合\\
+      ジョブの状態をfinishedに遷移させる．
+    \end{itemize}
+  \item
+    ジョブの状態に応じて，以下の処理を行う．
+    \begin{itemize}
+    \item
+      ジョブがシグナルを受けていない場合\\
+      ジョブの前回の終了状態がsubmitted, queued, running, done,
+      finishedのいずれかであれば何もしない．
+      前回の終了状態が設定されていないかinitialized, prepared,
+      submitted, abortedのいずれかであれば，
+      \textit{module-name}$_1$\|::start|, \ldots
+      \textit{module-name}$_n$\|::start|, \|core::start|のうち
+      定義されている最初のものを呼び出す．
+      \|core::start|以外の\|start|メソッドでは，
+      $$
+      \dollarit{self}\|->NEXT::start();| %$
+      $$
+      に相当する呼び出しにより，次の\|start|メソッドを呼び出すことができるが，
+      必須ではない．したがって，\|core::start|が呼び出されることは保証されない．
+      ただし，\|core::start|が呼び出されない場合でも，以下のいずれかが保証される．
+      \begin{itemize}
       \item
-        \|$self->{before_to_job}|%$
-        が真の場合，
-    \textit{module-name}$_1$\|::before|, \ldots \textit{module-name}$_n$\|::before|,
-    \|core::before|のうち，定義されているものをこの順に全て呼び出す
-      
-      
+        \|start|メソッドの処理によってジョブの状態がsubmitted, queued
+        にこの順に遷移させられること．さらに，queuedに遷移した後，
+        \|start|メソッドの処理またはこのジョブに対応するジョブスレッド
+        以外のスレッドによって，ジョブの状態がrunning, doneにこの順に
+        有限時間内に遷移させられること．
+      \item
+        \|start|メソッドの処理またはこのジョブに対応する
+        ジョブスレッド以外のスレッドによって，ジョブの状態がabortedに
+        有限時間内に遷移させられること．
+      \end{itemize}
+      \|core::start|が呼び出された場合，ジョブの情報や環境設定などに基づいて，
+      ジョブスクリプトの生成やバッチスケジューラへのジョブの投入が実行される．
+      （詳細な動作は\ref{sec:coere-start}に記述する．）
+    \item
+      ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
+      ジョブの状態をabortedに遷移させる．
+    \item 
+      ジョブがinvalidateシグナルを受けている場合\\
+      ジョブの状態をfinishedに遷移させる．
+    \end{itemize}
+  \item
+    ジョブの状態に応じて，以下の処理を行う．
+    \begin{itemize}
+    \item ジョブがシグナルを受けていない場合\\
+      ジョブの前回の終了状態が設定されていないかinitialized, prepared,
+      submitted, queued, running, abortedのいずれかであれば，
+      ジョブがdone, finished, abortedのいずれかになるのを待ち合わせる．
+      前回の終了状態が上記以外であれば何もしない．
+    \item
+      ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
+      ジョブの状態をabortedに遷移させる．
+    \item 
+      ジョブがinvalidateシグナルを受けている場合\\
+      ジョブの状態をfinishedに遷移させる．
+    \end{itemize}
+  \item
+    ジョブの状態に応じて，以下の処理を行う．
+    \begin{itemize}
+    \item ジョブがシグナルを受けていない場合\\
+      ジョブの前回の終了状態が設定されていないかinitialized, prepared,
+      submitted, queued, running, done, abortedのいずれかであれば，
+      \dollarit{self}\|->{after_to_job}|%$
+      の真偽を確認し，偽であれば\dollarit{self}\|->after|, %$
+      を呼び出す．さらに，
+      \textit{module-name}$_n$\|::after|, \ldots
+      \textit{module-name}$_1$\|::after|のうち，
+      定義されているものをこの順に全て呼び出す．
+      ジョブの前回の終了状態がfinishedであれば何も行わない．
+    \item
+      ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
+      ジョブの状態をabortedに遷移させる．
+    \item 
+      ジョブがinvalidateシグナルを受けている場合\\
+      ジョブの状態をfinishedに遷移させる．
+    \end{itemize}
+  \item
+    \dollarit{self}\|->{after_in_xcrypt}|が定義されていれば呼び出す． %$
+  \item
+    \|core::finally|,
+    \textit{module-name}$_n$\|::finally|, \ldots
+    \textit{module-name}$_1$\|::finally|,
+    \dollarit{self}\|->finally|のうち，
+    定義されているものをこの順に全て呼び出す．
+  \item
+    ジョブの状態に応じて，以下の処理を行う．
+    \begin{itemize}
+    \item ジョブがシグナルを受けていないか，invalidateシグナルを受けている場合\\
+      ジョブの状態をfinishedに遷移させる．
+    \item
+      ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
+      ジョブの状態をabortedに遷移させる．
+    \end{itemize}
   \end{enumerate}
 \end{enumerate}
 
-以上の処理の後，\|submit|がリストコンテキストで呼び出されていた場合は，
-各ジョブオブジェクトのメンバ\|thread|の値，すなわち生成したジョブスレッド
-の配列を返り値として返す．配列におけるスレッドの順序は，
-\|@|\textit{jobs}における対応するジョブオブジェクトの順序と等しい．
-スカラコンテキストで呼び出されていた場合は，生成したジョブスレッドの数を返す．
+なお，上記における\|initially|, \|before_in_xcrypt|, \|before|,
+\|after|, \|after_in_xcrypt|, \|finally|の呼び出し時の引数は以下の通りである．
+\begin{itemize}
+  \item 第1引数：ジョブオブジェクトへの参照\dollarit{self}
+  \item 第2引数以降：\|@{|\dollarit{self}\|->{VALUE}}|（設定されている場合のみ）
+\end{itemize}
+また，\|start|呼び出し時には第1引数としてジョブオブジェクトへの参照
+のみが渡される．
 
+以上の処理の後，\|submit|がリストコンテキストで呼び出されていた場合は
+\atmarkit{jobs}自身を，スカラコンテキストで呼び出されていた場合は
+\atmarkit{jobs}の要素数を返す．
 
-\subsubsection{sync}
-\subsubsection{spawn}
-\subsubsection{builtin::join}
+\subsubsection{builtin::sync}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \atmarkit{jobs}: ジョブオブジェクトへの参照の配列
+\end{itemize}
+\paragraph{返り値}
+\begin{itemize}
+\item
+  スカラコンテキスト：渡されたジョブオブジェクトの数
+\item
+  リストコンテキスト：渡されたジョブオブジェクトの配列自身
+\end{itemize}
+
+\paragraph{解説}
+\atmarkit{jobs}の要素数が1以上の場合，この配列の要素から参照されている
+全てのジョブオブジェクトのジョブスレッドの終了を待ち合わせる．
+\|submit|関数適用前のジョブオブジェクトに対して\|sync|が適用されたとき
+の動作は未定義である．
+
+\atmarkit{jobs}の要素数が0，即ち無引数で呼び出された場合は，現在所属す
+る最内のjoinスコープ（\ref{sec:join}節）において生成された全てのジョブ
+スレッドの終了を待ち合わせる．
+
+\|sync|の返り値は，この関数がリストコンテキストで呼び出されていた場合
+は\atmarkit{jobs}自身，スカラコンテキストで呼び出されていた場合は
+\atmarkit{jobs}の要素数である．
+
+\subsubsection{builtin::prepare\_submit}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \percentit{template}: ジョブテンプレート
+\end{itemize}
+\paragraph{返り値}
+\begin{itemize}
+\item
+  スカラコンテキストにおいては生成したジョブオブジェクトの数
+\item
+  リストコンテキストにおいては生成した全てのジョブオブジェクトを要素に持つ配列
+\end{itemize}
+
+\paragraph{解説}
+\|builtin::prepare(|\percentit{template}\|)|の呼び出しと同様にジョブオ
+ブジェクト（列）の生成およびメンバの設定を行った後，生成された各ジョブ
+オブジェクトに対して\|new|メソッドおよび\|builtin::submit|関数の適用を
+行う．
+
+それぞれのジョブオブジェクトに対する\|new|メソッドおよび
+\|builtin::submit|関数の適用の順序は，1つのジョブオブジェクトに対して
+\|new|と\|builtin::submit|がこの順序で適用されている限り任意である．
+
+\|prepare_submit|の返り値は，生成されたジョブオブジェクト列への参照の
+配列（リストコンテキスト）あるいは生成されたジョブオブジェクトの数
+（スカラコンテキスト）である．
+
+\subsubsection{builtin::submit\_sync}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \atmarkit{jobs}: ジョブオブジェクトへの参照の配列
+\end{itemize}
+\paragraph{返り値}
+\begin{itemize}
+\item
+  スカラコンテキスト：渡されたジョブオブジェクトの数
+\item
+  リストコンテキスト：渡されたジョブオブジェクトの配列自身
+\end{itemize}
+\paragraph{解説}
+以下の呼び出しと等価である．
+$$
+\|sync (submit (|\atmarkit{jobs}\|))|
+$$
+
+\subsubsection{builtin::prepare\_submit\_sync}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \percentit{template}: ジョブテンプレート
+\end{itemize}
+\paragraph{返り値}
+\begin{itemize}
+\item
+  スカラコンテキストにおいては生成したジョブオブジェクトの数
+\item
+  リストコンテキストにおいては生成した全てのジョブオブジェクトを要素に持つ配列
+\end{itemize}
+\paragraph{解説}
+以下の呼び出しと等価である．
+$$
+\|sync (prepare_submit (|\percentit{template}\|))|
+$$
+
+\subsubsection{builtin::spawn}
+\paragraph{書式}
+\|builtin::spawn {|\code{exe}\|}|[\|_initially_{|\code{initially}\|}|] \newline
+[\|_before_in_xcrypt_{|\code{before\_in\_xcrypt}\|}|]
+[\|_before_{|\code{before}\|}|]
+[\|_after_{|\code{after}\|}|]
+[\|_after_in_xcrypt_{|\code{after\_in\_xcrypt}\|}|]
+[\|_finally_{|\code{finally}\|}|]
+[\|(|\percentit{template}\|)|]\|;|
+  
+\paragraph{解説}
+以下の呼び出し文と等価である．\\
+\|prepare_submit(|\\
+\|  id => |\textit{id}\|,|\\
+\|  exe => sub{|\code{exe}\|},|\\
+\|  initially => sub{|\code{initially}\|},|\\
+\|  before_in_xcrypt => sub{|\code{before\_in\_xcrypt}\|},|\\
+\|  before => sub{|\code{before}\|},|\\
+\|  after => sub{|\code{after}\|},|\\
+\|  after_in_xcrypt=> sub{|\code{after\_in\_xcrypt}\|},|\\
+\|  finally => sub{|\code{finally}\|},|\\
+\|  |\percentit{template}$_{-\mbox{\it id}}$\|);|\\
+ただし，\percentit{template}$_{-\mbox{\it id}}$は\percentit{template}
+からメンバ\|id|を除いたハッシュオブジェクトであり，\textit{id}は
+以下のように定められる文字列である．
+\begin{itemize}
+\item \percentit{template}にメンバ\|id|が含まれていればその値．
+\item  \percentit{template}にメンバ\|id|が含まれていなければ，これまで
+  \|prepare|で生成されたジョブオブジェクトのメンバ\|id|の値および前回
+  の実行履歴（\ref{sec:rireki}節）に登録されているジョブIDのいずれの文
+  字列とも重複しない，かつ``\|spawned|''で始まる文字列．
+\end{itemize}
+
+\subsubsection{builtin::join}\label{sec:join}
+\paragraph{書式}
+\|builtin::join {|\code{body}\|};|
+\paragraph{解説}
+
+新たな「joinスコープ」を構成し，そのスコープ内において\code{body}を実行する．
+
+joinスコープは動的な生存期間を持つ．すなわち，\code{body}の実行開始か
+ら実行終了までは，構文上\|join|ブロック外に記述されたコードの実行もこ
+のjoinスコープに属しているとみなされる．また，\|join|で構成される全て
+のjoinスコープの外側にグローバルなjoinスコープが存在し，どの非グローバ
+ルなjoinスコープにも属さないコード実行は，このグローバルjoinスコープに
+属しているとみなされる．
+
 
 \section{Xcryptにおけるジョブの管理}
 
