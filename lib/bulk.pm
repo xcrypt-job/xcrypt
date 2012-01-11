@@ -243,9 +243,11 @@ sub start {
 
 sub initially {
     my $self = shift;
+    $self->make_dumped_environment();
     if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            $sub_self->initially($sub_self);
+            $sub_self->make_dumped_environment();
+            $sub_self->EVERY::initially(@{$sub_self->{VALUE}});
         }
     }
 }
@@ -254,8 +256,24 @@ sub before {
     my $self = shift;
     if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
-            if ($sub_self->{before_to_job} != 1) {
-                $sub_self->before($sub_self);
+            if ($sub_self->{before_to_job} and (exists $sub_self->{before})) {
+                # Eliminate user's before() temporarily.
+                $sub_self->{before_bkup} = $sub_self->{before};
+                delete $sub_self->{before};
+            }
+            #if ($sub_self->{before_to_job} != 1) {
+                my $before_return = $sub_self->EVERY::before(@{$sub_self->{VALUE}});
+                foreach my $key (keys %{$before_return}) {
+                    if ($key eq 'user::before' and $sub_self->{before} ne '') {
+                        $sub_self->{before_return} = ${$before_return}{$key};
+                        $sub_self->return_write("before", $sub_self->{workdir}, ${$before_return}{$key});
+                    }
+                }
+            #}
+            if (exists $sub_self->{before_bkup}) {
+                # Restore user's before() from before_bkup
+                $sub_self->{before} = $sub_self->{before_bkup};
+                delete $sub_self->{before_bkup};
             }
         }
     }
@@ -271,9 +289,25 @@ sub after {
                 local $jobsched::Warn_illegal_transition = 0;
                 jobsched::set_job_done($sub_self);
             }
-            if ($sub_self->{after_to_job} != 1) {
-                $sub_self->after($sub_self);
+            if ($sub_self->{after_to_job} == 1 and (exists $sub_self->{after})) {
+                # Eliminate user's after() temporarily.
+                $sub_self->{after_bkup} = $sub_self->{after};
+                delete $sub_self->{after};
+            }
+            #if ($sub_self->{after_to_job} != 1) {
+                my $after_return = $sub_self->EVERY::LAST::after(@{$sub_self->{VALUE}});
+                foreach my $key (keys %{$after_return}) {
+                    if ($key eq 'user::after' and $sub_self->{after} ne '') {
+                        $sub_self->{after_return} = ${$after_return}{$key};
+                        $sub_self->return_write("after", $sub_self->{workdir}, ${$after_return}{$key});
+                    }
+                }
                 builtin::delete_created_files ($sub_self);
+            #}
+            if (exists $sub_self->{after_bkup}) {
+                # Restore user's after() from after_bkup
+                $sub_self->{after} = $sub_self->{after_bkup};
+                delete $sub_self->{after_bkup};
             }
         }
     }
@@ -283,12 +317,18 @@ sub finally {
     my $self = shift;
     if ($self->is_bulk()) {
         foreach my $sub_self (@{$self->{bulk_jobs}}) {
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'running'));
+            xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'done'));
+            {
+                local $jobsched::Warn_illegal_transition = 0;
+                jobsched::set_job_done($sub_self);
+            }
             &jobsched::set_job_finished($sub_self);
-            $sub_self->finally($sub_self);
+            $sub_self->EVERY::LAST::finally(@{$sub_self->{VALUE}});
+            &builtin::delete_created_files($sub_self);
         }
     }
 }
-
 
 sub make_jobscript_body {
     my $self = shift;
