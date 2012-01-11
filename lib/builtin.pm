@@ -848,6 +848,8 @@ sub submit {
     foreach my $self (@array) {
         # Take a snapshot of the Perl(Xcrypt) environment for *_in_job_scripts
         $self->make_dumped_environment();
+        # Register the job to this join scope.
+        $Spawned{$self->{id}}=1;
         # Create a job thread.
         my $job_coro = Coro::async {
             my $self = $_[0];
@@ -1112,9 +1114,6 @@ sub spawn(&@) {
         $template{id} = generate_new_job_id();
     }
     my @jobs = prepare_submit (%template);
-    foreach my $job (@jobs) {
-        $Spawned{$job->{id}}=1;
-    }
     return @jobs;
 }
 sub _initially_(&@) {
