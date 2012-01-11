@@ -51,17 +51,21 @@ sub new {
     my $self = $class->NEXT::new(@_);
     
     if (defined $self->{dry}) {
-        &check_dry_value('dry', $self->{dry});
-    } elsif (exists $self->{dry}) {
-        $self->{dry} = $default_options{dry};
+        if ($self->{dry} ne '') {
+            &check_dry_value('dry', $self->{dry});
+        } else {
+            $self->{dry} = $default_options{dry};
+        }
     } else {
         $self->{dry} = $options{dry};
     }
     
     if (defined $self->{dry_qsub}) {
-        &check_dry_value('dry_qsub', $self->{dry_qsub});
-    } elsif (exists $self->{dry_qsub}) {
-        $self->{dry_qsub} = $default_options{dry_qsub};
+        if ($self->{dry_qsub} ne '') {
+            &check_dry_value('dry_qsub', $self->{dry_qsub});
+        } else {
+            $self->{dry_qsub} = $default_options{dry_qsub};
+        }
     } else{
         $self->{dry_qsub} = $options{dry_qsub};
     }
@@ -91,7 +95,7 @@ sub new {
         } 
         if ($self->{after_to_job} == 1) {
             &delete_sub($self, 'after');
-            delete $self->{before_to_job};
+            delete $self->{after_to_job};
         }
     }
     if ($self->{dry} >= 3) {
@@ -118,7 +122,9 @@ sub new {
                         $self->{$key} .= $self->{"dry_exe$1"} . "\n";
                     }
                 }
-                $self->{$key} .= "\#".$self->{$bkup};
+                if ($self->{$bkup} !~ /## dry_run ##/) {
+                    $self->{$key} .= "\#".$self->{$bkup};
+                }
             }
         }
     }
