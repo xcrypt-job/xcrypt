@@ -155,7 +155,7 @@ Xcryptスクリプトは以下の構成を持つテキストファイルであり，
 
 \textit{script-body}はXcryptスクリプト本体であり，追加の\texttt{use}文を
 含むほぼ通常のPerlプログラムを書くことができる．ただし，以下の点において
-Perlとは異ならる．
+Perlとは異なる．
 \begin{itemize}
 \item
   デフォルトのネームスペース名は\texttt{main}ではなく\texttt{user}である．
@@ -167,7 +167,7 @@ Perlとは異ならる．
 \end{itemize}
 
 \subsection{標準API}\label{sec:api}
-\subsubsection{builtin::prepare}
+\subsubsection{builtin::prepare}\label{sec:prepare}
 \paragraph{引数}
 \begin{itemize}
 \item
@@ -196,18 +196,18 @@ Perlとは異ならる．
   \item \|exe|$n$（\textit{n}は自然数）
   \item \|arg|$n$\|_|$m$（$n, m$は自然数）
   \item 
-    \|exe|, \|initially|, \|finally|, \|env|, \|transfer_variable|,
+    \|exe|, \|env|, \|transfer_variable|,
     \|transfer_reference_level|, \|not_transfer_info|, \|initially|,
     \|before|, \|before_to_job|, \|before_return|, \|before_bkup|,
     \|before_in_job|, \|before_in_xcrypt|, \|before_in_xcrypt_return|,
     \|finally|, \|after|,  \|after_to_job|, \|after_return|,
-    \|after_bkup|, \|after_in_job|, \|after_in_xcrypt|,\break
+    \|after_bkup|, \|after_in_job|, \|after_in_xcrypt|,
     \|after_in_xcrypt_return|, \|cmd_before_exe|, \|cmd_after_exe|,
     \|header|
   \item \|JS_|で始まるメンバ名
   \item \|:|で始まるメンバ名
-  \item \|buildin::add_key|関数によって登録されたメンバ名
-  \item \|buildin::add_prefix_of_key|関数によって登録された文字列から始まるメンバ名
+  \item \|builtin::add_key|関数によって登録されたメンバ名
+  \item \|builtin::add_prefix_of_key|関数によって登録された文字列から始まるメンバ名
   \item    
     2.--9. のメンバ名の最後に\|@|を追加したメンバ名．ただし，同じメン
     バ名に対して\|@|を追加した名前と追加していない名前のメンバを同時に
@@ -248,8 +248,8 @@ Perlとは異ならる．
     \item $\namae = \|id|$の場合\\
       $J(i_0, \ldots, i_n)$のメンバ\|id|に\\
       \quad $v_{\namae}$\|.|\textit{sep}\|.|$i_0$\ldots\|.|\textit{sep}\|.|$i_n$\\
-      を設定する．ただし，\textit{sep}は\|buidin::set_separator|関数で設定された
-      セパレータ文字列である（デフォルトは`\|_|'）．
+      を設定する．ただし，\textit{sep}は\|builtin::set_separator|関数
+      で設定されたセパレータ文字列（\ref{sec:set-separator}節）である（デフォルトは``\|_|''）．
     \item $\namae \neq \|id|$の場合\\
       $J(i_0, \ldots, i_n)$のメンバ''\namae''に$v_{\namae}$を値として設定する．
     \end{enumerate}
@@ -331,7 +331,7 @@ $$
 設定された文字列，\textit{sched}はデフォルトスケジューラ名（\ref{sec:sched}節）である．
 \begin{itemize}
 \item メンバ\|workdir|が未設定であれば，値を文字列\|'.'|として設定する．
-\item メンバ\|env|が未設定であれば，値をデフォルトの環境オブジェクト（\ref{sec:env}節）への参照として設定する．
+\item メンバ\|env|が未設定であれば，値をデフォルト環境オブジェクト（\ref{sec:env}節）への参照として設定する．
 \item メンバ\|JS_stdout|が未設定であれば，値を文字列\|"|\textit{id}\|_stdout"|として設定する．
 \item メンバ\|JS_stderr|が未設定であれば，値を文字列\|"|\textit{id}\|_stderr"|として設定する．
 \item メンバ\|jobscript_header|，\|jobscript_body|が未設定であれば，値を空の配列への参照として設定する．
@@ -365,7 +365,7 @@ $$
   生成した全てのジョブオブジェクトの参照からなる配列．配列中の参照の順序は任意である．
 \end{itemize}
 
-\subsubsection{submit}
+\subsubsection{builtin::submit}
 \paragraph{引数}
 \begin{itemize}
 \item
@@ -688,10 +688,322 @@ joinスコープは動的な生存期間を持つ．すなわち，\code{body}の実行開始か
 ルなjoinスコープにも属さないコード実行は，このグローバルjoinスコープに
 属しているとみなされる．
 
+\subsubsection{builtin::find\_job\_by\_id}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{name}: 文字列
+\end{itemize}
+\paragraph{返り値}
+ジョブオブジェクトへの参照または偽
+\paragraph{解説}
+与えられた文字列\dollarit{name}をメンバ\|id|の値として持つ，\|prepare|
+で生成済みのジョブオブジェクトへの参照を返す．そのようなジョブオブジェクト
+が存在しない場合は，警告を発生し偽を返す．
+
+\subsubsection{builtin::add\_key}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \atmarkit{keys}: 文字列の配列
+\end{itemize}
+\paragraph{返り値} 未定義
+\paragraph{解説}
+
+与えられた文字列の配列\dollarit{keys}の各要素に対し，この関数の実行以
+降の\|prepare|関数（\ref{sec:prepare}節）の実行においてジョブテンプレー
+トのメンバ名として当該文字列を使用することを可能にする．この関数の返り
+値は未定義である．
+
+\subsubsection{builtin::add\_prefix\_of\_key}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \atmarkit{prefixes}: 文字列の配列
+\end{itemize}
+\paragraph{返り値} 未定義
+\paragraph{解説}
+
+与えられた文字列の配列\dollarit{prefixes}の各要素に対し，この関数の実
+行以降の\|prepare|関数（\ref{sec:prepare}節）の実行においてジョブテン
+プレートのメンバ名として当該文字列から始まる任意の文字列を使用すること
+を可能にする．この関数の返り値は未定義である．
+
+\subsubsection{builtin::set\_separator}\label{sec:set-separator}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{str}: 文字列
+\end{itemize}
+\paragraph{返り値} 未定義
+\paragraph{解説}
+
+セパレータ文字列を\dollarit{str}に設定する．セパレータ文字列は
+\|prepare|関数（\ref{sec:prepare}節）において，ジョブオブジェクトのメンバ\|id|
+の値を設定する際に用いられる．セパレータ文字列のデフォルトは
+``\|_|''である．なお，文字列に含まれてよい文字は英数字あるいは
+$$
+\|!#+,-.@\^_~|
+$$
+のいずれかであり，それをみたさないセパレータ文字列が設定されていた場
+合，\|prepare|関数の実行時にエラーが発生する．
+
+\subsubsection{builtin::get\_separator}
+\paragraph{引数} なし
+\paragraph{返り値} セパレータ文字列
+\paragraph{解説}
+
+現在設定されているセパレータ文字列を返す．
+
+
+\subsubsection{builtin::add\_host}\label{sec:env}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{envhash}: 環境情報を定義するハッシュオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 生成した環境オブジェクト
+\paragraph{解説}
+与えられたハッシュオブジェクトの情報に基づき「環境オブジェクト」を生成し，
+返り値として返す．
+\dollarit{envhash}は以下のメンバを持つハッシュオブジェクトへの参照である．
+\begin{itemize}
+  \item \|host|: 
+    ログイン先のホスト情報を``\textit{user}\|@|\textit{hostname}''
+    の形式で記述した文字列．省略不可能．
+    この\|host|を指定した\|add_host|の呼び出し以降の任意の時点で，
+    以下のOpenSSHのシェルコマンド実行によりプロンプトの発生なしに\footnote{
+      たとえば，当該ホストには公開鍵認証によりログインできるようにし，
+      Xcryptの実行前に\texttt{ssh\_agent}により秘密鍵を登録しておくことで
+      プロンプトが発生しないようにしておく．
+    }指定した当該ホストへのログインが
+    可能でなければならない．さらに，上記コマンドによるログイン後，
+    Xcryptが提供する各コマンドがログインシェルから利用可能なように，
+    当該ホストにXcryptがインストールされていなければならない．
+    $$
+    \|% ssh |\textit{user}\|@|\textit{hostname}
+    $$
+  \item \|wd|: 上記のログイン先のホスト上のディレクトリを
+    絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
+    省略不可能．
+  \item \|sched|: ログイン先でジョブの投入，確認，削除のために利用する
+    バッチスケジューラ名．省略不可能． % ほんと???
+    絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
+  \item \|xd|: ログイン先でXcryptの各コマンドの実行ファイルが存在する
+    ディレクトリ．絶対パスあるいはログイン時のワーキングディレクトリか
+    らの相対パスで指定する．省略可能．省略された
+    場合は，ホストへのログインを行った後そのホストにおける環境変数\|$XCRYPT|%$
+    を参照しその値に設定する．\|xd|が省略され，環境変数\|$XCRYPT|%$
+    が設定されていなかった場合はエラーが発生する．
+\end{itemize}
+
+返り値の環境オブジェクトは\|prepare|関数（\ref{sec:prepare}節）に与え
+るジョブテンプレートのメンバ\|env|の値とすることができ，その結果生成さ
+れたジョブオブジェクトに対応するジョブの投入処理は\|add_host|による環
+境オブジェクト生成時に\dollarit{envhash}のメンバで指定したホスト・ワー
+キングディレクトリ上で実行される（詳細は\ref{sec:coere-start}節）．
+
+この環境オブジェクトはまた，\|xcr_exist|, \|xcr_qx|, \|xcr_system|,
+\|xcr_mkdir|, \|xcr_copy|, \|xcr_rename|, \|xcr_symlink|, \|xcr_unlink|
+（\ref{sec:xcr-exist}節--\ref{sec:xcr-unlink}節）の引数として
+当該ホスト上でのファイル操作を行うために用いることができる．
+
+なお，Xcryptを起動したホスト自身の環境に相当する環境オブジェクトがデフォ
+ルト環境オブジェクトとして自動的に定義されている．デフォルト環境オブジェ
+クトに対応する\|host|はXcryptを起動したユーザ名と\|localhost|，\|wd|は
+Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
+イル（\label{sec:xcryptrc}）で指定された文字列，\|xd|は環境変数\|$XCRYPT|%$
+の値であるとみなされる．デフォルト環境オブジェクトは\|prepare|呼び出し時の
+ジョブテンプレートで\|env|が省略された際にジョブオブジェクトの\|env|
+の値として自動的に設定されるほか，グローバル変数\|builtin::env_d|の値として
+参照することができる．
+
+\subsubsection{builtin::xcr\_exist}\label{sec:xcr-exist}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\end{itemize}
+\paragraph{返り値} コマンド実行による標準出力の文字列を改行コードで区切った配列
+
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}で指定したディレクトリ
+にワーキングディレクトリを移した後，\dollarit{command}をシェルコマンドとして
+実行し，その標準出力を返す．
+
+\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
+相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+
+\subsubsection{builtin::xcr\_qx}\label{sec:xcr-exist}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{path}: パス名
+\end{itemize}
+\paragraph{返り値} ファイルが存在すれば真，そうでなければ偽．
+
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}で指定したファイル
+が存在するかどうかを判定し，その結果を返す．
+
+\dollarit{path}は絶対パス，相対パスのいずれでも指定できる．
+相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+
+\subsubsection{builtin::xcr\_system}\label{sec:xcr-system}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{command}: コマンド文字列
+\item
+  \dollarit{dir}: ディレクトリ名
+\end{itemize}
+\paragraph{返り値} 終了コード
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}で指定したディレクトリ
+にワーキングディレクトリを移した後，\dollarit{command}をシェルコマンドとして
+実行し，その終了コードを返す．
+
+\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
+相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+
+\subsubsection{builtin::xcr\_mkdir}\label{sec:xcr-mkdir}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{dir}: ディレクトリ名
+\end{itemize}
+\paragraph{返り値} ディレクトリの生成に成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}ディレクトリが存在するかを確認し，
+存在しなければディレクトリを作成する．
+
+\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
+相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+
+\subsubsection{builtin::xcr\_copy}\label{sec:xcr-copy}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{path}$_1$: コピー元のパス名
+\item
+  \dollarit{path}$_2$: コピー先のパス名
+\end{itemize}
+\paragraph{返り値} コピーに成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}$_1$から
+\dollarit{path}$_2$へのファイルあるいはディレクトリのコピーを実行する．
+\dollarit{path}$_1$がディレクトリであった場合，そのディレクトリ以下の
+全てのサブディレクトリおよびファイルを全て再帰的にコピーする．また，
+\dollarit{path}$_2$が既存のファイルであった場合にはそのファイルへの上
+書きコピーが行われ，既存のディレクトリであった場合はそのディレクトリ
+上に新たなファイル・ディレクトリがコピーとして作成される．
+\dollarit{path}$_2$が既存ディレクトリ上の存在しないファイル名であった
+場合は，そのディレクトリ上に，\dollarit{path}$_1$のファイル名あるいは
+ディレクトリ名をその\dollarit{path}$_2$のファイル名に変更した上で新た
+なファイル・ディレクトリがコピーとして作成される．\dollarit{path}$_2$
+が存在しないディレクトリ上のファイル名であった場合は何も行わない．
+
+\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
+も指定できる．相対パスの場合，その基点は\|add_host|関数による
+\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
+したディレクトリである．
+
+\subsubsection{builtin::xcr\_rename}\label{sec:xcr-rename}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{path}$_1$: 移動元のパス名
+\item
+  \dollarit{path}$_2$: 移動先のパス名
+\end{itemize}
+\paragraph{返り値} 移動に成功した場合は真，そうでなければ偽．
+
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}$_1$から
+\dollarit{path}$_2$へのファイルあるいはディレクトリの移動を行う．
+\dollarit{path}$_2$が既存のファイルであった場合にはそのファイル
+を上書きして移動が行われ，既存のディレクトリであった場合はそのディレクトリ
+上に新たなファイル・ディレクトリが移動先ファイル・ディレクトリとして作成される．
+\dollarit{path}$_2$が既存ディレクトリ上の存在しないファイル名であった
+場合は，そのディレクトリ上に，\dollarit{path}$_1$のファイル名あるいは
+ディレクトリ名をその\dollarit{path}$_2$のファイル名に変更した上で新た
+なファイル・ディレクトリが移動先ファイル・ディレクトリとして作成される．
+\dollarit{path}$_2$が存在しないディレクトリ上のファイル名であった場合は何も行わない．
+
+\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
+も指定できる．相対パスの場合，その基点は\|add_host|関数による
+\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
+したディレクトリである．
+
+\subsubsection{builtin::xcr\_symlink}\label{sec:xcr-symlink}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{path}$_1$: リンク先のパス名
+\item
+  \dollarit{path}$_2$: シンボリックリンクのパス名
+\end{itemize}
+\paragraph{返り値} シンボリックリンクの作成に成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}$_1$へのシ
+ンボリックリンクを\dollarit{path}$_2$に作成する．\dollarit{path}$_2$が
+既存のファイルであった場合には何も行わない．\dollarit{path}$_2$が既存
+のディレクトリであった場合はそのディレクトリ上に\dollarit{path}$_1$と
+同名の新たなシンボリックリンクが作成される．\dollarit{path}$_2$が既存
+ディレクトリ上の存在しないファイル名であった場合は，そのディレクトリ上
+に\dollarit{path}$_2$のファイル名を名前とするシンボリックリンクを作成
+する．\dollarit{path}$_2$が存在しないディレクトリ上のファイル名であっ
+た場合は何も行わない．
+
+\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
+も指定できる．相対パスの場合，その基点は\|add_host|関数による
+\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
+したディレクトリである．
+
+\subsubsection{builtin::xcr\_unlink}\label{sec:xcr-unlink}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item 
+  \dollarit{path}$_1$: パス名
+\end{itemize}
+\paragraph{返り値} 削除に成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}で指定した
+ファイルあるいはディレクトリを削除する．\dollarit{path}がディレクトリ
+であった場合はそのディレクトリ以下のサブディレクトリおよびファイルを
+全て削除する．\dollarit{path}が存在しないファイルであった場合は何も
+行わない．
+
+\dollarit{path}は絶対パス，相対パスのいずれでも指定できる．相対パスの
+場合，その基点は\|add_host|関数による\dollarit{env}の生成時に引数のハッ
+シュオブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \section{Xcryptにおけるジョブの管理}
 
-\section{ユーザ環境スクリプト}
+\section{ユーザ設定ファイル}\label{sec:xcryptrc}
+ユーザ設定ファイルは以下の構成を持つテキストファイルである．
+\begin{screen}
+...
+\end{screen}
 
 \section{バッチスケジューラ定義スクリプト}
 
