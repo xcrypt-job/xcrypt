@@ -268,7 +268,6 @@ sub xcr_unlink  {            xcr_cmd('unlink',  @_);                }
 
 # Get job object from job ID
 sub find_job_by_id {
-    my $self = shift;
     jobsched::find_job_by_id ($_[0]);
 }
 
