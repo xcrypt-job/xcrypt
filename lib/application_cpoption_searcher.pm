@@ -366,13 +366,9 @@ sub set_matrix_data {
     # 排他オプション 「-O,-(-d,-e)」
     foreach my $line (@matrix_data) {
         if ($line =~ /^-[A-Za-z].*<.+$/) {
-print "a\n";
-
             push (@upper_options, [split (/</, $line)]);
             push (@matrix_files, ["","",split (/</, $line)]);
         } elsif ($line =~ /^\([^\{\}\[\]\(\)]+\)\,\+\([^\{\}\[\]\(\)]+\)$/) {
-print "b\n";
-
             my @matrixs = grep {$_ ne ''} &cut_space(split (/[\,\(\)]/, $line));
             my @new_matrixs = ();
             $new_matrixs[0] = [$matrixs[0],$matrixs[1]];
@@ -380,8 +376,6 @@ print "b\n";
             if ($new_matrixs[$#new_matrixs] eq '') {pop (@new_matrixs);}
             push (@matrix_files, \@new_matrixs);
         } elsif ($line =~ /(^-[A-Za-z][^\s\r\{\}\[\]\(\)]*|^)\,(\+|-|&|=|=>)\([^\{\}\[\]\(\)]+\)$/) {
-print "c\n";
-
             my @matrixs = &cut_space(split (/[\,\(\)]/, $line));
             if ($matrixs[$#matrixs] eq '') {pop (@matrixs);}
             push (@matrix_files, \@matrixs);
