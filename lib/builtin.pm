@@ -120,9 +120,9 @@ sub ssh_command {
         my $flag = $ssh->system("$str0") or warn $ssh->error;
         @flags = ($flag);
     } elsif ($command eq 'get') {
-        $ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+        @flags = $ssh->scp_get(\%ssh_opts, $str0, $str1) or warn $ssh->error;
     } elsif ($command eq 'put') {
-        $ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
+        @flags = $ssh->scp_put(\%ssh_opts, $str0, $str1) or warn $ssh->error;
     }
     return @flags;
 }
@@ -144,46 +144,95 @@ sub rmt_cmd {
     } elsif ($cmd eq 'exist') {
         my ($file) = @_;
         my $fullpath = File::Spec->catfile($env->{wd}, $file);
-        my @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath && echo 1");
+        my @flags;
+        $flags[0] = 0;
+        @flags = &ssh_command($env, $ssh, 'capture', "test -e $fullpath || echo 1");
         chomp($flags[0]);
+	if ($flags[0] == 0) {
+	    $flags[0] = 1;
+	} else {
+	    $flags[0] = 0;
+	}
         return $flags[0];
     } elsif ($cmd eq 'mkdir') {
         my ($dir) = @_;
         my $fullpath = File::Spec->catfile($env->{wd}, $dir);
-        &rmt_cmd('system', $env, "test -e $fullpath || mkdir $fullpath");
+	my $flag = 0;
+	unless (rmt_exist($env, $dir)) {
+	    $flag = &rmt_cmd('system', $env, "mkdir $fullpath");
+	}
+        return $flag;
     } elsif ($cmd eq 'copy') {
-        my ($copied, $dir) = @_;
+        my ($copied, $to) = @_;
         my $fp_copied = File::Spec->catfile($env->{wd}, $copied);
-        my $fp_dir = File::Spec->catfile($env->{wd}, $dir);
-        &rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_dir");
-        &rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_dir");
+        my $fp_to = File::Spec->catfile($env->{wd}, $to);
+	my @flags;
+	$flags[0] = 0;
+	if (rmt_exist($env, $copied)) {
+	    my @flag0 = &rmt_cmd('system', $env, "test -d $fp_copied && cp -r $fp_copied $fp_to");
+	    my @flag1 = &rmt_cmd('system', $env, "test -d $fp_copied || cp -f $fp_copied $fp_to");
+	    chomp($flag0[0]);
+	    chomp($flag1[0]);
+	    if ($flag0[0] == 1 || $flag1[0] == 1) {
+		$flags[0] = 1;
+	    }
+	}
+        return $flags[0];
     } elsif ($cmd eq 'rename') {
         my ($renamed, $file) = @_;
         my $tmp0 = File::Spec->catfile($env->{wd}, $renamed);
         my $tmp1 = File::Spec->catfile($env->{wd}, $file);
-        &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+	my @flags;
+	$flags[0] = 0;
+	if (rmt_exist($env, $tmp0)) {
+	    @flags = &rmt_cmd('system', $env, "mv -f $tmp0 $tmp1");
+	    chomp($flags[0]);
+	}
+        return $flags[0];
     } elsif ($cmd eq 'symlink') {
         my ($dir, $file, $link) = @_;
         my $tmp = File::Spec->catfile($dir, $link);
-        &rmt_cmd('system', $env, "ln -s $file $tmp");
+	my @flags;
+	$flags[0] = 0;
+	if (rmt_exist($env, File::Spec->catfile($dir, $file))) {
+	    @flags = &rmt_cmd('system', $env, "ln -s $file $tmp");
+	    chomp($flags[0]);
+	}
+        return $flags[0];
     } elsif ($cmd eq 'unlink') {
         my ($file) = @_;
         my $fullpath = File::Spec->catfile($env->{wd}, $file);
-        &rmt_cmd('system', $env, "rm -rf $fullpath");
+	my @flags;
+	$flags[0] = 0;
+	if (rmt_exist($env, $file)) {
+	    &rmt_cmd('system', $env, "rm -rf $fullpath");
+	    chomp($flags[0]);
+	}
+        return $flags[0];
     } elsif ($cmd eq 'get') {
         my ($file, $to) = @_;
+	my @flags;
+	$flags[0] = 0;
 	unless (defined $to) { $to = '.'; }
         unless ($xcropt::options{shared}) {
             my $fullpath = File::Spec->catfile($env->{wd}, $file);
-            &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+	    if (rmt_exist($env, $file)) {
+		@flags = &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+	    }
         }
+        return $flags[0];
     } elsif ($cmd eq 'put') {
         my ($file, $to) = @_;
+	my @flags;
+	$flags[0] = 0;
 	unless (defined $to) { $to = '.'; }
         unless ($xcropt::options{shared}) {
             my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-            &ssh_command($env, $ssh, 'put', $file, $fullpath);
-        }
+	    if (-e $file) {
+		@flags = &ssh_command($env, $ssh, 'put', $file, $fullpath);
+	    }
+	}
+        return $flags[0];
     } else {
         foreach(%$cmd){print $_, "\n";}
         die "$cmd doesn't match";
@@ -222,22 +271,40 @@ sub xcr_cmd {
 	    }
             return $flag;
         } elsif ($cmd eq 'mkdir') {
+            my $flag = 0;
             my ($dir) = @_;
-            mkdir $dir, 0755;
+            unless (-e $dir) {
+		$flag = mkdir $dir, 0755;
+	    }
+            return $flag;
         } elsif ($cmd eq 'copy') {
-            my ($copied, $dir) = @_;
-            rcopy($copied, $dir);
+            my $flag = 0;
+            my ($from, $to) = @_;
+            if (-e $from) {
+		$flag = rcopy($from, $to);
+	    }
+            return $flag;
         } elsif ($cmd eq 'rename') {
+            my $flag = 0;
             my ($renamed, $file) = @_;
             if (-e $renamed) {
-                rename $renamed, $file;
+                $flag = rename $renamed, $file;
             }
+            return $flag;
         } elsif ($cmd eq 'symlink') {
+            my $flag = 0;
             my ($dir, $file, $link) = @_;
-            symlink($file, File::Spec->catfile($dir, $link));
+	    if (-e File::Spec->catfile($dir, $file)) {
+		$flag = symlink($file, File::Spec->catfile($dir, $link));
+	    }
+            return $flag;
         } elsif ($cmd eq 'unlink') {
+            my $flag = 0;
             my ($file) = @_;
-            File::Path::rmtree ($file);
+	    if (-e $file) {
+		$flag = File::Path::rmtree ($file);
+	    }
+            return $flag;
         } else {
             die ;
         }
