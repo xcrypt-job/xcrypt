@@ -214,22 +214,42 @@ sub rmt_cmd {
 	my @flags;
 	$flags[0] = 0;
 	unless (defined $to) { $to = '.'; }
-        unless ($xcropt::options{shared}) {
-            my $fullpath = File::Spec->catfile($env->{wd}, $file);
-	    if (rmt_exist($env, $file)) {
-		@flags = &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+	if ($env->{location} eq 'remote') {
+	    unless ($xcropt::options{shared}) {
+		my $fullpath = File::Spec->catfile($env->{wd}, $file);
+		if (rmt_exist($env, $file)) {
+		    if (-d $to) {
+			@flags = &ssh_command($env, $ssh, 'get', $fullpath, File::Spec->catfile($to, $file));
+			chomp($flags[0]);
+			if ($flags[0] == 0) {
+			    $flags[0] = 1;
+			} else {
+			    $flags[0] = 0;
+			}
+		    }
+		}
 	    }
-        }
+	}
         return $flags[0];
     } elsif ($cmd eq 'put') {
         my ($file, $to) = @_;
 	my @flags;
 	$flags[0] = 0;
 	unless (defined $to) { $to = '.'; }
-        unless ($xcropt::options{shared}) {
-            my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
-	    if (-e $file) {
-		@flags = &ssh_command($env, $ssh, 'put', $file, $fullpath);
+	if ($env->{location} eq 'remote') {
+	    unless ($xcropt::options{shared}) {
+		my $fullpath = File::Spec->catfile($env->{wd}, $to, $file);
+		if (-e $file) {
+		    if (rmt_exist($env, $to)) {
+			@flags = &ssh_command($env, $ssh, 'put', $file, $fullpath);
+			chomp($flags[0]);
+			if ($flags[0] == 0) {
+			    $flags[0] = 1;
+			} else {
+			    $flags[0] = 0;
+			}
+		    }
+		}
 	    }
 	}
         return $flags[0];
