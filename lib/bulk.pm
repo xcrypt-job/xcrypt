@@ -320,8 +320,11 @@ sub finally {
             xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'running'));
             xcr_unlink ($sub_self->{env}, jobsched::left_message_file_name($sub_self, 'done'));
             {
-                local $jobsched::Warn_illegal_transition = 0;
-                jobsched::set_job_done($sub_self);
+                my $stat = jobsched::get_job_status ($sub_self);
+                unless ( $stat eq 'done' || $stat eq 'aborted' || $stat eq 'finished') {
+                    local $jobsched::Warn_illegal_transition = 0;
+                    jobsched::set_job_done($sub_self);
+                }
             }
             &jobsched::set_job_finished($sub_self);
             $sub_self->EVERY::LAST::finally(@{$sub_self->{VALUE}});
