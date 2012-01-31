@@ -205,7 +205,7 @@ sub rmt_cmd {
 	my @flags;
 	$flags[0] = 0;
 	if (rmt_exist($env, $file)) {
-	    &rmt_cmd('system', $env, "rm -rf $fullpath");
+	    @flags = &rmt_cmd('system', $env, "rm -rf $fullpath");
 	    chomp($flags[0]);
 	}
         return $flags[0];
