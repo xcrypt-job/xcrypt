@@ -1,7 +1,3 @@
-############################################
-# ＜＜出力データ抽出＞＞                   #
-# Ver=0.5 2010/02/20                       #
-############################################
 package data_extractor;
 use strict;
 use File::Basename;
@@ -431,7 +427,7 @@ sub check_extraction_cond {
     my @out_cond_data = ();                                                                   # チェック後抽出条件
     my $line_max      = 0;                                                                    # 抽出対象ファイルのレコード数
     # 抽出対象ファイルのレコード数取得
-    if ($^O eq 'linux' and $#{$obj->{cond_data}} eq -1) {
+    if ($^O eq 'linux' and $obj->{in_kbn} eq 'file') {
         $line_max     = &get_line_max($obj);
     }
     
@@ -1142,7 +1138,7 @@ sub check_extraction_data {
         if (&put_mid_data($obj, $index_now)) {return ()}
     }
     
-    my @in_line_col     = &get_col_data("$in_line");
+    my @in_line_col     = &get_col_data("$in_line", "0");
     my $in_col_su       = $#in_line_col + 1;
     my $extraction_data = ('0' x $in_col_su);
     ##############
@@ -1378,7 +1374,7 @@ sub get_out_line {
         unshift @{$col_data}, '';
         my $out_data = '';
         for (my $index=1; $index <= $#{$col_data}; $index++) {
-            if ((substr $extraction_data, $index, 1) eq '1') {
+            if ((substr $extraction_data, $index, 1) eq '1' and ${$col_data}[$index] ne '') {
                 $out_data .= "${$col_data}[$index] ";
             }
         }
@@ -1883,9 +1879,14 @@ sub init_extraction_data {
 sub get_col_data {
     #-----------------------------------------------------------------------------------------#
     # 引数 ： $_[0] = 行データ                                                                #
+    #      ： $_[1] = 処理区分（０＝先頭と最後の余白をカットしない）                          #
     # 処理 ： 行データを区切り文字で分割                                                      #
     # 返却 ： 配列化した行データ                                                              #
     #-----------------------------------------------------------------------------------------#
+    if ($_[1] ne '0') {
+        $_[0] =~  s/^[\s\,]*//;
+        $_[0] =~  s/[\s\,]*$//;
+    }
     return (split /\s+\,*\s*|\,+\s*/, $_[0]);
 }
 ###################################################################################################
@@ -2784,6 +2785,8 @@ sub get_cond_cr {
         #==========================#
         # 開始条件・終了条件の補正 #
         #==========================#
+        my $col_s = 0;
+        my $col_e = 0;
         # 処理中不要となる記述を削除
         ${$cond}[(2 + $col_add)] =~  s/^\\s\*|^\\,\*|^,\*|^\[\\s\]\*|^\[\\,\]\*|^\[,\]\*|^\[\\,\\s\]\*|^\[,\\s\]\*|^\[\\s\\,\]\*|^\[\\s,\]\*//;
         ${$cond}[(2 + $col_add)] =~  s/^(\[.*)\\s(.*\]\*)/$1$2/;
@@ -2819,19 +2822,34 @@ sub get_cond_cr {
             $check_key1 = '';
             # 左端が区切り文字でなければ、区切り文字(正規表現)を追加
             if ($key !~ /^\s|^\,/) {
-                $check_key1 .= '[^\s\,]*';
+                if (${$cond}[(2 + $col_add)] !~ /^\^/) {
+                    $check_key1 .= '[^\s\,]*';
+                } else {
+                    $check_key1 .= '(^|[\s\,]+)';
+                }
             }
-            $check_key1 .= ${$cond}[(2 + $col_add)];
+            my $set_key = ${$cond}[(2 + $col_add)];
+            if (${$cond}[(2 + $col_add)] =~ /^\^/) {
+                $set_key =~ s/^\^//;
+            }
+            if (${$cond}[(2 + $col_add)] =~ /\$$/) {
+                $set_key =~ s/\$$//;
+            }
+            $check_key1 .= $set_key;
             # 右端が区切り文字でなければ、区切り文字(正規表現)を追加
             if ($key !~ /\s$|\,$|\n$|\$$/) {
-                $check_key1 .= '[^\s\,\n]*';
+                if (${$cond}[(2 + $col_add)] !~ /\$$/) {
+                    $check_key1 .= '[^\s\,\n]*';
+                } else {
+                    $check_key1 .= '([\s\,\n]+|$)';
+                }
             }
             
             #--------------------#
             # 開始条件をチェック #
             #--------------------#
             # 列抽出判定用行データが開始条件を含んでいるかチェック
-            if ("$line_data" !~ /($check_key1)(.*)/) {
+            if ("$line_data" !~ /($check_key1.*)/) {
                 #･･････････････#
                 # 開始条件なし #
                 #･･････････････#
@@ -2842,8 +2860,10 @@ sub get_cond_cr {
             #------------------------------#
             # 次回チェック対象データを退避 #
             #------------------------------#
-            my $next_data = $2;
-            
+            my $next_data = $1;
+            $next_data =~ s/$check_key1//;
+            $next_data =~  s/^[\s\,]*//;
+            $next_data =~  s/[\s\,]*$//;
             #----------------#
             # 終了条件の補正 #
             #----------------#
@@ -2859,12 +2879,27 @@ sub get_cond_cr {
                 }
                 # 左端が区切り文字でなければ、区切り文字(正規表現)を追加
                 if ($key !~ /^\s|^\,/) {
-                    $check_key2 .= '[^\s\,]*';
+                    if (${$cond}[(3 + $col_add)] !~ /^\^/) {
+                        $check_key2 .= '[^\s\,]*';
+                    } else {
+                        $check_key2 .= '(^|[\s\,]+)';
+                    }
                 }
-                $check_key2 .= ${$cond}[(3 + $col_add)];
+                my $set_key = ${$cond}[(3 + $col_add)];
+                if (${$cond}[(3 + $col_add)] =~ /^\^/) {
+                    $set_key =~ s/^\^//;
+                }
+                if (${$cond}[(3 + $col_add)] =~ /\$$/) {
+                    $set_key =~ s/\$$//;
+                }
+                $check_key2 .= $set_key;
                 # 右端が区切り文字でなければ、区切り文字(正規表現)を追加
                 if ($key !~ /\s$|\,$|\n$|\$$/) {
-                    $check_key2 .= '[^\s\,]*';
+                    if (${$cond}[(3 + $col_add)] !~ /\$$/) {
+                        $check_key2 .= '[^\s\,]*';
+                    } else {
+                        $check_key2 .= '([\s\,]+|$)';
+                    }
                 }
             }
             
@@ -2931,10 +2966,12 @@ sub get_cond_cr {
                 #････････････#
                 # 正規表指定 #
                 #････････････#
-                if ("$next_data" =~ /($check_key2)(.*)/) {
-                    my $back_data = $2;
-                    my @split_out2 = split /($check_key2)/, $next_data, 3;
-                    $col_end = $col_su - (&get_col_data("$back_data")) + 1;
+                if ("$next_data" =~ /($check_key2.*)/) {
+                    my $back_data = $1;
+                    $back_data =~ s/$check_key2//;
+                    $back_data =~  s/^[\s\,]*//;
+                    $back_data =~  s/[\s\,]*$//;
+                    $col_end = $col_su - (&get_col_data("$back_data"));
                 } else {
                     $col_end = $col_su;
                     my @split_out2 = &get_col_data("$line_data");
