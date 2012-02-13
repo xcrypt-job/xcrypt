@@ -15,7 +15,7 @@ use Config::Simple;
 
 our %bulk = ();
 
-&add_key('bulk_jobs', 'bulk_id', 'time');
+&add_key('bulk_jobs', 'max_num', 'max_time', 'user_bulk');
 
 sub initialize {
     ### designated unit bulk ###
@@ -72,57 +72,24 @@ sub initialize {
 sub bulk {
     my $id   = shift;
     my @jobs = @_;
+    my @user_bulk_jobs = ();
     
     if ( exists $bulk{user_bulk} ) {
         ### user function bulk ###
         my @bulk_jobs = $bulk{user_bulk}->($id, @jobs);
         foreach my $bulk_job (@bulk_jobs) {
-            delete $bulk_job->{status};
-            # Entry job's
-            &jobsched::entry_job_id ($bulk_job);
-            &jobsched::set_job_initialized($bulk_job);
-            &jobsched::set_job_prepared($bulk_job);
-            # stderr & stdout
-            $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
-            $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
-            # Job script related members
-            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
-            $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
-            $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
-            $bulk_job->{'before'}             = $bulk{before};
-            $bulk_job->{'after'}              = $bulk{after};
-            $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
-            $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
-            $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
-            $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
+            push (@user_bulk_jobs, &prepare(%bulk_job, %bulk));
         }
         # return
-        return (@bulk_jobs);
+        return (@user_bulk_jobs);
     } elsif ( !exists $bulk{max_time} and !exists $bulk{max_num} ) {
         ### All jobs bulk ###
-        my %frame         = %{$jobs[0]};
+        my %frame         = ();
         $frame{id}        = "$id";
-        $frame{exe}       = '';
         $frame{bulk_jobs} = \@jobs;
-        delete $frame{status};
-        my $bulk_job      = user->new(\%frame);
-        # Entry job's
-        &jobsched::entry_job_id ($bulk_job);
-        # stderr & stdout
-        $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
-        $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
-        # Job script related members
-        $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
-        $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
-        $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
-        $bulk_job->{'before'}             = $bulk{before};
-        $bulk_job->{'after'}              = $bulk{after};
-        $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
-        $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
-        $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
-        $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
+        my @bulk_job = &prepare(%frame, %bulk);
         # return
-        return ($bulk_job);
+        return (@bulk_job);
     } else {
         ### designated unit bulk ###
         # Supplement¡ËWhen queue names are different; an other bulk job
@@ -132,7 +99,7 @@ sub bulk {
         my @bulk_job  = ();
         my @bulk_jobs = ();
         my $time_cnt  = 0;
-        my %frame     = %{$jobs[0]};
+        my %frame     = ();
         for ( my $i = 0; $i <= $jobs_max; $i++ ) {
             my $job = shift @jobs;
             # check job plan execute time
@@ -144,23 +111,16 @@ sub bulk {
                 $time_cnt += $job->{time};
                 push (@bulk_job, $job);
                 $job_cnt++;
-                # check bulk top job
-                if ( $job_cnt == 1 ) {
-                    # set top job information to bulk job information
-                    %frame = %{$job};
-                }
             } else {
                 # register bulk job
                 $bulk_cnt++;
+                $frame{id}        = ();
                 $frame{id}        = "${id}_${bulk_cnt}";
                 $frame{exe}       = '';
                 my @bulk_job_tmp  = @bulk_job;
                 $frame{bulk_jobs} = \@bulk_job_tmp;
-                delete $frame{status};
-                my %frame_tmp     = %frame;
-                push (@bulk_jobs, (user->new(\%frame_tmp)));
+                push (@bulk_jobs, &prepare(%frame, %bulk));
                 # initial setting
-                %frame    = %{$job};
                 @bulk_job = ();
                 push (@bulk_job, $job);
                 $job_cnt  = 1;
@@ -170,35 +130,17 @@ sub bulk {
             if ( ((exists $bulk{max_num}) and $bulk{max_num} <= $job_cnt) or $i >= $jobs_max ) {
                 # register bulk job
                 $bulk_cnt++;
+                $frame{id}        = ();
                 $frame{id}        = "${id}_${bulk_cnt}";
                 $frame{exe}       = '';
                 my @bulk_job_tmp  = @bulk_job;
                 $frame{bulk_jobs} = \@bulk_job_tmp;
-                delete $frame{status};
-                my %frame_tmp        = %frame;
-                push (@bulk_jobs, (user->new(\%frame_tmp)));
+                push (@bulk_jobs, &prepare(%frame, %bulk));
                 # initial setting
                 @bulk_job = ();
                 $job_cnt  = 0;
                 $time_cnt = 0;
             }
-        }
-        foreach my $bulk_job (@bulk_jobs) {
-            # Entry the bulk job's into the system job hash table
-            &jobsched::entry_job_id ($bulk_job);
-            # stderr & stdout
-            $bulk_job->{'JS_stdout'} = "$bulk_job->{id}_stdout";
-            $bulk_job->{'JS_stderr'} = "$bulk_job->{id}_stderr";
-            # Job script related members
-            $bulk_job->{'jobscript_file'}     = "$bulk_job->{id}_$bulk_job->{env}->{sched}.bat";
-            $bulk_job->{'before_in_job_file'} = "$bulk_job->{id}_before_in_job.pl";
-            $bulk_job->{'after_in_job_file'}  = "$bulk_job->{id}_after_in_job.pl";
-            $bulk_job->{'before'}             = $bulk{before};
-            $bulk_job->{'after'}              = $bulk{after};
-            $bulk_job->{'before_in_job'}      = $bulk{before_in_job};
-            $bulk_job->{'after_in_job'}       = $bulk{after_in_job};
-            $bulk_job->{'before_to_job'}      = $bulk{before_to_job};
-            $bulk_job->{'after_to_job'}       = $bulk{after_to_job};
         }
         # return
         return (@bulk_jobs);
