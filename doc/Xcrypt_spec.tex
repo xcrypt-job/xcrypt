@@ -1,26 +1,27 @@
 \documentclass[a4paper,10pt]{jarticle}
 
 %% for hyperref >  6.76i
-%\usepackage{atbegshi}
-%\AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
+                                %\usepackage{atbegshi}
+                                %\AtBeginDvi{\special{pdf:tounicode EUC-UCS2}}
 %% for hyperref <= 6.76i
 \AtBeginDvi{\special{pdf:tounicode 90ms-RKSJ-UCS2}}
 \usepackage[dvips,dvipdfm,bookmarks=true,%
-  bookmarksnumbered=true,% しおりに見出し番号をつける
-  bookmarksopen=true,% しおりのツリーを開く
-  breaklinks=true,% ハイパーリンクが複数行にまたがってもよい
-  colorlinks=false,% ハイパーリンクを枠ではなく文字に色をつけて表現
-  linkcolor=red,%
-  citecolor=green,%
-  bookmarksopen=true,% PDFしおりを展開
-  pdfstartview=FitH,%
-  bookmarkstype=toc,% PDFしおりに使うべき目次情報
-  pdftitle={Xcrypt Language System Specification},%
-  pdfauthor={E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}]{hyperref}
+bookmarksnumbered=true,% しおりに見出し番号をつける
+bookmarksopen=true,% しおりのツリーを開く
+breaklinks=true,% ハイパーリンクが複数行にまたがってもよい
+colorlinks=false,% ハイパーリンクを枠ではなく文字に色をつけて表現
+linkcolor=red,%
+citecolor=green,%
+bookmarksopen=true,% PDFしおりを展開
+pdfstartview=FitH,%
+bookmarkstype=toc,% PDFしおりに使うべき目次情報
+pdftitle={Xcrypt Language System Specification},%
+pdfauthor={E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}]{hyperref}
 
-% abbrevs
+                                % abbrevs
 \newcommand\mboxit[1]{\mbox{\textit{#1}}}
 \def\namae{\mboxit{name}}
+\newcommand\mboxtt[1]{\mbox{\texttt{#1}}}
 \newcommand\dollarit[1]{\mbox{\texttt{\$}\textit{#1}}}
 \newcommand\atmarkit[1]{\mbox{\texttt{@}\textit{#1}}}
 \newcommand\percentit[1]{\mbox{\texttt{\%}\textit{#1}}}
@@ -30,16 +31,16 @@
 \usepackage{ascmac}
 \usepackage{alltt}
 \usepackage{fancybox}
-%\usepackage[all]{xy}
+                                %\usepackage[all]{xy}
 
-%\addtolength{\topmargin}{-50pt}
-%\addtolength{\textheight}{80pt}
+                                %\addtolength{\topmargin}{-50pt}
+                                %\addtolength{\textheight}{80pt}
 \addtolength{\oddsidemargin}{-35pt}
 \addtolength{\textwidth}{70pt}
 
-%
+                                %
 \def\|{\verb|} %|
-%
+                                %
 
 \title{Xcrypt言語仕様}
 \author{E-Science Group, Nakashima Laboratory, ACCMS, Kyoto University}
@@ -55,10 +56,10 @@ to a job scheduler.  At this time, we often go through the following
 procedures:
 \begin{itemize}
 \item to create a script in its writing style depending on the
-      job scheduler,
+  job scheduler,
 \item to pass the script to the job scheduler, and
 \item to extract data from its result, create another script from
-      the data, and pass it to the job scheduler.
+  the data, and pass it to the job scheduler.
 \end{itemize}
 
 However, such procedures require manual intervention cost.  It
@@ -143,15 +144,16 @@ job, and supports users to process jobs easily.
 
 
 \section{Xcryptスクリプト}
-\subsection{スクリプトの構成}
+\subsection{スクリプトの構成}\label{sec:script-struct}
 Xcryptスクリプトは以下の構成を持つテキストファイルであり，
 ``.xcr''を拡張子とするファイル名で保存されなければならない．
 \begin{screen}
-\texttt{use qw(}[\textit{module-name}$_1$ \ldots \textit{module-name}$_n]$ \texttt{core);}\\
-\textit{script-body}
+  \texttt{use base qw(}[\textit{module-name}$_1$ \ldots \textit{module-name}$_n]$ \texttt{core);}\\
+  \textit{script-body}
 \end{screen}
-ここで，\textit{module-name}$_k (1\leq k \leq n)$はこのXcryptスクリプト
-が使用するモジュール名である．
+ここで，\textit{module-name}$_k (1\leq k \leq n)$および\|core|はこのス
+クリプトが使用するXcryptモジュール（\ref{sec:module}節）の名前である
+（\|core|は使用することがが必須のモジュールである）．
 
 \textit{script-body}はXcryptスクリプト本体であり，追加の\texttt{use}文を
 含むほぼ通常のPerlプログラムを書くことができる．ただし，以下の点において
@@ -160,10 +162,11 @@ Perlとは異なる．
 \item
   デフォルトのネームスペース名は\texttt{main}ではなく\texttt{user}である．
 \item
-  \ref{sec:api}節で述べるXcryptのコア機能のほか，\textit{module-name}$_1$
-  \ldots \textit{module-name}$_n$のモジュールの機能を利用する
-  ことができる．また，\ref{sec:requirement}節で列挙したCPANモジュールが
-  暗黙のうちに読み込まれている．
+  \ref{sec:api}節で述べるXcryptのコア機能のほか，
+  \textit{module-name}$_1$ \ldots \textit{module-name}$_n$および
+  \|core|のXcryptモジュールの機能を利用することができる．また，
+  \ref{sec:requirement}節で列挙したCPANモジュールが暗黙のうちに読み込
+  まれている．
 \end{itemize}
 
 \subsection{標準API}\label{sec:api}
@@ -191,27 +194,27 @@ Perlとは異なる．
 を発生する．
 
 \begin{enumerate}
-  \item \|RANGE|$n$（\textit{n}は自然数），\|RANGES|．ただし，この両者を同時に使用してはならない．
-  \item \|id|
-  \item \|exe|$n$（\textit{n}は自然数）
-  \item \|arg|$n$\|_|$m$（$n, m$は自然数）
-  \item 
-    \|exe|, \|env|, \|transfer_variable|,
-    \|transfer_reference_level|, \|not_transfer_info|, \|initially|,
-    \|before|, \|before_to_job|, \|before_return|, \|before_bkup|,
-    \|before_in_job|, \|before_in_xcrypt|, \|before_in_xcrypt_return|,
-    \|finally|, \|after|,  \|after_to_job|, \|after_return|,
-    \|after_bkup|, \|after_in_job|, \|after_in_xcrypt|,
-    \|after_in_xcrypt_return|, \|cmd_before_exe|, \|cmd_after_exe|,
-    \|header|
-  \item \|JS_|で始まるメンバ名
-  \item \|:|で始まるメンバ名
-  \item \|builtin::add_key|関数によって登録されたメンバ名
-  \item \|builtin::add_prefix_of_key|関数によって登録された文字列から始まるメンバ名
-  \item    
-    2.--9. のメンバ名の最後に\|@|を追加したメンバ名．ただし，同じメン
-    バ名に対して\|@|を追加した名前と追加していない名前のメンバを同時に
-    指定してはならない．
+\item \|RANGE|$n$（\textit{n}は0以上の整数），\|RANGES|．ただし，この両者を同時に使用してはならない．
+\item \|id|
+\item \|exe|$n$（\textit{n}は0以上の整数）
+\item \|arg|$n$\|_|$m$（$n, m$は0以上の整数）
+\item 
+  \|exe|, \|env|, \|transfer_variable|,
+  \|transfer_reference_level|, \|not_transfer_info|, \|initially|,
+  \|before|, \|before_to_job|, \|before_return|, \|before_bkup|,
+  \|before_in_job|, \|before_in_xcrypt|, \|before_in_xcrypt_return|,
+  \|finally|, \|after|, \|after_to_job|, \|after_return|,
+  \|after_bkup|, \|after_in_job|, \|after_in_xcrypt|,
+  \|after_in_xcrypt_return|, \|cmd_before_exe|, \|cmd_after_exe|,
+  \|header|
+\item \|JS_|で始まるメンバ名
+\item \|:|で始まるメンバ名
+\item \|builtin::add_key|関数によって登録されたメンバ名
+\item \|builtin::add_prefix_of_key|関数によって登録された文字列から始まるメンバ名
+\item    
+  2.--9. のメンバ名の最後に\|@|を追加したメンバ名．ただし，同じメン
+  バ名に対して\|@|を追加した名前と追加していない名前のメンバを同時に
+  指定してはならない．
 \end{enumerate}
 
 \|prepare|は呼び出されるとまず，以下の通りジョブオブジェクト（列）を生成し，
@@ -228,7 +231,7 @@ Perlとは異なる．
   ばならず，ジョブオブジェクトは
   $$
   R = \{ (i_0, \ldots, i_n)\ |\ i_0 \le \|$#|A_0, \ldots, i_n \le\|$#|A_n \}
-  \quad (i_0, \ldots, i_n は自然数)
+  \quad (i_0, \ldots, i_n は0以上の整数)
   $$
   の各要素に対応してそれぞれ生成する．$R$の要素$(i_0, \ldots, i_n)$
   に対応するジョブオブジェクトを$J(i_0, \ldots, i_n)$とすると，
@@ -310,32 +313,34 @@ Perlとは異なる．
 
 \end{itemize}
 
-ジョブオブジェクト（列）の生成とメンバ設定の終了後，各ジョブオブジェクトに対して，
-クラスメソッド
-\textit{module-name}$_1$\|::new|, \ldots \textit{module-name}$_n$\|::new|, \|core::new|
-のうち定義されている最初のものを呼び出す．
-\|new|メソッドには第1引数としてモジュール名の文字列\dollarit{class}，
-第2引数として対応するジョブオブジェクトへの参照\dollarit{self}が渡される．
-\|core::new|以外の各\|new|メソッドでは，モジュールの機能を達成するために
-ジョブオブジェクト生成時に必要となる処理が行われる．また，これらのメソッドは，
+ジョブオブジェクト（列）の生成とメンバ設定の終了後，各ジョブオブジェク
+トに対して，クラスメソッド\textit{module-name}$_1$\|::new|, \ldots
+\textit{module-name}$_n$\|::new|, \|core::new|のうち定義されている最初
+のものを呼び出す．\|new|メソッドには第1引数としてXcryptモジュール名の
+文字列\dollarit{class}，第2引数として対応するジョブオブジェクトへの参照
+\dollarit{self}が渡される．\|core::new|以外の各\|new|メソッドでは，
+Xcryptモジュールの機能を達成するためにジョブオブジェクト生成時に必要と
+なる処理が行われる．また，これらのメソッドは，
 $$
 \dollarit{self}\| = |\dollarit{class}\|->NEXT::new(|\dollarit{class}\|, |\dollarit{self}\|);|
 $$
-に相当する処理を1度だけ実行することにより，
-次の\|new|メソッドを呼び出す（すなわち，\|core::new|が必ず1度呼び出される）
-ことを保証するように実装されている．
+に相当する処理を1度だけ実行することにより，次の\|new|メソッドを呼び出
+す（すなわち，\|core::new|が必ず1度呼び出される）ことを保証するように
+実装されている．また，各\|new|メソッドの返り値は，``\|bless|
+\dollarit{self}\|,| \dollarit{class}''の結果である．
 
-なお，\|core::new|はXcryptシステムが提供するものであり，必ず定義されている．
-\|core::new|メソッドは，ジョブオブジェクトに対し，以下の処理を行う．
-ただし，以下において\textit{id}は当該ジョブオブジェクトのメンバ\|id|の値として
-設定された文字列，\textit{sched}はデフォルトスケジューラ名（\ref{sec:sched}節）である．
+なお，\|core::new|はXcryptシステムが提供するものであり，必ず定義されて
+いる．\|core::new|メソッドは，ジョブオブジェクトに対し，以下の処理を行
+う．ただし，以下において\textit{id}は当該ジョブオブジェクトのメンバ
+\|id|の値として設定された文字列，\textit{sched}はデフォルト環境オブジェ
+クト（\ref{sec:env}節）に対応する\|sched|の値である．
 \begin{itemize}
 \item メンバ\|workdir|が未設定であれば，値を文字列\|'.'|として設定する．
 \item メンバ\|env|が未設定であれば，値をデフォルト環境オブジェクト（\ref{sec:env}節）への参照として設定する．
 \item メンバ\|JS_stdout|が未設定であれば，値を文字列\|"|\textit{id}\|_stdout"|として設定する．
 \item メンバ\|JS_stderr|が未設定であれば，値を文字列\|"|\textit{id}\|_stderr"|として設定する．
 \item メンバ\|jobscript_header|，\|jobscript_body|が未設定であれば，値を空の配列への参照として設定する．
-\item メンバ\|jobscript_file|が未設定であれば，値を文字列\|"|\textit{id}\|_|\textit{env}\|_stdout"|として設定する．
+\item メンバ\|jobscript_file|が未設定であれば，値を文字列\|"|\textit{id}\|_|\textit{sched}\|_stdout"|として設定する．
 \item メンバ\|before_in_job_file|が未設定であれば，値を文字列\|"|\textit{id}\|_before_in_job.pl"|として設定する．
 \item メンバ\|exe_in_job_file|が未設定であれば，値を文字列\|"|\textit{id}\|_exe_in_job.pl"|として設定する．
 \item メンバ\|after_in_job_file|が未設定であれば，値を文字列\|"|\textit{id}\|_after_in_job.pl"|として設定する．
@@ -365,7 +370,7 @@ $$
   生成した全てのジョブオブジェクトの参照からなる配列．配列中の参照の順序は任意である．
 \end{itemize}
 
-\subsubsection{builtin::submit}
+\subsubsection{builtin::submit}\label{sec:submit}
 \paragraph{引数}
 \begin{itemize}
 \item
@@ -385,9 +390,6 @@ $$
 以下の処理を行う．
 
 \begin{enumerate}
-\item
-  \dollarit{self}\|->make_dumped_environment|メソッド（\ref{sec:make_dumped_environment}節） %$
-  を呼び出して，Xcryptの環境をシリアライズした文字列を保存する．
 \item
   以下の処理を非同期に実行するスレッド\footnote{
     ここでいう「スレッド」はCPANのCoroモジュールにおけるスレッドであり，
@@ -444,19 +446,16 @@ $$
     \item
       ジョブがシグナルを受けていない場合\\
       ジョブの前回の終了状態がsubmitted, queued, running, done,
-      finishedのいずれかであれば何もしない．
-      前回の終了状態が設定されていないかinitialized, prepared,
-      submitted, abortedのいずれかであれば，
-      \textit{module-name}$_1$\|::start|, \ldots
-      \textit{module-name}$_n$\|::start|, \|core::start|のうち
-      定義されている最初のものを呼び出す．
-      \|core::start|以外の\|start|メソッドでは，
-      $$
-      \dollarit{self}\|->NEXT::start();| %$
-      $$
-      に相当する呼び出しにより，次の\|start|メソッドを呼び出すことができるが，
-      必須ではない．したがって，\|core::start|が呼び出されることは保証されない．
-      ただし，\|core::start|が呼び出されない場合でも，以下のいずれかが保証される．
+      finishedのいずれかであれば何もしない．前回の終了状態が設定されて
+      いないかinitialized, prepared, submitted, abortedのいずれかであ
+      れば，\textit{module-name}$_1$\|::start|, \ldots
+      \textit{module-name}$_n$\|::start|, \|core::start|のうち定義され
+      ている最初のものを呼び出す．\|start|メソッドの本体では，
+      \ref{sec:module-general}節に示す|NEXT|を用いたメソッド呼び出し式
+      により，次の\|start|メソッドを呼び出すことができるが，これを行う
+      ことは必須ではない．したがって，\|core::start|が呼び出されること
+      は保証されない．ただし，\|core::start|が呼び出されない場合でも，
+      以下のいずれかが保証される．
       \begin{itemize}
       \item
         \|start|メソッドの処理によってジョブの状態がsubmitted, queued
@@ -471,7 +470,7 @@ $$
       \end{itemize}
       \|core::start|が呼び出された場合，ジョブの情報や環境設定などに基づいて，
       ジョブスクリプトの生成やバッチスケジューラへのジョブの投入が実行される．
-      （詳細な動作は\ref{sec:coere-start}に記述する．）
+      （詳細な動作は\ref{sec:core-start}を参照．）
     \item
       ジョブがabortシグナル，あるいはcancelシグナルを受けている場合\\
       ジョブの状態をabortedに遷移させる．
@@ -537,10 +536,10 @@ $$
 なお，上記における\|initially|, \|before_in_xcrypt|, \|before|,
 \|after|, \|after_in_xcrypt|, \|finally|の呼び出し時の引数は以下の通りである．
 \begin{itemize}
-  \item 第1引数：ジョブオブジェクトへの参照\dollarit{self}
-  \item 第2引数以降：\|@{|\dollarit{self}\|->{VALUE}}|（設定されている場合のみ）
+\item 第1引数：ジョブオブジェクトへの参照\dollarit{self}
+\item 第2引数以降：\|@{|\dollarit{self}\|->{VALUE}}|（設定されている場合のみ）
 \end{itemize}
-また，\|start|呼び出し時には第1引数としてジョブオブジェクトへの参照
+また，\|start|の呼び出し時には第1引数としてジョブオブジェクトへの参照
 のみが渡される．
 
 以上の処理の後，\|submit|がリストコンテキストで呼び出されていた場合は
@@ -650,7 +649,7 @@ $$
 [\|_after_in_xcrypt_{|\code{after\_in\_xcrypt}\|}|]
 [\|_finally_{|\code{finally}\|}|]
 [\|(|\percentit{template}\|)|]\|;|
-  
+
 \paragraph{解説}
 以下の呼び出し文と等価である．\\
 \|prepare_submit(|\\
@@ -768,55 +767,60 @@ $$
 返り値として返す．
 \dollarit{envhash}は以下のメンバを持つハッシュオブジェクトへの参照である．
 \begin{itemize}
-  \item \|host|: 
-    ログイン先のホスト情報を``\textit{user}\|@|\textit{hostname}''
-    の形式で記述した文字列．省略不可能．
-    この\|host|を指定した\|add_host|の呼び出し以降の任意の時点で，
-    以下のOpenSSHのシェルコマンド実行によりプロンプトの発生なしに\footnote{
-      たとえば，当該ホストには公開鍵認証によりログインできるようにし，
-      Xcryptの実行前に\texttt{ssh\_agent}により秘密鍵を登録しておくことで
-      プロンプトが発生しないようにしておく．
-    }指定した当該ホストへのログインが
-    可能でなければならない．さらに，上記コマンドによるログイン後，
-    Xcryptが提供する各コマンドがログインシェルから利用可能なように，
-    当該ホストにXcryptがインストールされていなければならない．
-    $$
-    \|% ssh |\textit{user}\|@|\textit{hostname}
-    $$
-  \item \|wd|: 上記のログイン先のホスト上のディレクトリを
-    絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
-    省略可能．省略された
-    場合は，ホストへのログインを行った後そのホストにおける環境変数\|$HOME|%$
-    を参照しその値に設定する．\|wd|が省略され，環境変数\|$HOME|%$
-    が設定されていなかった場合はエラーが発生する．
-  \item \|sched|: ログイン先でジョブの投入，確認，削除のために利用する
-    バッチスケジューラ名．省略不可能． % ほんと???
-    絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
-  \item \|xd|: ログイン先でXcryptの各コマンドの実行ファイルが存在する
-    ディレクトリ．絶対パスあるいはログイン時のワーキングディレクトリか
-    らの相対パスで指定する．省略可能．省略された
-    場合は，ホストへのログインを行った後そのホストにおける環境変数\|$XCRYPT|%$
-    を参照しその値に設定する．\|xd|が省略され，環境変数\|$XCRYPT|%$
-    が設定されていなかった場合はエラーが発生する．
+\item \|host|: 
+  ログイン先のホスト情報を``\textit{user}\|@|\textit{hostname}''
+  の形式で記述した文字列．省略不可能．
+  この\|host|を指定した\|add_host|の呼び出し以降の任意の時点で，
+  以下のOpenSSHのシェルコマンド実行によりプロンプトの発生なしに\footnote{
+    たとえば，当該ホストには公開鍵認証によりログインできるようにし，
+    Xcryptの実行前に\texttt{ssh\_agent}により秘密鍵を登録しておくことで
+    プロンプトが発生しないようにしておく．
+  }指定した当該ホストへのログインが
+  可能でなければならない．さらに，上記コマンドによるログイン後，
+  Xcryptが提供する各コマンドがログインシェルから利用可能なように，
+  当該ホストにXcryptがインストールされていなければならない．
+  $$
+  \|% ssh |\textit{user}\|@|\textit{hostname}
+  $$
+\item \|wd|: 上記のログイン先のホスト上のディレクトリを
+  絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
+  省略可能．省略された
+  場合は，ホストへのログインを行った後そのホストにおける環境変数\|$HOME|%$
+  を参照しその値に設定する．\|wd|が省略され，環境変数\|$HOME|%$
+  が設定されていなかった場合はエラーが発生する．
+\item \|sched|: ログイン先でジョブの投入，確認，削除のために利用する
+  バッチスケジューラ名．省略不可能． % ほんと???
+  絶対パスあるいはログイン時のワーキングディレクトリからの相対パスで指定する．
+\item \|xd|: ログイン先でXcryptの各コマンドの実行ファイルが存在する
+  ディレクトリ．絶対パスあるいはログイン時のワーキングディレクトリか
+  らの相対パスで指定する．省略可能．省略された
+  場合は，ホストへのログインを行った後そのホストにおける環境変数\|$XCRYPT|%$
+  を参照しその値に設定する．\|xd|が省略され，環境変数\|$XCRYPT|%$
+  が設定されていなかった場合はエラーが発生する．
 \end{itemize}
 
 返り値の環境オブジェクトは\|prepare|関数（\ref{sec:prepare}節）に与え
 るジョブテンプレートのメンバ\|env|の値とすることができ，その結果生成さ
 れたジョブオブジェクトに対応するジョブの投入処理は\|add_host|による環
 境オブジェクト生成時に\dollarit{envhash}のメンバで指定したホスト・ワー
-キングディレクトリ上で実行される（詳細は\ref{sec:coere-start}節）．
+キングディレクトリ上で実行される（詳細は\ref{sec:core-start}節）．
 
 この環境オブジェクトはまた，\|xcr_exist|, \|xcr_qx|, \|xcr_system|,
-\|xcr_mkdir|, \|xcr_copy|, \|xcr_rename|, \|xcr_symlink|, \|xcr_unlink|
-（\ref{sec:xcr-exist}節--\ref{sec:xcr-unlink}節）の引数として
+\|xcr_mkdir|, \|xcr_copy|, \|xcr_rename|, \|xcr_symlink|, \|xcr_unlink|,
+\|get_from|, \|put_into|
+（\ref{sec:xcr-exist}節--\ref{sec:put-into}節）の引数として
 当該ホスト上でのファイル操作を行うために用いることができる．
 
-なお，Xcryptを起動したホスト自身の環境に相当する環境オブジェクトがデフォ
-ルト環境オブジェクトとして自動的に定義されている．デフォルト環境オブジェ
-クトに対応する\|host|はXcryptを起動したユーザ名と\|localhost|，\|wd|は
-Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
-イル（\label{sec:xcryptrc}）で指定された文字列，\|xd|は環境変数\|$XCRYPT|%$
-の値であるとみなされる．デフォルト環境オブジェクトは\|prepare|呼び出し時の
+なお，Xcryptの起動時に，デフォルトの環境オブジェクトが1つ自動的に
+定義される．デフォルト環境オブジェクトに対応する\|host|はXcryptを
+起動したユーザ名とホスト名を\|@|で連結した文字列，\|wd|はXcryptを
+起動したときのワーキングディレクトリ，\|sched|は\|sh|，\|xd|は
+環境変数\|$XCRYPT|%$の値であるとみなされる．
+（ただし，ユーザ設定ファイル（\ref{sec:xcryptrc}節）において
+\|environment|セクションのユーザ環境変数\|host|，\|wd|，\|sched|，
+\|xd|が設定されていた場合は，上記のメンバの値は対応する名前の
+ユーザ環境変数の設定値となる．）
+デフォルト環境オブジェクトは\|prepare|呼び出し時の
 ジョブテンプレートで\|env|が省略された際にジョブオブジェクトの\|env|
 の値として自動的に設定されるほか，グローバル変数\|builtin::env_d|の値として
 参照することができる．
@@ -827,7 +831,28 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 \item
   \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
 \item
+  \dollarit{path}: パス名
+\end{itemize}
+\paragraph{返り値} ファイルまたはディレクトリが存在すれば真，そうでなければ偽．
+
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上で，\dollarit{path}で指定した
+ファイルまたはディレクトリが存在するかどうかを判定し，存在すれば真，存
+在しなければ偽を返す．
+
+\dollarit{path}は相対パスで指定する．
+相対パスの基点は\|add_host|関数による\dollarit{env}の生成時に
+引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+
+\subsubsection{builtin::xcr\_qx}\label{sec:xcr-qx}
+\paragraph{引数}
+\begin{itemize}
+\item
   \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item
+  \dollarit{command}: コマンド文字列
+\item
+  \dollarit{dir}: ディレクトリ名
 \end{itemize}
 \paragraph{返り値} コマンド実行による標準出力の文字列を改行コードで区切った配列
 
@@ -836,26 +861,8 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 にワーキングディレクトリを移した後，\dollarit{command}をシェルコマンドとして
 実行し，その標準出力を返す．
 
-\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
-相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
-引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
-
-\subsubsection{builtin::xcr\_qx}\label{sec:xcr-exist}
-\paragraph{引数}
-\begin{itemize}
-\item
-  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
-\item
-  \dollarit{path}: パス名
-\end{itemize}
-\paragraph{返り値} ファイルが存在すれば真，そうでなければ偽．
-
-\paragraph{解説}
-指定した\dollarit{env}に対応するホスト上で，\dollarit{path}で指定したファイル
-が存在するかどうかを判定し，その結果を返す．
-
-\dollarit{path}は絶対パス，相対パスのいずれでも指定できる．
-相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+\dollarit{dir}は相対パスで指定する．
+相対パスの基点は\|add_host|関数による\dollarit{env}の生成時に
 引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_system}\label{sec:xcr-system}
@@ -874,8 +881,8 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 にワーキングディレクトリを移した後，\dollarit{command}をシェルコマンドとして
 実行し，その終了コードを返す．
 
-\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
-相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
+\dollarit{dir}は相対パスで指定する．
+相対パスの基点は\|add_host|関数による\dollarit{env}の生成時に
 引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_mkdir}\label{sec:xcr-mkdir}
@@ -886,14 +893,14 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 \item
   \dollarit{dir}: ディレクトリ名
 \end{itemize}
-\paragraph{返り値} ディレクトリの生成に成功した場合は真，そうでなければ偽．
+\paragraph{返り値} ディレクトリの生成が成功した場合は真，そうでなければ偽．
 \paragraph{解説}
-指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}ディレクトリが存在するかを確認し，
-存在しなければディレクトリを作成する．
+指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}ディレクトリ
+が存在するかを確認し，存在しなければディレクトリを作成する．
 
-\dollarit{dir}は絶対パス，相対パスのいずれでも指定できる．
-相対パスの場合，その基点は\|add_host|関数による\dollarit{env}の生成時に
-引数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+\dollarit{dir}は相対パスで指定する．相対パスの基点は\|add_host|関数に
+よる\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で
+指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_copy}\label{sec:xcr-copy}
 \paragraph{引数}
@@ -920,10 +927,9 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 なファイル・ディレクトリがコピーとして作成される．\dollarit{path}$_2$
 が存在しないディレクトリ上のファイル名であった場合は何も行わない．
 
-\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
-も指定できる．相対パスの場合，その基点は\|add_host|関数による
-\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
-したディレクトリである．
+\dollarit{path}$_1$, \dollarit{path}$_2$は相対パスで指定する．相対パス
+の基点は\|add_host|関数による\dollarit{env}の生成時に引数のハッシュオ
+ブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_rename}\label{sec:xcr-rename}
 \paragraph{引数}
@@ -935,7 +941,7 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 \item
   \dollarit{path}$_2$: 移動先のパス名
 \end{itemize}
-\paragraph{返り値} 移動に成功した場合は真，そうでなければ偽．
+\paragraph{返り値} 移動が成功した場合は真，そうでなければ偽．
 
 指定した\dollarit{env}に対応するホスト上で，\dollarit{path}$_1$から
 \dollarit{path}$_2$へのファイルあるいはディレクトリの移動を行う．
@@ -948,10 +954,9 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 なファイル・ディレクトリが移動先ファイル・ディレクトリとして作成される．
 \dollarit{path}$_2$が存在しないディレクトリ上のファイル名であった場合は何も行わない．
 
-\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
-も指定できる．相対パスの場合，その基点は\|add_host|関数による
-\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
-したディレクトリである．
+\dollarit{path}$_1$, \dollarit{path}$_2$は相対パスで指定する．相対パス
+の基点は\|add_host|関数による\dollarit{env}の生成時に引数のハッシュオ
+ブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_symlink}\label{sec:xcr-symlink}
 \paragraph{引数}
@@ -959,26 +964,28 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 \item
   \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
 \item
-  \dollarit{path}$_1$: リンク先のパス名
+  \dollarit{dir}: ディレクトリ名
 \item
-  \dollarit{path}$_2$: シンボリックリンクのパス名
+  \dollarit{target}: リンク先のパス名
+\item
+  \dollarit{link}: シンボリックリンクのパス名
 \end{itemize}
-\paragraph{返り値} シンボリックリンクの作成に成功した場合は真，そうでなければ偽．
+\paragraph{返り値} シンボリックリンクの作成が成功した場合は真，そうでなければ偽．
 \paragraph{解説}
-指定した\dollarit{env}に対応するホスト上で，\dollarit{path}$_1$へのシ
-ンボリックリンクを\dollarit{path}$_2$に作成する．\dollarit{path}$_2$が
-既存のファイルであった場合には何も行わない．\dollarit{path}$_2$が既存
-のディレクトリであった場合はそのディレクトリ上に\dollarit{path}$_1$と
-同名の新たなシンボリックリンクが作成される．\dollarit{path}$_2$が既存
-ディレクトリ上の存在しないファイル名であった場合は，そのディレクトリ上
-に\dollarit{path}$_2$のファイル名を名前とするシンボリックリンクを作成
-する．\dollarit{path}$_2$が存在しないディレクトリ上のファイル名であっ
+指定した\dollarit{env}に対応するホスト上で，パス名\dollarit{target}の
+シンボリックリンクを\dollarit{dir}\|/|\dollarit{link}に作成する．
+\dollarit{dir}\|/|\dollarit{link}が既存のファイルであった場合には何も行わない．
+\dollarit{dir}\|/|\dollarit{link}が既存のディレクトリであった場合は
+そのディレクトリ上にパス名\dollarit{target}からディレクトリ名を取り除いた
+名前と同名の新たなシンボリックリンクが作成される．\dollarit{dir}\|/|\dollarit{link}
+が既存ディレクトリ上の存在しないファイル名であった場合は，そのディレクトリ上
+に\dollarit{link}からディレクトリ名を除いた名前のシンボリックリンクを作成
+する．\dollarit{dir}\|/|\dollarit{link}が存在しないディレクトリ上のファイル名であっ
 た場合は何も行わない．
 
-\dollarit{path}$_1$, \dollarit{path}$_2$は絶対パス，相対パスのいずれで
-も指定できる．相対パスの場合，その基点は\|add_host|関数による
-\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で指定
-したディレクトリである．
+\dollarit{dir}および\dollarit{link}は相対パスで指定する．
+\dollarit{dir}の基点は\|add_host|関数による\dollarit{env}の生成時に引
+数のハッシュオブジェクトのメンバ\|wd|で指定したディレクトリである．
 
 \subsubsection{builtin::xcr\_unlink}\label{sec:xcr-unlink}
 \paragraph{引数}
@@ -986,9 +993,9 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 \item
   \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
 \item 
-  \dollarit{path}$_1$: パス名
+  \dollarit{path}: パス名
 \end{itemize}
-\paragraph{返り値} 削除に成功した場合は真，そうでなければ偽．
+\paragraph{返り値} 削除が成功した場合は真，そうでなければ偽．
 \paragraph{解説}
 指定した\dollarit{env}に対応するホスト上で，\dollarit{path}で指定した
 ファイルあるいはディレクトリを削除する．\dollarit{path}がディレクトリ
@@ -996,22 +1003,662 @@ Xcryptを起動したときのワーキングディレクトリ，\|sched|はユーザ設定ファ
 全て削除する．\dollarit{path}が存在しないファイルであった場合は何も
 行わない．
 
-\dollarit{path}は絶対パス，相対パスのいずれでも指定できる．相対パスの
-場合，その基点は\|add_host|関数による\dollarit{env}の生成時に引数のハッ
-シュオブジェクトのメンバ\|wd|で指定したディレクトリである．
+\dollarit{path}は相対パスで指定する．相対パスの基点は\|add_host|関数に
+よる\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で
+指定したディレクトリである．
+
+\subsubsection{builtin::get\_from}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item 
+  \dollarit{path}: コピー元のパス名
+\item
+  \dollarit{to}（省略可能）: コピー先のディレクトリ．省略した場合は\|'.'|
+  を指定したとみなされる．
+\end{itemize}
+\paragraph{返り値} コピーが成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+指定した\dollarit{env}に対応するホスト上の\dollarit{path}で指定した
+ファイルあるいはディレクトリをXcryptを実行したホスト上の\dollarit{to}
+にコピーする．
+\dollarit{path}がディレクトリであった場合，そのディレクトリ以下の
+全てのサブディレクトリおよびファイルを全て再帰的にコピーする．また，
+\dollarit{to}は既存のディレクトリ名でなければならず，そのディレクトリ
+上に新たなファイル・ディレクトリがコピーとして作成される．
+\dollarit{to}が既存のファイル，あるいは存在しないファイル・ディレクトリ
+であった場合は何も行わない．
+
+\dollarit{path}は相対パスで指定する．相対パスの基点は\|add_host|関数に
+よる\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で
+指定したディレクトリである．\dollarit{to}は相対パスまたは絶対パスで指
+定する．相対パスの場合，その基点はXcryptを実行したワーキングディレクト
+リである．
+
+\subsubsection{builtin::put\_into}\label{sec:put-into}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{env}: \|add_host|関数で生成した環境オブジェクト
+\item 
+  \dollarit{path}: コピー元のパス名
+\item
+  \dollarit{to}（省略可能）: コピー先のディレクトリ．省略した場合は\|'.'|
+  を指定したとみなされる．
+\end{itemize}
+\paragraph{返り値} コピーが成功した場合は真，そうでなければ偽．
+\paragraph{解説}
+Xcryptを実行したホスト上にある\dollarit{path}で指定したファイルあるいは
+ディレクトリを，\dollarit{env}に対応するホスト上の\dollarit{to}に
+コピーする．
+\dollarit{path}がディレクトリであった場合，そのディレクトリ以下の
+全てのサブディレクトリおよびファイルを全て再帰的にコピーする．また，
+\dollarit{to}は既存のディレクトリ名でなければならず，そのディレクトリ
+上に新たなファイル・ディレクトリがコピーとして作成される．
+\dollarit{to}が既存のファイル，あるいは存在しないファイル・ディレクトリ
+であった場合は何も行わない．
+
+\dollarit{to}は相対パスで指定する．相対パスの基点は\|add_host|関数に
+よる\dollarit{env}の生成時に引数のハッシュオブジェクトのメンバ\|wd|で
+指定したディレクトリである．\dollarit{path}は相対パスまたは絶対パスで指
+定する．相対パスの場合，その基点はXcryptを実行したワーキングディレクト
+リである．
 
 \section{Xcryptにおけるジョブの管理}
+
+
 
 \section{ユーザ設定ファイル}\label{sec:xcryptrc}
 ユーザ設定ファイルは以下の構成を持つテキストファイルである．
 \begin{screen}
-...
+  \|[|$\mboxit{sectionname}_0$\|]|\\
+  $\mboxit{var}_0^0$ \|=| $\mboxit{val}_0^0$\\
+  \ldots\\
+  $\mboxit{var}_0^{m_0}$ \|=| $\mboxit{val}_0^{m_0}$\\
+  \\
+  \ldots\\
+  \\
+  \|[|$\mboxit{sectionname}_n$\|]|\\
+  $\mboxit{var}_n^0$ \|=| $\mboxit{val}_n^0$\\
+  \ldots\\
+  $\mboxit{var}_n^{m_n}$ \|=| $\mboxit{val}_n^{m_n}$
 \end{screen}
 
-\section{バッチスケジューラ定義スクリプト}
+Xcryptの起動時，以下の順でファイルの存在を確認し，存在すればそのファイルが
+ユーザ設定ファイルとして読み込まれる．
+\begin{enumerate}
+\item Xcryptのコマンドラインオプションに\|--config |\mboxit{configfile}が指定されていれば，\mboxit{configfile}．
+\item \|$HOME/.xcryptrc|
+\item \|$XCRYPT/etc/xcryptrc|
+\end{enumerate}
+
+読み込まれる設定ファイルに，$\mboxit{var}_s^i$ \|=|
+$\mboxit{val}_0^0$の記述が存在したとき，セクション
+$\mboxit{sectionname}_s$のユーザ環境変数$\mboxit{var}_s^i$
+が$\mboxit{val}_0^0$に設定されるという．
+
+\|template|セクションのユーザ環境変数\mboxit{var}が\mboxit{val}
+に設定されると，\|prepare|関数（\ref{sec:prepare}節）の呼び出し
+において引数のジョブテンプレートにメンバ\mboxit{var}が存在しない
+とき，このメンバが\mboxit{val}を値として自動的に追加される．
+
+\|environment|セクションのユーザ環境変数の設定値は，デフォルト
+環境オブジェクトの生成時に用いられる（詳細は\ref{sec:env}節を参照）．
+
+\section{バッチスケジューラ定義スクリプト}\label{sec:sched-script}
+バッチスケジューラ定義スクリプトは、\textit{schedname}\|.pm|という
+名前でディレクトリ\|$XCRYPT/lib/config/|%$
+に保存されたPerlモジュールスクリプトである．ここで，\textit{schedname}
+はスケジューラ名を表す任意の名前である．バッチスケジューラ定義スクリプ
+トは上記のディレクトリに複数存在してもよく，Xcrypt起動時に存在する定義
+スクリプトが全て読み込まれる（読み込まれる順序は未定義である）．
+
+各バッチスケジューラ定義スクリプトには任意のPerlモジュールを記述するこ
+とができる．ただし，ハッシュオブジェクトとして定義済の
+グローバル変数\|$jsconfig::jobsched_config|%$
+のメンバ\textit{jobsched}に値をハッシュオブジェクトへの参照として設定
+することが要請される．このハッシュオブジェクトは少なくとも以下のメンバ
+を持たなければならない．
+\begin{itemize}
+\item  \|qsub_command|: ジョブの投入をバッチスケジューラに依頼し，投入
+  されたジョブのrequest IDを含むメッセージを標準出力に出力するジョブ投
+  入コマンドを実行するためのコマンドライン文字列の先頭部分．
+\item \|qstat_command|: ジョブ投入コマンドにより投入され実行待ちとなっ
+  ているジョブおよび実行中のジョブのrequest IDの一覧を含むメッセージを
+  標準出力に出力するジョブ確認コマンドを実行するためのコマンドライン文
+  字列の先頭部分．
+\item \|qdel_command|: ジョブ投入コマンドにより投入され実行待ちとなっ
+  ているあるいは実行中のジョブ実行を取り消すジョブ中止コマンドを実行す
+  るためのコマンドライン文字列の先頭部分．
+\item \|extract_req_id_from_qsub_output|: 上記ジョブ投入コマンドを実行
+  した際の標準出力を改行文字で分割した文字列の配列を引数として受け取り，
+  投入されたジョブのrequest IDを返す関数．
+\item \|extract_req_ids_from_qstat_output|: 上記ジョブ確認コマンドを実
+  行した際の標準出力を改行文字で分割した文字列のリストを引数として受け
+  取り，ジョブ投入コマンドにより投入され実行待ちとなっているあるいは実
+  行中の全てのジョブのrequest IDを配列として返す関数．
+\end{itemize}
+また，以下の名前のメンバは特別な意味を持つ．
+
+\begin{itemize}
+\item \|jobscript_preamble|: ジョブ投入のために生成されるジョブスクリプトにおいて先頭行に追加される文字列．
+\item \|jobscript_option_|\textit{optname}: \textit{optname}は任意の文
+  字列．ジョブオブジェクトのメンバ\|JS_|\textit{optname}の値に対応して，
+  上記ジョブスクリプトにオプション設定のための記述を追加するために用い
+  られる値．
+\item \|jobscript_other_options|: 
+  ジョブ投入のために生成されるジョブスクリプトにおいて，
+  \|jobscript_option_|\textit{optname}によって追加された行に
+  続いて追加される文字列．
+\item \|jobscript_workdir|: 上記ジョブスクリプトにおいて，プログラムを
+  実行するワーキングディレクトリを参照するために用いられる値．
+\item \|jobscript_body_preamble|: 上記ジョブスクリプトにおいて，プログ
+  ラムの実行直前に実行するコマンドを追加するために用いられる値．
+\item \|qsub_option_|\textit{optname}: \textit{optname}は任意の文字列．
+  ジョブオブジェクトのメンバ\|JS_|\textit{optname}の値に対応して，ジョ
+  ブ投入コマンド実行時のコマンドラインオプションを追加するために用いら
+  れる値．
+\item \|qstat_option_|\textit{optname}: \textit{optname}は任意の文字列．
+  ジョブオブジェクトのメンバ\|JS_|\textit{optname}の値に対応して，ジョ
+  ブ確認コマンド実行時のコマンドラインオプションを追加するために用いら
+  れる値．
+\item \|qdel_option_|\textit{optname}: \textit{optname}は任意の文字列．
+  ジョブオブジェクトのメンバ\|JS_|\textit{optname}の値に対応して，ジョ
+  ブ中止コマンド実行時のコマンドラインオプションを追加するために用いら
+  れる値．
+\end{itemize}
+さらに，上記以外の名前のメンバを含んでいてもよい．
+
+これらのメンバの値がどのように利用されるかの詳細は，
+\ref{sec:core-start}節を参照のこと．
+
+\section{Xcryptモジュール}\label{sec:module}
+\subsection{一般的なXcryptモジュール}\label{sec:module-general}
+
+Xcryptモジュール\textit{module-name}は、\textit{module-name}\|.pm|という
+名前のPerlモジュールスクリプト（Xcryptモジュールスクリプト）で定義し，
+ディレクトリ\|$XCRYPT/lib/|%$
+に保存する．Xcryptモジュールスクリプトは上記のディレクトリに複数存在し
+てもよい．Xcrypt起動時，Xcryptスクリプトの先頭の\|use|文
+（\ref{sec:script-struct}節）で指定されたXcryptモジュールが全て読み込
+まれる．
+
+Xcryptモジュールスクリプトは，以下の構成を持つ．
+\begin{screen}
+  \texttt{package }\textit{module-name}\|;|\\
+  \textit{module-body}\\
+  \texttt{1;}
+\end{screen}
+
+\textit{module-body}はXcryptモジュールスクリプトの本体であり，任意の
+Perlプログラムを書くことができる．これにより，Xcryptスクリプトから利用
+するための\textit{module-name}パッケージの変数や関数を定義する．
+
+\textit{module-body}のトップレベルで\|our|を用いて宣言された変数
+\textit{module-name}\|::|\textit{var}は，Xcryptスクリプトから同じ名前
+で参照することができる．
+
+\textit{module-body}のトップレベルで\|sub|を用いて定義された関数（メソッド）
+\textit{module-name}\|::|\textit{func}はXcryptスクリプトから
+同じ関数名で参照できるほか，インスタンスメソッド呼び出し式
+$$
+\dollarit{job}\|->|\textit{func}\|(|\textit{args}\|)|
+$$
+を使って呼び出すことができる．ここで，\dollarit{job}はジョブオブジェク
+トへの参照，\textit{args}は\textit{func}に渡す0個以上の引数リストであ
+る．インスタンスメソッド呼び出し式によって\textit{func}が呼び出された
+際に渡される引数は，第1引数が\dollarit{job}，第2引数以降が
+\textit{args}である．
+
+Xcryptスクリプトが
+$$
+\texttt{use base qw(}\mboxit{module-name}_1\ \ldots\ \mboxit{module-name}_n\ \texttt{core);}
+$$
+のように複数のモジュールの使用を宣言しており，かつ
+\textit{module-name}$_1$\|::|\textit{func}, \ldots,
+\textit{module-name}$_n$\|::|\textit{func}, \|core::|\textit{func}のう
+ち複数の定義が存在した場合，これらの\textit{func}は\|use|で指定された
+モジュール名リストの最も左にあるモジュール名に対応するものから順に高い
+優先度を持ち，最も高い優先度を持つ\textit{func}がインスタンスメソッド
+呼び出し式によって呼び出される．さらに，インスタンスメソッド呼び出し式
+によって呼び出された関数の本体では，
+$$
+\dollarit{self}\|->NEXT::|\mboxit{func}\|(|\mboxit{args}\|);|
+$$
+という\|NEXT|を用いたメソッド呼び出し式により，次に優先度が高いモジュー
+ル名に対応する\textit{func}を呼び出すことができる（そのような
+\textit{func}が存在しない場合は，メソッドの呼び出しは行われない）．こ
+こで，\dollarit{self}は第1引数として渡されたジョブオブジェクトへの参照
+であり次の\textit{func}への第1引数として渡され，また，\mboxit{args}は
+任意の0個以上の引数リストであり次の\textit{func}に第2引数以降として渡
+される．
+
+\textit{func}として以下の名前を持つ関数（メソッド）は，以下の通り
+Xcryptの標準API関数や\|core|モジュール（\ref{sec:core}節）が定義するメ
+ソッドから呼び出されるなど特別な意味を持つ．
+\begin{itemize}
+\item \|new|: \|builtin::prepare|関数から，生成されたジョブオブジェ
+  クトを初期化するためにさ呼び出される．詳細は\ref{sec:prepare}節を参
+  照．
+\item \|initially|, \|before_in_xcrypt|, \|before|, \|start|,
+  \|after|, \|after_in_xcrypt|, \|finally|: \|builtin::submit|関数が生
+  成するジョブスレッドから呼び出される．詳細は\ref{sec:submit}節を参照．
+\end{itemize}
+
+このほか，\ref{sec:core}節で列挙する\|core|モジュールのメソッドは，各々
+の仕様をみたすように定義されているため，これらと同名のメソッドを
+\|core|以外のモジュールで定義する場合には，そのモジュールにおいて全体
+の動作を保証しなければならない．さらに，Xcryptの個別の実装において，そ
+れ以外の名前の変数・メソッドが定義される場合がある．これらの名前の変数・
+メソッドは，実装のドキュメント等において特に明記されない限り，\|core|
+以外のモジュールで定義してはならない．
+
+\subsection{coreモジュール}\label{sec:core}
+Xcryptモジュールのうち，名前が\|core|であるモジュールはXcryptシステム
+自体が提供する特別なモジュールであり，以下のメソッドを提供する．
+
+以下の説明において，$\mboxit{CFG}(\mboxit{param})$は，環境オブジェクト
+\dollarit{self}\|->{env}|に対応するバッチスケジューラの定義スクリプト
+（\ref{sec:sched-script}節）におけるハッシュオブジェクトのメンバ
+\mboxit{param}を指す．
+
+\subsubsection{newメソッド}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{class}: モジュール名（$=$\|'core'|）
+\item 
+  \dollarit{self}: 初期化対象のジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} ``\|bless |\dollarit{self}\|,| \dollarit{class}''の結果
+\paragraph{解説}
+与えられたジョブオブジェクトのメンバを初期化し，
+Perlにおけるクラスオブジェクトとして返す．
+メンバの初期化等の詳細は\ref{sec:prepare}節を参照．
+
+\subsubsection{startメソッド}\label{sec:core-start}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+以下の手順で，\dollarit{self}に対応するジョブをバッチスケジューラの
+ジョブ投入コマンドを用いて投入する．
+
+\begin{enumerate}
+\item ジョブオブジェクトの\|make_jobscript|メソッド
+  （\ref{sec:make-jobscript}節）をインスタンスメソッドとして呼び出し，
+  ジョブスクリプトの内容を生成する．
+\item ジョブオブジェクトの\|make_qsub_options|メソッド
+  （\ref{sec:make-qsub-options}節）をインスタンスメソッドとして呼び出し，
+  ジョブ投入コマンドに付加するコマンドラインオプション文字列を生成する．
+\item ジョブオブジェクトの\|make_before_in_job_script|メソッド
+  （\ref{sec:make-before-in-job-script}節）をインスタンスメソッドとし
+  て呼び出し，ジョブスクリプトから実行されるPerlスクリプトの内容を生成する．
+\item ジョブオブジェクトの\|make_exe_in_job_script|メソッド
+  （\ref{sec:make-exe-in-job-script}節）をインスタンスメソッドとし
+  て呼び出し，ジョブスクリプトから実行されるPerlスクリプトの内容を生成する．
+\item ジョブオブジェクトの\|make_after_in_job_script|メソッド
+  （\ref{sec:make-after-in-job-script}節）をインスタンスメソッドとし
+  て呼び出し，ジョブスクリプトから実行されるPerlスクリプトの内容を生成する．
+\item \label{it:make-file} 以下の通りファイルを生成し，上記1.および3.--5.で生成した文字列をそれぞれ書き込む．  \begin{itemize}
+  \item \dollarit{self}\|->{jobscript_header}|と
+    \dollarit{self}\|->{jobscript_body}|の値となっている参照が
+    指す文字列配列を連結し，その全要素を改行文字で連結した文字列を\break
+    \dollarit{self}\|->{jobscript_file}|のパス名で指定されるファイルに
+    書き込む．
+  \item \dollarit{self}\|->{before_in_job_script}|の値となっている参照が
+    指す文字列配列を改行文字で連結した文字列を
+    \dollarit{self}\|->{before_in_job_file}|のパス名で指定されるファイルに
+    書き込む．
+  \item \dollarit{self}\|->{exe_in_job_script}|の値となっている参照が
+    指す文字列配列を改行文字で連結した文字列を
+    \dollarit{self}\|->{exe_in_job_file}|のパス名で指定されるファイルに
+    書き込む．
+  \item \dollarit{self}\|->{after_in_job_script}|の値となっている参照が
+    指す文字列配列を改行文字で連結した文字列を
+    \dollarit{self}\|->{after_in_job_file}|のパス名で指定されるファイルに
+    書き込む．
+  \end{itemize}
+\item \ref{it:make-file}.で生成した各ファイル\textit{file}に対し，
+  \|put_into|関数（\ref{sec:put-into}節）を，第1引数に
+  環境オブジェクト\dollarit{self}\|->{env}|，第2引数に
+  \dollarit{self}\|->{workdir}|と\textit{file}を連結したパス名を
+  与えて呼び出すことで，ファイルを転送する．ただし，転送元と転送先が
+  同一である場合は，何も行わない．
+\item ジョブの状態をsubmittedに遷移させる．
+\item \label{it:qsub}  \|xcr_qx|関数（\ref{sec:xcr-qx}節）を，第1引数
+  に環境オブジェクト\dollarit{self}\|->{env}|，第2引数に文字列
+  \|'|\mboxit{command}~\mboxit{options}~\mboxit{scriptfile}\|'|，第3引
+  数に\dollarit{self}\|->{workdir}|の値となっているワーキングディレク
+  トリを与えて呼び出すことで，\dollarit{self}\|->{env}|のホスト上でジョ
+  ブ投入コマンドを実行し，その標準出力を獲得する．ただし，
+  \textit{command}は$\mboxit{CFG}(\mboxtt{qsub\_command})$の値として定
+  義されている文字列，\textit{options}は
+  \dollarit{self}\|->{qsub_options}|の参照先の配列の各要素を空白文字で
+  連結した文字列，\mboxit{scriptfile}は
+  \dollarit{self}\|->{jobscript_file}|の値となっている文字列である．
+\item 
+  \dollarit{self}\|->{env}|に対応するバッチスケジューラの定義スクリプト
+  において\break \|extract_req_id_from_qsub_output|の値として定義されている
+  関数を，\ref{it:qsub}.で実行した\|xcr_qx|の返り値（文字列のリスト）
+  を引数として呼び出して投入したジョブのrequest IDを獲得し，そのIDを
+  \dollarit{self}\|->{request_id}|の値として保存する．
+\end{enumerate}
+
+\subsubsection{make\_jobscriptメソッド}\label{sec:make-jobscript}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\|start|メソッド（\ref{sec:core-start}節）の実行中に呼び出され，ジョブ
+投入コマンド実行時に必要なジョブスクリプトの内容となる文字列を生成する．
+このメソッド自体は，\|make_jobscript_header|メソッド
+（\ref{sec:make-jobscript-header}節）および\|make_jobscript_body|メソッ
+ド（\ref{sec:make-jobscript-body}節）をこの順で呼び出すだけの処理を行
+い，具体的な生成処理はこれらのメソッドで行われる．
+
+\subsubsection{make\_jobscript\_headerメソッド}\label{sec:make-jobscript-header}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\|make_jobscript|メソッドの実行中に呼び出され，ジョブスクリプトの内容
+となる文字列のうちヘッダ部分を生成し，その結果を改行文字で区切った文字
+列配列への参照として\dollarit{self}\|->{jobscript_header}|に格納する．
+
+文字列の生成は以下のように行う．
+\begin{enumerate}
+\item \label{it:preamble} $\mboxit{CFG}(\mboxtt{jobscript\_preamble})$
+  が関数であれば，その関数を\dollarit{self}を引数として呼び出した結果，
+  文字列であればその文字列に改行文字を加えたもの，配列への参照であれば
+  それらの要素を改行文字で連結し末尾にも改行文字を加えたものをスクリプ
+  トに追加する．
+\item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$
+  の値が存在する全ての\mboxit{optname}に対して以下を行う．
+  \begin{itemize}
+  \item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$が
+    関数の場合，その関数を第1引数として\dollarit{self}，第2引数として
+    文字列\|'|\mboxtt{JS\_}\mboxit{optname}\|'|を与えて呼び出し，その
+    返り値である文字列の末尾に改行文字を加えたものをスクリプトに追加す
+    る．
+  \item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$が
+    文字列の場合，\dollarit{self}\|->{JS_|\mboxit{optname}\|}|の値が定
+    義されていれば，この2つの文字列を連結させたものに改行文字を加えた
+    ものをスクリプトに追加する．
+    \dollarit{self}\|->{JS_|\mboxit{optname}\|}|の値が定義されていなけ
+    れば何も行わない．
+  \item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$が
+    関数でも文字列でもない場合，警告を発生させる．
+  \end{itemize}
+\item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$に対して，
+  \ref{it:preamble}.と同様の手続きでスクリプトに文字列を追加する．
+\item \dollarit{self}\|->{JS_user_preamble}|が定義されている場合，その
+  値が文字列であればそれに改行文字を追加したもの，配列への参照であれば
+  それらの要素を改行文字で連結し末尾にも改行文字を加えたものをスクリプ
+  トに追加する．
+\item 各実装に応じて，必要なスクリプトを追加する．
+\end{enumerate}
+
+\subsubsection{make\_jobscript\_bodyメソッド}\label{sec:make-jobscript-body}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\|make_jobscript|メソッドの実行中に呼び出され，ジョブスクリプトの内容
+となる文字列のうち本体部分を生成し，その結果を改行文字で区切った文字
+列配列への参照として\dollarit{self}\|->{jobscript_body}|に格納する．
+
+文字列の生成は以下のように行う．
+\begin{enumerate}
+\item 文字列\|'cd |\mboxit{wkdir}\|'|に改行文字を加えた文字列をスクリ
+  プトに追加する．ただし\mboxit{wkdir}は以下のように決定される文字列で
+  ある．
+  \begin{itemize}
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+      文字列の場合，その値．
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+      関数の場合，その関数を\dollarit{self}を引数として呼び出した
+      返り値の文字列．
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が未定
+      義の場合，環境オブジェクト\dollarit{self}\|->{env}|に対応するワー
+      キングディレクトリと\dollarit{self}\|->{workdir}|を連結したパス
+      名．なお，$\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+      文字列でも関数でもない場合は，警告を発生させたうえで，未定義の
+      場合として扱う．
+  \end{itemize}
+\item \label{it:preamble} $\mboxit{CFG}(\mboxtt{jobscript\_body\_preamble})$
+  が関数であれば，その関数を\dollarit{self}を引数として呼び出した結果，
+  文字列であればその文字列に改行文字を加えたもの，配列への参照であれば
+  それらの要素を改行文字で連結し末尾にも改行文字を加えたものをスクリプ
+  トに追加する．
+\item \label{it:running} このジョブスクリプトを実行するプロセスから
+  Xcrypt本体に，\dollarit{self}に対応するジョブの状態をrunningに遷移さ
+  せることを促すメッセージを送るコマンドライン文字列（末尾の改行文字を
+  含む）をスクリプトに追加する．
+\item \dollarit{self}\|->{cmd_before_exe}|の値が配列への参照として定義
+  されていれば，その各要素を改行文字で連結した文字列をスクリプトに追加
+  する．このメンバが配列へ参照以外の値に設定されていた場合は，
+  エラーを発生する．
+\item \dollarit{self}\|->{before_in_job_file}|のファイルをPerlプログラ
+  ムとして実行するコマンドライン文字列（末尾の改行文字を含む）をスクリ
+  プトに追加する．
+\item \dollarit{self}\|->{exe}|が定義されている場合
+  \begin{enumerate}
+  \item \dollarit{self}\|->{exe|$n$\|}|（$n$は0以上の整数）も定義され
+    ていた場合，警告を発生する．
+  \item \dollarit{self}\|->{exe}|の値が関数であれば，
+    \dollarit{self}\|->{exe_in_job_file}|のファイルをPerlをプログラム
+    として実行するコマンドライン文字列（末尾の改行文字を含む）をスクリ
+    プトに追加する．\dollarit{self}\|->{exe}|の値が関数でなければ警告
+    を発生し，何も行わない．
+  \end{enumerate}
+\item \dollarit{self}\|->{exe}|が定義されていない場合，値が定義されて
+  いる\dollarit{self}\|->{exe|$n$\|}|（$n$は0以上の整数）に対し，$n$の
+  値が小さいものから順に以下を行う．
+  \begin{itemize}
+  \item
+    \dollarit{self}\|->{exe|$n$\|}|の値の文字列に
+    \dollarit{self}\|->{exe|$n$\|_|$m$\|}|（$m$は0以上の整数）のうち
+    値が定義されているものを$m$の値が小さいものから順に空白文字を
+    挟みつつ連結し，最後に末尾に改行文字を追加したものをスクリプトに
+    追加する
+  \end{itemize}
+\item \dollarit{self}\|->{after_in_job_file}|のファイルをPerlプログラ
+  ムとして実行するコマンドライン文字列（末尾の改行文字を含む）をスクリ
+  プトに追加する．
+\item \dollarit{self}\|->{cmd_after_exe}|の値が配列への参照として定義
+  されていれば，その各要素を改行文字で連結した文字列をスクリプトに追加
+  する．このメンバが配列へ参照以外の値に設定されていた場合は，
+  エラーを発生する．
+\item \label{it:done} このジョブスクリプトを実行するプロセスからXcrypt
+  本体に，\dollarit{self}に対応するジョブの状態をdoneに遷移させること
+  を促すメッセージを送るコマンドライン文字列（末尾の改行文字を含む）を
+  スクリプトに追加する．
+\end{enumerate}
+
+%% メッセージについて要記述
+\subsubsection{make\_qsub\_optionsメソッド}\label{sec:make-qsub-options}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\|start|メソッド（\ref{sec:core-start}節）の実行中に呼び出され，ジョブ
+投入コマンド実行時に指定するコマンドラインオプションの内容を生成する．
+結果は，文字列配列への参照として\dollarit{self}\|->{qsub_options}|に格納する．
+
+上記の文字列配列の生成は，空の配列から始めて，以下の手順で末尾に要素を
+追加していくことで行う．
+\begin{enumerate}
+\item $\mboxit{CFG}(\mboxtt{qsub\_option\_}\mboxit{optname})$
+  の値が存在する全ての\mboxit{optname}に対して以下を行う．
+  \begin{itemize}
+  \item $\mboxit{CFG}(\mboxtt{qsub\_option\_}\mboxit{optname})$が
+    関数の場合，その関数を第1引数として\dollarit{self}，第2引数として
+    文字列\|'|\mboxtt{JS\_}\mboxit{optname}\|'|を与えて
+    呼び出し，その返り値である配列を末尾に連結する．
+  \item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$が
+    文字列の場合，\dollarit{self}\|->{JS_|\mboxit{optname}\|}|の値が定
+    義されていれば，この2つの文字列をこの順に配列の末尾に追加する．
+    \dollarit{self}\|->{JS_|\mboxit{optname}\|}|の値が定義されていなけ
+    れば何も行わない．
+  \item $\mboxit{CFG}(\mboxtt{jobscript\_option\_}\mboxit{optname})$が
+    関数でも文字列でもない場合，警告を発生させる．
+  \end{itemize}
+\item \dollarit{self}\|->{JS_user_qsub_options}|が定義されている場合，
+  その値が文字列であればそれをこれまでの配列の末尾に追加，配列への参照
+  であればその配列をこれまでの配列の末尾に連結する．
+\end{enumerate}
+
+\subsubsection{make\_before\_in\_job\_scriptメソッド}\label{sec:make-before-in-job-script}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\dollarit{self}\|->{before}|および\dollarit{self}\|->{before_in_job}|の
+各関数をジョブスクリプトから起動したPerlプロセスで実行するための
+Perlスクリプトの内容を生成し，その結果を改行文字で区切った文字
+列配列への参照として\dollarit{self}\|->{before_in_job_script}|に格納する．
+
+生成されるPerlスクリプトについて，以下の要件をみたさなければならない．
+\begin{itemize}
+\item このPerlスクリプトは，\dollarit{self}に対する\|builtin::submit|
+  関数の適用時の関数\dollarit{self}\|->{before}|および
+  \dollarit{self}\|->{before_in_job}|を呼び出す．ただし，
+  \dollarit{self}\|->{before}|の呼び出しは，
+  \dollarit{self}\|->{before_to_job}|の値が真のときのみ行う．
+\item 上記の関数の本体においては，以下のものがグローバル変数，トップレ
+  ベル関数として参照できる．
+  \begin{itemize}
+  \item \dollarit{self}が指すジョブオブジェクトから，
+    \dollarit{self}\|->{not_transfer_info}|の参照先の配列
+    に含まれる文字列に対応するメンバを取り除いたものへの参照が
+    上記の関数本体においてグローバル変数\|$user::self|を用いて参照可能．%$
+  \item \|$user::TEMPLATE{transfer_variable}|の参照先の配列 %$
+    が文字列\|'|\dollarit{var}\|'|を含む場合，Xcryptで定義されたグロー
+    バル変数\|$user::|\textit{var}が，
+    上記の関数本体においてグローバル変数\|$user::|\textit{var}%$
+    として参照可能．
+  \item \|$user::TEMPLATE{transfer_variable}|の参照先の配列 %$
+    が文字列\|'|\atmarkit{var}\|'|を含む場合，Xcryptで定義されたグロー
+    バル変数\|@user::|\textit{var}が，
+    上記の関数本体においてグローバル変数\|@user::|\textit{var}
+    として参照可能．
+  \item \|$user::TEMPLATE{transfer_variable}|の参照先の配列 %$
+    が文字列\|'|\percentit{var}\|'|を含む場合，Xcryptで定義されたグロー
+    バル変数\|%user::|\textit{var}が，
+    上記の関数本体においてグローバル変数\|%user::|\textit{var}
+    として参照可能．
+  \item \|$user::TEMPLATE{transfer_variable}|の参照先の配列 %$
+    が文字列\|'&|\textit{func}\|'|を含む場合，Xcryptで定義された
+    トップレベル関数\|user::|\textit{func}が，
+    上記の関数本体においてトップレベル関数\|user::|\textit{func}
+    として参照可能．
+  \end{itemize}
+  ただし，これらの参照可能なデータに「参照値」が含まれる場合（ジョブオ
+  ブジェクトへの参照を含む），参照の深さ$d$を上限としてXcrypt上のデー
+  タがコピーされたものが参照先の値となる．ここで，$d$は以下で定まる値
+  である．
+  \begin{itemize}
+  \item \dollarit{self}に対する\|builtin::submit|の適用時，
+    \dollarit{self}\|->{transfer_reference_level}|の値が設定されていた
+    場合，その値．
+  \item それ以外の場合，5．
+  \end{itemize}
+  また，これらの変数に対する値の更新はXcrypt自体には反映されない．
+\item 上記の関数の本体において利用可能なライブラリは実装依存である．
+\item \dollarit{self}に対応するジョブの状態がdoneに遷移した後，
+  \dollarit{self}\|->{before}|の返り値を
+  \dollarit{self}\|->before_return()|のメソッド呼び出し，
+  \dollarit{self}\|->{before_in_job}|の返り値を
+  \dollarit{self}\|->before_in_job_return()|のメソッド呼び出しの返り値
+  としてそれぞれ獲得できる（上記の関数の返り値がスカラコンテキストかリ
+  ストコンテキストかで異なる場合，\|before_return|や
+  \|before_in_job_return|のメソッドをスカラコンテキスト・リストコンテ
+  キストにおいて呼び出すことで，対応した返り値が得られる）．ただし，こ
+  れらの返り値に「参照値」が含まれる場合は，上の説明と同様にコピーされ
+  たデータが当該の参照先のデータとなる．
+\end{itemize}
+
+\subsubsection{make\_exe\_in\_job\_scriptメソッド}\label{sec:make-exe-in-job-script}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\dollarit{self}\|->{exe_in_job}|関数をジョブスクリプトから起動したPerl
+プロセスで実行するためのPerlスクリプトの内容を生成し，その結果を改行文
+字で区切った文字列配列への参照として
+\dollarit{self}\|->{exe_in_job_script}|に格納する．
+
+生成されるPerlスクリプトについて，以下の要件をみたさなければならない．
+\begin{itemize}
+\item このPerlスクリプトは，\dollarit{self}に対する\|builtin::submit|
+  関数の適用時の関数\dollarit{self}\|->{exe}|を呼び出す．
+\item 上記の関数の本体において参照可能な変数および利用可能なライブラリ
+  に関する仕様は\|make_before_in_job|が生成するPerlスクリプトと同様で
+  ある．
+\item \dollarit{self}に対応するジョブの状態がdoneに遷移した後，
+  \dollarit{self}\|->{exe}|の返り値を
+  \dollarit{self}\|->exe_return()|のメソッド呼び出しの返り値として獲得できる．
+  スカラ，リストコンテキストの扱いや，返り値に「参照値」が含まれる
+  場合の扱いは\|make_before_in_job|と同様である．
+\end{itemize}
+
+\subsubsection{make\_after\_in\_job\_scriptメソッド}\label{sec:make-after-in-job-script}
+\paragraph{引数}
+\begin{itemize}
+\item
+  \dollarit{self}: ジョブオブジェクトへの参照
+\end{itemize}
+\paragraph{返り値} 特に規定しない
+\paragraph{解説}
+\dollarit{self}\|->{after}|および\dollarit{self}\|->{after_in_job}|の
+各関数をジョブスクリプトから起動したPerlプロセスで実行するための
+Perlスクリプトの内容を生成し，その結果を改行文字で区切った文字
+列配列への参照として\dollarit{self}\|->{after_in_job_script}|に格納する．
+
+生成されるPerlスクリプトについて，以下の要件をみたさなければならない．
+\begin{itemize}
+\item このPerlスクリプトは，\dollarit{self}に対する\|builtin::submit|
+  関数の適用時の関数\dollarit{self}\|->{after}|および
+  \dollarit{self}\|->{after_in_job}|を呼び出す．ただし，
+  \dollarit{self}\|->{after}|の呼び出しは，
+  \dollarit{self}\|->{after_to_job}|の値が真のときのみ行う．
+\item 上記の関数の本体において参照可能な変数および利用可能なライブラリ
+  に関する仕様は\|make_before_in_job|が生成するPerlスクリプトと同様で
+  ある．
+\item \dollarit{self}に対応するジョブの状態がdoneに遷移した後，
+  \dollarit{self}\|->{after}|の返り値を
+  \dollarit{self}\|->after_return()|のメソッド呼び出し，
+  \dollarit{self}\|->{after_in_job}|の返り値を
+  \dollarit{self}\|->after_in_job_return()|のメソッド呼び出しの返り値
+  としてそれぞれ獲得できる．
+  スカラ，リストコンテキストの扱いや，返り値に「参照値」が含まれる
+  場合の扱いは\|make_before_in_job|と同様である．
+\end{itemize}
+
 
 \section{コマンドラインインターフェース}
-
-\section{拡張ライブラリ}
 
 \end{document}
