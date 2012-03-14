@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
-spawn _before_ _after_ _initially_ _finally_ _before_in_xcrypt_ _after_in_xcrypt_
+spawn _before_ _after_ _initially_ _finally_ _before_in_xcrypt_ _after_in_xcrypt_ _before_in_job_ _after_in_job_
 add_package
 add_cmd_before_exe add_cmd_after_exe
 );
@@ -413,6 +413,9 @@ sub add_host {
             $ssh->error and die "Unable to establish SSH connection: " . $ssh->error;
             $Host_Ssh_Hash{$env->{host}} = $ssh;
         }
+    }
+    unless (defined $env->{sched}) {
+	$env->{sched} = 'sh';
     }
     unless (defined $env->{wd}) {
         my @wd = &xcr_qx($env, 'echo $HOME');
@@ -1225,6 +1228,15 @@ sub _before_in_xcrypt_(&@) {
 sub _after_in_xcrypt_(&@) {
     my $code = shift;
     return ('after_in_xcrypt', $code, @_);
+}
+
+sub _before_in_job_(&@) {
+    my $code = shift;
+    return ('before_in_job', $code, @_);
+}
+sub _after_in_job_(&@) {
+    my $code = shift;
+    return ('after_in_job', $code, @_);
 }
 
 sub join(&) {
