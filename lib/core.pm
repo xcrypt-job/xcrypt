@@ -405,7 +405,7 @@ sub qsub_make {
 
     my $sched = $self->{env}->{sched};
     unless (defined $jsconfig::jobsched_config{$sched}) {
-	die "$sched.pm doesn't exist in lib/config";
+	die "$sched.pm doesn't exist in lib/config or isn't written along Perl's grammar";
     }
     my %cfg = %{$jsconfig::jobsched_config{$sched}};
 
