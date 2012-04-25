@@ -507,15 +507,20 @@ sub check_and_write_aborted {
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
 	    my $status = get_job_status($aborted_job);
+            my $env = $aborted_job->{env};
+            my $is_alive = $jsconfig::jobsched_config{$env->{sched}}{is_alive};
 	    unless (($status eq 'done') || ($status eq 'finished')
-                    || xcr_exist ($aborted_job->{env}, left_message_file_name($aborted_job, 'done'))) {
-                if ($xcropt::options{verbose_abort}) {
-		    print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
-                }
+                    || xcr_exist ($env, left_message_file_name($aborted_job, 'done'))
+                    # Configに関数is_aliveが定義されていて，それが真を返せばまだ生きているとみなす
+                    || (ref $is_alive eq 'CODE') && (&{$is_alive}($aborted_job)) )
+            {
                 if ( get_signal_status($aborted_job) eq 'sig_invalidate' ) {
                     local $Warn_illegal_transition = undef;
                     set_job_finished ($aborted_job);
                 } else {
+                    if ($xcropt::options{verbose_abort}) {
+                        print STDERR "aborted: $req_id: " . $aborted_job->{id} . "\n";
+                    }
                     set_job_aborted ($aborted_job);
                 }
 	    }
