@@ -13,6 +13,7 @@ use Coro::AnyEvent;
 use Coro::Signal;
 use Time::HiRes;
 use File::Copy::Recursive qw(fcopy dircopy rcopy);
+use File::Path;
 
 use builtin;
 use common;
@@ -616,13 +617,13 @@ sub left_signal_message_check {
             if ($self) {
                 if ( $sig eq 'cancelled' || $sig eq 'uninitialized' ) {
                     $self->cancel();
-                    unlink ($sigmsg);
+                    File::Path::rmtree ($sigmsg);
                 } elsif ( $sig eq 'invalidated' || $sig eq 'finished' ) {
                     $self->invalidate();
-                    unlink ($sigmsg);
+                    File::Path::rmtree ($sigmsg);
                 } elsif ( $sig eq 'aborted' ) {
                     $self->abort();
-                    unlink ($sigmsg);
+                    File::Path::rmtree ($sigmsg);
 		}
             }
         }

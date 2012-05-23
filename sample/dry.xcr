@@ -1,9 +1,11 @@
-use base qw(dry core);
-
-%template = (
-    'id'  => 'job6',
-    'exe' => 'bin/fib 40',
-    'dry' => 1
-);
-
-&prepare_submit_sync(%template);
+use base qw (dry core); 
+&dry::initialize( 
+    'dry' => '1',                                      # ドライランレベルの指定 
+    'dry_exe0' => 'echo "Dry execution"'               # 本来のプログラム実行を置き換える処理 
+    ); 
+prepare_submit_sync ( 
+    'id' => 'dry_job', 
+    'exe0' => 'calculate.exe', 
+    'before' => sub {print "Before\n"},
+    'after' => sub {print "After\n"},
+    );
