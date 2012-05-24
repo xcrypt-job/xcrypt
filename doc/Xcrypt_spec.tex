@@ -879,7 +879,8 @@ $$
 \paragraph{解説}
 指定した\dollarit{env}に対応するホスト上で，\dollarit{dir}で指定したディレクトリ
 にワーキングディレクトリを移した後，\dollarit{command}をシェルコマンドとして
-実行し，その終了コードを返す．
+実行する．返り値は不定である．
+%% note: 終了コードを返すのは，Net::OpenSSHのsystemメソッドの仕様により困難．
 
 \dollarit{dir}は相対パスで指定する．
 相対パスの基点は\|add_host|関数による\dollarit{env}の生成時に
@@ -1427,15 +1428,15 @@ Perlにおけるクラスオブジェクトとして返す．
   プトに追加する．ただし\mboxit{wkdir}は以下のように決定される文字列で
   ある．
   \begin{itemize}
-    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_workdir})$の値が
       文字列の場合，その値．
-    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_workdir})$の値が
       関数の場合，その関数を\dollarit{self}を引数として呼び出した
       返り値の文字列．
-    \item $\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が未定
+    \item $\mboxit{CFG}(\mboxtt{jobscript\_workdir})$の値が未定
       義の場合，環境オブジェクト\dollarit{self}\|->{env}|に対応するワー
       キングディレクトリと\dollarit{self}\|->{workdir}|を連結したパス
-      名．なお，$\mboxit{CFG}(\mboxtt{jobscript\_other\_options})$の値が
+      名．なお，$\mboxit{CFG}(\mboxtt{jobscript\_workdir})$の値が
       文字列でも関数でもない場合は，警告を発生させたうえで，未定義の
       場合として扱う．
   \end{itemize}
@@ -1658,7 +1659,9 @@ Perlスクリプトの内容を生成し，その結果を改行文字で区切った文字
   場合の扱いは\|make_before_in_job|と同様である．
 \end{itemize}
 
-
 \section{コマンドラインインターフェース}
+\subsection{\texttt{xcrypt}}
+\subsection{\texttt{xcryptstat}}
+\subsection{\texttt{xcryptdel}}
 
 \end{document}
