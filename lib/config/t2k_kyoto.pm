@@ -1,4 +1,4 @@
-# Config file for Kyoto Fujitsu NQS
+# Config file for Kyoto Fujitsu NQS (expired on Mar, 2012)
 use config_common;
 use File::Spec;
 use File::Basename qw(basename);
