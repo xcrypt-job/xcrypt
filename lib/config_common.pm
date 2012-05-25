@@ -18,10 +18,12 @@ sub workdir_file_option {
 
 sub boolean_option {
     my $opt_string = shift;
+    my $default = shift;
     sub {
         my $self = shift;
         my $mb_name = shift;
-        return $self->{$mb_name} ? ($opt_string) : ();
+        my $val = (defined $self->{$mb_name})?($self->{$mb_name}):$default;
+        return $val ? ($opt_string) : ();
     }
 }
 
