@@ -1,5 +1,5 @@
 if [ "x$XCRYPT" = "x" ]; then
-    export XCRYPT=$HOME/xcrypt
+    export XCRYPT=$HOME/xcrypt-A
 fi
 export PATH=$XCRYPT/bin:$PATH
 export XCR_CPAN_BASE=$XCRYPT/lib/cpan

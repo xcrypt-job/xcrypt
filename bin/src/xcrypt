@@ -143,11 +143,12 @@ if (defined $options{'xbs-auto'}) { $options{'xbs-type'} = $options{sched}; }
 if (defined $options{'xbs-type'}) { $options{sched} = 'XBS'; }
 
 unless (defined $options{config}) {
-    my $cfg_file = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
-    if (-e $cfg_file) {
-	$options{config} = File::Spec->catfile($ENV{HOME}, '.xcryptrc');
-    } else {
-	$options{config} = File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc');
+    foreach my $cfg_file ($ENV{XCRYPTRC},
+                          File::Spec->catfile($ENV{HOME}, '.xcryptrc'),
+                          File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc')) {
+        if (-e $cfg_file) {
+            $options{config} = $cfg_file;
+        }
     }
 }
 my $cfg_obj = new Config::Simple($options{config});

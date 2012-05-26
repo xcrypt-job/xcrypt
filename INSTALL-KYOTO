@@ -1,0 +1,58 @@
+==============================================================
+Important notes for users of the supercomputer of ACCMS, Kyoto
+University after May, 2012
+==============================================================
+
+If you want to use Xcrypt on the subsystem A (camphor) as well as
+on the subsystems B/C (laurel), you have to two copies of Xcrypt
+directories and perform the installation process following the
+instructions in "INSTALL".
+
+Before installing Xcrypt to the subsystem A, perform the
+following commands:
+===
+$ module switch PrgEnv-cray PrgEnv-gnu
+$ LD_LIBRARY_PATH=/opt/cray/xe-sysroot/4.0.46.securitypatch.20120222/usr/lib/alps/:$LD_LIBRARY_PATH
+===
+In addition, after executing all the steps in "INSTALL",
+modify /path/to/xcrypt-A/bin/.wrapper as follows:
+===
+@@ -2,6 +2,7 @@
+ if [ "x$XCRYPT" = "x" ]; then
+   XCRYPT=$HOME/xcrypt
+ fi
++export LD_LIBRARY_PATH=/opt/cray/xe-sysroot/4.0.46.securitypatch.20120222/usr/lib/alps/:$LD_LIBRARY_PATH
+ PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
+ PATH=$XCRYPT/bin:$PATH
+ export XCRYPT PERL5LIB PATH
+===
+You also have to perform
+===
+$ module switch PrgEnv-cray PrgEnv-gnu
+===
+before executing Xcrypt on the subsystem A.
+
+We recommend you to add the following piece of code to your login
+script (.bashrc, .zshrc, etc.) to use Xcrypt on all the subsystems
+with comfort.
+===
+# * Replace /path/to/xcrypt-A and /path/to/xcrypt-B to
+#   your install directories.
+# * Replace $HOME/xcryptrc-camphor and $HOME/xcryptrc-laurel
+#   to the paths to your Xcrypt user configulation files.
+#   (Each file, at least, must include JS_queue/JS_group settings
+#   according to your account information in the [template] section
+#   and "sched=kyoto-camphor" or "sched=kyoto-laurel" in the
+#   [environment] section.
+HN_PREFIX=`hostname -s | awk -F - '{print $1}'`
+if [ $HN_PREFIX = 'xe' ]; then
+    export XCRYPT=/path/to/xcrypt-A
+    export XCRYPTRC=$HOME/xcryptrc-camphor
+    module switch PrgEnv-cray PrgEnv-gnu
+elif [ $HN_PREFIX = 'ap' ];
+    export XCRYPT=/path/to/xcrypt-B
+    export XCRYPTRC=$HOME/xcryptrc-laurel
+    alias xcrypt="xcrypt --config=$HOME/xcryptrc-laurel"
+fi
+[ "x$XCRYPT" != 'x' ] && export PATH=$XCRYPT/bin:$PATH
+===
