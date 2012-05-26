@@ -2,6 +2,7 @@
 if [ "x$XCRYPT" = "x" ]; then
   XCRYPT=$HOME/xcrypt
 fi
+export LD_LIBRARY_PATH=/opt/cray/xe-sysroot/4.0.46.securitypatch.20120222/usr/lib/alps/:$LD_LIBRARY_PATH
 PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
 PATH=$XCRYPT/bin:$PATH
 export XCRYPT PERL5LIB PATH

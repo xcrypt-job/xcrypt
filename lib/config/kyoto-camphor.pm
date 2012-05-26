@@ -5,12 +5,11 @@ use File::Basename qw(basename);
 my $myname = basename(__FILE__, '.pm');
 $jsconfig::jobsched_config{$myname} = {
     # commands
-    qsub_command => '/usr/share/lsf/kclusterb/8.0/linux2.6-glibc2.3-x86_64/bin/qsub <',
+    qsub_command => '/usr/share/lsf/kclustera/8.0/linux2.6-glibc2.3-x86_64/bin/qsub <',
     qdel_command => '/opt/dpc/bin/qkill',
-    qstat_command => '/usr/share/lsf/kclusterb/8.0/linux2.6-glibc2.3-x86_64/bin/qjobs',
+    qstat_command => '/usr/share/lsf/kclustera/8.0/linux2.6-glibc2.3-x86_64/bin/qjobs',
     # standard options
     jobscript_preamble => ['#!/bin/bash'],
-    jobscript_body_preamble => ['. /usr/Modules/3.2.9/init/bash', 'module load intel/12.1'],
     jobscript_option_stdout => workdir_file_option('#QSUB -oo ', 'stdout'),
     jobscript_option_stderr => workdir_file_option('#QSUB -eo ', 'stderr'),
     jobscript_workdir => '$LS_SUBCWD',
@@ -19,7 +18,7 @@ $jsconfig::jobsched_config{$myname} = {
 	my $node = $self->{JS_node} || 1;
 	my $cpu = $self->{JS_cpu} || 1;
 	my $thread = $self->{JS_thread} || $cpu;
-	my $memory = $self->{JS_memory} || (61440/16*$cpu).'M';
+	my $memory = $self->{JS_memory} || (61440/32*$cpu).'M';
 	return "#QSUB -A p=$node:t=$thread:c=$cpu:m=$memory";
     },
     #jobscript_option_node => (see other_options),
