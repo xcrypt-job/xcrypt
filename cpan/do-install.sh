@@ -1,5 +1,7 @@
 #!/bin/sh
 ## source source-me.sh before executing this script
+CC=gcc
+LD=gcc
 
 if [ "x$XCRYPT" = "x" ]; then
   echo "Set environment variable XCRYPT."
@@ -26,5 +28,5 @@ echo "Start installation."
 for i in $LIBS
 do
   echo ">>> installing $i <<<"
-  (cd $i && perl Makefile.PL LIB=$XCR_CPAN_BASE && make INSTALLSITEMAN3DIR=none install)
+  (cd $i && perl Makefile.PL LIB=$XCR_CPAN_BASE && make CC=$CC LD=$LD INSTALLSITEMAN3DIR=none install)
 done

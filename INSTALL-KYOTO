@@ -8,30 +8,6 @@ the subsystems B/C (laurel), you have to make two copies of Xcrypt
 directories and perform the installation process following the
 instructions in "INSTALL".
 
-Before the "INSTALL" process for the subsystem A, perform the
-following commands:
-===
-$ module switch PrgEnv-cray PrgEnv-gnu
-$ LD_LIBRARY_PATH=/opt/cray/xe-sysroot/4.0.46.securitypatch.20120222/usr/lib/alps/:$LD_LIBRARY_PATH
-===
-In addition, after executing all the steps in "INSTALL",
-modify /path/to/xcrypt-A/bin/.wrapper as follows:
-===
-@@ -2,6 +2,7 @@
- if [ "x$XCRYPT" = "x" ]; then
-   XCRYPT=$HOME/xcrypt
- fi
-+export LD_LIBRARY_PATH=/opt/cray/xe-sysroot/4.0.46.securitypatch.20120222/usr/lib/alps/:$LD_LIBRARY_PATH
- PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
- PATH=$XCRYPT/bin:$PATH
- export XCRYPT PERL5LIB PATH
-===
-You also have to perform
-===
-$ module switch PrgEnv-cray PrgEnv-gnu
-===
-before executing Xcrypt on the subsystem A.
-
 We recommend you to add the following piece of code to your login
 script (.bashrc, .zshrc, etc.) to use Xcrypt on all the subsystems
 with comfort.
@@ -48,11 +24,9 @@ HN_PREFIX=`hostname -s | awk -F - '{print $1}'`
 if [ $HN_PREFIX = 'xe' ]; then
     export XCRYPT=/path/to/xcrypt-A
     export XCRYPTRC=$HOME/xcryptrc-camphor
-    module switch PrgEnv-cray PrgEnv-gnu
 elif [ $HN_PREFIX = 'ap' ]; then
     export XCRYPT=/path/to/xcrypt-B
     export XCRYPTRC=$HOME/xcryptrc-laurel
-    alias xcrypt="xcrypt --config=$HOME/xcryptrc-laurel"
 fi
 [ "x$XCRYPT" != 'x' ] && export PATH=$XCRYPT/bin:$PATH
 ===
