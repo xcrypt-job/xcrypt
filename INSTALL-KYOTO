@@ -3,12 +3,12 @@ Important notes for users of the supercomputer of ACCMS, Kyoto
 University after May, 2012
 ==============================================================
 
-If you want to use Xcrypt on the subsystem A (camphor) as well as
-on the subsystems B/C (laurel), you have to two copies of Xcrypt
+If you want to use Xcrypt on the subsystem A (camphor) as well as on
+the subsystems B/C (laurel), you have to make two copies of Xcrypt
 directories and perform the installation process following the
 instructions in "INSTALL".
 
-Before installing Xcrypt to the subsystem A, perform the
+Before the "INSTALL" process for the subsystem A, perform the
 following commands:
 ===
 $ module switch PrgEnv-cray PrgEnv-gnu
@@ -49,7 +49,7 @@ if [ $HN_PREFIX = 'xe' ]; then
     export XCRYPT=/path/to/xcrypt-A
     export XCRYPTRC=$HOME/xcryptrc-camphor
     module switch PrgEnv-cray PrgEnv-gnu
-elif [ $HN_PREFIX = 'ap' ];
+elif [ $HN_PREFIX = 'ap' ]; then
     export XCRYPT=/path/to/xcrypt-B
     export XCRYPTRC=$HOME/xcryptrc-laurel
     alias xcrypt="xcrypt --config=$HOME/xcryptrc-laurel"
