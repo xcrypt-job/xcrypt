@@ -9,7 +9,9 @@ Copy the directory tree to the directory you want to install Xcrypt (INSTALLDIR)
 Change the value of the XCRYPT environment variable in source-me.sh to INSTALLDIR.
 
 (3)
-Run the following commands
+Run the following commands.
+Note: If you already set the XCRYPT environment variable and want to install Xcrypt
+to another directory, unset its value before running the following commands.
 % source source-me.sh
 % cd INSTALLDIR/cpan
 % sh do-install.sh   # Answer 'yes' or just press enter key for all the question.
