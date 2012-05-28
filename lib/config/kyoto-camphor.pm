@@ -35,8 +35,8 @@ $jsconfig::jobsched_config{$myname} = {
     extract_req_id_from_qsub_output => sub {
         # Job <5610> is submitted to queue <gr10001b>.   # as the second line
         my (@lines) = @_;
-        foreach $ln (@lines) {
-            if ($ln =~ /Job\s+<([0-9])+>\s+is/) {
+        foreach my $ln (@lines) {
+            if ($ln =~ /Job\s+<([0-9]+)>\s+is/) {
                 return $1;
             }
         }
@@ -58,3 +58,4 @@ $jsconfig::jobsched_config{$myname} = {
         return @ids;
     },
 };
+
