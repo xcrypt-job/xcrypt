@@ -148,6 +148,7 @@ unless (defined $options{config}) {
                           File::Spec->catfile($ENV{XCRYPT}, 'etc', 'xcryptrc')) {
         if (-e $cfg_file) {
             $options{config} = $cfg_file;
+            last;
         }
     }
 }
