@@ -2,7 +2,7 @@
 package jobsched;
 
 use base qw(Exporter);
-our @EXPORT = qw(inventory_write_cmdline);
+our @EXPORT = qw(inventory_write_cmdline get_job_status);
 
 use strict;
 use Cwd;
