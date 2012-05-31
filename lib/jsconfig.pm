@@ -1,6 +1,7 @@
 package jsconfig;
 
 use strict;
+use File::Spec;
 #use xcropt;
 
 # Load all configulation files in $XCRYPT/lib/config/*.pm and initialize %jobsched_config
