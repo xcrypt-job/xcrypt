@@ -1,4 +1,4 @@
-# Config file for Kyoto Fujitsu NQS
+# Config file for the Subsystems B/C (laurel) of ACCMS, Kyoto University after 2012
 use config_common;
 use File::Spec;
 use File::Basename qw(basename);
