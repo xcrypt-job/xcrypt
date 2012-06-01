@@ -8,7 +8,7 @@ my @job_statuses = qw(initialized prepared submitted queued running done finishe
 
 my @help = (
     q /xcryptdel [--help] [--all] [--clean]/,
-    q /          [--cancel] [--invalidate] [--ununinitialize] [--finish]/,
+    q /          [--cancel] [--invalidate] [--uninitialize] [--finish]/,
     q /          [--name regexp] [--status regexp]/,
     q //,
     q /Options:/,
