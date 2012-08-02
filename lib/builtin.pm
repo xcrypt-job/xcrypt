@@ -623,7 +623,8 @@ sub do_initialized {
             } elsif ( ref($template{"$members"}) eq 'SCALAR' ) {
                 $template{"$k"} = ${$template{"$members"}};
             } else {
-                die "Can't interpret $members\n";
+                die ("Can't interpret $members: ref to "
+                     . ref($template{"$members"}));
             }
         }
     }
@@ -930,6 +931,7 @@ sub job_info {
 our %Spawned=();
 
 sub submit {
+    if ( ref $_[0] eq 'ARRAY' ) { return (submit(@{$_[0]})); }
     my @array = @_;
     my $slp = 0;
     # my @coros = ();
@@ -1083,6 +1085,7 @@ sub delete_created_files
 
 ### Waits for submitted jobs to be finished
 sub sync {
+    if ( ref $_[0] eq 'ARRAY' ) { return (sync(@{$_[0]})); }
     my @jobs = @_;
     # If any jobs are not specified, all the jobs submitted in this lexical scope.
     if ($#jobs  < 0) { @jobs = map {jobsched::find_job_by_id($_)} (keys %Spawned); }
@@ -1103,6 +1106,7 @@ sub sync {
 }
 
 sub prepare {
+    if (ref($_[0]) eq 'HASH') { return (prepare (%{$_[0]})); }
     $count = 0;
     my %template = &unalias(@_);
     %template = &add_exes_args_colon(%template); # for compatibility
