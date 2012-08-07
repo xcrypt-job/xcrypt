@@ -239,7 +239,7 @@ sub make_dumped_environment {
 
     push (@body, 'use data_extractor;', 'use data_generator;', 'use return_transmission;'); # for return_transmission
     push (@body, 'use Data::Dumper;', '$Data::Dumper::Deparse = 1;', '$Data::Dumper::Deepcopy = 1;'); # for return_transmission
-    push (@body, 'use Config::Simple; use File::Copy::Recursive;'); # since these modules are convenient
+#    push (@body, 'use Config::Simple; use File::Copy::Recursive;'); # since these modules are convenient, but dangerous staging env
     if (exists $self->{transfer_reference_level} and $self->{transfer_reference_level} =~ /^[0-9]+$/) {
         push (@body, '$Data::Dumper::Maxdepth = '.$self->{transfer_reference_level}.';');
     } else {

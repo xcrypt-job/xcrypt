@@ -50,7 +50,8 @@ sub new {
 	$self->{stage_out_files_set}= $cfg{stage_out_files};
 
 	# Xcrypt内部ファイルの設定
-	my @xcr_stage_in_files_list = ();	# ステージインファイル
+#	my @xcr_stage_in_files_list = ();	# ステージインファイル
+	my @xcr_stage_in_files_list = ("$ENV{XCRYPT}/lib/data_extractor.pm", "$ENV{XCRYPT}/lib/data_generator.pm", "$ENV{XCRYPT}/lib/return_transmission.pm",);	# ステージインファイル
 	$self->{xcr_stage_in_files_list} = \@xcr_stage_in_files_list;
 	my @xcr_stage_out_files_list = ();	# ステージアウトファイル
 	$self->{xcr_stage_out_files_list} = \@xcr_stage_out_files_list;
