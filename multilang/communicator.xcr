@@ -1,0 +1,357 @@
+use strict;
+use warnings;
+
+use Coro::Socket;
+# use Coro::Handle;
+use Coro::Channel;              # also in coro.pm
+use Switch;
+
+use JSON;
+
+# for debug
+use Log::Handler;
+use Data::Dumper;
+# use DDP colored=>1, deparse=>1, sort_keys=>1;
+# use Smart::Comments;
+
+$|=1;
+
+local $Data::Dumper::Indent = 1;
+local $Data::Dumper::Purity = 1;
+local $Data::Dumper::Terse = 1;         # dont display 'Var'
+
+my $debug = $ENV{XCRYPT_DEBUG};
+my $test = $ENV{XCRYPT_TEST};          # 新機能
+
+my $log = Log::Handler->new(
+    screen => {
+        log_to => 'STDERR',
+        maxlevel => 'debug',
+        timeformat => '%H:%M:%S',
+        message_layout => "%L,\t[%T] %s(%l):\t%m",
+    });
+
+my $server;
+my $client;
+my %functions;
+
+my $queues = {};
+my $lock = Coro::Semaphore->new(1);
+
+our @ISA;
+
+sub use_base_runtime {
+    $log->debug("use_base_runtime");
+    my $libs = shift;
+    foreach my $m (@$libs) {
+        require $m;
+    }
+
+    warn my $s = join " ", @$libs;       # fixme!
+    push @ISA, $s;
+}
+sub start_server {
+    $server = Coro::Socket->new(
+        LocalPort => 9000,
+        Listen    => 2,
+        ReuseAddr => 1          # deprecated
+    );
+
+    $log->info("waiting...");
+    $log->dump($server);
+
+    $client = $server->accept();
+    $log->info("accept!");
+    $log->dump($client);
+}
+
+# ================================================================
+sub before_to_json {
+    # Receive a ref, then substitute CODE to special hash recursively.
+
+    my ($args) = @_;
+    if (ref $args eq 'CODE') {
+        my $id = "$args";
+        $functions{$id} = $args;
+        return {type=>"function/pl", id=>"$id"};
+    } elsif (ref $args eq 'ARRAY') {
+        return [map { before_to_json($_) } @$args];
+    } elsif (ref $args eq 'HASH') {
+        my $newhash = {};
+        for my $k (keys %$args) {
+            $newhash->{$k} = before_to_json($args->{$k});
+        }
+        return $newhash;
+    } elsif (ref $args eq 'user') {
+        return {type=>"job_obj", id=>($args->{id})};
+    } elsif (ref $args) {
+        return "$args";
+    } else {
+        return $args;
+    }
+}
+
+sub retrieve {
+    # ruby function/object => perl function/object
+    # perl function/object => retrieve from hash table
+    my ($args) = @_;
+
+    if (ref $args eq 'HASH') {
+        if (defined $args->{type}) {
+            if ($args->{type} eq 'function/pl') {
+                return $functions{$args->{id}};
+            } elsif ($args->{type} eq 'function/rb') {
+                return sub {
+                    my @args = @_;
+                    return xcrypt_call($args->{id}, @args);
+                }
+            } elsif ($args->{type} eq 'job_obj') {
+                $log->debug("retrieve/job_obj");
+                return jobsched::find_job_by_id($args->{id});
+            } else {
+                $log->fatal("Wrong message.");
+                return $args;
+            }
+        } else {
+            for my $k (keys %$args) {
+                $args->{$k} = retrieve($args->{$k});
+            }
+            return $args;
+        }
+    } elsif (ref $args eq 'ARRAY') {
+        my $ret = [ map { retrieve($_) } @$args];
+        return $ret;
+    } else {
+        return $args;
+    }
+}
+
+sub xcrypt_send {
+    my $message = shift;
+
+#    $lock->down;
+    my $q = $queues->{"$Coro::current"} = Coro::Channel->new;
+#    $lock->up;
+
+    my $json_str = JSON->new->convert_blessed->encode($message);
+    $lock->down;
+    print $client $json_str . "\n";
+    $lock->up;
+
+    my $retval = $q->get();
+    $log->debug("Got return value ". $retval);
+    
+    return $retval;
+}
+
+# Send funcall message and waits.
+sub xcrypt_call {
+    my ($fn, @args) = @_;
+    $log->debug(" -- xcrypt_call");
+
+    my $message = {
+        "thread_id" => "$Coro::current",
+        "exec" => "funcall",
+        "function" => "$fn",
+        "args" => (before_to_json[@args]),
+    };
+
+    $log->dump($message);
+    return xcrypt_send($message);
+}
+
+# ================
+
+sub dispatch {
+    while (1) {
+        $log->debug(" -- dispatch");
+        unless ($client) {
+            $log->fatal("client is undef");
+            finish(1);
+        }
+
+        # add hook for debug
+        if (0) {
+            Coro::on_enter { $log->debug("dbg: dipatch thread -- enter : nready=". Coro::nready);};
+            Coro::on_leave { print "dbg: dispatch thread -- leave : nready=". Coro::nready ."\n";};
+        }
+
+        $log->info("waiting...");
+
+        my $line = $client->getline();
+        $log->debug("<== got line");
+        $log->debug($line);
+
+        my $hash = decode_json($line); # hash ref
+        my $message = retrieve($hash);
+
+        switch ($message->{exec}) {
+            case "returning" {
+                $log->debug("receive returning value ".$message->{message}
+                            ." to ".$message->{thread_id});
+                my $q = $queues->{$message->{thread_id}};
+                $q->put($message->{message});
+                cede;           # necessary?
+                # cf. id:nayu / 20100109
+            }
+            case "funcall" {
+                async { #??
+                    $log->debug("funcall");
+                    my ($fn, $args) = ($message->{function}, $message->{args});
+                    die "undefined function" . $fn unless (defined $fn);
+                    
+                    if (1) {
+                        Coro::on_enter { $log->debug("dbg: execute thread -- enter : nready=". Coro::nready);};
+                        Coro::on_leave { $log->debug("dbg: execute thread -- leave : nready=". Coro::nready);};
+                    }
+                    
+                    no strict "refs";
+                    my @ret = &$fn(@$args);
+                    
+                    $log->debug("dbg: returning -- funcall");
+                    
+                    my $json_str = JSON->new->convert_blessed->encode({
+                        "thread_id" => $message->{thread_id},
+                        "exec" => "returning",
+                        "message" => (before_to_json [@ret])
+                                                                      });
+                    $log->dump($json_str);
+                    
+                    $lock->down;
+                    print $client $json_str . "\n"; # fixme: モジュール化すべき
+                    $lock->up;
+                };
+                # cede;           #?
+            }
+            case "finish" { finish() }
+            case "" { $log->fatal("message is undef") }
+            else {
+                 $log->fatal("invalid input: $_");
+            }
+        }
+    } #while
+} #dispatch
+
+
+sub finish {
+    # todo: more than 'close $server'
+    my ($error) = shift;
+    if ($error) {
+        $log->fatal("ERROR! -- finish");
+    }
+    xcrypt_send ({'exec' => 'finack'});
+    sleep (1);
+    $log->info("finish!");
+    close $server;
+    exit;
+}
+
+sub get {
+    $log->debug("comm/get");
+    my ($job, $field) = @_;
+#    p @_ if $debug;
+    return $job->{$field}; # fixme
+}
+
+sub set {
+    $log->debug("comm/set");
+    my ($job, $field, $newvar) = @_;
+    return $job->{$field} = $newvar; # fixme / setf place??
+}
+
+# ================================================================
+sub test_callback {
+    warn " -- test_callback";
+
+    warn "calling callback -- test_callback";
+    my $ret = &{$_[0]};
+    warn "called callback -- test_callback";
+
+    warn Dumper ["ret", $ret];
+
+    if ($ret < 10000) {
+        warn "*** ret is smaller than 10000 ***\n";
+    } else {
+        warn "*** ret is larger than or equal to 10000 ***\n";
+    }
+    warn "end calling callback -- test_callback";
+    return "return of test_callback";
+}
+
+sub test {
+    warn Dumper my $json = JSON::Xcrypt->new;
+    my $str;
+    $str = $json->encode(\&test);        # ok
+    $str = $json->encode([\&test]); # ok
+    $str = $json->encode({fn=>\&test}); # ng!
+    # warn Dumper ["str", $str];
+    # warn Dumper \%JSON::Xcrypt::Xcrypt_functions;
+
+    # warn Dumper my $json2 = $json->decode($str);
+    # warn Dumper ["json2", retrieve($json2)];
+
+    warn "#### json/rb ####";
+    my $jsonrb = {
+        "exec" => "funcall",
+        "function" => "prepare",
+        args => {
+            "after"=>{"type"=>"function/rb", "id"=>"#<Proc(0x100938a)>"} # next: to_a
+        },
+    };
+
+    warn "jsonrb", Dumper $jsonrb;
+    warn "retrieved_jsonrb", Dumper retrieve($jsonrb);
+    warn "================================================================";
+    my %template = (
+        id => 'job1',
+        exe0 => './a.out',
+#         after => sub {
+# #            print "\$self->{id} finished\n";
+#             print "finished\n";
+#         }
+    );
+    my $job1 = user->new(%template);
+    warn Dumper $job1;
+
+    return "Test test test!";
+}
+
+sub test_to_json {
+    print "test_to_json\n";
+    print "*** test2 ***\n";
+    use core;
+    my $obj = core->new({id => 'j100'});
+    my $h = {code => \&print, core => $obj};
+
+    p $h;
+    my $json = JSON->new->convert_blessed;
+    p $json->encode( before_to_json $h );
+}
+
+sub main {
+    if ($debug) {
+        $log->info("*** debug mode: on***");
+    }
+
+    if (0) {
+        warn "test";
+        test_to_json;
+    } else {
+        if (1) {
+            Coro::on_enter { print $log->debug("dbg: main thread -- enter : nready=". Coro::nready);};
+            Coro::on_leave { print $log->debug("dbg: main thread -- leave : nready=". Coro::nready);};
+        }
+        start_server
+            and dispatch;
+        # my $th = async{dispatch};
+        # $th->join;
+
+        # ensure
+        $log->debug("closing -- main");
+        if ( $server ) {
+            close($server);
+        }
+    }
+}
+
+main();
