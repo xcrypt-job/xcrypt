@@ -1,7 +1,5 @@
 #!/bin/sh
-if [ "x$XCRYPT" = "x" ]; then
-  XCRYPT=$HOME/xcrypt
-fi
+XCRYPT=@@INSTALLDIR@@
 PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
 PATH=$XCRYPT/bin:$PATH
 export XCRYPT PERL5LIB PATH

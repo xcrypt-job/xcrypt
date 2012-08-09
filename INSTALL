@@ -1,40 +1,32 @@
 HOW TO INSTALL Xcrypt
 
-Note: Please use Bourne-shell compatible shell (e.g., sh, bash, zsh, ...)
-
 (1)
 Copy the directory tree to the directory you want to install Xcrypt (INSTALLDIR).
 
 (2)
-Change the value of the XCRYPT environment variable in source-me.sh to INSTALLDIR.
+Run the following commands.
+
+% cd INSTALLDIR
+% sh do-install.sh
+
+Just press enter to the question asking the install directory.
+Answer 'yes' or just press enter key for all the following questions.
 
 (3)
-Run the following commands.
-Note: If you already set the XCRYPT environment variable and want to install Xcrypt
-to another directory, unset its value before running the following commands.
-% source source-me.sh
-% cd INSTALLDIR/cpan
-% sh do-install.sh   # Answer 'yes' or just press enter key for all the question.
-
-(4)
 Add INSTALLDIR/bin into the PATH environment variable as follows.
 ===
 export PATH=INSTALLDIR/bin:$PATH
 ===
 (You should add this setting to the startup file of your login shell such as .bash_profile)
 
-(5)
-Change the value of the XCRYPT environment variable in INSTALLDIR/bin/.wrapper
-to INSTALLDIR.
-
-(6)
+(4)
 If your system supports a batch scheduler and you want to use it,
 Copy INSTALLDIR/etc/xcryptrc into $HOME/.xcryptrc
 and set the parameter values according to the comments in this file.
 (You can find the pre-installed schedulers in INSTALLDIR/lib/config/*.pm
 Please read Xcrypt manual to add a new scheduler definition.)
 
-(7)
+(5)
 Chdir to INSTALLDIR/sample and execute
 % xcrypt single.xcr
 to check the installation is successfully finished.
