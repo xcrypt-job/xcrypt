@@ -5,10 +5,12 @@ use base qw(Exporter);
 our @EXPORT = qw(inventory_write_cmdline get_job_status);
 
 use strict;
+use List::Util qw(min);
 use Cwd;
 use File::Basename;
 use File::Spec;
 use Coro;
+use Coro::Semaphore;
 use Coro::AnyEvent;
 use Coro::Signal;
 use Time::HiRes;
@@ -56,14 +58,15 @@ my %Running_Jobs = ();
 # to indicate that the job is deleted by a user (not accidentally).
 my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
-# 外部からの状態変更通知を待ち受け，処理するスレッド
-# my $Watch_Thread = undef;    # accessed from bin/xcrypt # Obsolete
-# ジョブがabortedになってないかチェックするスレッド
-my $Abort_Check_Thread = undef;
+
+# Interval of checking whether queued/running jobs are not aborted
+# by invoking qstat command [sec]
 my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
-# The thread that checks messages that inventory_write.pl leaves when communication failed
-my $Left_Message_Check_Thread = undef;
+# Interval of checking state transition files (*_is_running/done)
+# and signal files (*_to_be_cancelled/uninitialized/invalidated/finished/aborted)
 my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
+# The thread to perform the above mentioned checking.
+my $Status_Check_Thread = undef;
 
 # Warning option (can be bound dynamically using a local declaration)
 our $Warn_job_not_found_by_id = 1;
@@ -529,23 +532,6 @@ sub check_and_write_aborted {
     }
 }
 
-sub invoke_abort_check {
-    # print "invoke_abort_check.\n";
-    $Abort_Check_Thread = Coro::async_pool {
-        while (1) {
-            Coro::AnyEvent::sleep $Abort_Check_Interval;
-            check_and_write_aborted();
-
-            # print_all_job_status();
-            ## inv_watch/* のopenがhandle_inventoryと衝突してエラーになるので
-            ## とりあえずコメントアウト
-            # &check_and_alert_elapsed();
-        }
-    };
-    # print "invoke_abort_check done.\n";
-    return $Abort_Check_Thread;
-}
-
 # Check messages that a job script leaves when the job becomes 'running' or 'done'
 # and when xcrypt{del,cancel,invalidate}[all] commands is executed by user.
 sub left_message_file_name {   # Transition message file
@@ -637,18 +623,33 @@ sub left_message_check {
     # Signal
     left_signal_message_check (1);
 }
-sub invoke_left_message_check {
-    # インベントリファイルの置き場所ディレクトリを作成
+
+# Create a thread to perform left_message_check() and check_and_write_aborted()
+# repeatedly.
+sub invoke_status_check {
     unless (-d "$Inventory_Path") {
         mkdir $Inventory_Path, 0755;
     }
-    $Left_Message_Check_Thread = Coro::async_pool {
+    $Status_Check_Thread = Coro::async_pool {
+        my $rem_lmsg = $Left_Message_Check_Interval;
+        my $rem_abrt = $Abort_Check_Interval; 
         while (1) {
-            left_message_check();
-            Coro::AnyEvent::sleep $Left_Message_Check_Interval;
+            my $slp = min($rem_lmsg, $rem_abrt);
+            Coro::AnyEvent::sleep $slp;
+            $rem_lmsg -= $slp; $rem_abrt -= $slp;
+            if ( $rem_lmsg <= 0 ) {
+                # print "left_message_check()\n";
+                left_message_check();
+                $rem_lmsg += $Left_Message_Check_Interval;
+            }
+            if ( $rem_abrt <= 0 ) {
+                # print "check_and_write_aborted()\n";
+                check_and_write_aborted();
+                $rem_abrt += $Abort_Check_Interval;
+            }
         }
     };
-    return $Left_Message_Check_Thread;
+    return $Status_Check_Thread;
 }
 
 ##
