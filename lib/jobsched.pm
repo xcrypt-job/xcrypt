@@ -61,12 +61,16 @@ my @Signals = ("sig_abort", "sig_cancel", "sig_invalidate");
 
 # Interval of checking whether queued/running jobs are not aborted
 # by invoking qstat command [sec]
-my $Abort_Check_Interval = $xcropt::options{abort_check_interval};
+my $Abort_Check_Interval_Max = $xcropt::options{abort_check_interval};
+my $Abort_Check_Interval = $Abort_Check_Interval_Max;
 # Interval of checking state transition files (*_is_running/done)
 # and signal files (*_to_be_cancelled/uninitialized/invalidated/finished/aborted)
 my $Left_Message_Check_Interval = $xcropt::options{left_message_check_interval};
+# If true, a job does not become "done" while it remains in "qstat" list
+my $Done_After_Queue = $xcropt::options{done_after_queue};
 # The thread to perform the above mentioned checking.
 my $Status_Check_Thread = undef;
+
 
 # Warning option (can be bound dynamically using a local declaration)
 our $Warn_job_not_found_by_id = 1;
@@ -506,7 +510,9 @@ sub check_and_write_aborted {
             }
         }
     }
-    # %uncheckedに残っているジョブを"aborted"にする．
+    # Invoke left_message_check(0) here because %unchecked jobs may be going to be "done"
+    left_message_check(0);
+    # Make %unchecked jobs "aborted"
     foreach my $req_id ( keys %unchecked ) {
         if ( exists $Running_Jobs{$req_id} ) {
             my $aborted_job = $Running_Jobs{$req_id};
@@ -544,6 +550,11 @@ sub left_message_file_name_inventory {   # Signal message file
 }
 
 sub left_transition_message_check {
+    # If $done_check_only is true, a job does not become "done" even if *_is_done exists.
+    # Instead, $Abort_Check_Interval shorten. Then, check_and_write_aborted() will invoke
+    # left_transition_message_check(0) after the job does not appear in "qstat" list
+    # and it will become "done".
+    my $done_check_only = shift;
     foreach my $req_id (keys %Running_Jobs) {
         my $self = $Running_Jobs{$req_id};
         if ( get_job_status($self) eq 'queued') {
@@ -569,14 +580,18 @@ sub left_transition_message_check {
                     . " exists at $self->{env}->{host}.\n";
             }
             if ( xcr_exist ($self->{env}, left_message_file_name($self, 'done')) ) {
-                unless (get_signal_status($self)) {
-                    set_job_done ($self);
+                if ( $done_check_only ) {
+                    $Abort_Check_Interval = min (1, $Abort_Check_Interval);
                 } else {
-                    set_job_status_according_to_signal($self);
-                    $self->qdel();
-                }
-                if ( $xcropt::options{delete_left_message_file} ) {
-                    xcr_unlink ($self->{env}, left_message_file_name($self, 'done'));
+                    unless (get_signal_status($self)) {
+                        set_job_done ($self);
+                    } else {
+                        set_job_status_according_to_signal($self);
+                        $self->qdel();
+                    }
+                    if ( $xcropt::options{delete_left_message_file} ) {
+                        xcr_unlink ($self->{env}, left_message_file_name($self, 'done'));
+                    }
                 }
             }
         }
@@ -588,7 +603,7 @@ sub left_transition_message_check {
 sub left_signal_message_check {
     my $self_or_all = shift;
     my @checklist;
-    if (ref ($self_or_all) eq 'HASH') {
+    if (ref ($self_or_all) eq 'user') {
 	my $id = $self_or_all->{id};
         @checklist = glob File::Spec->catfile($Inventory_Path, $id .'_to_be_*');
     } else {
@@ -617,9 +632,11 @@ sub left_signal_message_check {
 }
 
 sub left_message_check {
-    if (defined $xcropt::options{verbose_leftmessage}) { print STDERR "left_message_check:\n"; }
+    # $done_check_only is just passed to left_transition_message_check
+    my $done_check_only = shift;
+    if (defined $xcropt::options{verbose_leftmessage}) { print STDERR "left_message_check($done_check_only):\n"; }
     # Transition to running/done
-    left_transition_message_check ();
+    left_transition_message_check ($done_check_only);
     # Signal
     left_signal_message_check (1);
 }
@@ -638,14 +655,13 @@ sub invoke_status_check {
             Coro::AnyEvent::sleep $slp;
             $rem_lmsg -= $slp; $rem_abrt -= $slp;
             if ( $rem_lmsg <= 0 ) {
-                # print "left_message_check()\n";
-                left_message_check();
+                left_message_check($Done_After_Queue);
                 $rem_lmsg += $Left_Message_Check_Interval;
             }
             if ( $rem_abrt <= 0 ) {
-                # print "check_and_write_aborted()\n";
                 check_and_write_aborted();
                 $rem_abrt += $Abort_Check_Interval;
+                $Abort_Check_Interval = min($Abort_Check_Interval*2, $Abort_Check_Interval_Max);
             }
         }
     };
