@@ -28,5 +28,10 @@ Please read Xcrypt manual to add a new scheduler definition.)
 
 (5)
 Chdir to INSTALLDIR/sample and execute
+% cd bin
+% make    # Make execution files executed by sample Xcrypt scripts
+% cd ..
 % xcrypt single.xcr
 to check the installation is successfully finished.
+If successful, an output file "jobsingle_out" whose contents is
+"fib(40)=165580141" is created.
