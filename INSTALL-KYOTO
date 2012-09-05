@@ -10,16 +10,14 @@ instructions in "INSTALL".
 
 We recommend you to add the following piece of code to your login
 script (.bashrc, .zshrc, etc.) to use Xcrypt on all the subsystems
-with comfort.
+with comfort. You also have to prepare $HOME/xcryptrc-camphor and
+$HOME/xcryptrc-laurel instead of $HOME/.xcryptrc, which should
+include, at least, JS_queue and JS_group settings according to your
+account information in the [template] section and "sched=kyoto-camphor"
+or "sched=kyoto-laurel" in the [environment] section.
 ===
 # * Replace /path/to/xcrypt-A and /path/to/xcrypt-B to
 #   your install directories.
-# * Replace $HOME/xcryptrc-camphor and $HOME/xcryptrc-laurel
-#   to the paths to your Xcrypt user configulation files.
-#   (Each file, at least, must include JS_queue/JS_group settings
-#   according to your account information in the [template] section
-#   and "sched=kyoto-camphor" or "sched=kyoto-laurel" in the
-#   [environment] section.
 HN_PREFIX=`hostname -s | awk -F - '{print $1}'`
 if [ $HN_PREFIX = 'xe' ]; then
     export XCRYPT=/path/to/xcrypt-A
