@@ -9,7 +9,8 @@ sched = sh
 # sched = condor
 # sched = msdos
 # sched = sh
-# sched = t2k_kyoto
+# sched = kyoto-laurel
+# sched = kyoto-camphor
 # sched = t2k_tokyo
 # sched = t2k_tsukuba
 # sched = torque
@@ -36,7 +37,7 @@ sched = sh
 
 ## Set (uncomment) this if the batch scheduer requests you to (or you want to)
 ## specify estimated job execution time.
-# JS_time = 3600
+# JS_limit_time = 3600
 
 ## Set (uncomment) this if the batch scheduer requests you to specify a queue name
 ## when submitting a job.
