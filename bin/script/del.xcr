@@ -1,5 +1,6 @@
 use base qw(core);
 use File::Spec;
+use File::Path;
 use Getopt::Long;
 use common;
 
@@ -7,48 +8,66 @@ our %options = ();
 my @job_statuses = qw(initialized prepared submitted queued running done finished aborted); # ジョブ状態一覧
 
 my @help = (
-    q /xcryptdel [--help] [--all] [--clean]/,
-    q /          [--cancel] [--invalidate] [--uninitialize] [--finish]/,
-    q /          [--name regexp] [--status regexp]/,
-    q //,
+    q /xcryptdel [--all] [--name regexp] [--status regexp]/,
+    q /          [--abort] [--cancel] [--invalidate] [--uninitialize] [--finish]/,
+    q /          [--help] [--clean]/,
     q /Options:/,
-    q /--help          shows this message/,
+    q /[job selection options]/,
+    q /--all           select all the jobs./,
+    q /--name          select jobs whose ids match regexp./,
+    q /--status        select jobs whose status name match the regexp./,
     q //,
     q /[delete options]/,
-    q /--all           delete all the jobs./,
-    q /--clean         delete all the jobs and clean the history./,
-    q /--name          delete jobs the name matches of regexp./,
-    q /--status        delete jobs the status name matches the regexp./,
+    q /--abort (default)         delete unfinished jobs with making aborted (default)/,
+    q /--cancel,--uninitialize   delete jobs with making uninitialized./,
+    q /--invalidate,--finish     delete jobs with making finished./,
     q //,
-    q /[state options]/,
-    q /--cancel        the same as uninitialized./,
-    q /--invalidate    the same as finish./,
-    q /--uninitialize  delete jobs with making uninitialized./,
-    q /--finish        delete jobs with making finished./,
+    q /[other options]/,
+    q /--clean         delete all the Xcrypt log information in this directory./,
+    q /--help          shows this message/,
 );
 
 
-my %keys = ('help', 'all', 'clean', 'cancel', 'invalidate', 'uninitialize', 'finish', 'name', 'status');
+### Read command line options
 GetOptions(\%options,
-            'help'   ,
             'all'   ,
-            'clean'   ,
-            'cancel'   ,
-            'invalidate'   ,
-            'uninitialize'   ,
-            'finish'   ,
 	    'name=s'   => \&set_regexp_option,
 	    'status=s' => \&set_regexp_option,
+            'abort'  ,
+            'cancel'   ,
+            'uninitialize' => sub { $options{cancel} = 1 } ,
+            'invalidate'   ,
+            'finish'       => sub { $options{invalidate} = 1 } ,
+            'clean'   ,
+            'help'   ,
     );
-
-my %Host_Ssh_Hash;
-my $Inventory_Path = $xcropt::options{inventory_path};
+# Show help and exit
 if (defined $options{'help'}) {
     foreach (@help) {
         print $_ . "\n";
     }
     exit;
 }
+# Read redundant options as --name arguments
+set_regexp_option ('name', @ARGV);
+# Check delete options
+{
+    my $count = 0;
+    foreach my $sigopt ('abort', 'cancel', 'invalidate') {
+        if ($options{$sigopt}) { $count++; }
+    }
+    if ( $count == 0 ) {
+        $options{abort} = 1;
+        $count++;
+    }
+    if ( $count > 1 ) {
+        die "You can specify only zero or one delete option.\n";
+    }
+}
+
+### Main
+my %Host_Ssh_Hash;
+my $Inventory_Path = $xcropt::options{inventory_path};
 if (defined $options{'clean'} || defined $options{'all'}) {
     foreach my $id (&jobsched::get_last_job_id) {
         &del($id);
@@ -68,7 +87,7 @@ if (defined $options{'clean'} || defined $options{'all'}) {
     }
     if (defined $options{'name'}) {
         foreach my $id (@{$options{'name'}}) {
-            my @del_job_ids = grep {$_ =~ /$id/} @last_ids;
+            my @del_job_ids = grep {$_ =~ /^$id$/} @last_ids;
             foreach my $id (@del_job_ids) {
                 &del($id);
             }
@@ -81,12 +100,9 @@ if (defined $options{'clean'} || defined $options{'all'}) {
             }
         }
     }
-} else {
-    foreach my $id (@ARGV) {
-        &del($id);
-    }
 }
 
+### Functions
 sub set_regexp_option {
     my ($optname, @regexps) = @_;
     
@@ -102,19 +118,28 @@ sub set_regexp_option {
     }
 }
 
+sub delete_signal_files {
+    my $id = shift;
+    foreach my $sig ('uninitialized', 'finished', 'aborted') {
+        File::Path::rmtree (File::Spec->catfile($Inventory_Path, $id .'_to_be_ '. $sig));
+    }
+}
+
 sub del {
     my $id = shift;
     &qdel($id);
-    print "$id is deleted by user.\n";
-    if ($options{'invalidate'} || $options{'finish'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_uninitialized');
-	system('mkdir '. File::Spec->catfile($Inventory_Path, $id .'_to_be_finished'));
-	print "$id is finished by user.\n";
+    delete_signal_files ($id);
+    if ($options{'abort'}) {
+	mkdir File::Spec->catfile($Inventory_Path, $id.'_to_be_aborted');
+	print "$id is signaled to be aborted.\n";
     }
-    if ($options{'cancel'} || $options{'uninitialize'}) {
-	unlink File::Spec->catfile($Inventory_Path, $id . '_to_be_finished');
-	system('mkdir '. File::Spec->catfile($Inventory_Path, $id.'_to_be_uninitialized'));
-	print "$id is uninitialized by user.\n";
+    if ($options{'cancel'}) {
+	mkdir File::Spec->catfile($Inventory_Path, $id.'_to_be_uninitialized');
+	print "$id is signaled to be uninitialized.\n";
+    }
+    if ($options{'invalidate'}) {
+	mkdir File::Spec->catfile($Inventory_Path, $id .'_to_be_finished');
+	print "$id is signaled to be finished.\n";
     }
 }
 
@@ -143,9 +168,7 @@ sub qdel {
 	} else {
 	    my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
 	    $ssh->system("rm -rf $running_file") or warn $ssh->error;
-#	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $running_file");
 	    $ssh->system("rm -rf $done_file") or warn $ssh->error;
-#	    Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "rm -f $done_file");
 	}
 	if ((&jobsched::get_last_job_state($id) eq 'queued') ||
 	    (&jobsched::get_last_job_state($id) eq 'running')) {
@@ -156,21 +179,13 @@ sub qdel {
 	    # execute qdel
 	    my $command_string = any_to_string_spc ("$qdel_command ", &jobsched::get_last_job_request_id($id));
 	    if (&jobsched::get_last_job_location($id) eq 'local') {
-#        if (cmd_executable ($command_string, $self->{env})) {
 		print "Deleting $id (request ID: " . &jobsched::get_last_job_request_id($id) . ")\n";
 		exec_async ($command_string);
-#        } else {
-#            warn "$command_string not executable.";
-#        }
 	    } else {
 		print "Deleting $id (request ID: " . &jobsched::get_last_job_request_id($id) . ")\n";
 		my $ssh = $Host_Ssh_Hash{&jobsched::get_last_job_userhost($id)};
 		$ssh->system("$command_string") or warn $ssh->error;
-#		Net::SSH::ssh(&jobsched::get_last_job_userhost($id), "$command_string");
 	    }
 	}
     } 
-#   else {
-#       die "any job of id:$id doesn't exist";
-#   }
 }
