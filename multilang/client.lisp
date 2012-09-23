@@ -293,15 +293,17 @@
     (setq *notification-table* nil)
     (setq *function-table* nil)))
 
-(defmacro define-remote-call (package sym)
-  (when (atom sym)
-    (setq sym (list sym 
-                    (format nil "~(~A~)" (symbol-name sym)))))
-  (let ((args-sym (gensym)))
-    `(defun ,(car sym) (&rest ,args-sym)
-       (apply #'xcrypt-call  ,(format nil "~A::~A" package (cadr sym))
-              ,args-sym))))
-
+;;;
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro define-remote-call (package sym)
+    (when (atom sym)
+      (setq sym (list sym 
+		      (format nil "~(~A~)" (symbol-name sym)))))
+    (let ((args-sym (gensym)))
+      `(defun ,(car sym) (&rest ,args-sym)
+	 (apply #'xcrypt-call  ,(format nil "~A::~A" package (cadr sym))
+		,args-sym)))))
+  
 (define-remote-call "builtin" prepare)
 (define-remote-call "builtin" submit)
 (define-remote-call "builtin" sync)
@@ -311,3 +313,7 @@
   (submit (prepare template)))
 (defun prepare-submit-sync (template)
   (sync (submit (prepare template))))
+
+;;;
+(defun serialize (obj)
+  (format nil "~S" obj))
