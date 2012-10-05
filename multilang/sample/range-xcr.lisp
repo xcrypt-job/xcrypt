@@ -1,5 +1,5 @@
-(xcrypt-init "limit" "core")
-(xcrypt-call "limit::initialize" 1)
+(xcrypt-init "injob_lisp" "limit" "core")
+(xcrypt-call "limit::initialize" 3)
 
 (setq jobs
   (prepare-submit
@@ -9,7 +9,8 @@
      (:exe0 . "./bin/fib")
      (:arg0_0@ . ,#'(lambda (jo &rest vals) (+ (nth 0 vals) (nth 1 vals))))
      (:arg0_1@ . ,#'(lambda (jo &rest vals) (format nil "> out_~A" (jobobj-get jo "id"))))
-     (:after . ,#'(lambda (jo &rest vals) (format t "Job ~A finished." (jobobj-get jo "id"))))
+     (:after . ,#'(lambda (jo &rest vals) (format t "Job ~A finished.~%" (jobobj-get jo "id"))))
+     (:after_in_job . (lambda (jo) (format t "Job ~A finished.~%" (jobobj-get jo "id"))))
      )))
 
 ;; 以下のように対話環境でジョブの状態を確認できる

@@ -269,7 +269,7 @@
   ;; Generate communicator.xcr from temp.xcr
   (generate-communicator-script "temp.xcr" "communicator.xcr" libs)
   ;; Run Xcrypt
-  (mp:process-run-function "Xcrypt" #'command-line "xcrypt" :args '("temp.xcr"))
+  (mp:process-run-function "Xcrypt" #'command-line "xcrypt" :args '("--nodelete_in_job_file" "temp.xcr"))
   (sleep 5)
   ;; Make connection with the Xcrypt process
   (let ((socket (socket:make-socket :format :text
@@ -291,7 +291,9 @@
     (close *perl-socket*)
     (setq *perl-socket* nil)
     (setq *notification-table* nil)
-    (setq *function-table* nil)))
+    (setq *function-table* nil)
+    (command-line "pkill" :args '("perl"))
+    ))
 
 ;;;
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -304,10 +306,16 @@
 	 (apply #'xcrypt-call  ,(format nil "~A::~A" package (cadr sym))
 		,args-sym)))))
   
-(define-remote-call "builtin" prepare)
 (define-remote-call "builtin" submit)
 (define-remote-call "builtin" sync)
 (define-remote-call "jobsched" (get-job-status "get_job_status"))
+
+(defun prepare (tmpl)
+  (dolist (key '(:before_in_job :exe :after_in_job))
+    (awhen (assoc key tmpl)
+      (unless (stringp (cdr it))
+        (rplacd it (format nil "~S" (cdr it))))))
+  (xcrypt-call "builtin::prepare" tmpl))
 
 (defun prepare-submit (template)
   (submit (prepare template)))
@@ -316,4 +324,42 @@
 
 ;;;
 (defun serialize (obj)
-  (format nil "~S" obj))
+  (if (consp obj)
+      (format nil "(~A . ~A)" (serialize (car obj)) (serialize (cdr obj)))
+    (let ((s (format nil "~S" obj)))
+      (cond ((and (>= (length s) 1)
+                  (char= #\# (aref s 0)))
+             (format nil "~S" s))
+            ((keywordp obj)
+             (lisp2perl-keyname obj))
+            (t s)
+            ))))
+
+(defun lisp2perl-keyname (key)
+  (let ((lower-mode t)
+        (name (symbol-name key)))
+    (with-output-to-string (s)
+      (write-char #\" s)
+      (loop for i from 0 upto (1- (length name))
+          do (let ((ch (aref name i)))
+               (cond
+                ((and (char= ch #\-)
+                      (< i (1- (length name)))
+                      (char= (aref name (1+ i)) #\-))
+                 (incf i)
+                 (write-char #\_ s))
+                ((char= ch #\+)
+               (setq lower-mode (not lower-mode)))
+                (lower-mode
+                 (format s "~(~C~)" ch))
+                (t
+                 (format s "~:@(~C~)" ch))
+                )))
+      (write-char #\" s)
+      )))
+
+;;; Interactive command
+(defun xcrypt-clean ()
+  (command-line "xcryptdel" :args '("--clean")))
+(defun qstat ()
+  (command-line "qjobs"))
