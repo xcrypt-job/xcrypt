@@ -58,7 +58,8 @@ echo
 echo "##### Generating a wrapper script #####"
 
 BINDIR=$INSTALLDIR/bin
-WRAPPER=$BINDIR/.wrapper
+WRAPPER_FILE=.wrapper
+WRAPPER=$BINDIR/$WRAPPER_FILE
 WRAPPER_TMPL=$BINDIR/wrapper-template
 
 if [ ! -f $WRAPPER_TMPL ]; then
@@ -69,6 +70,14 @@ fi
 rm -f $WRAPPER
 sed s#@@INSTALLDIR@@#$INSTALLDIR# < $WRAPPER_TMPL > $WRAPPER
 chmod --reference=$WRAPPER_TMPL $WRAPPER
+
+#########################################################
+echo "##### Generating Xcrypt commands #####"
+for i in xcrypt xcryptdel xcryptstat xcryptsched
+do
+    (cd $BINDIR; rm -f $i; ln -s $WRAPPER_FILE $i)
+    echo Created $BINDIR/$i
+done
 
 #########################################################
 echo "#######################################"
