@@ -214,20 +214,6 @@ until (-e $tmp_filename) {
     sleep 1;
     print "a header file is being generated, please wait...\n";
 }
-open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
-my $header = basename($tmp_filename, '.pm');
-my $TMP;
-if (defined $options{compile_only}) {
-    open($TMP , ">", $xcrfile . '.pl') or die $!;
-} else {
-    open($TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
-}
-print $TMP <<'EOH';
-package user;
-use File::Spec;
-use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
-use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'cpan'));
-use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib', 'algo', 'lib'));
 use builtin;
 use Coro;
 use jobsched;
