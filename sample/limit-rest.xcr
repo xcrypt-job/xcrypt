@@ -1,0 +1,36 @@
+# A sample of the limit module: limits the number of simultaneously running jobs.
+# Derived from limit.xcr:
+# * Added arguments of limit::initalize to use the rest guard.
+# * (Changed the value of id}
+use base qw (limit core);
+
+# * Set the limit number of simultaneously running jobs to 2.
+# * Set the rest guard: job submission is guarded after every submissions of 3 jobs. 
+#   The guard is deactivated again after all the submitted jobs are completed and
+#   30 seconds passed.
+limit::initialize(2,3,30);
+
+%template = (
+    'id' => 'joblmt',
+    # 10 jobs that are characterized by (30,0), (30,1), ..., (30,4), (40,0), ...,(40,4)
+    'RANGE0' => [30,40],      
+    'RANGE1' => [0..4],
+    # All the jobs have parameter 'exe0' whose value is './bin/fib'
+    'exe0' => './bin/fib',
+    # For parameter whose value is different for each job:
+    # * Parameter name is postfixed by '@'
+    # * Parameter value is defined as function that returns a parameter value
+    # In the function, $VALUE[i] can be used to refer to the assigned value
+    # from the RANGE[i], and $self can be used to refer to the job object.
+    'arg0_0@' => sub {$VALUE[0]+$VALUE[1]},
+    'arg0_1@' => sub {"> out_$self->{id}"},
+    # Exectuted asynchronously before submitting a job
+    'before' => sub {
+        print "Submitting $self->{id}\n";
+    },
+    # Exectuted asynchronously after the job is done
+    'after' => sub {
+        print "$self->{id} finished\n";
+    } 
+    );
+prepare_submit_sync (%template);
