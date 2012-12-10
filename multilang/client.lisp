@@ -9,13 +9,25 @@
 (setq *locale* (find-locale "utf-8-unix"))
 
 (defvar *perl-host* "localhost")
-(defvar *perl-port* 9000)
+(defvar *perl-port* 9001)		; eql to # in communicator.xcr
 (defvar *perl-socket* nil)
 (defvar *perl-socket-lock* nil)
 
 (defvar *notification-table* (make-hash-table :test #'equal))
 (defvar *function-table* (make-hash-table :test #'equal))
 
+
+;; Script mode or Module mode?
+(defvar *module-mode* nil)
+(defvar *xcrypt-modules* (list))
+
+(let ((args (or #+allegro (cdr (sys:command-line-arguments))
+		#+clisp ext:*args*)))
+  (let ((modules args))
+    (when modules
+      (setq *module-mode* t)
+      (setq *xcrypt-modules* modules))))
+  
 
 ;; Miscellaneous
 (defun product (&rest lists)
@@ -154,7 +166,7 @@
 (defun convert-before-serialize-function (fn)
   (let ((fnstr (write-to-string fn)))
     (setf (gethash fnstr *function-table*) fn)
-    `(("type" . "function/rb")
+    `(("type" . "function/ext")
       ("id" . ,fnstr))))
 
 (defun convert-before-serialize-jobobj (jobj)
@@ -203,10 +215,10 @@
     (let* ((line (read-line socket))
 	   (msg (json:decode-json-from-string line))
 	   (kind (cdr (assoc :exec msg))))
-      (format t "~&~A~%" line)
-      (format t "~&~S~%" msg)
+      (format *error-output* "~&~A~%" line)
+      (format *error-output* "~&~S~%" msg)
       (cond
-       ((string= "returning" kind)
+       ((string= "return" kind)
 	(let ((thread-id (cdr (assoc :thread--id msg)))
 	      (retval (cdr (assoc :message msg))))
 	  (assert (stringp thread-id))
@@ -221,8 +233,15 @@
 		 (acond
 		  ((gethash func *function-table*)
 		   #'(lambda () (apply it args)))
-		  ((fboundp (intern func))
-		   (let ((fn (symbol-function (intern func))))
+		  ((let* ((p-colon (search "::"func))) ; "package::fname"
+                     (and p-colon
+                          (let* ((package-name (string-upcase (subseq func 0 p-colon)))
+                                 (fname        (string-upcase (subseq func (+ p-colon 2))))
+                                 (package (find-package package-name)))
+                            (and package
+                                 (fboundp (intern fname package))
+                                 (intern fname package)))))
+		   (let ((fn (symbol-function it)))
 		     #'(lambda () (apply fn args))))
 		  (t
 		   #'(lambda ()
@@ -231,7 +250,7 @@
 	    (mp:process-run-function (format nil "Funcall of ~A (~A)" func (gensym))
 	      #'(lambda (&aux (retval (convert-before-serialize (funcall proc))))
 		  (xcrypt-send `(("thread_id" . ,thread-id)
-				 ("exec" . "returning")
+				 ("exec" . "return")
 				 ("message" . ,retval)
 				 )))))))
        ((string= "finack" kind)
@@ -245,8 +264,22 @@
       (format socket "~A~%" line)
       (finish-output socket))
     line))
-	    
-;; user function
+
+(defun make-connection-to-perl ()
+  (let ((socket (socket:make-socket :format :text
+				    :remote-host *perl-host*
+				    :remote-port *perl-port*)))
+    (if socket
+	(progn
+	  (setq *perl-socket* socket)
+          (setq *perl-socket-lock* (mp:make-process-lock))
+	  (mp:process-run-function "Dispatcher" #'dispatch))
+      (progn
+	(warn "Failed to connect to Xcrypt process")
+	nil)))
+  )
+
+;;; user functions
 (defun xcrypt-call (fn &rest args)
   (let ((thread-id (get-current-thread-id)))
     (ask-notification thread-id)
@@ -269,21 +302,11 @@
   ;; Generate communicator.xcr from temp.xcr
   (generate-communicator-script "temp.xcr" "communicator.xcr" libs)
   ;; Run Xcrypt
-  (mp:process-run-function "Xcrypt" #'command-line "xcrypt" :args '("--nodelete_in_job_file" "temp.xcr"))
+  (mp:process-run-function "Xcrypt" #'command-line "xcrypt" :args '("--nodelete_in_job_file" "--lang" "lisp" "temp.xcr"))
   (sleep 5)
   ;; Make connection with the Xcrypt process
-  (let ((socket (socket:make-socket :format :text
-				    :remote-host *perl-host*
-				    :remote-port *perl-port*)))
-    (if socket
-	(progn
-	  (setq *perl-socket* socket)
-          (setq *perl-socket-lock* (mp:make-process-lock))
-	  (mp:process-run-function "Dispatcher" #'dispatch)
-	  t)
-      (progn
-	(warn "Failed to connect to Xcrypt process")
-	nil))))
+  (make-connection-to-perl)
+  )
 
 (defun xcrypt-finish ()
   (when *perl-socket*
@@ -305,7 +328,8 @@
       `(defun ,(car sym) (&rest ,args-sym)
 	 (apply #'xcrypt-call  ,(format nil "~A::~A" package (cadr sym))
 		,args-sym)))))
-  
+
+;;; Define wrappers of Xcrypt functions
 (define-remote-call "builtin" submit)
 (define-remote-call "builtin" sync)
 (define-remote-call "jobsched" (get-job-status "get_job_status"))
@@ -363,3 +387,20 @@
   (command-line "xcryptdel" :args '("--clean")))
 (defun qstat ()
   (command-line "qjobs"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; When *module-mode*, load given modules, 
+;;; make a connection to Perl, and wait for messages from Perl
+(when *module-mode*
+  (loop for mod in *xcrypt-modules*
+      do (load (make-pathname
+		:name mod :type "lisp"
+		:directory (append (pathname-directory *load-pathname*)
+                                   '("lib")))))
+  (let ((dispatcher-thread (make-connection-to-perl)))
+    (if dispatcher-thread
+        (progn
+          (format t "Successfully connected to Perl~%")
+          (mp:process-wait "Waiting" #'(lambda () nil)))
+      (error "Failed to connect to perl process.")))
+  )
