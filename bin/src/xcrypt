@@ -117,6 +117,8 @@ GetOptions
      'verbose_hosts!', 'verbose_periodic!',
      'verbose_coro!', 'verbose_leftmessage_all!',
      'stack_size=i',
+     # internal use only
+     'lang=s',
      # define other command-line options...
     );
 

@@ -1,27 +1,38 @@
+package user;
 use strict;
 use warnings;
 
 use Coro::Socket;
-# use Coro::Handle;
 use Coro::Channel;              # also in coro.pm
 use Switch;
 
 use JSON;
+use NEXT;
 
 # for debug
 use Log::Handler;
 use Data::Dumper;
-# use DDP colored=>1, deparse=>1, sort_keys=>1;
-# use Smart::Comments;
+use Carp;
+
+use FindBin qw($Bin);
+use lib $Bin;
 
 $|=1;
+
+require "communicator.pm";
 
 local $Data::Dumper::Indent = 1;
 local $Data::Dumper::Purity = 1;
 local $Data::Dumper::Terse = 1;         # dont display 'Var'
 
-my $debug = $ENV{XCRYPT_DEBUG};
-my $test = $ENV{XCRYPT_TEST};          # æ–°æ©Ÿèƒ½
+#my $debug = $ENV{XCRYPT_DEBUG};
+my $debug = 1;
+my $test = $ENV{XCRYPT_TEST};          # ¿·µ¡Ç½
+
+close STDOUT;
+close STDERR;
+open(STDOUT, ">", "log-communicator.o");
+open(STDERR, ">", "log-communicator.e");
 
 my $log = Log::Handler->new(
     screen => {
@@ -31,38 +42,81 @@ my $log = Log::Handler->new(
         message_layout => "%L,\t[%T] %s(%l):\t%m",
     });
 
-my $server;
-my $client;
 my %functions;
 
-my $queues = {};
-my $lock = Coro::Semaphore->new(1);
-
-our @ISA;
-
-sub use_base_runtime {
-    $log->debug("use_base_runtime");
-    my $libs = shift;
-    foreach my $m (@$libs) {
-        require $m;
+sub check_lang {
+    # °ú¿ô¤¬¥µ¥Ý¡¼¥È¸À¸ì¤Ë´Þ¤Þ¤ì¤ë¤«È½Äê¤¹¤ë¤À¤±¤Î´ÊÃ±¤Ê´Ø¿ô
+    my $check_str = shift;
+    unless ($check_str) {
+        finish("check_str is undef");
     }
 
-    warn my $s = join " ", @$libs;       # fixme!
-    push @ISA, $s;
+    for my $la (keys %$Comm::sockets) {
+        return if($la eq $check_str);
+    }
+#    croak "Error no match <$check_str> -- check_lang";
+    finish("no match <$check_str> -- check_lang");
 }
+
+sub check_connection {
+    # ¥é¥¤¥Ö¥é¥ê¤Ç»È¤ï¤ì¤Æ¤¤¤ë¸À¸ì¤Ç¡¢$Comm::sockets¤¬½é´ü²½¤µ¤ì¤Æ¤¤¤Ê¤±¤ì¤Ð
+    # $Comm::sockets->{lang}->{lib}¤ò¥í¡¼¥É¤¹¤ëÂ¿¸À¸ì¥×¥í¥»¥¹¤òµ¯Æ°
+
+    $log->debug("start -- check_connection");
+    $log->dump(["Comm::langs_in_libs", @Comm::langs_in_libs]);
+
+    for my $lang (@Comm::langs_in_libs) {
+        unless ($Comm::sockets->{$lang}->{socket}) {
+            $log->debug("<$lang> client launching...");
+
+            # 1. async¤Çstart_server(waits)
+            my $th = async { start_server($lang) };
+            sleep 3;
+            my $libs = join(' ', @{$Comm::sockets->{$lang}->{libs}});
+            $log->debug("libs: $libs");
+
+            # 2. async¤Çrubyµ¯Æ°¡¢ÀÜÂ³¤µ¤»¤ë¡£libs¤ò°ú¿ô¤Ë¤¯¤Ã¤Ä¤±¤ë
+            defined(my $pid = fork) or die "Cannot fork: $!";
+            unless ($pid) {
+                # child
+                warn "i am child, libs: $libs";
+                $log->debug("i am child, libs: $libs");
+                exec("$Comm::sockets->{$lang}->{bin} $libs");
+                exit;
+            }
+
+            $log->debug("I'm parent. child:$pid");
+            $Comm::sockets->{$lang}->{pid} = $pid;
+
+            $th->join;
+
+            # 3. async¤Çdispatchµ¯Æ°¡¢$Comm::sockets¤ò¹¹¿·
+            $log->debug("launch dispatch");
+            $th = async { dispatch($lang) };
+            $log->debug("store dispatch");
+            $Comm::sockets->{$lang}->{dispatch} = $th;
+        }
+    }
+}
+
 sub start_server {
-    $server = Coro::Socket->new(
-        LocalPort => 9000,
+    my $lang = shift;
+    $log->debug("start -- start_server; lang=$lang");
+
+    my $port = $Comm::sockets->{$lang}->{port};
+
+    my $server = Coro::Socket->new(
+        LocalPort => $port,
         Listen    => 2,
         ReuseAddr => 1          # deprecated
     );
 
-    $log->info("waiting...");
+    $log->info("waiting <$lang> for port $port");
     $log->dump($server);
 
-    $client = $server->accept();
-    $log->info("accept!");
-    $log->dump($client);
+    $Comm::sockets->{$lang}->{socket} = $server->accept();
+
+    $log->info("client connected");
 }
 
 # ================================================================
@@ -85,6 +139,8 @@ sub before_to_json {
     } elsif (ref $args eq 'user') {
         return {type=>"job_obj", id=>($args->{id})};
     } elsif (ref $args) {
+        $log->debug("before_to_json");
+        $log->dump($args);
         return "$args";
     } else {
         return $args;
@@ -94,16 +150,20 @@ sub before_to_json {
 sub retrieve {
     # ruby function/object => perl function/object
     # perl function/object => retrieve from hash table
-    my ($args) = @_;
+    my ($lang, $args) = @_;
 
     if (ref $args eq 'HASH') {
         if (defined $args->{type}) {
             if ($args->{type} eq 'function/pl') {
+                $log->debug("function/pl");
+                $log->dump(\%functions);
                 return $functions{$args->{id}};
-            } elsif ($args->{type} eq 'function/rb') {
+            } elsif ($args->{type} eq "function/ext") {
+                $log->debug("function/ext");
                 return sub {
-                    my @args = @_;
-                    return xcrypt_call($args->{id}, @args);
+                    my @fnargs = @_;
+                    $log->debug("sub: @fnargs");
+                    return xcrypt_call($lang, $args->{id}, @fnargs);
                 }
             } elsif ($args->{type} eq 'job_obj') {
                 $log->debug("retrieve/job_obj");
@@ -114,60 +174,82 @@ sub retrieve {
             }
         } else {
             for my $k (keys %$args) {
-                $args->{$k} = retrieve($args->{$k});
+                $args->{$k} = retrieve($lang, $args->{$k});
             }
             return $args;
         }
     } elsif (ref $args eq 'ARRAY') {
-        my $ret = [ map { retrieve($_) } @$args];
+        my $ret = [ map { retrieve($lang, $_) } @$args];
         return $ret;
     } else {
         return $args;
     }
 }
 
+# to_json here
 sub xcrypt_send {
-    my $message = shift;
+    my ($lang, $ref) = @_;
+    $log->debug("lang:$lang -- xcrypt_send");
+    $log->dump($ref);
+    my $bef_json = before_to_json($ref);
+    $log->dump($bef_json);
+    my $json = JSON->new->convert_blessed->encode($bef_json);
+    $log->dump($json);
+    my $lock = $Comm::sockets->{$lang}->{lock};
 
-#    $lock->down;
-    my $q = $queues->{"$Coro::current"} = Coro::Channel->new;
-#    $lock->up;
-
-    my $json_str = JSON->new->convert_blessed->encode($message);
     $lock->down;
-    print $client $json_str . "\n";
+#    $log->dump($Comm::sockets->{$lang});
+    finish("\$Comm::sockets->{$lang}->socket is undef") unless defined $Comm::sockets->{$lang}->{socket};
+    print { $Comm::sockets->{$lang}->{socket} } ($json."\n"); # cf. perldoc#print
     $lock->up;
 
-    my $retval = $q->get();
-    $log->debug("Got return value ". $retval);
-    
-    return $retval;
+    $log->debug("end -- xcrypt_send");
+}
+
+# for users
+sub xcrypt_call {
+    my ($lang, $fn, @args) = @_;
+    xcrypt_call_with_super($lang, sub{}, $fn, @args);
 }
 
 # Send funcall message and waits.
-sub xcrypt_call {
-    my ($fn, @args) = @_;
-    $log->debug(" -- xcrypt_call");
+sub xcrypt_call_with_super {
+    my ($lang, $super, $fn, @args) = @_;
+    $log->debug(" -- xcrypt_call_with_super");
+    check_lang($lang);
+    check_connection();
 
     my $message = {
         "thread_id" => "$Coro::current",
         "exec" => "funcall",
         "function" => "$fn",
-        "args" => (before_to_json[@args]),
+        "args" => [@args],
+        "super" => $super,
     };
 
+    $log->debug("==> xcrypt_call sending...");
     $log->dump($message);
-    return xcrypt_send($message);
+
+    my $q = $Comm::sockets->{$lang}->{queues}->{"$Coro::current"} = Coro::Channel->new;
+    xcrypt_send($lang, $message);
+    my $retval = $q->get();
+    $log->debug("Got return value -- xcrypt_call " . $retval);
+
+    return $retval;
 }
 
 # ================
-
+# dispatch(<lang>)
 sub dispatch {
+    my $lang = shift;
+    $log->debug("lang=$lang -- dispatch");
+    my $client = $Comm::sockets->{$lang}->{socket};
+
     while (1) {
+        cede();
         $log->debug(" -- dispatch");
-        unless ($client) {
-            $log->fatal("client is undef");
-            finish(1);
+        unless (defined $client) {
+            finish("client is undef");
         }
 
         # add hook for debug
@@ -183,175 +265,185 @@ sub dispatch {
         $log->debug($line);
 
         my $hash = decode_json($line); # hash ref
-        my $message = retrieve($hash);
+        my $message = retrieve($lang, $hash);
+
+        $log->debug("after retrieve");
+        $log->dump($message);
 
         switch ($message->{exec}) {
-            case "returning" {
-                $log->debug("receive returning value ".$message->{message}
+            case "return" {
+                $log->debug("receive return value ".$message->{message}
                             ." to ".$message->{thread_id});
-                my $q = $queues->{$message->{thread_id}};
+                my $q = $Comm::sockets->{$lang}->{queues}->{$message->{thread_id}};
                 $q->put($message->{message});
-                cede;           # necessary?
+                cede();           # necessary?
                 # cf. id:nayu / 20100109
             }
             case "funcall" {
-                async { #??
-                    $log->debug("funcall");
+                async {
+                    $log->debug("start perl-funcall thread");
+
                     my ($fn, $args) = ($message->{function}, $message->{args});
                     die "undefined function" . $fn unless (defined $fn);
-                    
+
                     if (1) {
                         Coro::on_enter { $log->debug("dbg: execute thread -- enter : nready=". Coro::nready);};
                         Coro::on_leave { $log->debug("dbg: execute thread -- leave : nready=". Coro::nready);};
                     }
-                    
+
+                    # unless (ref &$fn eq 'CODE') {
+                    #     $log->dump($fn);
+                    #     finish("fn is not a CODE ref");
+                    # }
+
+                    if ($fn =~ /^CODE/ ) {
+                        $log->debug("CODE found");
+                        my $fn = $functions{$fn}
+                            or die "no fn";
+                    }
+
+                    warn "fn: $fn";
                     no strict "refs";
                     my @ret = &$fn(@$args);
-                    
-                    $log->debug("dbg: returning -- funcall");
-                    
-                    my $json_str = JSON->new->convert_blessed->encode({
+
+                    $log->debug("return lang:$lang -- funcall");
+
+                    xcrypt_send( $lang, {
                         "thread_id" => $message->{thread_id},
-                        "exec" => "returning",
-                        "message" => (before_to_json [@ret])
-                                                                      });
-                    $log->dump($json_str);
-                    
-                    $lock->down;
-                    print $client $json_str . "\n"; # fixme: ãƒ¢ã‚¸ãƒ¥ãƒ¼ãƒ«åŒ–ã™ã¹ã
-                    $lock->up;
+                        "exec" => "return",
+                        "message" => before_to_json([@ret])
+                    });
+
                 };
-                # cede;           #?
+                cede();           #?
             }
+            case "call_next" {
+                $log->info("call_next");
+                my $pack = $message->{package};
+                my $func = $message->{function};
+                my $args = $message->{args};
+
+                $func = "call_next_$func";
+
+                async {
+                    my $ret;
+                    no strict "refs";
+                    $log->dump([$pack,$func,$args]);
+#                    $ret = $pack->$func($args);
+                    $ret = user->call_next_new(@$args);
+                    warn $ret;
+#                    my $ret = 1;
+                    $log->dump($ret);
+
+                    if ($@) {           # eval exception trap
+                        $log->fatal("error: $@");
+                        exit;
+                    }
+
+                    $log->dump( $ret );
+                    $log->debug($message->{thread_id});
+
+                    xcrypt_send({ # $lang
+                        "thread_id" => $message->{thread_id},
+                        "exec" => "return",
+                        "message" => before_to_json($ret),
+                    });
+                };
+            } #call_next
             case "finish" { finish() }
-            case "" { $log->fatal("message is undef") }
+            case "" { finish("message is undef") }
             else {
-                 $log->fatal("invalid input: $_");
+                finish("invalid input: $_ -- dispatch");
             }
         }
     } #while
 } #dispatch
 
-
 sub finish {
-    # todo: more than 'close $server'
-    my ($error) = shift;
-    if ($error) {
-        $log->fatal("ERROR! -- finish");
-    }
-    xcrypt_send ({'exec' => 'finack'});
-    sleep (1);
-    $log->info("finish!");
-    close $server;
-    exit;
+    # use die!
+    my ($message) = @_;
+    $log->warn("$message -- finish");
+    confess;
 }
 
 sub get {
-    $log->debug("comm/get");
-    my ($job, $field) = @_;
-#    p @_ if $debug;
-    return $job->{$field}; # fixme
+    my ($job_obj, $field) = @_;
+    $log->dump(["comm/get", $job_obj, $field, $job_obj->{$field}]);
+    return $job_obj->{$field}; # fixme
 }
 
 sub set {
     $log->debug("comm/set");
-    my ($job, $field, $newvar) = @_;
-    return $job->{$field} = $newvar; # fixme / setf place??
+    my ($job_obj, $field, $newvar) = @_;
+    $log->dump(["comm/set", $job_obj, $field, $newvar]);
+    return $job_obj->{$field} = $newvar; # fixme / setf place??
 }
 
 # ================================================================
-sub test_callback {
-    warn " -- test_callback";
-
-    warn "calling callback -- test_callback";
-    my $ret = &{$_[0]};
-    warn "called callback -- test_callback";
-
-    warn Dumper ["ret", $ret];
-
-    if ($ret < 10000) {
-        warn "*** ret is smaller than 10000 ***\n";
-    } else {
-        warn "*** ret is larger than or equal to 10000 ***\n";
+sub _finish {
+    my ($message);
+    # Server°Û¾ï½ªÎ»
+    $log->fatal("$message -- _finish");
+    for my $la (keys %$Comm::sockets) {
+        if (defined $Comm::sockets->{$la}->{socket}) {
+            # finish´Ø¿ô¤ò°ú¿ôÉÕ¤­¤Ç¸Æ¤Ö
+            xcrypt_call($la, "finish", "Server Dead:" . $message);
+            sleep 1;
+            close($Comm::sockets->{$la}->{socket});
+            $Comm::sockets->{$la}->{dispatch}->cancel;
+        }
     }
-    warn "end calling callback -- test_callback";
-    return "return of test_callback";
 }
 
-sub test {
-    warn Dumper my $json = JSON::Xcrypt->new;
-    my $str;
-    $str = $json->encode(\&test);        # ok
-    $str = $json->encode([\&test]); # ok
-    $str = $json->encode({fn=>\&test}); # ng!
-    # warn Dumper ["str", $str];
-    # warn Dumper \%JSON::Xcrypt::Xcrypt_functions;
-
-    # warn Dumper my $json2 = $json->decode($str);
-    # warn Dumper ["json2", retrieve($json2)];
-
-    warn "#### json/rb ####";
-    my $jsonrb = {
-        "exec" => "funcall",
-        "function" => "prepare",
-        args => {
-            "after"=>{"type"=>"function/rb", "id"=>"#<Proc(0x100938a)>"} # next: to_a
-        },
-    };
-
-    warn "jsonrb", Dumper $jsonrb;
-    warn "retrieved_jsonrb", Dumper retrieve($jsonrb);
-    warn "================================================================";
-    my %template = (
-        id => 'job1',
-        exe0 => './a.out',
-#         after => sub {
-# #            print "\$self->{id} finished\n";
-#             print "finished\n";
-#         }
-    );
-    my $job1 = user->new(%template);
-    warn Dumper $job1;
-
-    return "Test test test!";
+END {
+    # ÀäÂÐ¤Ë¤ä¤é¤Ê¤¤¤È¤¤¤±¤Ê¤¤½èÍý¤À¤±½ñ¤¯
+    # ¡Ê°Ê²¼¤ò¶èÊÌ¤Ç¤­¤Ê¤¤¡Ë
+    # 1.Ìµ»ö¤Ë¤³¤³¤Þ¤ÇÍè¤¿¾ì¹ç
+    # 2.¤É¤Ã¤«¤Ç¥¨¥é¡¼¤¬½Ð¤Æ¡¢die¤·¤¿¤Ð¤¢¤¤
+    close STDOUT;
+    close STDERR;
 }
 
-sub test_to_json {
-    print "test_to_json\n";
-    print "*** test2 ***\n";
-    use core;
-    my $obj = core->new({id => 'j100'});
-    my $h = {code => \&print, core => $obj};
-
-    p $h;
-    my $json = JSON->new->convert_blessed;
-    p $json->encode( before_to_json $h );
-}
-
-sub main {
+MAIN: {
     if ($debug) {
         $log->info("*** debug mode: on***");
+    } else {
+        $log->info("--- debug mode: off---");
     }
 
-    if (0) {
-        warn "test";
-        test_to_json;
-    } else {
-        if (1) {
-            Coro::on_enter { print $log->debug("dbg: main thread -- enter : nready=". Coro::nready);};
-            Coro::on_leave { print $log->debug("dbg: main thread -- leave : nready=". Coro::nready);};
-        }
-        start_server
-            and dispatch;
-        # my $th = async{dispatch};
-        # $th->join;
+    if (1) {
+        Coro::on_enter { print $log->debug("dbg: main thread -- enter : nready=". Coro::nready);};
+        Coro::on_leave { print $log->debug("dbg: main thread -- leave : nready=". Coro::nready);};
+    }
+#    start_server and dispatch;
 
-        # ensure
-        $log->debug("closing -- main");
-        if ( $server ) {
-            close($server);
+    my $lang = $xcropt::options{lang};
+    if ($lang) {        # Â¾¸À¸ì¤«¤éµ¯Æ°¤µ¤ì¤¿
+        $log->debug("launched by $lang");
+        start_server($lang);
+        my $th = async { dispatch($lang) };
+        $Comm::sockets->{$lang}->{dispatch} = $th;
+    } else {
+        $log->info("lang is undef (perl script?)");
+    }
+
+# ¤³¤Î¥Õ¥¡¥¤¥ë¤Ï°ìÈÖºÇ½é¤Ë¥í¡¼¥É¤µ¤ì¤ë
+# ºÇ½é¤Î¥í¡¼¥É»þ¤Ï¶õ¤Ç¤è¤¤
+# ¤½¤Î¸å use base »þ¤ËÄÉ²Ã¤µ¤ì¤ë
+# ¼ÂºÝ¤ËÀÜÂ³¤¹¤ë¤Î¤ÏºÇ½é¤Îxcrypt_call¤Î»þ
+
+# warn Dumper ["Comm::langs_in_libs", @Comm::langs_in_libs];
+# for my $la (@Comm::langs_in_libs) {
+#     $log->debug("launch $la process");
+#     start_server($la);
+# }
+
+# wait here
+    for my $la (keys %$Comm::sockets) {
+        if (my $th = $Comm::sockets->{$la}->{dispatch}) {
+            $th->join;
         }
     }
 }
 
-main();
+1;

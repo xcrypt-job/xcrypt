@@ -19,7 +19,7 @@ sub unbless {
 # Currently, only supports dumping a job object    
 sub make_dumped_environment {
     my $self = shift;
-    my $self_in_lisp = user::xcrypt_call ('SERIALIZE', unbless ($self));
+    my $self_in_lisp = user::xcrypt_call ('lisp', 'cl-user::serialize', unbless ($self));
     my @body = ();
     ## serialized self in Lisp
     push (@body, "(defconstant +self+ '$self_in_lisp)");

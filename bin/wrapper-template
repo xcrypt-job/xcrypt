@@ -1,6 +1,6 @@
 #!/bin/sh
 XCRYPT=@@INSTALLDIR@@
-PERL5LIB=$XCRYPT/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
+PERL5LIB=$XCRYPT/lib:$XCRYPT/multilang/lib:$XCRYPT/lib/algo/lib:$XCRYPT/lib/cpan:$PERL5LIB
 PATH=$XCRYPT/bin:$PATH
 export XCRYPT PERL5LIB PATH
 progname=`basename $0`
