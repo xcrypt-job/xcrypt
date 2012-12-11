@@ -1,0 +1,15 @@
+Execute the samples in the $XCRYPT/multilang directory as follows:
+(This limitation should be fixed soon.)
+
+(1) Execute the Ruby sample scripts
+% ruby sample/use_limit_rb.rb            # uses a module defined in Ruby
+% ruby sample/use_limit_lsp.rb           # uses a module defined in Lisp
+
+(2) Execute the Perl sample scripts
+% xcrypt sample/use_limit_lsp.xcr        # uses a module defined in Lisp
+
+(3) Execute the Lisp sample script
+;; Now only Allegro Common Lisp with quicklisp is supported.
+% alisp
+CL-USER> (load "client.lisp")
+CL-USER> (load "range-xcr.lisp")         # uses a module defined in Perl
