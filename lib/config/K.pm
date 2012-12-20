@@ -24,7 +24,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    return 1;
 	}
     },
-    jobscript_option_bulk => boolean_option ('#PJM --bulk'),
+    jobscript_option_bulk => boolean_option ('#PJM --bulk\n#PJM --mpi "assign-online-node"'),
     jobscript_option_sparam => sub {
 	my ($self, $mbname) = @_;
 	if (defined $self->{$mbname}) {
