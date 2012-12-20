@@ -10,7 +10,8 @@ $jsconfig::jobsched_config{$myname} = {
     left_message_running_file_type => 'file',
     left_message_done_file_type => 'file',
     # standard options
-    jobscript_preamble => ['#!/bin/sh', '#PJM -s', '#PJM --mpi "use-rankdir"'],
+	#jobscript_preamble => ['#!/bin/sh', '#PJM -s', '#PJM --mpi "use-rankdir"'],
+    jobscript_preamble => ['#!/bin/sh', '#PJM -s'],
     jobscript_workdir => sub { File::Spec->catfile('.'); },
     jobscript_option_stdout => workdir_file_option('#PJM -o ', '"stdout"'),
     jobscript_option_stderr => workdir_file_option('#PJM -e ', '"stderr"'),
@@ -135,10 +136,12 @@ $jsconfig::jobsched_config{$myname} = {
 	my ($self, $mbname) = @_;
 	my @tmp;
 	foreach my $i (@{$self->{xcr_stage_in_files_list}}) {
-	    push(@tmp, '#PJM --stgin "rank=* '.$i.' %r:./"');
+#	    push(@tmp, '#PJM --stgin "rank=* '.$i.' %r:./"');
+	    push(@tmp, '#PJM --stgin "'.$i.' ./"');
  	}
 	foreach my $i (@{$self->{$mbname}}) {
-	    push(@tmp, '#PJM --stgin "rank=* '.$i.'"');
+#	    push(@tmp, '#PJM --stgin "rank=* '.$i.'"');
+	    push(@tmp, '#PJM --stgin "'.$i.'"');
  	}
 	if ($#tmp < 0) {
 	    return '';
