@@ -33,7 +33,9 @@ in_job.xcr:
 A sample of before_in_job and after_in_job.
 
 spawn.xcr:
-A sample of spawn{}: Multithreading language like notation for submitting jobs
+A sample of
+* spawn{}: Multithreading language like notation for submitting jobs
+* return_transmission: Obtaining the return value of the exe block.
 
 === Practical example ===
 fib-eval.xcr:
@@ -74,9 +76,9 @@ bulk_tim.xcr:
 A sample of unifying multiple jobs into a bulk job using the bulk.pm module.
 
 n_section_method.xcr:
-# A sample of
-# * the n_section_method module
-# * the data_generator and data_extractor libraries
+A sample of
+* the n_section_method module
+* the data_generator and data_extractor libraries
 
 DC.xcr:
 Sample of DC.pm module (Divide and Conquer)
