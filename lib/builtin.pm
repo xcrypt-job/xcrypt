@@ -11,7 +11,7 @@ set_expander get_expander
 set_separator get_separator check_separator nocheck_separator
 filter
 set_TEMPLATE
-spawn _before_ _after_ _initially_ _finally_ _before_in_xcrypt_ _after_in_xcrypt_ _before_in_job_ _after_in_job_
+spawn_prepare spawn spawn_sync _before_ _after_ _initially_ _finally_ _before_in_xcrypt_ _after_in_xcrypt_ _before_in_job_ _after_in_job_
 add_package
 add_cmd_before_exe add_cmd_after_exe
 );
@@ -1199,15 +1199,23 @@ sub generate_new_job_id {
         }
     }
 }
-## spawn {} [spawn_before {}] [spawn_after {}] [spawn_before_in_xcrypt {}] [spawn_after_in_xcrypt {}]
-sub spawn(&@) {
-    my $code = shift;
-    my %template = ('exe' => $code, @_);
+## spawn {} [_initially_ {}] [_before_in_xcrypt_ {}] [_before_ {}] [_before_in_job_ {}] [_after_in_job_ {}] [_after_ {}] [_after_in_xcrypt_ {}] [_finally_ {}]
+sub convert_spawn_args {
+    my ($code, @args) = @_;
+    my %template = ('exe' => $code, @args);
     unless (defined $template{id}) {
         $template{id} = generate_new_job_id();
     }
-    my @jobs = prepare_submit (%template);
-    return @jobs;
+    return %template;
+}
+sub spawn_prepare(&@) {
+    return prepare (convert_spawn_args(@_));
+}
+sub spawn(&@) {
+    return prepare_submit (convert_spawn_args(@_));
+}
+sub spawn_sync(&@) {
+    return prepare_submit_sync (convert_spawn_args(@_));
 }
 sub _initially_(&@) {
     my $code = shift;

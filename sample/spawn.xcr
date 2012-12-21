@@ -1,9 +1,11 @@
 # A sample of spawn{}: Multithreading language like notation for submitting jobs
 use base qw(sandbox core);
+use return_transmission;
 
 # Global variable named $i can be read (cannot be written) to from spawn bodies.
 $TEMPLATE{transfer_variable}=['$i'];
 
+### spawn {}
 foreach $i (10..20) {
     # Submit a job that executes the spawn{} body in the job
     my ($j) = spawn {
@@ -13,14 +15,21 @@ foreach $i (10..20) {
         # The global variable $i defined in Xcrypt script can be read
         # because it is contained in $TEMPLATE{transfer_variable}
         system ("../bin/fib $i > out"); # Use Perl system() function instead of 'exe0'
+        # Extract data from otuput file
+        if ( -e 'out' ) {
+            open (FH, '<out'); my $line = <FH>; chomp ($line); return $line;
+        } else {
+            return 'Error';
+        }
     }_before_{
         # This body is executed in Xcrypt process before submitting the job (optional)
         my $self = shift;
-        print 'Submitting '. $self->{id} ."\n";
+        print '(spawn) Submitting '. $self->{id} ."\n";
     }_after_{
         # This body is executed in Xcrypt process after the job is done (optional)
         my $self = shift;
-        print 'The job '. $self->{id} ." is finished.\n";
+        my $res = get_exe_return($self);  # get the return value of the spawn{} block
+        print '(spawn) The job '. $self->{id} ." is finished. Result: $res\n";
     };
     # You can set additional parameters as follows (like prepare())
     # This parenthesis is optional (even 'id'!)
@@ -28,3 +37,46 @@ foreach $i (10..20) {
     print 'Spawned '.$j->{id}."\n";
 }
 sync;
+
+# spawn_prepare {}
+my @jobs;
+foreach $i (10..20) {
+    my ($j) = spawn_prepare {
+        my $self=shift;
+        print "exe: $self->{id}\n";
+        system ("../bin/fib $i > out"); # Use Perl system() function instead of 'exe0'
+        if ( -e 'out' ) {
+            open (FH, '<out'); my $line = <FH>; chomp ($line); return $line;
+        } else {
+            return 'Error';
+        }
+    }_before_{
+        my $self = shift;
+        print '(spawn_prepare) Submitting '. $self->{id} ."\n";
+    }_after_{
+        my $self = shift;
+        my $res = get_exe_return($self);  # get the return value of the spawn{} block
+        print '(spawn_prepare) The job '. $self->{id} ." is finished. Result: $res\n";
+    };
+    print 'Prepared '.$j->{id}."\n";
+    push (@jobs, $j);
+}
+submit_sync(@jobs);
+
+# spawn_sync {}
+foreach $i (10..20) {
+    my ($j) = spawn_sync {
+        my $self=shift;
+        print "exe: $self->{id}\n";
+        system ("../bin/fib $i > out"); # Use Perl system() function instead of 'exe0'
+    }_before_{
+        my $self = shift;
+        print '(spawn_sync) Submitting '. $self->{id} ."\n";
+    }_after_{
+        my $self = shift;
+        my $res = get_exe_return($self);  # get the return value of the spawn{} block
+        print '(spawn_sync) The job '. $self->{id} ." is finished. Result: $res\n";
+    };
+    print 'Completed '.$j->{id}."\n";
+    push (@jobs, $j);
+}
