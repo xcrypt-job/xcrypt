@@ -40,7 +40,7 @@ my @help = (
 '--queue=<name>      Specify (overwrite) a default queue jobs to be submitted',
 '--abort_check_interval=<num>        Interval time for checking whether submitted jobs are aborted [sec] (default: 19)',
 '--left_message_check_interval=<num> Interval time for checking message files from jobs [sec] (default: 3)',
-'--[no]done_after_queue              When specified, a job does not become done while it remains in a job queue',
+'--[no]done_after_queue              When specified, a job does not become done while it remains in a job queue (default: yes)',
 '--inventory_path=<directory>        Directory to save log files (default: ./inv_watch/)', 
 '--[no]delete_left_message_file      Delete message files *_is_[running|done] automatically when a job finishes (default: yes)',
 '--[no]delete_job_script             Delete a job script automatically when a job finishes (default: no)',
@@ -70,9 +70,10 @@ my @help = (
 our %options = (
     'abort_check_interval' => 19, # abortになったジョブをチェックする間隔(sec)
     'left_message_check_interval' => 3, # ジョブスクリプトが残したメッセージをチェックする間隔(sec)
+    'done_after_queue' => 1,
     'inventory_path' => 'inv_watch',
     'delete_left_message_file' => 1, # delete *_is_done/running after read
-    'delete_in_job_file' => 1,  # delete *_before/after/exe_in_job.pl after a job finished
+    'delete_in_job_file' => 1,   # delete *_before/after/exe_in_job.pl after a job finished
     'delete_return_file' => 0,   # delete *_return after a job finished
     'delete_job_script' => 0,    # delete a job script after a job finished
     'delete_stdout' => 0,        # delete a stdout file after a job finished
