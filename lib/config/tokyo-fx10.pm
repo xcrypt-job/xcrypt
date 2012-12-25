@@ -7,9 +7,9 @@ my $myname = basename(__FILE__, '.pm');
 my $NCORE = 16; # cores per physical node
 $jsconfig::jobsched_config{$myname} = {
     # commands
-    qsub_command => '/usr/bin/pjsub',
-    qdel_command => '/usr/bin/pjdel',
-    qstat_command => '/usr/bin/pjstat',
+    qsub_command => 'pjsub',
+    qdel_command => 'pjdel',
+    qstat_command => 'pjstat',
     # standard options
     jobscript_preamble => ['#!/bin/sh'],
     #jobscript_body_preamble => [''],
@@ -27,6 +27,7 @@ $jsconfig::jobsched_config{$myname} = {
 	return (
 	    "#PJM -L \"node=$phnode\"",
 	    "#PJM --mpi \"proc=$node\"",
+            "#PJL -j"
 	    );
     },
     #jobscript_option_node => (see other_options),
@@ -49,7 +50,7 @@ $jsconfig::jobsched_config{$myname} = {
         # [INFO] PJM 0000 pjsub Job 12345 submitted.
         my (@lines) = @_;
         foreach my $ln (@lines) {
-            if ($ln =~ /\s+<([0-9]+)>\s+submitted/) {
+            if ($ln =~ /\s+([0-9]+)\s+submitted/) {
                 return $1;
             }
         }
