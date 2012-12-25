@@ -24,10 +24,10 @@ $jsconfig::jobsched_config{$myname} = {
 	my $cpu = $self->{JS_cpu} || 1;
 	## # physical nodes
 	my $phnode = $self->{JS_phnode} || ceil(($node*$cpu)/$NCORE);
-	return [
+	return (
 	    "#PJM -L \"node=$phnode\"",
 	    "#PJM --mpi \"proc=$node\"",
-	    ];
+	    );
     },
     #jobscript_option_node => (see other_options),
     #jobscript_option_cpu => (see other_options),
@@ -36,12 +36,12 @@ $jsconfig::jobsched_config{$myname} = {
     jobscript_option_limit_time => sub {
 	my ($self, $mbname) = @_;
 	return $self->{$mbname}?
-	    '#PJM -L "elapse='.$self->{$mbname}.'"' : [];
+	    '#PJM -L "elapse='.$self->{$mbname}.'"' : ();
     },
     jobscript_option_queue => sub {
 	my ($self, $mbname) = @_;
 	return $self->{$mbname}?
-	    '#PJM -L "rscgrp='.$self->{$mbname}.'"' : [];
+	    '#PJM -L "rscgrp='.$self->{$mbname}.'"' : ();
     },
     jobscript_option_group => '#PJM -g ',
     # Extract from output messages

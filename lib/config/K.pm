@@ -30,7 +30,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --sparam '.$self->{$mbname};
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_node => sub {
@@ -38,7 +38,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --rsc-list "node='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_limit_time => sub {
@@ -46,7 +46,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --rsc-list "elapse='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_rank_map_bynode => sub {
@@ -54,7 +54,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "rank-map-bynode'.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_use_rankdir => boolean_option ('#PJM --mpi "use-rankdir"'),
@@ -63,7 +63,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "rank-map-bychip:'.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_rank_map_hostfile => sub {
@@ -71,7 +71,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "rank-map-hostfile='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_mpi_node => sub {
@@ -79,7 +79,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "node='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_mpi_shape => sub {
@@ -87,7 +87,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "shape='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_mpi_proc => sub {
@@ -95,7 +95,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --mpi "proc='.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_stg_transfiles => sub {
@@ -103,7 +103,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --stg-transfiles '.$self->{$mbname};
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_name => sub {
@@ -111,7 +111,7 @@ $jsconfig::jobsched_config{$myname} = {
 	if (defined $self->{$mbname}) {
 	    return '#PJM --name "'.$self->{$mbname}.'"';
 	} else {
-	    return [];
+	    return ();
 	}
     },
     jobscript_option_mpi_vset => sub {
@@ -121,7 +121,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    push(@tmp, '#PJM --vset "'.$i.'"');
  	}
 	if ($#tmp < 0) {
-	    return [];
+	    return ();
 	} else {
 	    return @tmp;
 	}
@@ -144,7 +144,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    push(@tmp, '#PJM --stgin "'.$i.'"');
  	}
 	if ($#tmp < 0) {
-	    return [];
+	    return ();
 	} else {
 	    return @tmp;
 	}
@@ -159,7 +159,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    push(@tmp, '#PJM --stgout "'.$i.'"');
  	}
 	if ($#tmp < 0) {
-	    return [];
+	    return ();
 	} else {
 	    return @tmp;
 	}
@@ -171,7 +171,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    push(@tmp, '#PJM --stgin-dir "'.$i.'"');
  	}
 	if ($#tmp < 0) {
-	    return [];
+	    return ();
 	} else {
 	    return @tmp;
 	}
@@ -186,7 +186,7 @@ $jsconfig::jobsched_config{$myname} = {
 	    push(@tmp, '#PJM --stgout-dir "'.$i.'"');
  	}
 	if ($#tmp < 0) {
-	    return [];
+	    return ();
 	} else {
 	    return @tmp;
 	}
