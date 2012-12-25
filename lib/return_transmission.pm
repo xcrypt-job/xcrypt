@@ -3,6 +3,7 @@ package return_transmission;
 use base qw(Exporter);
 our @EXPORT = qw(
 get_before_in_job_return get_before_return
+get_exe_return
 get_after_in_job_return  get_after_return
 return_write
 data_dumper
@@ -65,7 +66,7 @@ sub get_xxx_return {
     }
     close(RETURN_R);
     my @return_datas = split /\n\r\n/, $return_datas;
-    for (my $i = 0; $i <= $#return_datas; $i++) {
+    for (my $i = $#return_datas; $i >= 0 ; $i--) {
         if ($return_datas[$i] =~ /${get_nm} =/) {
             my $get_retuen_data = eval("my $return_datas[$i]");
             my $get_retuen_type = ref($get_retuen_data);
