@@ -510,8 +510,13 @@ sub check_and_write_aborted {
             }
         }
     }
-    # Invoke left_message_check(0) here because %unchecked jobs may be going to be "done"
-    left_message_check(0);
+    # Invoke left_message_check(0) for %unchecked jobs because they may be going to be "done"
+    foreach my $req_id ( keys %unchecked ) {
+        if ( exists $Running_Jobs{$req_id} ) {
+            my $job = $Running_Jobs{$req_id};
+            left_message_check (0, $job);
+        }
+    }
     # Make %unchecked jobs "aborted"
     foreach my $req_id ( keys %unchecked ) {
         if ( exists $Running_Jobs{$req_id} ) {
@@ -554,9 +559,18 @@ sub left_transition_message_check {
     # Instead, $Abort_Check_Interval shorten. Then, check_and_write_aborted() will invoke
     # left_transition_message_check(0) after the job does not appear in "qstat" list
     # and it will become "done".
+    # If $job is given, check messages only for the job. Otherwise, check for all %Running_Jobs.
     my $done_check_only = shift;
-    foreach my $req_id (keys %Running_Jobs) {
-        my $self = $Running_Jobs{$req_id};
+    my $job = shift;
+    my @jobs;
+    if ($job) {
+        @jobs = ($job);
+    } else {
+        foreach my $req_id (keys %Running_Jobs) {
+            push (@jobs, $Running_Jobs{$req_id});
+        }
+    }
+    foreach my $self (@jobs) {
         if ( get_job_status($self) eq 'queued') {
             if (defined $xcropt::options{verbose_leftmessage_all}) {
                 print "check if ". left_message_file_name($self, 'running')
@@ -632,13 +646,15 @@ sub left_signal_message_check {
 }
 
 sub left_message_check {
-    # $done_check_only is just passed to left_transition_message_check
+    # Arguments are just passed to left_transition_message_check() and left_signal_message_check()
     my $done_check_only = shift;
-    if (defined $xcropt::options{verbose_leftmessage}) { print STDERR "left_message_check($done_check_only):\n"; }
+    my $job = shift;
+    my $idmes = $job?", $job->{id}":'';
+    if (defined $xcropt::options{verbose_leftmessage}) { print STDERR "left_message_check($done_check_only$idmes):\n"; }
     # Transition to running/done
-    left_transition_message_check ($done_check_only);
+    left_transition_message_check ($done_check_only, $job);
     # Signal
-    left_signal_message_check (1);
+    left_signal_message_check ($job?$job:1);
 }
 
 # Create a thread to perform left_message_check() and check_and_write_aborted()
