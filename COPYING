@@ -1,8 +1,8 @@
-Xcrypt 0.20110119
+Xcrypt 0.20120208
 
-Copyright (C) 2008--2011 Tatsuya Abe, Tasuku Hiraishi, Takeshi Iwashita,
-Yohei Miyake, and Hiroshi Nakashima <xcrypt@sys.i.kyoto-u.ac.jp>.
-All rights reserved.
+Copyright 2008 Tatsuya Abe, Tasuku Hiraishi, Masaru Ueno, Yohei
+Miyake, Takeshi Iwashita, and Hiroshi Nakashima
+<xcrypt@sys.i.kyoto-u.ac.jp>.  All rights reserved.
 
 This package is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
