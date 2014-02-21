@@ -66,11 +66,13 @@ sub new {
 	return bless $self, $class;
 }
 
+sub before{}
+
 #####################################################################################
 ##  ファイルステージング前処理
 ##  stage_in_local:ステージインアーカイブファイル作成
 #####################################################################################
-sub before{
+sub start{
 	my $self = shift;
 
 	# stage_in_localの呼び出し
@@ -89,6 +91,7 @@ sub before{
 		$self->add_cmd_after_exe("/bin/sh $self->{stage_out_job_file}");
 		$self->add_cmd_after_exe("fi");
 	}
+        $self->NEXT::start();
 }
 
 #################################################################################
