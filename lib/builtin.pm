@@ -1065,21 +1065,33 @@ sub delete_created_files
 {
     my $self = shift;
     if ( $xcropt::options{delete_in_job_file} ) {
-        xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
-        xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
-        xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
+	if (defined $self->workdir_member_file('before_in_job_file')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('before_in_job_file'));
+	}
+	if (defined $self->workdir_member_file('exe_in_job_file')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('exe_in_job_file'));
+	}
+	if (defined $self->workdir_member_file('after_in_job_file')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('after_in_job_file'));
+	}
     }
     if ( $xcropt::options{delete_return_file} ) {
-        xcr_unlink ($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
+	xcr_unlink ($self->{env}, File::Spec->catfile($self->{workdir}, "$self->{id}_return"));
     }
     if ( $xcropt::options{delete_job_script} ) {
-        xcr_unlink ($self->{env}, $self->workdir_member_file('jobscript_file'));
+	if (defined $self->workdir_member_file('jobscript_file')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('jobscript_file'));
+	}
     }
     if ( $xcropt::options{delete_stdout} ) {
-        xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stdout'));
+	if (defined $self->workdir_member_file('JS_stdout')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stdout'));
+	}
     }
     if ( $xcropt::options{delete_stderr} ) {
-        xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stderr'));
+	if (defined $self->workdir_member_file('JS_stderr')) {
+	    xcr_unlink ($self->{env}, $self->workdir_member_file('JS_stderr'));
+	}
     }
 }
 
