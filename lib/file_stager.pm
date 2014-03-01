@@ -51,7 +51,10 @@ sub new {
 
 	# Xcrypt内部ファイルの設定
 #	my @xcr_stage_in_files_list = ();	# ステージインファイル
-	my @xcr_stage_in_files_list = ("$ENV{XCRYPT}/lib/data_extractor.pm", "$ENV{XCRYPT}/lib/data_generator.pm", "$ENV{XCRYPT}/lib/return_transmission.pm",);	# ステージインファイル
+	my @xcr_stage_in_files_list = ("$self->{env}->{xd}/lib/data_extractor.pm", \
+				       "$self->{env}->{xd}/lib/data_generator.pm", \
+				       "$self->{env}->{xd}/lib/return_transmission.pm",);
+
 	$self->{xcr_stage_in_files_list} = \@xcr_stage_in_files_list;
 	my @xcr_stage_out_files_list = ();	# ステージアウトファイル
 	$self->{xcr_stage_out_files_list} = \@xcr_stage_out_files_list;
@@ -91,7 +94,7 @@ sub start{
 		$self->add_cmd_after_exe("/bin/sh $self->{stage_out_job_file}");
 		$self->add_cmd_after_exe("fi");
 	}
-        $self->NEXT::start();
+	$self->NEXT::start();
 }
 
 #################################################################################

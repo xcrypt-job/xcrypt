@@ -96,10 +96,10 @@ sub qstat {
 	    warn "Error in $env->{sched}.pm: extract_req_ids_from_qstat_output must be a function.";
 	}
 	my $command_string = any_to_string_spc ($qstat_command);
-	unless (cmd_executable ($command_string, $env)) {
-	    warn "$command_string not executable";
-	    return ();
-	}
+#	unless (cmd_executable ($command_string, $env)) {
+#	    warn "$command_string not executable";
+#	    return ();
+#	}
 	my @qstat_out = &xcr_qx($env, $command_string, '.');
 	my @tmp_ids = &$extractor(@qstat_out);
 	foreach (@tmp_ids) {
