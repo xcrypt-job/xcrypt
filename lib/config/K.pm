@@ -4,7 +4,7 @@ use File::Basename qw(basename);
 my $myname = basename(__FILE__, '.pm');
 $jsconfig::jobsched_config{$myname} = {
     # commands
-    qsub_command => "pjsub",
+    qsub_command => "env LD_LIBRARY_PATH=/opt/local/Python-2.7.3/lib pjsub",
     qdel_command => 'pjdel',
     qstat_command => "pjstat -E",
     left_message_running_file_type => 'file',
@@ -15,15 +15,15 @@ $jsconfig::jobsched_config{$myname} = {
     jobscript_workdir => sub { File::Spec->catfile('.'); },
     jobscript_option_stdout => workdir_file_option('#PJM -o ', '"stdout"'),
     jobscript_option_stderr => workdir_file_option('#PJM -e ', '"stderr"'),
-    is_alive => sub {
-        my $self = shift;
-	sleep 5;
-        if ((-e $self->{JS_stderr})) {
-	    return 0;
-	} else {
-	    return 1;
-	}
-    },
+#    is_alive => sub {
+#        my $self = shift;
+#	sleep 5;
+#        if ((-e $self->{JS_stderr})) {
+#	    return 0;
+#	} else {
+#	    return 1;
+#	}
+#    },
     jobscript_option_bulk => boolean_option ('#PJM --bulk'."\n".'#PJM --mpi "assign-online-node"'),
     jobscript_option_sparam => sub {
 	my ($self, $mbname) = @_;
