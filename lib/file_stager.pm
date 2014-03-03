@@ -51,9 +51,14 @@ sub new {
 
 	# Xcrypt内部ファイルの設定
 #	my @xcr_stage_in_files_list = ();	# ステージインファイル
-	my @xcr_stage_in_files_list = ("$self->{env}->{xd}/lib/data_extractor.pm", \
-				       "$self->{env}->{xd}/lib/data_generator.pm", \
-				       "$self->{env}->{xd}/lib/return_transmission.pm",);
+	my @xcr_stage_in_files_list;
+	if ($cfg{is_visible_from_computational_node}==1) {
+	    @xcr_stage_in_files_list = ();
+	} else {
+	    @xcr_stage_in_files_list = ("$self->{env}->{xd}/lib/data_extractor.pm", \
+					"$self->{env}->{xd}/lib/data_generator.pm", \
+					"$self->{env}->{xd}/lib/return_transmission.pm",);
+	}
 
 	$self->{xcr_stage_in_files_list} = \@xcr_stage_in_files_list;
 	my @xcr_stage_out_files_list = ();	# ステージアウトファイル

@@ -15,6 +15,7 @@ $jsconfig::jobsched_config{$myname} = {
     jobscript_workdir => sub { File::Spec->catfile('.'); },
     jobscript_option_stdout => workdir_file_option('#PJM -o ', '"stdout"'),
     jobscript_option_stderr => workdir_file_option('#PJM -e ', '"stderr"'),
+    is_visible_from_computational_node => 0, # set 1 at /opt/aics/xcrypt
 #    is_alive => sub {
 #        my $self = shift;
 #	sleep 5;
