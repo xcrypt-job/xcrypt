@@ -24,7 +24,7 @@ PERL5LIB=$INSTALLDIR/lib:$INSTALLDIR/lib/algo/lib:$XCR_CPAN_BASE:$PERL5LIB
 
 #########################################################
 echo "##### Installing CPAN libraries #####"
-LIBS="Config-Simple-4.59-without-flock Data-Dumper-2.151 File-Copy-Recursive-0.38 EV-4.11 Event-1.22 AnyEvent-7.01 common-sense-3.6 Guard-1.021 Coro-6.39-without-conftest Net-OpenSSH-0.57 Error-0.17018 Text-CSV_XS-0.90 JSON-2.53 Log-Handler-0.75 TermReadKey-2.32"
+LIBS="Config-Simple-4.59-without-flock Data-Dumper-2.151 File-Copy-Recursive-0.38 EV-4.11 Event-1.22 AnyEvent-7.01 common-sense-3.6 Guard-1.021 Coro-6.39-without-conftest Net-OpenSSH-0.57 Error-0.17018 Text-CSV_XS-0.90 JSON-2.53 Log-Handler-0.75"
 
 echo "### Removing CPAN working directories. ###"
 for i in $LIBS
