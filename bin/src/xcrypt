@@ -31,7 +31,7 @@ my @help = (
 '--xbs-type=<type>   Use XBS (http://www.il.is.s.u-tokyo.ac.jp/~yamamoto/xbs/) internally for generating job scripts of the XBS\'s type',
 '--shared            Block the passage of files between local and remote sites in remote-execution mode',
 '--scratch           Not read execution log file even if it exists. Execute all the jobs from the beginning',
-'--preview           Preview job scripts before submitting it (Test Version)',
+'--preview           Preview job scripts before submitting them (Test Version)',
 '--config=<path>     Specify configulation file (default: ~/.xcryptrc or INSTALLDIR/etc/xcryptrc)',
 '--host=<hostname>   Do remote execution on hostname',
 '--wd=<directory>    Working directory on remote host (remote execution only)',
