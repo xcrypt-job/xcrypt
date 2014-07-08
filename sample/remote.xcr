@@ -5,23 +5,23 @@
 use base qw(sandbox core);
 
 my $default = &get_local_env();
-my $env0 = &add_host({'host' => 'abet@super.para.media.kyoto-u.ac.jp',
-		      'sched' => 'muramasa',
-		      'wd' => '/home/spara/abet/xcrypt/sample',
-		      'xd' => '/home/spara/abet/xcrypt'});
-my $env1 = &add_host({'host' => 'abet@t2k.ccs.tsukuba.ac.jp',
+my $env0 = &add_host({'host' => 'foo@bar1',
+		      'sched' => 'sh',
+		      'wd' => '/home/foo/xcrypt/sample',
+		      'xd' => '/home/foo/xcrypt'});
+my $env1 = &add_host({'host' => 'foo@bar2',
 		      'sched' => 't2k_tsukuba'});
-my $env2 = &add_host({'host' => 'h22029@ha8000.cc.u-tokyo.ac.jp',
+my $env2 = &add_host({'host' => 'foo@bar3',
 		      'sched' => 't2k_tokyo'});
-my $env3 = &add_host({'host' => 'b30331@thin.kudpc.kyoto-u.ac.jp',
+my $env3 = &add_host({'host' => 'foo@bar3',
 		      'sched' => 't2k_kyoto'});
 
 %template = (
 'id'            => 'jobremote',
 'JS_cpu'        => '1',
 'JS_memory'     => '1GB',
-'JS_queue@'      => [' ',  'ESCIENCE', 'debug', 'gh10034', ' '],
-'JS_group'      => 'gh10034', # for t2k-kyoto only
+'JS_queue@'      => [' ',  'ESCIENCE', 'debug', 'gh', ' '],
+'JS_group'      => 'gh', # for t2k-kyoto only
 'JS_limit_time' => 300,
 'exe0@'         => sub { "echo $VALUE[0] > job4_$VALUE[0]"; },
 'RANGE0'        => [0,     1,     2,     3,     4       ],
