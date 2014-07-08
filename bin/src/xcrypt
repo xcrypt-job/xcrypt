@@ -31,6 +31,7 @@ my @help = (
 '--xbs-type=<type>   Use XBS (http://www.il.is.s.u-tokyo.ac.jp/~yamamoto/xbs/) internally for generating job scripts of the XBS\'s type',
 '--shared            Block the passage of files between local and remote sites in remote-execution mode',
 '--scratch           Not read execution log file even if it exists. Execute all the jobs from the beginning',
+'--preview           Preview job scripts before submitting it (Test Version)',
 '--config=<path>     Specify configulation file (default: ~/.xcryptrc or INSTALLDIR/etc/xcryptrc)',
 '--host=<hostname>   Do remote execution on hostname',
 '--wd=<directory>    Working directory on remote host (remote execution only)',
@@ -86,6 +87,7 @@ our %options = (
 GetOptions
     (\%options,
      'help',
+     'preview',
      'jobinfo!',
      'compile_only',
      'xbs-auto',
@@ -220,11 +222,11 @@ until (-e $tmp_filename) {
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
 my $header = basename($tmp_filename, '.pm');
 my $TMP;
-if (defined $options{compile_only}) {
+#if (defined $options{compile_only}) {
     open($TMP , ">", $xcrfile . '.pl') or die $!;
-} else {
-    open($TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
-}
+#} else {
+#    open($TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
+#}
 print $TMP <<'EOH';
 package user;
 use File::Spec;
@@ -256,11 +258,14 @@ unless ($xcropt::options{scratch}) { &jobsched::read_log(); }
 &jobsched::invoke_status_check();
 $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::options{wd}, "sched" => $xcropt::options{sched}, "xd" => $xcropt::options{xd}});
 EOH
-foreach (<$USER>) { print $TMP "$_"; }
+
+$|=1;
+foreach my $i (<$USER>) { print $TMP "$i"; }
 close($TMP);
 close($USER);
 
-#my $exitcode = system("perl -m$header[0] $xcrfile.pl " . join(' ', @ARGV));
-#unless ($exitcode == 0) { die "Can't perl $xcrfile.pl\n"; }
+my $exitcode = system("perl -m$header $xcrfile.pl " . join(' ', @ARGV));
+unless ($exitcode == 0) { die "Can't perl $xcrfile.pl\n"; }
 
-#unlink $tmp_filename;
+unlink $tmp_filename;
+unlink "$xcrfile.pl";

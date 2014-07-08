@@ -14,6 +14,8 @@ use common;
 use builtin;
 use return_transmission;
 
+use Coro::Handle;
+
 ###
 # configuration for Data::Dumper
 $Data::Dumper::Deparse  = 1;
@@ -74,9 +76,31 @@ sub start {
     my $self = shift;
     # print "$self->{id}: calling qsub.\n";
     &qsub_make($self);
+
+    # a mode to preview a job script (test version)
+if ($xcropt::options{preview}) {
+print "=== The following is a job script. =====\n";
+open(my $script_file, '<', $self->{jobscript_file});
+foreach my $i (<$script_file>) { print STDOUT "$i"; }
+close($script_file);
+print "================== end ==================\n";
+print "Really submit this? (y/n)\n";
+my $fh = new_from_fh Coro::Handle \*STDIN;
+my $char = $fh->readline;
+chomp($char);
+if ($char eq 'y') {
     # Returns request ID
     $self->{request_id} = (&qsub($self));
     &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+} else {
+    &jobsched::set_job_aborted($self);
+}
+} else {
+    # Returns request ID
+    $self->{request_id} = (&qsub($self));
+    &jobsched::write_log (":reqID $self->{id} $self->{request_id} $self->{env}->{host} $self->{env}->{sched} $self->{env}->{wd} $self->{env}->{location} $self->{workdir} $self->{jobscript_file} $self->{JS_stdout} $self->{JS_stderr}\n");
+}
+
 }
 
 sub workdir_member_file {
