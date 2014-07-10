@@ -15,6 +15,7 @@ use builtin;
 use return_transmission;
 
 use Coro::Handle;
+use Term::ReadKey;
 
 ###
 # configuration for Data::Dumper
@@ -85,9 +86,17 @@ foreach my $i (<$script_file>) { print STDOUT "$i"; }
 close($script_file);
 print "================== end ==================\n";
 print "Really submit this? (y/n)\n";
-my $fh = new_from_fh Coro::Handle \*STDIN;
-my $char = $fh->readline;
-chomp($char);
+#
+# Coro::Handle version
+#my $fh = new_from_fh Coro::Handle \*STDIN;
+#my $char = $fh->readline;
+#chomp($char);
+#
+# Term::ReadKey version
+ReadMode "cbreak";
+my $char = ReadKey 0;
+ReadMode "restore";
+#
 if ($char eq 'y') {
     # Returns request ID
     $self->{request_id} = (&qsub($self));
