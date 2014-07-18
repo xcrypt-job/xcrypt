@@ -17,7 +17,7 @@ $jsconfig::jobsched_config{$myname} = {
     #jobscript_option_stderr => workdir_file_option('#QSUB -eo ', 'stderr'),
     jobscript_workdir => sub { File::Spec->catfile('.'); },
     jobscript_other_options => sub {
-	$self = shift;
+	my $self = shift;
 	## # MPI processes
 	my $node = $self->{JS_node} || 1;  
         ## # cores / MPI proc.

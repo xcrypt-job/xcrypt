@@ -1,12 +1,12 @@
-# Config file for the Subsystem B (laurel, GreenBlade 8000)
-# of ACCMS, Kyoto University installed in 2012
-# http://web.kudpc.kyoto-u.ac.jp/manual/ja/run/batchjob/systembc
+# Config file for the Subsystem D (magnolia, XC30 w/ Haswell)
+# of ACCMS, Kyoto University installed in 2012(A)/2014(E)
+# http://web.kudpc.kyoto-u.ac.jp/manual/ja/run/batchjob/systeme
 use config_common;
 use File::Spec;
 use File::Basename qw(basename);
 use POSIX qw/ceil floor/;
 my $myname = basename(__FILE__, '.pm');
-my $NCORE = 32;  # cores per physical node
+my $NCORE = 28;  # cores per physical node
 my $MEM = 61440; # memory size per node available for users in MB
 $jsconfig::jobsched_config{$myname} = {
     # commands
@@ -15,7 +15,6 @@ $jsconfig::jobsched_config{$myname} = {
     qstat_command => 'qjobs',
     # standard options
     jobscript_preamble => ['#!/bin/bash'],
-    jobscript_body_preamble => ['. /usr/Modules/3.2.9/init/bash', 'module load intel/12.1'],
     jobscript_option_stdout => workdir_file_option('#QSUB -oo ', 'stdout'),
     jobscript_option_stderr => workdir_file_option('#QSUB -eo ', 'stderr'),
     jobscript_workdir => '$LS_SUBCWD',
