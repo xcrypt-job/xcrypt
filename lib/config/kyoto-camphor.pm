@@ -1,24 +1,29 @@
-# Config file for the Subsystems A (camphor) of ACCMS, Kyoto University after 2012
+# Config file for the Subsystem A (camphor, XE6)
+# of ACCMS, Kyoto University installed in 2012
+# http://web.kudpc.kyoto-u.ac.jp/manual/ja/run/batchjob/systema
 use config_common;
 use File::Spec;
 use File::Basename qw(basename);
+use POSIX qw/ceil floor/;
 my $myname = basename(__FILE__, '.pm');
+my $NCORE = 32;  # cores per physical node
+my $MEM = 30720; # memory size per node available for users in MB
 $jsconfig::jobsched_config{$myname} = {
     # commands
-    qsub_command => '/usr/share/lsf/kclustera/8.0/linux2.6-glibc2.3-x86_64/bin/qsub <',
-    qdel_command => '/opt/dpc/bin/qkill',
-    qstat_command => '/usr/share/lsf/kclustera/8.0/linux2.6-glibc2.3-x86_64/bin/qjobs',
+    qsub_command => 'qsub <',
+    qdel_command => 'qkill',
+    qstat_command => 'qjobs',
     # standard options
     jobscript_preamble => ['#!/bin/bash'],
     jobscript_option_stdout => workdir_file_option('#QSUB -oo ', 'stdout'),
     jobscript_option_stderr => workdir_file_option('#QSUB -eo ', 'stderr'),
     jobscript_workdir => '$LS_SUBCWD',
     jobscript_other_options => sub {
-	$self = shift;
+	my $self = shift;
 	my $node = $self->{JS_node} || 1;
 	my $cpu = $self->{JS_cpu} || 1;
 	my $thread = $self->{JS_thread} || $cpu;
-	my $memory = $self->{JS_memory} || (61440/32*$cpu).'M';
+	my $memory = $self->{JS_memory} || ceil($MEM/$NCORE*$cpu).'M';
 	return "#QSUB -A p=$node:t=$thread:c=$cpu:m=$memory";
     },
     #jobscript_option_node => (see other_options),
