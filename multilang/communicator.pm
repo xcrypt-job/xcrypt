@@ -29,6 +29,10 @@ our $sockets = {
 	bin=>"alisp -L ~/quicklisp/setup.lisp -L $ENV{XCRYPT}/multilang/client.lisp -kill --",
         socket=>undef, dispatch=>undef, pid=>undef,
         lock=>Coro::Semaphore->new(1), queue=>{}, libs=>[]},
+    python => {
+        port=>9002, bin=>'python client.py',
+        socket=>undef, dispatch=>undef, pid=>undef,
+        lock=>Coro::Semaphore->new(1), queue=>{}, libs=>[]},
 };
 
 

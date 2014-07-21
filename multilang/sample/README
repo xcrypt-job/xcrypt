@@ -2,14 +2,20 @@ Execute the samples in the $XCRYPT/multilang directory as follows:
 (This limitation should be fixed soon.)
 
 (1) Execute the Ruby sample scripts
-% ruby sample/use_limit_rb.rb            # uses a module defined in Ruby
-% ruby sample/use_limit_lsp.rb           # uses a module defined in Lisp
+% ruby sample/use_limit_rb.rb            # uses the limit module defined in Ruby
+% ruby sample/use_limit_lsp.rb           # uses the limit module defined in Lisp
 
 (2) Execute the Perl sample scripts
-% xcrypt sample/use_limit_lsp.xcr        # uses a module defined in Lisp
+% xcrypt sample/use_limit_lsp.xcr        # uses the limit module defined in Lisp
 
 (3) Execute the Lisp sample script
 ;; Now only Allegro Common Lisp with quicklisp is supported.
 % alisp
 CL-USER> (load "client.lisp")
-CL-USER> (load "range-xcr.lisp")         # uses a module defined in Perl
+CL-USER> (load "sample/range-xcr.lisp")  # uses the limit module defined in Perl
+
+(4) Execute the Python sample scripts
+% python sample/single-xcr.py            # Submit a single job.
+% python sample/use_dry.py               # uses the dry module defined in Perl
+% python sample/use_dry_py.py            # uses the dry module defined in Python
+% python sample/use_limit_py.py          # uses the limit module defined in Python
