@@ -592,15 +592,19 @@ sub do_initialized {
     # 	$template{"VALUE$tmp"} = $_;
     # 	$tmp++;
     # }
-        if ($separator_check) {
-            unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
-                die "Can't support $separator as \$separator.\n";
-            }
+    if ($separator_check) {
+        unless ( $separator =~ /\A[!#+,-.@\^_~a-zA-Z0-9]\Z/ ) {
+            die "Can't support $separator as \$separator.\n";
+        }
     }
 
     # generate job objects
     unless (defined $template{"id$expander"}) {
-        $template{id} = join($separator, ($template{id}, @_));
+        my $newid =  join($separator, ($template{id}, @_));
+        if ($xcropt::options{genid}) {
+            $newid = generate_new_job_id ($newid, 2);
+        }
+        $template{id} = $newid;
     }
 #    foreach my $k (@allkeys) {
     foreach my $tmp_k (keys(%template)) {
@@ -1201,15 +1205,18 @@ sub add_cmd_after_exe{
 ## Constructs for executing perl code as a job.
 my $n_spawned_job=0;
 sub generate_new_job_id {
-    my $prefix = 'spawned_job_';
+    my $prefix = shift;
+    my $count = shift;
+    unless (defined ($prefix)) { $prefix = 'spawned_job'; }
+    unless (defined ($count))  { $count = $n_spawned_job; }
     local $jobsched::Warn_job_not_found_by_id=0;
-    while (1) {
-        my $candidate = $prefix.sprintf("%03d", $n_spawned_job++);
-        unless (jobsched::find_job_by_id($candidate)
-                || jobsched::get_last_job_state ($candidate)) {
-            return $candidate;
-        }
+    my $candidate = $prefix;
+    while (jobsched::find_job_by_id($candidate)
+           || jobsched::get_last_job_state ($candidate)) {
+        $candidate = $prefix.sprintf("_%03d", $count++);
     }
+    $n_spawned_job=$count;
+    return $candidate;
 }
 ## spawn {} [_initially_ {}] [_before_in_xcrypt_ {}] [_before_ {}] [_before_in_job_ {}] [_after_in_job_ {}] [_after_ {}] [_after_in_xcrypt_ {}] [_finally_ {}]
 sub convert_spawn_args {
