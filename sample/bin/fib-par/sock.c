@@ -41,6 +41,7 @@ SUCH DAMAGE.
 #define RECV_MAX 1024
 
 /* SunOS does not support vasprintf() */
+#define NO_VASPRINTF
 #ifdef NO_VASPRINTF
 #define VSNPRINTF_LEN 1000
 #endif
