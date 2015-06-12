@@ -510,6 +510,20 @@ sub check_and_write_aborted {
             }
         }
     }
+    # If sleep_after_qstat option is defined, sleep for a while
+    # (typically for avoiding NFS consistency problems)
+    { 
+        my $slp = 0;
+        foreach my $req_id ( keys %unchecked ) {
+            my $aborted_job = $Running_Jobs{$req_id};
+            my $env = $aborted_job->{env};
+            my $slp0 = $jsconfig::jobsched_config{$env->{sched}}{sleep_after_qstat};
+            if ($slp0 > $slp) { 
+                $slp = $slp0;
+            }
+        }
+        Coro::AnyEvent::sleep $slp;
+    }
     # Invoke left_message_check(0) for %unchecked jobs because they may be going to be "done"
     foreach my $req_id ( keys %unchecked ) {
         if ( exists $Running_Jobs{$req_id} ) {
