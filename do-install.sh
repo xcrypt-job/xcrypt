@@ -1,11 +1,21 @@
 #!/bin/sh
-CC=gcc
-LD=gcc
+
+# Compiler settings
+CC="gcc"
+LD="gcc"
+if [ `uname` = 'AIX' ]; then
+    CC="xlc_r -q32"
+    LD="xlc_r -q32"
+fi
+
+# Installation settings
+# In some system we need to wait for a few seconds between "make" and "make install"
+SLEEP=5
 
 # Install Directory
 INSTALLDIR_DEFAULT=`pwd`
 if [ "x$INSTALLDIR" = "x" ]; then
-    echo -n "Install Directory [default=$INSTALLDIR_DEFAULT]: "
+    printf "Install Directory [default=$INSTALLDIR_DEFAULT]: "
     read INSTALLDIR
     if [ "x$INSTALLDIR" = "x" ]; then
         INSTALLDIR=$INSTALLDIR_DEFAULT
@@ -29,7 +39,11 @@ LIBS="Config-Simple-4.59-without-flock Data-Dumper-2.151 File-Copy-Recursive-0.3
 echo "### Removing CPAN working directories. ###"
 for i in $LIBS
 do
-    rm -rf $INSTALLDIR/cpan/$i
+    RMVDIR=$INSTALLDIR/cpan/$i
+    if [ -e $RMVDIR ]; then
+        echo "Removing $RMVDIR"
+        rm -rf $RMVDIR
+    fi
 done
 
 echo "### Extracting CPAN archives. ###"
@@ -40,17 +54,21 @@ do
         echo "Error: CPAN archive $GZFILE does not exist."
         exit 99
     fi
-    tar xfz $GZFILE -C $INSTALLDIR/cpan
+    echo "Extracting $GZFILE"
+    gzip -dc $GZFILE | tar -xf - -C $INSTALLDIR/cpan
 done    
 
 echo "### Removing CPAN install directory. ###"
-rm -rf $XCR_CPAN_BASE
+if [ -e $XCR_CPAN_BASE ]; then
+    echo "Removing $XCR_CPAN_BASE"
+    rm -rf $XCR_CPAN_BASE
+fi
 
-echo "### Starting CPAN installation. ###"
+echo "### Installing CPAN libraries. ###"
 for i in $LIBS
 do
-  echo; echo "# installing $i #"
-  (cd $INSTALLDIR/cpan/$i && perl Makefile.PL LIB=$XCR_CPAN_BASE && make CC=$CC LD=$LD INSTALLSITEMAN3DIR=none install)
+  echo; echo "# Installing $i #"
+  (cd $INSTALLDIR/cpan/$i && perl Makefile.PL LIB=$XCR_CPAN_BASE && make CC="$CC" LD="$LD" INSTALLSITEMAN3DIR=none && sleep $SLEEP ; make CC="$CC" LD="$LD" INSTALLSITEMAN3DIR=none install)
 done
 echo
 
@@ -68,8 +86,8 @@ if [ ! -f $WRAPPER_TMPL ]; then
 fi
 
 rm -f $WRAPPER
+cp -p $WRAPPER_TMPL $WRAPPER
 sed s#@@INSTALLDIR@@#$INSTALLDIR# < $WRAPPER_TMPL > $WRAPPER
-chmod --reference=$WRAPPER_TMPL $WRAPPER
 
 #########################################################
 echo "##### Generating Xcrypt commands #####"
