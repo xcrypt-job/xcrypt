@@ -184,8 +184,12 @@ sub make_jobscript_header {
 	File::Spec->catfile($self->{env}->{xd}, 'lib') . ':' .
 	File::Spec->catfile($self->{env}->{xd}, 'lib', 'cpan') . ':' .
 	File::Spec->catfile($self->{env}->{xd}, 'lib', 'algo', 'lib');
-    push (@header, 'PERL5LIB=' . $p5l);
-    push (@header, 'export PERL5LIB');
+    if ($cfg{jobscript_shell_type} eq 'csh') {
+        push (@header, 'setenv PERL5LIB ' . $p5l);
+    } else {
+        push (@header, 'PERL5LIB=' . $p5l);
+        push (@header, 'export PERL5LIB');
+    }
     $self->{jobscript_header} = \@header;
 }
 
