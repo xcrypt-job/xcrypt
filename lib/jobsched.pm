@@ -494,6 +494,7 @@ sub check_and_write_aborted {
             print STDERR "check_and_write_aborted:\n";
         }
         my @ids = qstat();
+        # print "ids: @ids\n";
         foreach (@ids) {
             my $job = $unchecked{$_};
             # Delete from %unchecked if the job is displayed by qstat.

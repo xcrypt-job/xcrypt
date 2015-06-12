@@ -1,7 +1,7 @@
 # A sample of taking performance evaluation using Xcrypt and a parallel implementation of Fibonacci
 use base qw(limit core);
 # Uncomment if your system does not support a batch scheduler.
-limit::initialize(1);
+limit::initialize(5);
 
 my %job_lu = (
     'id' => 'jobfibpar',

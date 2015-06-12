@@ -5,7 +5,7 @@ use File::Spec;
 use File::Basename qw(basename);
 use POSIX qw/ceil floor/;
 my $myname = basename(__FILE__, '.pm');
-my $NCORE = 8*4;  # cores per physical node
+my $NCORE = 8*2;  # cores per physical node
 # my $MEM = 122880; # memory size per node available for users in MB
 $jsconfig::jobsched_config{$myname} = {
     # commands
@@ -74,11 +74,10 @@ $jsconfig::jobsched_config{$myname} = {
         my @ids = ();
         shift (@lines);
         foreach (@lines) {
-            if ($_ =~ /^\s*(htcf\S+)\s+/) {
+            if ($_ =~ /^\s*(htcf\S+)\.0\s+/) {
                 push (@ids, $1);
             }
         }
         return @ids;
     },
-    sleep_after_qstat => 5,
 };
