@@ -1,6 +1,6 @@
 All samples can be executed by
 % xcrypt <filename>.xcr
-Since some scripts requires execution files in the bin/ subdirectories,
+Since some scripts require execution files in the bin/ subdirectories,
 apply Makefile in bin/ before trying the following xcr files.
 
 You can delete all the job executiion history by:
