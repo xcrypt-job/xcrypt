@@ -223,13 +223,12 @@ until (-e $tmp_filename) {
 }
 open(my $USER, "<", $xcrfile) or die "Can't open $xcrfile\n";
 my $header = basename($tmp_filename, '.pm');
-my $TMP;
+my ($XCRPL, $xcrplfile) = tempfile( (basename ($xcrfile)).'XXXX', DIR => "$options{inventory_path}", SUFFIX => '.pl' );
 #if (defined $options{compile_only}) {
-    open($TMP , ">", $xcrfile . '.pl') or die $!;
 #} else {
-#    open($TMP , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
+#    open($XCRPL , "| perl -m$header - " . join(' ', @ARGV)) or die $!;
 #}
-print $TMP <<'EOH';
+print $XCRPL <<'EOH';
 package user;
 use File::Spec;
 use lib (File::Spec->catfile($ENV{XCRYPT}, 'lib'));
@@ -262,12 +261,14 @@ $builtin::env_d = &add_host({"host" => $xcropt::options{host}, "wd" => $xcropt::
 EOH
 
 $|=1;
-foreach my $i (<$USER>) { print $TMP "$i"; }
-close($TMP);
+foreach my $i (<$USER>) { print $XCRPL "$i"; }
+close($XCRPL);
 close($USER);
 
-my $exitcode = system("perl -m$header $xcrfile.pl " . join(' ', @ARGV));
-unless ($exitcode == 0) { die "Can't perl $xcrfile.pl\n"; }
+my $cmd = "perl -m$header $xcrplfile " . join(' ', @ARGV);
+#print "$cmd\n";
+my $exitcode = system($cmd);
+unless ($exitcode == 0) { die "Can't perl $xcrplfile\n"; }
 
 unlink $tmp_filename;
-unlink "$xcrfile.pl";
+unlink $xcrplfile;
