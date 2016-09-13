@@ -1,14 +1,14 @@
 # Define dependencis among jobs declaratively
 package dependency;
 
-use strict;
-use NEXT;
-use common;
 use builtin;
+use jobsched;
+use common;
+use strict;
 
 &add_key('depend_on');
 
-sub before {
+sub initially {
     my $self = shift;
     my @dep_jobs0 = @{mkarray ($self->{depend_on})};
     my @dep_jobs = ();
@@ -21,9 +21,9 @@ sub before {
             push (@dep_jobs, $j0);
         }
     }
-    # Do not sync if @dep_jobs is empty (when an empty list is given, sync waits for
-    # all the jobs submitted inside the nearest (implicit) join block)
-    if (@dep_jobs) { sync (@dep_jobs) };
+    foreach (@dep_jobs) {
+	jobsched::wait_job_status ($_, 'finished');
+    }
 }
 
 1;
