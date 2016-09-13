@@ -67,6 +67,10 @@ Save the specified parameter values job object and
 Resotre the values in the next execution of the script.
 
 === Using algorithm modules ===
+dependency.xcr:
+A sample of the dependency module.
+Declaring dependencies among jobs declaratively.
+
 successor.xcr:
 A sample of the successor module:
 Defining a job which depend on other jobs.
