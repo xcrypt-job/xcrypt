@@ -1,6 +1,10 @@
 # Submit jobs which have dependencies each other
 # (using dependency module)
-use base qw (dependency core);
+#use base qw (dependency core);
+
+# If you want use the limit module in addition, use the followings
+use base qw (dependency limit core);   # (limit dependency core) does not work!
+limit::initialize (1);
 
 %template = (
     'id' => 'jobdep',

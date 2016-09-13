@@ -12,6 +12,7 @@ sub before {
     my $self = shift;
     my @dep_jobs0 = @{mkarray ($self->{depend_on})};
     my @dep_jobs = ();
+    
     foreach my $j0 (@dep_jobs0) {
         if ( ref $j0 eq '' ) {
             my $j = jobsched::find_job_by_id ($j0);
@@ -20,7 +21,9 @@ sub before {
             push (@dep_jobs, $j0);
         }
     }
-    sync (@dep_jobs);
+    # Do not sync if @dep_jobs is empty (when an empty list is given, sync waits for
+    # all the jobs submitted inside the nearest (implicit) join block)
+    if (@dep_jobs) { sync (@dep_jobs) };
 }
 
 1;
