@@ -1,13 +1,12 @@
-=================================================================
-Important notes for users of the supercomputer of ACCMS, Kyoto
-University installed in 2012 and enhanced in 2014 (Jul 18th, 2014)
-=================================================================
+=========================================================================
+Important notes for users of the supercomputer of ACCMS, Kyoto University
+=========================================================================
 
 If you want to use Xcrypt on more than one subsystems,
 you have to make a copy of Xcrypt for each set of subsystems as follows:
-* Subsystem A (camphor)
-* Subsystems B (laurel) and C (cinnamon)
-* Subsystem D (magnolia) and E (camellia)
+* Subsystem A (camphor2): installed in  Oct. 2016.
+* Subsystems B (laurel) and C (cinnamon): installed in Apr. 2012.
+* Subsystem D (magnolia) and E (camellia): installed in 2014.
 and perform the installation process following the instructions in "INSTALL".
 
 You should also note that:
@@ -28,45 +27,45 @@ The following is an insruction for setting up Xcrypt for all the subsystems.
 
 (2) Prepare configulation files.
 (2.1) Log in to Subsystem A, B, or C and make user configulation files as follows.
-      (NOTE: Replace "gh10001" by your own group name)
+      (NOTE: Replace "gr<nnnnn>" by your own group name)
 
 === $HOME/xcryptrc-camphor ===
 [template]
-JS_group = gr10001
-JS_queue = gr10001a
+JS_group = gr<nnnnn>
+JS_queue = gr<nnnnn>a
 [environment]
-sched = kyoto-camphor
+sched = kyoto-camphor2
 ===============================
 === $HOME/xcryptrc-laurel =====
 [template]
-JS_group = gr10001
-JS_queue = gr10001b
+JS_group = gr<nnnnn>
+JS_queue = gr<nnnnn>b
 [environment]
 sched = kyoto-laurel
 ===============================
 === $HOME/xcryptrc-cinnamon ===
 [template]
-JS_group = gr10001
-JS_queue = gr10001c
+JS_group = gr<nnnnn>
+JS_queue = gr<nnnnn>c
 [environment]
 sched = kyoto-laurel
 ===============================
 (NOTE: The configuration file kyoto-laurel is used by both Subsystems B and C)
 
 (2.2) Log in to Subsystem D or E and make user configulation files as follows.
-      (NOTE: Replace "gh10001" by your own group name)
+      (NOTE: Replace "gr<nnnnn>" by your own group name)
 
 === $HOME/xcryptrc-magnolia ===
 [template]
-JS_group = gr10001
-JS_queue = gr10001d
+JS_group = gr<nnnnn>
+JS_queue = gr<nnnnn>d
 [environment]
 sched = kyoto-magnolia
 ===============================
 === $HOME/xcryptrc-camellia ===
 [template]
-JS_group = gr10001
-JS_queue = gr10001e
+JS_group = gr<nnnnn>
+JS_queue = gr<nnnnn>e
 [environment]
 sched = kyoto-camellia
 ===============================
@@ -76,22 +75,22 @@ etc.) to automatically set environment variables depending on login node.
 (NOTE: You have to modify the both login script in Subsystems A/B/C and D/E.)
 
 ===============================
-node_name=`echo $HOSTNAME | cut -c 1-2`
-if [ $node_name = "xe" ]; then
+node_name2=`echo $HOSTNAME | cut -c 1-2`
+node_name7=`echo $HOSTNAME | cut -c 1-7`
+if [ $node_name7 = "camphor" ]; then
     XCRYPT=$HOME/xcrypt-A
-    export XCRYPTRC=$HOME/xcryptrc-camphor
-elif [ $node_name = "ap" ]; then
+    export XCRYPTRC=$HOME/xcryptrc-camphor2
+elif [ $node_name2 = "ap" ]; then
     XCRYPT=$HOME/xcrypt-BC
     export XCRYPTRC=$HOME/xcryptrc-laurel
     # "export XCRYPTRC=$HOME/xcryptrc-cinnamon" if you use Subsystem C more often than B
-elif [ $node_name = "xc" ]; then
+elif [ $node_name2 = "xc" ]; then
     XCRYPT=$HOME/xcrypt-DE
     export XCRYPTRC=$HOME/xcryptrc-magnolia
-elif [ $node_name = "xm" ]; then
+elif [ $node_name2 = "xm" ]; then
     XCRYPT=$HOME/xcrypt-DE
     export XCRYPTRC=$HOME/xcryptrc-camellia
-fi
-if [ "x$XCRYPT" != 'x' ]; then
-    export PATH=$XCRYPT/bin:$PATH
+else
+    echo "Unexpected HOSTNAME: $HOSTNAME"
 fi
 ===============================
