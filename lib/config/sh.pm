@@ -5,7 +5,8 @@ my $myname = basename(__FILE__, '.pm');
 $jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => "$ENV{XCRYPT}/lib/config/run-output-pid.sh",
-    qdel_command => "kill -9",
+    #qdel_command => "kill -9",
+    qdel_command => "$ENV{XCRYPT}/lib/config/killtree.sh",
     qstat_command => "ps",
     # standard options
 #    left_message_done_file_type => 'file',
