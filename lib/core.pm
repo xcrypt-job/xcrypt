@@ -245,7 +245,7 @@ sub make_jobscript_body {
             if ($self->{"exe$j"}) {
                 my @args = ();
                 for ( my $i = 0; $i <= $max_of_second; $i++ ) {
-                    if ($self->{"arg$j".'_'."$i"}) {
+                    if ( exists($self->{"arg$j".'_'."$i"}) ) {
                         push(@args, $self->{"arg$j".'_'."$i"});
                     }
 	    }
