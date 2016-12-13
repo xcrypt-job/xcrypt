@@ -1,1 +1,0 @@
-t2k_kyoto.pm

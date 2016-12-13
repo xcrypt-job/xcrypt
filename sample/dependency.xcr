@@ -1,5 +1,10 @@
 # Submit jobs which have dependencies each other
-use base qw (core);
+# (using dependency module)
+#use base qw (dependency core);
+
+# If you want use the limit module in addition, use the followings
+use base qw (dependency limit core);   # (limit dependency core) does not work!
+limit::initialize (1);
 
 %template = (
     'id' => 'jobdep',
@@ -10,11 +15,11 @@ use base qw (core);
 
 @jobs = prepare(%template);
 
-# submit jobdep_5 after jobdep_1 finished
-$jobs[4]->{before} = sub {sync($jobs[0])};
-# submit jobdep_3 after jobdep_2 finished
-$jobs[2]->{before} = sub {sync($jobs[1])};
+# submit jobdep_1 after jobdep_5 finished
+$jobs[0]->{depend_on} = $jobs[4];
+# submit jobdep_3 after jobdep_2 finished (specify by job ID)
+$jobs[2]->{depend_on} = 'jobdep_2';
 # submit jobdep_4 after jobdep_1 and jobdep_3 finished 
-$jobs[3]->{before} = sub {sync($jobs[0], $jobs[2])};
+$jobs[3]->{depend_on} = ['jobdep_1', 'jobdep_3'];
 
 submit_sync (@jobs);
