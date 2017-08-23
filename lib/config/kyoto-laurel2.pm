@@ -12,7 +12,7 @@ $jsconfig::jobsched_config{$myname} = {
     # commands
     qsub_command => 'qsub',
     qdel_command => 'qdel',
-    qstat_command => '/opt/dpc/test/bin/qstat',
+    qstat_command => '/opt/dpc/bin/qstat',
     # standard options
     jobscript_preamble => ['#!/bin/bash'],
     jobscript_option_stdout => workdir_file_option('#QSUB -o ', 'stdout'),
