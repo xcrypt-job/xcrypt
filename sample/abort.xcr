@@ -3,12 +3,58 @@
 # cancel():     Executing and Finished job is aborted to be retried.
 # invalidate(): Executing job is aborted and it is never reexecuted. Do nothing for finished job
 
+# Try
+# % xcrypt abort.xcr
+# and then execute
+# % xcryptstat
+# _60 is "aborted"  becaause it is abort()ed during execution.
+# _40 is "finished" becaause it is abort()ed after execution finished.
+# Cancel()ed jobs, _61 and _41, become "aborted" even if it is applied to a finished job.
+# Finish()ed jobs, _62 and _42, become "finished" even if it is applied to a running job.
+# Try
+# % xcrypt abort.xcr
+# again. Only "aborted" jobs are reexecuted.
+
+# [Notice about initially, before, after, after_aborted, and finally methods]
+# - initially: Always executed before the job submission.
+# - before: Executed before the job submission. However, the execution is skipped
+#   if this method was executed during a previous exeution and not cancelled.
+# - after: Executed after the job execution is normally done.
+# - after_aborted: Executed after the job execution is aborted.
+# - finally: Always executed after the job execution is normally done or aborted.
+# (Example in this script)
+# When running this script in the initial state,
+# - 'initially' and 'before' are executed for all the jobs.
+# - 'after' is executed for the jobs _40, _41, and _42.
+# - 'after_aborted' is executed for the jobs _60, _61.
+#   (_62's is not executed because it is abnormally done but set as 'finished')
+# - 'finally' is executed for all the jobs.
+# When running this script again,
+# - 'initially', 'before', and 'finally' are executed for the jobs _60, _61, and _41
+#   because these jobs have been aborted or cancelled, and are reexecuted.
+# - 'after' is executed for the job _42.
+# - 'after_aborted' is executed for the jobs _60, _61.
+# To know the difference between 'initially' and 'before', try the followings.
+# % xcryptdel --clean
+# % xcrypt abort.xcr
+# When all the jobs are submitted, press Ctrl+C
+# before the jobs _40, _41, and _42 are finished.
+# Then execute
+# % xcrypt abort.xcr
+# again. Here, 'initially' of the jobs _40, 41, and _42 are executed (again)
+# but the executions of 'before' for these jobs are skipped.
+
 use base qw(core);
 
 %template1 = (
     'id@' => sub { "jobabrt_$VALUE[0]" },
     'exe0@' => sub { 'bin/fib ' . ($VALUE[0]) . " > out_$VALUE[0]"},
     'RANGE0' => [60,61,62,40,41,42],
+    'initially' => sub {print ">initially> $self->{id}.\n"},
+    'before' => sub {print ">>before>> $self->{id}.\n"},
+    'after' => sub {print "<<after<< $self->{id}.\n"},
+    'after_aborted' => sub {print "!after_aborted! $self->{id}.\n"},
+    'finally' => sub {print "<finally< $self->{id}.\n"},
 );
 
 @jobs = &prepare_submit(%template1);
@@ -19,15 +65,3 @@ $jobs[2]->invalidate();
 $jobs[3]->abort();
 $jobs[4]->cancel();
 $jobs[5]->invalidate();
-
-# Try
-# % xcrypt abort.xcr
-# and then execute
-# % xcryptstat
-# _60 is "aborted"  becaause it is abort()ed during execution.
-# _40 is "finished" becaause it is abort()ed after execution finished.
-# Cancel()ed jobs, _61 and _41, become "aborted" even if it is applied to a finished job.
-# Finish()ed jobs, _61 and _42, become "finished" even if it is applied to a running job.
-# Try
-# % xcrypt abort.xcr
-# again. Only "aborted" jobs are reexecuted.

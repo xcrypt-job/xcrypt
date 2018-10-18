@@ -44,7 +44,7 @@ use File::Copy::Recursive qw(fcopy dircopy rcopy);
 # Permitted job template member names.
 my @allkeys = ('id', 'exe', 'initially', 'finally', 'env', 'transfer_variable', 'transfer_reference_level', 'not_transfer_info',
 'initially', 'before', 'before_to_job', 'before_return', 'before_bkup', 'before_in_job', 'before_in_xcrypt', 'before_in_xcrypt_return',
-'finally', 'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return',
+'finally', 'after',  'after_to_job',  'after_return',  'after_bkup',  'after_in_job',  'after_in_xcrypt',  'after_in_xcrypt_return', 'after_aborted',
 'cmd_before_exe', 'cmd_after_exe',
 'header'
 );
@@ -868,9 +868,26 @@ sub check_status_for_after {
         jobsched::set_job_status_according_to_signal ($self);
         return 0;
     } elsif (jobsched::job_proceeded_last_time ($self, 'finished')) {
-        print "$self->{id}: the after() methods invocation.\n";
+        print "$self->{id}: skip the after() methods invocation.\n";
         return 0;
     } elsif ( $stat eq 'done' ) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub check_status_for_after_aborted {
+    my $self = shift;
+    my $sig = jobsched::get_signal_status($self);
+    my $stat = jobsched::get_job_status($self);
+    if ($sig) {
+        jobsched::set_job_status_according_to_signal ($self);
+    }
+    if (jobsched::job_proceeded_last_time ($self, 'finished')) {
+        print "$self->{id}: the after_aborted() methods invocation.\n";
+        return 0;
+    } elsif ( $stat eq 'aborted' ) {
         return 1;
     } else {
         return 0;
@@ -1050,7 +1067,15 @@ sub submit {
 		$self->return_write("after_in_xcrypt", $self->{workdir}, $after_in_xcrypt_return);
 	    }
 
+	    ## Invoke after_aborted()
+	    if (check_status_for_after_aborted ($self)) {
+		$self->EVERY::LAST::after_aborted(@{$self->{VALUE}});
+	    }
+
+	    ## Invoke finally()
             $self->EVERY::LAST::finally(@{$self->{VALUE}});
+
+	    ## Set the job's status to 'finished'
             if (check_status_for_set_job_finished ($self)) {
                 &jobsched::set_job_finished($self);
             }
