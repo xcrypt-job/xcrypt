@@ -48,6 +48,8 @@ A job is automatically killed when its running time exceeds specified time.
 
 abort.xcr:
 A sample of using three kinds of methods for interrupting jobs.
+This also contains samples and documentation to understand
+the 'initially', 'before', 'after', 'after_aborted', and 'finally' methods.
 
 customize.xcr:
 A sample of add_key(): adding your own job parameters.
