@@ -16,6 +16,7 @@ sched = sh
 # sched = ofp
 # sched = reedbush
 # sched = tokyo-fx10
+# sched = obcx
 # sched = torque
 
 [template]
