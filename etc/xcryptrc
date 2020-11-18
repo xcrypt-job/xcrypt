@@ -7,15 +7,12 @@ sched = sh
 # sched = XBS
 # sched = aics_kameyama
 # sched = condor
-# sched = hokudai-sr16k
 # sched = sh
-# sched = kyoto-camellia
 # sched = kyoto-camphor2
 # sched = kyoto-laurel2
 # sched = msdos
 # sched = ofp
 # sched = reedbush
-# sched = tokyo-fx10
 # sched = obcx
 # sched = torque
 
