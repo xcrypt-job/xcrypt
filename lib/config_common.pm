@@ -43,7 +43,7 @@ sub num_to_hhmmss {
 	return $arg;
     } else {
 	my ($hrs,$min,$sec) = sec_to_hms ($arg);
-	return sprintf ("%d:%02d%:%02d", $hrs, $min, $sec);
+	return sprintf ("%d:%02d:%02d", $hrs, $min, $sec);
     }
 }
 
