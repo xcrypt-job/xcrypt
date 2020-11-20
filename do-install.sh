@@ -30,7 +30,7 @@ echo $INSTALLDIR
 
 # Perl library paths
 XCR_CPAN_BASE=$INSTALLDIR/lib/cpan
-PERL5LIB=$INSTALLDIR/lib:$INSTALLDIR/lib/algo/lib:$XCR_CPAN_BASE:$PERL5LIB
+export PERL5LIB=$INSTALLDIR/lib:$INSTALLDIR/lib/algo/lib:$XCR_CPAN_BASE:$PERL5LIB
 
 #########################################################
 echo "##### Installing CPAN libraries #####"
