@@ -16,7 +16,9 @@ $jsconfig::jobsched_config{$myname} = {
     jobscript_option_queue => '#PBS -q ',
     jobscript_option_stdout => workdir_file_option('#PBS -o ', 'stdout'),
     jobscript_option_stderr => workdir_file_option('#PBS -e ', 'stderr'),
-    jobscript_option_limit_time => '#PBS -l walltime=',
+    # If JS_limit_time looks like a number, treat it as seconds and convert it into the 'hh:mm:ss' format.
+    # If JS_limit_time is not specified, set to 1800 ('0:30:00').
+    jobscript_option_limit_time =>  time_hhmmss_option ('#PBS -l walltime=', 1800),
     jobscript_option_group => '#PBS -W group_list=',
     # Treat node (phnode), cpu, thread in other_options
     jobscript_other_options => sub {

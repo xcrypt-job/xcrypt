@@ -22,6 +22,10 @@ limit::initialize(2);
     # from the RANGE[i], and $self can be used to refer to the job object.
     'arg0_0@' => sub {$VALUE[0]+$VALUE[1]},
     'arg0_1@' => sub {"> out_$self->{id}"},
+    # Specify the amount of resources
+    'JS_cpu' => 1,   # number of cores per proc
+    'JS_node' => 1,  # number of procs
+    'JS_limit_time' => 300,  # limit time (can be specified in seconds in systems of Kyoto U and U Tokyo)
     # Exectuted asynchronously before submitting a job
     'before' => sub {
         print "Submitting $self->{id}\n";

@@ -18,7 +18,9 @@ $jsconfig::jobsched_config{$myname} = {
     jobscript_option_stderr => workdir_file_option('#PJM -e ', 'stderr'),
     jobscript_option_queue => '#PJM -L rscgrp=',
     jobscript_option_group => '#PJM -g ',
-    jobscript_option_limit_time => '#PJM -L elapse=',
+    # If JS_limit_time looks like a number, treat it as seconds and convert it into the 'hh:mm:ss' format.
+    # If JS_limit_time is not specified, set to 1800 ('0:30:00').
+    jobscript_option_limit_time => time_hhmmss_option ('#PJM -L elapse=', 1800),
     # Treat node (phnode), cpu, thread, queue, and limit_time in other_options
     jobscript_other_options => sub {
 	my $self = shift;

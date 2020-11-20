@@ -30,7 +30,8 @@ $jsconfig::jobsched_config{$myname} = {
     #jobscript_option_cpu => (see other_options),
     #jobscript_option_thread => (see other_options),
     #jobscript_option_memory => (see other_options),
-    jobscript_option_limit_time => '#QSUB -W ',
+    # If JS_limit_time looks like a number, treat it as seconds and convert it into the 'hh:mm' format.
+    jobscript_option_limit_time => time_hhmm_option ('#QSUB -W '),
     jobscript_option_queue => '#QSUB -q ',
     jobscript_option_group => '#QSUB -ug ',
     # non-standard options
