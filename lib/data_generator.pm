@@ -458,7 +458,7 @@ sub value_evaluation{
         @in_values = split /[\\]\{0\}(\$|\$\#|\@)/, "$in_values[2]", 2;
         $in_value .= $in_values[0];
         
-        if ($in_values[2] =~ /^[\{]{,1}[a-zA-Z_]+/) {
+        if ($in_values[2] =~ /^[\{]\{,1\}[a-zA-Z_]+/) {
             #==============#
             # 変数表記あり #
             #==============#
