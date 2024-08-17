@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Compiler settings
-CC="gcc"
-LD="gcc"
+CC="cc"
+LD="cc"
 if [ `uname` = 'AIX' ]; then
     CC="xlc_r -q32"
     LD="xlc_r -q32"
