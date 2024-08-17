@@ -1,95 +1,57 @@
 =========================================================================
 Important notes for users of the supercomputer of ACCMS, Kyoto University
+(installed in 2023)
 =========================================================================
 
-If you want to use Xcrypt on more than one subsystems,
-you have to make a copy of Xcrypt for each set of subsystems as follows:
-* Subsystem A (camphor2): installed in  Oct. 2016.
-* Subsystems B (laurel) and C (cinnamon): installed in Apr. 2012.
-* Subsystem D (magnolia) and E (camellia): installed in 2014.
-and perform the installation process following the instructions in "INSTALL".
+The supercomputer of Kyoto University includes the following subsystems:
+* Subsystem A (camphor3)
+* Subsystem B (laurel3)
+* Subsystem C (cinnamon3)
+* Subsystem G (gardenia)
 
-You should also note that:
-* filesystems for Subsystems A/B/C and Subsystems D/E are separated,
-* you have to parepare a user configuration file (xcryptrc) for each subsystem, and
-* you have to use "aprun" to execute program in Subsystems A, D, and E.
+If you want to use Xcrypt in more than one sub systems, you should note that:
+* the file system for user files is shared by all subsystems, and
+* you have to parepare a user configuration file (xcryptrc) for each subsystem
 
-Please refer to sample/mic-fib-eval.xcr for writing Xcrypt scripts
-for submitting jobs using Xeon Phi coprocessors in Subsystem E.
+The following is an insruction for setting up Xcrypt for the subsystems A, B, and G.
+(Subsystem C is not officially supported in the current package.)
 
-The following is an insruction for setting up Xcrypt for all the subsystems.
+(1) Login to the login node of the any subsystem (A, B or G) and install
+    Xcrypt according to the instruction of the INSTALL document
 
-(1) Install Xcrypt for each set of subsystems.
-(1.1) Log in to Subsystem A and install Xcrypt to $HOME/xcrypt-A.
-(1.2) Log in to Subsystem B or C and install Xcrypt to $HOME/xcrypt-BC
-      (NOTE: Subsystems B and C share the same login nodes.)
-(1.3) Log in to Subsystem D or E and install Xcrypt to $HOME/xcrypt-DE
+(2) Make user configulation files as follows.
+    (NOTE: "gr<nnnnn>" is your own group name, which can be found out using the qgroup command)
 
-(2) Prepare configulation files.
-(2.1) Log in to Subsystem A, B, or C and make user configulation files as follows.
-      (NOTE: Replace "gr<nnnnn>" by your own group name)
-
-=== $HOME/xcryptrc-camphor ===
+=== $HOME/xcryptrc-camphor3 ===
 [template]
-JS_group = gr<nnnnn>
 JS_queue = gr<nnnnn>a
 [environment]
-sched = kyoto-camphor2
+sched = kyoto-camphor3
 ===============================
-=== $HOME/xcryptrc-laurel =====
+=== $HOME/xcryptrc-laurel3 =====
 [template]
-JS_group = gr<nnnnn>
 JS_queue = gr<nnnnn>b
 [environment]
-sched = kyoto-laurel
+sched = kyoto-laurel3
 ===============================
-=== $HOME/xcryptrc-cinnamon ===
+=== $HOME/xcryptrc-gardenia ===
 [template]
-JS_group = gr<nnnnn>
-JS_queue = gr<nnnnn>c
+JS_queue = gr<nnnnn>g
 [environment]
-sched = kyoto-laurel
-===============================
-(NOTE: The configuration file kyoto-laurel is used by both Subsystems B and C)
-
-(2.2) Log in to Subsystem D or E and make user configulation files as follows.
-      (NOTE: Replace "gr<nnnnn>" by your own group name)
-
-=== $HOME/xcryptrc-magnolia ===
-[template]
-JS_group = gr<nnnnn>
-JS_queue = gr<nnnnn>d
-[environment]
-sched = kyoto-magnolia
-===============================
-=== $HOME/xcryptrc-camellia ===
-[template]
-JS_group = gr<nnnnn>
-JS_queue = gr<nnnnn>e
-[environment]
-sched = kyoto-camellia
+sched = kyoto-gardenia
 ===============================
 
 (3) Add the following piece of code to your login script (.bashrc, .zshrc,
 etc.) to automatically set environment variables depending on login node.
-(NOTE: You have to modify the both login script in Subsystems A/B/C and D/E.)
 
 ===============================
-node_name2=`echo $HOSTNAME | cut -c 1-2`
-node_name7=`echo $HOSTNAME | cut -c 1-7`
-if [ $node_name7 = "camphor" ]; then
-    XCRYPT=$HOME/xcrypt-A
-    export XCRYPTRC=$HOME/xcryptrc-camphor2
-elif [ $node_name2 = "ap" ]; then
-    XCRYPT=$HOME/xcrypt-BC
-    export XCRYPTRC=$HOME/xcryptrc-laurel
-    # "export XCRYPTRC=$HOME/xcryptrc-cinnamon" if you use Subsystem C more often than B
-elif [ $node_name2 = "xc" ]; then
-    XCRYPT=$HOME/xcrypt-DE
-    export XCRYPTRC=$HOME/xcryptrc-magnolia
-elif [ $node_name2 = "xm" ]; then
-    XCRYPT=$HOME/xcrypt-DE
-    export XCRYPTRC=$HOME/xcryptrc-camellia
+node_name=`hostname | sed -E 's/([a-zA-Z]+).*/\1/'`
+if [ $node_name = "camphor" ]; then
+    export XCRYPTRC=$HOME/xcryptrc-camphor3
+elif [ $node_name = "laurel" ]; then
+    export XCRYPTRC=$HOME/xcryptrc-laurel3
+elif [ $node_name = "gardenia" ]; then
+    export XCRYPTRC=$HOME/xcryptrc-gardenia
 else
     echo "Unexpected HOSTNAME: $HOSTNAME"
 fi
