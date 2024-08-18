@@ -13,10 +13,12 @@ use common;
 use jsconfig;
 use Config::Simple;
 
+# The object to store user options for this library
 our %bulk = ();
 
 &add_key('bulk_jobs', 'max_num', 'max_time', 'user_bulk');
 
+# The method to be called by the user to initialize this library with user options
 sub initialize {
     ### designated unit bulk ###
     %bulk = @_;
@@ -69,6 +71,12 @@ sub initialize {
     }
 }
 
+# The method to be called by the user to create a bulk job
+# Arguments:
+#  $id: the id prefix of the bulk job
+#  @jobs: the list of jobs to be bulked
+# Return value:
+#  a list of bulk jobs
 sub bulk {
     my $id   = shift;
     my @jobs = @_;
@@ -78,7 +86,7 @@ sub bulk {
         ### user function bulk ###
         my @bulk_jobs = $bulk{user_bulk}->($id, @jobs);
         foreach my $bulk_job (@bulk_jobs) {
-            push (@user_bulk_jobs, &prepare(%bulk_job, %bulk));
+            push (@user_bulk_jobs, &prepare(%$bulk_job, %bulk));
         }
         # return
         return (@user_bulk_jobs);
@@ -92,7 +100,7 @@ sub bulk {
         return (@bulk_job);
     } else {
         ### designated unit bulk ###
-        # Supplement¡ËWhen queue names are different; an other bulk job
+        # Supplementï¿½ï¿½When queue names are different; an other bulk job
         my $job_cnt   = 0;
         my $jobs_max  = $#jobs;
         my $bulk_cnt  = 0;
@@ -309,7 +317,7 @@ sub make_jobscript_body {
         push (@body, @{mkarray($preamble)});
     }
     # Set the job's status to "running"
-#    push (@body, "sleep 1"); # running ¤¬Áá¤¹¤®¤Æ queued ¤¬¤Ê¤«¤Ê¤«¾¡¤Æ¤Ê¤¤¤¿¤á
+#    push (@body, "sleep 1"); # running ï¿½ï¿½ï¿½á¤¹ï¿½ï¿½ï¿½ï¿½ queued ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½Æ¤Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push(@body, @{$self->{'cmd_before_exe'}});
     # Do before_in_job by executing the perl script created by make_before_in_job_script
@@ -344,7 +352,7 @@ sub make_jobscript_body {
     push (@body, "perl $self->{after_in_job_file}"); 
     push(@body, @{$self->{'cmd_after_exe'}});
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    # inventory_write.pl ¤ò¤ä¤á¤Æ mkdir ¤Ë
+    # inventory_write.pl ï¿½ï¿½ï¿½ï¿½ï¿½ mkdir ï¿½ï¿½
     push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
     $self->{jobscript_body} = \@body;    
 }
