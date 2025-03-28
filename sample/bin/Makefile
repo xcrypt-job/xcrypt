@@ -1,6 +1,6 @@
 CC=gcc
 subdirs = fib-par
-.PHONY: all $(subdirs)
+.PHONY: all clean $(subdirs)
 
 all: fib fib-stdo fib-file fib-par
 
@@ -13,3 +13,7 @@ fib-file: fib-file.c
 
 fib-par:
 	$(MAKE) -C fib-par
+
+clean:
+	rm -f fib fib-stdo fib-file
+	$(MAKE) -C fib-par clean
