@@ -219,7 +219,7 @@ sub make_jobscript_body {
         push (@body, @{mkarray($preamble)});
     }
     # Set the job's status to "running"
-#    push (@body, "sleep 1"); # running ¤¬Áá¤¹¤®¤Æ queued ¤¬¤Ê¤«¤Ê¤«¾¡¤Æ¤Ê¤¤¤¿¤á
+#    push (@body, "sleep 1"); # running ï¿½ï¿½ï¿½á¤¹ï¿½ï¿½ï¿½ï¿½ queued ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½Æ¤Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½
     push (@body, jobsched::inventory_write_cmdline($self, 'running'). " || exit 1");
     push(@body, @{$self->{'cmd_before_exe'}});
     # Do before_in_job by executing the perl script created by make_before_in_job_script
@@ -258,7 +258,7 @@ sub make_jobscript_body {
     push (@body, "$self->{injob_program} $self->{after_in_job_file}"); 
     push(@body, @{$self->{'cmd_after_exe'}});
     # Set the job's status to "done" (should set to "aborted" when failed?)
-    # inventory_write.pl ¤ò¤ä¤á¤Æ mkdir ¤Ë
+    # inventory_write.pl ï¿½ï¿½ï¿½ï¿½ï¿½ mkdir ï¿½ï¿½
     push (@body, jobsched::inventory_write_cmdline($self, 'done'). " || exit 1");
     $self->{jobscript_body} = \@body;
 }
@@ -415,6 +415,10 @@ sub make_qsub_options {
             }
         }
     }
+    # Default qsub options defined by config file
+    if ( defined $cfg{qsub_other_options} ) {
+        push (@contents, @{mkarray($cfg{qsub_other_options})});
+    }
     # User defined qsub options
     if ( defined $self->{JS_user_qsub_options} ) {
         push (@contents, @{mkarray($self->{JS_user_qsub_options})});
@@ -511,10 +515,10 @@ sub qsub {
 }
 
 ##################################################
-# qdel¥³¥Þ¥ó¥É¤ò¼Â¹Ô¤·¤Æ»ØÄê¤µ¤ì¤¿¥¸¥ç¥Ö¤ò»¦¤¹
+# qdelï¿½ï¿½ï¿½Þ¥ï¿½É¤ï¿½Â¹Ô¤ï¿½ï¿½Æ»ï¿½ï¿½ê¤µï¿½ì¤¿ï¿½ï¿½ï¿½ï¿½Ö¤ò»¦¤ï¿½
 sub qdel {
     my ($self) = @_;
-    # qdel¥³¥Þ¥ó¥É¤òconfig¤«¤é³ÍÆÀ
+    # qdelï¿½ï¿½ï¿½Þ¥ï¿½É¤ï¿½configï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     my $qdel_command = $jsconfig::jobsched_config{$self->{env}->{sched}}{qdel_command};
     unless ( defined $qdel_command ) {
         die "qdel_command is not defined in $self->{env}->{sched}.pm";
