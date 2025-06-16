@@ -45,7 +45,7 @@ $jsconfig::jobsched_config{$myname} = {
         );
     },
     # qsub options
-    qsub_other_options => ["--no-check-directory"],
+    qsub_other_options => ["-x PJM_LLIO_GFSCACHE=/vol0004:/vol0003:/vol0002"],
     # body preamble
     jobscript_body_preamble => sub {
         my $self = shift;
@@ -57,8 +57,8 @@ $jsconfig::jobsched_config{$myname} = {
             "export PARALLEL=${thread}",
             "export OMP_NUM_THREADS=${thread}",
             '# For running programs compiled with GCC',
-            'export GCC="/vol0004/apps/oss/gcc-arm-11.2.1"',
-            'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$GCC/aarch64-linux-gnu/lib:$GCC/aarch64-linux-gnu/lib64"'
+            '#export GCC="/vol0004/apps/oss/gcc-arm-11.2.1"',
+            '#export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$GCC/aarch64-linux-gnu/lib:$GCC/aarch64-linux-gnu/lib64"'
         );
     },
     # extractors
