@@ -41,13 +41,14 @@ $jsconfig::jobsched_config{$myname} = {
         my $cpu_phnode = $node_phnode*$cpu;
         return (
             "#PJM -L node=$phnode",
-            "#PJM --mpi proc=$node",
+            "#PJM --mpi proc=$node,max-proc-per-node=$node_phnode",
         );
     },
     # qsub options
     qsub_other_options => ["--no-check-directory"],
     # body preamble
     jobscript_body_preamble => sub {
+        my $self = shift;
         ## # cores / MPI proc.
         my $cpu = $self->{JS_cpu} || 1;
         ## # threads / MPI proc.
