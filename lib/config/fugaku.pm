@@ -45,7 +45,7 @@ $jsconfig::jobsched_config{$myname} = {
         );
     },
     # qsub options
-    qsub_other_options => ["-x PJM_LLIO_GFSCACHE=/vol0004:/vol0003:/vol0002"],
+    qsub_other_options => ["-x PJM_LLIO_GFSCACHE=/vol0004:/vol0003:/vol0002", "--no-check-directory"],
     # body preamble
     jobscript_body_preamble => sub {
         my $self = shift;
